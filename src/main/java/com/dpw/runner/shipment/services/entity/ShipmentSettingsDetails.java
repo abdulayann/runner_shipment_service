@@ -539,4 +539,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String transportInstructionDeliveryOrder;
     @Column(name = "enable_party_check_for_consolidation")
     private Boolean enablePartyCheckForConsolidation;
+
+    @Column(name = "csd")
+    private String csd;
 }

@@ -1,5 +1,19 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -7,12 +21,19 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -27,6 +48,12 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -37,22 +64,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
@@ -975,6 +990,17 @@ class ShipmentControllerTest {
     }
 
     @Test
+    void validateInvoicePosting_success() {
+        InvoicePostingValidationRequest request = new InvoicePostingValidationRequest();
+        when(shipmentService.validateInvoicePosting(request)).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        var responseEntity = shipmentController.validateInvoicePosting(request);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+    }
+
+    @Test
     void getDateTimeChanges() throws RunnerException {
         // Mock
         when(shipmentService.getDateTimeChangeUpdates(anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -992,6 +1018,26 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.getDateTimeChanges(123L);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainerListFromTrackingServiceFails() throws RunnerException {
+        // Mock
+        when(shipmentService.getContainerListFromTrackingService(anyLong(), anyLong())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.getContainerListFromTrackingService(123L,123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getContainerListFromTrackingService() throws RunnerException {
+        // Mock
+        when(shipmentService.getContainerListFromTrackingService(anyLong(),anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getContainerListFromTrackingService(123L,123L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -1047,25 +1093,25 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void updateConsoleShipments_Success() {
+    void updateConsoleShipments_Success() throws RunnerException {
         IRunnerResponse runnerResponse = new UpstreamDateUpdateResponse();
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.updateConsoleShipments(any())).thenReturn(responseEntity);
+        when(shipmentService.updateShipments(any())).thenReturn(responseEntity);
 
-        responseEntity = shipmentController.updateConsoleShipments(request);
+        responseEntity = shipmentController.updateShipments(request);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void updateConsoleShipments_Exception() {
+    void updateConsoleShipments_Exception() throws RunnerException {
         UpdateConsoleShipmentRequest request = mock(UpdateConsoleShipmentRequest.class);
 
-        when(shipmentService.updateConsoleShipments(any())).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.updateShipments(any())).thenThrow(new RuntimeException("Test Exception"));
 
-        var responseEntity = shipmentController.updateConsoleShipments(request);
+        var responseEntity = shipmentController.updateShipments(request);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -1085,6 +1131,46 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.retrieveMeasurmentData(Optional.of(UUID.randomUUID().toString()), Optional.of(module));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole() throws RunnerException {
+        // Mock
+        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_Failure() throws RunnerException {
+        // Mock
+        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getPendingNotifications() throws RunnerException {
+        // Mock
+        when(shipmentService.getPendingNotifications(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getPendingNotifications(new PendingNotificationRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getPendingNotificationsFails() throws RunnerException {
+        // Mock
+        when(shipmentService.getPendingNotifications(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.getPendingNotifications(new PendingNotificationRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

@@ -23,6 +23,7 @@ import java.util.UUID;
 public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Integer tenantId;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;

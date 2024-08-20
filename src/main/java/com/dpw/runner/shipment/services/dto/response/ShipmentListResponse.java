@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -124,6 +126,10 @@ public class ShipmentListResponse implements IRunnerResponse {
     private ShipmentPackStatus shipmentPackStatus;
     private String requestedType;
     private String requestedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shipmentCreatedOn;
+    private Integer pendingActionCount;
 }

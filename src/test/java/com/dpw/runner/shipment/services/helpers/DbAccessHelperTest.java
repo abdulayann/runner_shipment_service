@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
@@ -11,7 +12,9 @@ import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
@@ -156,7 +159,7 @@ class DbAccessHelperTest {
     }
 
     @Test
-    void fetchDataTableNamesNotNullPredicate() {
+    void fetchDataTableNamesNotNullPredicate_NotInLong_UUID_Date() {
         listCommonRequest.setContainsText("transportMode");
         listCommonRequest.setContainsText("status");
         listCommonRequest.setContainsText("eta");
@@ -164,20 +167,35 @@ class DbAccessHelperTest {
         listCommonRequest.setContainsText("masterBill");
         listCommonRequest.setContainsText("origin");
         listCommonRequest.setContainsText("destination");
+        listCommonRequest = CommonUtils.andCriteria("id", List.of(1), "NOTIN", listCommonRequest);
+        listCommonRequest = CommonUtils.andCriteria("guid", List.of(UUID.randomUUID()), "NOTIN", listCommonRequest);
+        listCommonRequest = CommonUtils.andCriteria("customerCategory", List.of(CustomerCategoryRates.CATEGORY_1), "NOTIN", listCommonRequest);
+        listCommonRequest = CommonUtils.andCriteria("eta", List.of(LocalDateTime.now()), "NOTIN", listCommonRequest);
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
-        tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
-        tableNames.put("eta", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
-        tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
-        tableNames.put("masterBill", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(List.class).build());
-        tableNames.put("origin", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
-        tableNames.put("destination", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
+        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("status", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(LocalDateTime.class).build());
+        tableNames.put("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("masterBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(List.class).build());
+        tableNames.put("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("id", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(Long.class).build());
+        tableNames.put("guid", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(UUID.class).build());
+        tableNames.put("customerCategory", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(CustomerCategoryRates.class).build());
+
 
         Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
-        when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
+        CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
+        CriteriaBuilder.In<Object> inClause = mock(CriteriaBuilder.In.class);
+        when(root.join(Constants.CARRIER_DETAILS, JoinType.LEFT)).thenReturn((Join) join);
+        when(criteriaBuilder.in(path.get("id"))).thenReturn(inClause);
+        when(criteriaBuilder.in(path.get("guid"))).thenReturn(inClause);
+        when(criteriaBuilder.in(path.get("customerCategory"))).thenReturn(inClause);
+        when(criteriaBuilder.in(path.get("eta"))).thenReturn(inClause);
+        when(inClause.value(anyList())).thenReturn(inClause);
 
         Predicate predicate = specification.toPredicate(root, criteriaQuery, criteriaBuilder);
         assertNull(predicate);

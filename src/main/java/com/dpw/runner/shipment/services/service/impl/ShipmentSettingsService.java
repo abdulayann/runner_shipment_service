@@ -616,7 +616,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
         }
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
-        List<TenantModel> listOfColoadStations = v1Data.values().stream().toList();
+        List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
         return ResponseHelper.buildSuccessResponse(listOfColoadStations);
     }
 }

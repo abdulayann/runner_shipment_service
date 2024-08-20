@@ -1,17 +1,62 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVNO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NET_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TareWeight;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VGMWeight;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -20,11 +65,23 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,21 +93,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class SeawayBillReportTest extends CommonMocks {
+
     @InjectMocks
     private SeawayBillReport seawayBillReport;
 
@@ -59,6 +105,9 @@ class SeawayBillReportTest extends CommonMocks {
 
     @Mock
     private ModelMapper modelMapper;
+
+    @Mock
+    private ShipmentService shipmentService;
 
     @Mock
     private V1ServiceUtil v1ServiceUtil;
@@ -93,7 +142,8 @@ class SeawayBillReportTest extends CommonMocks {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+                V1TenantSettingsResponse.builder().isModuleValidationEnabled(Boolean.TRUE).P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd")
+                        .GSTTaxAutoCalculation(true).build());
     }
 
     private void populateModel(SeawayBillModel seawayBillModel) {
@@ -241,7 +291,7 @@ class SeawayBillReportTest extends CommonMocks {
         seawayBillModel.setConsolidation(consolidationModel);
     }
 
-    private Hbl populateHbl(){
+    private Hbl populateHbl() {
         Hbl hbl = new Hbl();
         HblDataDto hblDataDto = new HblDataDto();
         hblDataDto.setCargoGrossVolumeUnit("M3");
@@ -250,6 +300,89 @@ class SeawayBillReportTest extends CommonMocks {
         hbl.setHblData(hblDataDto);
         return hbl;
     }
+
+    @Test
+    void testValidatePrinting_ModuleValidationDisabled() {
+        V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        tenantSettings.setIsModuleValidationEnabled(Boolean.FALSE);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
+    void testValidatePrinting_ShipmentNull() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
+    void testValidatePrinting_ShipmentValidationWithSeaTransportAndMissingFields() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doAnswer(invocation -> {
+            List<ModuleValidationFieldType> missingFields = invocation.getArgument(1);
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+            return null;
+        }).when(shipmentService).validateCarrierDetails(any(), anyList());
+
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
+    void testValidatePrinting_ShipmentValidationWithSeaTransportAndMissingFields2() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doAnswer(invocation -> {
+            List<ModuleValidationFieldType> missingFields = invocation.getArgument(1);
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+            return null;
+        }).when(shipmentService).validateCarrierDetails(any(), anyList());
+
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
+    void testValidatePrinting_ShipmentValidationWithSeaTransportAndNoMissingFields() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentService).validateCarrierDetails(any(), anyList());
+        doNothing().when(shipmentService).validateContainerDetails(any(), anyList());
+
+        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+    }
+
+    @Test
+    void testValidatePrinting_ShipmentValidationWithDifferentJobType() {
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT); // Different job type
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+        verify(shipmentService, never()).validateCarrierDetails(any(), anyList());
+        verify(shipmentService, never()).validateContainerDetails(any(), anyList());
+    }
+
 
     @Test
     void populateDictionary() {

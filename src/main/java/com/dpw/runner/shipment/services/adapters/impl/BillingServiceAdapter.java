@@ -103,7 +103,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Autowired
     private CommonUtils commonUtils;
 
-    private static final String NULL_RESPONSE_ERROR = "Received null response from billing service or response data is null";
+    private static final String NULL_RESPONSE_ERROR = "Received null/empty response from billing service or response data is null/empty";
     private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
     private static final String REQUEST_PAYLOAD = "Request payload: {}";
     private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
@@ -211,7 +211,16 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             // Check the response status and body
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
-            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null) {
+
+            if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
+                // Handle the errors by throwing an exception
+                String errorMsg = "Response contains errors: " + billingEntityResponse.getErrors().toString();
+                log.error(errorMsg);
+                throw new BillingException(errorMsg);
+            }
+
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get("billingSummary"))) {
                 log.info("Received billingEntityResponse from billing service");
                 Map<String, Object> data = billingEntityResponse.getData();
                 log.debug("Response data: {}", data);
@@ -220,7 +229,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get("billingSummary");
 
                 // Map the list of maps to a list of BillingSummary objects
-                return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {}.getType());
+                return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {
+                }.getType());
             } else {
                 log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
                 return List.of();
@@ -295,7 +305,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         ParameterizedTypeReference<BillingListResponse<ChargeTypeBaseResponse>> responseType = new ParameterizedTypeReference<>() {
         };
         BillingListResponse<ChargeTypeBaseResponse> listResponse = executePostRequest(url, httpEntity, responseType);
-        if (listResponse == null || listResponse.getData() == null) {
+        if (listResponse == null || ObjectUtils.isEmpty(listResponse.getData())) {
             throw new BillingException(NULL_RESPONSE_ERROR);
         }
 

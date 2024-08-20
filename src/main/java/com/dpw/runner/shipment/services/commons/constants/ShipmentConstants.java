@@ -42,6 +42,7 @@ public class ShipmentConstants {
     public static final String DELETE_SUCCESSFUL = "Successful Shipment Delete";
 
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Id";
+    public static final String REQUESTED_INTER_BRANCH_CONSOLE = "Requested inter branch console";
 
     public static final String SHIPMENT_ID = "Shipment Id";
     public static final String SHIPMENT_GUID = "Shipment Guid";
@@ -80,6 +81,7 @@ public class ShipmentConstants {
     public static final String FETCH_CREDIT_LIMIT = "/creditLimit";
     public static final String FETCH_EMAILS = "/email";
     public static final String GET_DATETIME_CHANGES = "/get/dateTimeChanges";
+    public static final String GET_CONTAINERS = "/get/ts/containers";
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
 
 
@@ -87,7 +89,7 @@ public class ShipmentConstants {
 
     public static final String ALL_SHIPMENT_COUNT = "All shipment count fetched successfully";
     public static final String LATEST_CARGO_DELIVERY_DATE = "Latest cargo delivery date out of shipments fetched successfully";
-    public static final String UPDATE_CONSOLE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
+    public static final String UPDATE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
 
     // Shipment Statuses
     public static final String PENDING = "PENDING";
@@ -103,4 +105,5 @@ public class ShipmentConstants {
     public static final String NO_DATA_FOUND_FOR_ORG_CODE = "No Data found for org code {}";
     public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
     public static final String CHECK_CREDIT_LIMIT_FAILED = "Check Credit Limit failed due to : ";
+    public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
 }

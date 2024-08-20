@@ -136,6 +136,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
     public static final String CARGO_TYPE_FCL = "FCL";
+    public static final String CARGO_TYPE_LSE = "LSE";
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
@@ -231,6 +232,7 @@ public class Constants {
 
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
+    public static final String CONSOLIDATION_TYPE_DRT = "DRT";
 
     public static final String METRIC_TON = "MT";
     public static final String METRE = "M";
@@ -383,6 +385,8 @@ public class Constants {
     public static final String SCO = "SCO";
     public static final String SPX = "SPX";
     public static final String SHR = "SHR";
+    public static final String OPEN_FOR_ATTACHMENT = "openForAttachment";
+    public static final String INTER_BRANCH_CONSOLE = "interBranchConsole";
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
@@ -433,6 +437,7 @@ public class Constants {
     public static final String ENTITY = "entity";
     public static final String NAME_FILTER = "name";
     public static final String Active = "Active";
+    public static final String FILE_STATUS = "FileStatus";
 
     private Constants() {
     }

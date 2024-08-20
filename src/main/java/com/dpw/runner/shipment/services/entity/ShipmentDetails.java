@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -360,6 +361,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Size(max=3, message = "max size is 3 for job_status")
     @MasterData(type = MasterDataType.BILL_JOBS)
     private String jobStatus;
+
+    @Column(name = "file_status")
+    @Enumerated(EnumType.STRING)
+    private FileStatus fileStatus;
 
     @Column(name = "entry_ref_no")
     @Size(max=250, message = "max size is 250 for entry_ref_no")

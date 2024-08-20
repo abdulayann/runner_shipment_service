@@ -30,8 +30,9 @@ public class BillConsumer {
         try {
             log.info("{} | Bill event message: {}", LoggerEvent.KAFKA_BILL_EVENT, message);
             BillDto obj = objectMapper.readValue(message, BillDto.class);
-            if(!Objects.isNull(obj.getPayload()) && Objects.equals(obj.getPayload().getModuleTypeCode(), Constants.SHIPMENT) && !Objects.isNull(obj.getPayload().getModuleId()))
-                genericQueryRepository.saveJobStatusByGuid(UUID.fromString(obj.getPayload().getModuleId()), obj.getPayload().getJobStatus());
+            if(!Objects.isNull(obj.getPayload()) && Objects.equals(obj.getPayload().getModuleTypeCode(), Constants.SHIPMENT) && !Objects.isNull(obj.getPayload().getModuleId())) {
+                genericQueryRepository.saveJobStatusByGuid(UUID.fromString(obj.getPayload().getModuleId()), obj.getPayload().getJobStatus(), obj.getPayload().getFileStatus().getDescription());
+            }
             log.info("Passed");
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_BILL_EVENT, message, ex.getLocalizedMessage());

@@ -59,4 +59,5 @@ public class ConsolidationConstants {
     public static final String ATTACH_SHIPMENT_SUCCESSFUL = "Attach Shipment Request Successful";
     public static final String CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Consolidation list with Request Id {}";
     public static final String CONSOLIDATION_LIST_REQUEST_NULL_ERROR = "Consolidation List Request is Null";
+    public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
 }
