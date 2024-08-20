@@ -23,6 +23,10 @@ public enum MawbPrintFor {
         this.desc = desc;
     }
 
+    public String getDesc() {
+        return desc;
+    }
+
     public static MawbPrintFor getById(int id) {
         for (MawbPrintFor mawbPrintFor : MawbPrintFor.values()) {
             if(mawbPrintFor.id == id) {
