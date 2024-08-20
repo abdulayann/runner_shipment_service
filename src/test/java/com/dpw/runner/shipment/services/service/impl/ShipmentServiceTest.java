@@ -721,9 +721,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void completeUpdate_success_validMasterBill() throws RunnerException {
-        testShipment.setId(1L);
-        ShipmentDetails mockShipment = testShipment;
-        testShipment.setMasterBill("sampleMasterBill");
+        shipmentDetails.setId(1L);
+        ShipmentDetails mockShipment = shipmentDetails;
+        shipmentDetails.setMasterBill("sampleMasterBill");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -745,16 +745,16 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any()))
                 .thenReturn(
                         Optional.of(
-                                testShipment
+                                shipmentDetails
                                         .setConsolidationList(new ArrayList<>())
                                         .setContainersList(new ArrayList<>())));
-        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(testShipment);
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
         mockTenantSettings();
-        when(consolidationDetailsDao.findMblNumberInDifferentTenant(testShipment.getMasterBill())).thenReturn(List.of(consolidationDetailsProjection));
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(shipmentDetails.getMasterBill())).thenReturn(List.of(consolidationDetailsProjection));
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
@@ -1765,7 +1765,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(shipmentDao.findAll(any(), any())).thenReturn(page);
         // Moved the below mocking part to convertEntityListToDtoList method
-//        when(modelMapper.map(any(), eq(ShipmentListResponse.class))).thenReturn(objectMapper.convertValue(testShipment, ShipmentListResponse.class));
+//        when(modelMapper.map(any(), eq(ShipmentListResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.fetchShipmentsForConsoleId(commonRequestModel);
