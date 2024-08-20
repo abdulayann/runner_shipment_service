@@ -4155,10 +4155,17 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public void validateCarrierDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(consolidation.getCarrierDetails())) {
+        CarrierDetails carrierDetails = consolidation.getCarrierDetails();
+
+        if (ObjectUtils.isEmpty(carrierDetails)) {
             missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else if (ObjectUtils.isEmpty(consolidation.getCarrierDetails().getEta())) {
-            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+        } else {
+            if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
+                missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
+            }
+            if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
+                missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+            }
         }
     }
 
