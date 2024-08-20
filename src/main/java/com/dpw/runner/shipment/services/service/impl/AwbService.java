@@ -413,7 +413,10 @@ public class AwbService implements IAwbService {
             for (var hawb : linkedHawb) {
                 if(hawb.getAwbPackingInfo() != null) {
                     hawb.setTenantId(hawb.getTenantId());
-                    linkedPacks.addAll(hawb.getAwbPackingInfo());
+                    for (AwbPackingInfo pack : hawb.getAwbPackingInfo()) {
+                        pack.setTenantId(hawb.getTenantId());
+                        linkedPacks.add(pack);
+                    }
                 }
             }
             awb.setAwbPackingInfo(linkedPacks);
