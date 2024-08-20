@@ -3923,7 +3923,12 @@ public class ConsolidationService implements IConsolidationService {
                 log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            MeasurementBasisResponse response = modelMapper.map(consolidationDetails.get().getAllocations(), MeasurementBasisResponse.class);
+            MeasurementBasisResponse response = null;
+            if (consolidationDetails.get().getAllocations() != null) {
+                response = modelMapper.map(consolidationDetails.get().getAllocations(), MeasurementBasisResponse.class);
+            } else {
+                response = new MeasurementBasisResponse();
+            }
             calculatePacksAndPacksUnit(consolidationDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, consolidationDetails.get().getContainersList());
             return ResponseHelper.buildSuccessResponse(response);
