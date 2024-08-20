@@ -4864,10 +4864,17 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateCarrierDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(shipment.getCarrierDetails())) {
+        CarrierDetails carrierDetails = shipment.getCarrierDetails();
+
+        if (ObjectUtils.isEmpty(carrierDetails)) {
             missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else if (ObjectUtils.isEmpty(shipment.getCarrierDetails().getEta())) {
-            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+        } else {
+            if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
+                missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
+            }
+            if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
+                missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
+            }
         }
     }
 

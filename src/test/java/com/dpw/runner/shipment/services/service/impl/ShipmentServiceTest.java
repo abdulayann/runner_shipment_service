@@ -530,6 +530,7 @@ ShipmentServiceTest extends CommonMocks {
         InvoicePostingValidationResponse validationResponse = responses.get(0);
         assertEquals(guid.toString(), validationResponse.getShipmentGuid());
         assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CARRIER_ETA));
+        assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CARRIER_ETD));
         assertFalse(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CONTAINER_DETAILS));
         assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.MAWB_DETAILS));
     }

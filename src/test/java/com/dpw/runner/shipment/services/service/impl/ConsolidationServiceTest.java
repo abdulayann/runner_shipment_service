@@ -399,6 +399,18 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
+    void testValidateCarrierDetails_EmptyCarrierETD() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEta(LocalDateTime.now());
+        carrierDetails.setEtd(null);
+        consolidationDetails.setCarrierDetails(carrierDetails);
+
+        consolidationService.validateCarrierDetails(consolidationDetails, missingFields);
+
+        assertTrue(missingFields.contains(ModuleValidationFieldType.CARRIER_ETD));
+    }
+
+    @Test
     void testValidateCarrierDetails_ValidCarrierDetailsAndETA() {
         CarrierDetails carrierDetails = new CarrierDetails();
         carrierDetails.setEta(LocalDateTime.now());
