@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.validator.custom.validations;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -25,6 +26,7 @@ import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
@@ -165,6 +167,28 @@ class CustomerBookingValidationsTest extends CommonMocks {
                 .carrierDetails(CarrierDetails.builder().origin("origin").destination("destination").build())
                 .build();
 
+        CustomerBooking newEntity_withOriginPortAndTransportType_ROA = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                .consignee(Parties.builder().orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .incoTerms("incoterms")
+                .transportType(Constants.TRANSPORT_MODE_ROA)
+                .carrierDetails(CarrierDetails.builder().originPort("origin Port").origin("origin").destination("destination").build())
+                .cargoType("cargo_type")
+                .build();
+
+        CustomerBooking newEntity_withOriginPortAndDestinationPortAndTransportType_ROA = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                .consignee(Parties.builder().orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .incoTerms("incoterms")
+                .transportType(Constants.TRANSPORT_MODE_ROA)
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .cargoType("cargo_type")
+                .build();
+
         CustomerBooking newEntity_withoutDestinationPort = CustomerBooking.builder().bookingNumber("num1")
                 .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 .consignee(Parties.builder().orgCode("code").build())
@@ -207,8 +231,9 @@ class CustomerBookingValidationsTest extends CommonMocks {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCargoType));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCargoType));
+        assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity,newEntity_withOriginPortAndTransportType_ROA));
+        assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity,newEntity_withOriginPortAndDestinationPortAndTransportType_ROA));
         customerBookingValidations.onSave(oldEntity,newEntity);
-
     }
 
 
