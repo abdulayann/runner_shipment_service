@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -466,8 +467,10 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
-    public List<Events> getTrackingEvents(String referenceNumber) throws RunnerException {
+    @Override
+    public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {
+            TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
             var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
             ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
             ForkJoinPool customThreadPool = new ForkJoinPool(4);
@@ -507,12 +510,19 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                             eventsRows.addAll(rows);
                         })
                     ).join();
+                    // set ata and atd date
+                    var container = res.getContainers().get(0);
+                    if(container.getJourney() != null) {
+                        trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta()).map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                        trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfArrivalAta()).map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                    }
                 }
             } finally {
                 customThreadPool.shutdown();
             }
 
-            return eventsRows.stream().toList();
+            trackingEventsResponse.setEventsList(eventsRows.stream().toList());
+            return trackingEventsResponse;
 
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());

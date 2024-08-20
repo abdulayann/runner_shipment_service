@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
@@ -32,6 +33,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogSer
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +59,8 @@ import org.springframework.web.client.RestTemplate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -102,6 +106,12 @@ public class EventService implements IEventService {
 
     @Autowired
     private PartialFetchUtils partialFetchUtils;
+
+    @Autowired
+    private CommonUtils commonUtils;
+
+    @Autowired
+    private ITrackingServiceAdapter trackingServiceAdapter;
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -363,102 +373,141 @@ public class EventService implements IEventService {
         }
     }
 
-  public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
-    Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
-    Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
-    String referenceNumber = null;
-    if(shipmentId.isPresent()) {
-        optionalShipmentDetails = shipmentDao.findById(shipmentId.get());
-        if (optionalShipmentDetails.isEmpty()) {
-            log.debug(
+    public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
+        Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
+        Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
+        String referenceNumber = null;
+        Long entityId = null;
+        String entityType = null;
+        if (shipmentId.isPresent()) {
+            optionalShipmentDetails = shipmentDao.findById(shipmentId.get());
+            if (optionalShipmentDetails.isEmpty()) {
+                log.debug(
                     "No Shipment present for the current Event ",
                     LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-        referenceNumber = optionalShipmentDetails.get().getShipmentId();
-    }
-    else if(consolidationId.isPresent()) {
-        optionalConsolidationDetails = consolidationDao.findById(consolidationId.get());
-        if (optionalConsolidationDetails.isEmpty()) {
-            log.debug(
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            referenceNumber = optionalShipmentDetails.get().getShipmentId();
+            entityId = shipmentId.get();
+            entityType = Constants.SHIPMENT;
+        } else if (consolidationId.isPresent()) {
+            optionalConsolidationDetails = consolidationDao.findById(consolidationId.get());
+            if (optionalConsolidationDetails.isEmpty()) {
+                log.debug(
                     "No Consolidation present for the current Event",
                     LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
+            entityId = consolidationId.get();
+            entityType = Constants.CONSOLIDATION;
+        } else {
+            throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
-        referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
-    } else {
-        throw new RunnerException("Both shipmentId and consolidationId are empty !");
+
+        TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
+        TrackingEventsResponse trackingEventsResponse = null;
+        List<Events> trackingEvents = new ArrayList<>();
+
+        HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
+        try {
+            trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(
+                jsonHelper
+                    .readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class)
+                    .getError()
+                    .getMessage());
+        }
+        List<EventsResponse> res = new ArrayList<>();
+        if (trackingEventsResponse != null) {
+            if (trackingEventsResponse.getEvents() != null) {
+                for (var i : trackingEventsResponse.getEvents()) {
+                    EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
+                    shipmentId.ifPresent(eventsResponse::setShipmentId);
+                    res.add(eventsResponse);
+                }
+                saveTrackingEvents(trackingEvents, entityId, entityType);
+            }
+
+            if ((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
+                ShipmentDetails shipment = optionalShipmentDetails.get();
+                CarrierDetails carrierDetails =
+                    shipment.getCarrierDetails() != null
+                        ? shipment.getCarrierDetails()
+                        : new CarrierDetails();
+
+                if (trackingEventsResponse.getShipmentAta() != null)
+                    carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
+                if (trackingEventsResponse.getShipmentAtd() != null)
+                    carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
+
+                shipmentDao.save(shipment, false);
+                try {
+                    shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
+            }
+        }
+
+        return ResponseHelper.buildSuccessResponse(res);
     }
 
-    TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
-    TrackingEventsResponse trackingEventsResponse = null;
-
-    HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
-    try {
-      var v1Response = this.restTemplate.postForEntity(trackEventDetailsUrl, entity, TrackingEventsResponse.class);
-      trackingEventsResponse = v1Response.getBody();
-    } catch (HttpClientErrorException | HttpServerErrorException ex) {
-      throw new V1ServiceException(
-          jsonHelper
-              .readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class)
-              .getError()
-              .getMessage());
-    }
-    List<EventsResponse> res = new ArrayList<>();
-    if (trackingEventsResponse != null) {
-      if (trackingEventsResponse.getEvents() != null){
-          for (var i : trackingEventsResponse.getEvents()) {
-              EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
-              shipmentId.ifPresent(eventsResponse::setShipmentId);
-              res.add(eventsResponse);
-          }
-      }
-
-      if((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
-          ShipmentDetails shipment = optionalShipmentDetails.get();
-          CarrierDetails carrierDetails =
-                  shipment.getCarrierDetails() != null
-                          ? shipment.getCarrierDetails()
-                          : new CarrierDetails();
-
-          if(trackingEventsResponse.getShipmentAta() != null)
-              carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
-          if(trackingEventsResponse.getShipmentAtd() != null)
-              carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
-
-          shipmentDao.save(shipment, false);
-          try {
-              shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
-          } catch (Exception e) {
-              log.error("Error performing sync on shipment entity, {}", e);
-          }
-      }
-    }
-
-    return ResponseHelper.buildSuccessResponse(res);
-  }
-
-  @Override
-  public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
-        if(events != null && events.size() > 0) {
-            Events lastEvent = events.get(events.size()-1);
-            if(tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
-                if(lastEvent.getActual() != null) {
+    @Override
+    public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
+        if (events != null && events.size() > 0) {
+            Events lastEvent = events.get(events.size() - 1);
+            if (tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
+                if (lastEvent.getActual() != null) {
                     shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
-                    if(Constants.ATA_EVENT_CODES.contains(lastEvent.getEventCode())) {
+                    if (Constants.ATA_EVENT_CODES.contains(lastEvent.getEventCode())) {
                         shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
                         createDateTimeChangeLog(DateType.ATA, lastEvent.getActual(), shipmentDetails.getId());
                     }
-                    if(Constants.ATD_EVENT_CODES.contains(lastEvent.getEventCode())) {
+                    if (Constants.ATD_EVENT_CODES.contains(lastEvent.getEventCode())) {
                         shipmentDetails.getCarrierDetails().setAtd(lastEvent.getActual());
                         createDateTimeChangeLog(DateType.ATD, lastEvent.getActual(), shipmentDetails.getId());
                     }
                 }
             }
         }
-  }
+    }
 
     private void createDateTimeChangeLog(DateType dateType, LocalDateTime localDateTime, Long shipmentId) {
         dateTimeChangeLogService.saveDateTimeChangeLog(dateType, localDateTime, shipmentId, DateTimeChangeLogConstants.EVENT_SOURCE);
+    }
+
+    /**
+     * @param trackingEvents
+     * @param entityId
+     * @param entityType
+     * save tracking response events and update if any existing event that's already saved
+     */
+    private void saveTrackingEvents(List<Events> trackingEvents, Long entityId, String entityType) {
+        if (trackingEvents == null || trackingEvents.isEmpty())
+            return;
+
+        var listCriteria = commonUtils.constructListRequestFromEntityId(entityId, entityType);
+        Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
+        Page<Events> eventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+
+        Map<String, Events> existingEvents = eventsPage.getContent().stream().collect(
+            Collectors.toMap(Events::getEventCode, Function.identity(), (oldVal, newVal) -> newVal));
+
+        List<Events> updatedEvents = new ArrayList<>();
+        trackingEvents.forEach(e -> {
+            Events event = modelMapper.map(e, Events.class);
+            if (existingEvents.containsKey(e.getEventCode())) {
+                event.setId(existingEvents.get(e.getEventCode()).getId());
+                event.setGuid(existingEvents.get(e.getEventCode()).getGuid());
+            }
+            event.setEntityId(entityId);
+            event.setEntityType(entityType);
+            event.setSource(Constants.FLOW);
+            updatedEvents.add(event);
+        });
+
+        eventDao.saveAll(updatedEvents);
     }
 }

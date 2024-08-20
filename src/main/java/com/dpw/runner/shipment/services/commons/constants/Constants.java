@@ -438,6 +438,7 @@ public class Constants {
     public static final String NAME_FILTER = "name";
     public static final String Active = "Active";
     public static final String FILE_STATUS = "FileStatus";
+    public static final String FLOW = "Flow";
 
     private Constants() {
     }
