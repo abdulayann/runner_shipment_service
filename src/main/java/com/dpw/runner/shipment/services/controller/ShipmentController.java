@@ -28,8 +28,10 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -527,6 +529,12 @@ public class ShipmentController {
     @PostMapping(value = ShipmentConstants.SHOW_ASSIGN_ALL_CONTAINERS)
     public ResponseEntity<IRunnerResponse> showAssignAllContainers(@RequestBody ShipmentConsoleIdDto request) {
         return shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = InvoicePostingValidationResponse.class)})
+    @PostMapping(value = "/invoices/validation")
+    public ResponseEntity<IRunnerResponse> validateInvoicePosting(@RequestBody InvoicePostingValidationRequest request) {
+        return shipmentService.validateInvoicePosting(request);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})

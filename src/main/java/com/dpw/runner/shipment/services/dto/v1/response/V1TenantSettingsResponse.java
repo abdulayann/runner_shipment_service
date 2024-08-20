@@ -1,12 +1,11 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
+import java.io.Serializable;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.util.List;
 
 @Data
 @Builder
@@ -46,4 +45,5 @@ public class V1TenantSettingsResponse implements Serializable {
     private List<Integer> ColoadingBranchIds;
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
+    private Boolean isModuleValidationEnabled;
 }
