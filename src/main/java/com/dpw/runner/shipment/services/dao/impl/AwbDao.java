@@ -74,10 +74,18 @@ public class AwbDao implements IAwbDao {
 
     @Autowired
     private EntityManager entityManager;
-    @Autowired
     private V1ServiceUtil v1ServiceUtil;
-    @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
+        this.v1ServiceUtil = v1ServiceUtil;
+    }
+    @Autowired
+    private void setModelMapper(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
+    }
+
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = false; // TODO- handle create/update here
