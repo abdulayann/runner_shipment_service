@@ -14,14 +14,12 @@ public class CargoDeliveryDateValidator implements ConstraintValidator<ValidCarg
         Date cargoReadyDate = shipment.getCargoReadyDate();
         Date cargoDeliveryDate = shipment.getCargoDeliveryDate();
 
-        if (cargoDeliveryDate != null && cargoReadyDate != null) {
-            if (cargoDeliveryDate.before(cargoReadyDate)) {
+        if (cargoDeliveryDate != null && cargoReadyDate != null && cargoDeliveryDate.before(cargoReadyDate)) {
                 context.disableDefaultConstraintViolation();
                 context.buildConstraintViolationWithTemplate(
                     "Cargo Delivery Date should not be lesser than Cargo Ready Date."
                 ).addPropertyNode("cargoDeliveryDate").addConstraintViolation();
                 return false;
-            }
         }
         return true;
     }
