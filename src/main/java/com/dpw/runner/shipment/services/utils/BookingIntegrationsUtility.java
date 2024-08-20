@@ -615,7 +615,6 @@ public class BookingIntegrationsUtility {
             case "LSE" -> lseBusinessCode;
             case "BBK" -> lclBusinessCode;
             case "ROR" -> lclBusinessCode;
-            //todo:
             default -> null;
         };
     }

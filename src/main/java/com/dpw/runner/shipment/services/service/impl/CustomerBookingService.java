@@ -1181,7 +1181,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
 
-    //todo:
     private String generateBookingNumber(String cargoType) {
         String prefix = "DBAR";
         if (Objects.equals(cargoType, "FCL") || Objects.equals(cargoType, "FTL"))

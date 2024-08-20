@@ -36,7 +36,6 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         this.baseUrl = baseUrl;
     }
 
-    //todo:
     @Override
     public ResponseEntity<IRunnerResponse> createAtPlatform(CommonRequestModel requestModel) throws RunnerException {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
