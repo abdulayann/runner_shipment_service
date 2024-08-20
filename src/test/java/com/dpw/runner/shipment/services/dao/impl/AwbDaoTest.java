@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -84,6 +85,8 @@ class AwbDaoTest {
     private IEventDao eventDao;
     @Mock
     private EntityManager entityManager;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -385,10 +388,10 @@ class AwbDaoTest {
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
-        when(awbRepository.findByShipmentId(testShipment.getId())).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(List.of(mockAwb));
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
 
         // Test
         try {
@@ -408,9 +411,9 @@ class AwbDaoTest {
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
 
         // Mock
-        when(awbRepository.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
 
         // Test
         try {
@@ -545,7 +548,7 @@ class AwbDaoTest {
         // Mock
         when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(testMawb);
         when(consoleShipmentMappingDao.findByConsolidationIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
-        when(awbRepository.findByShipmentIdByQuery(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdsByQuery(anyList())).thenReturn(List.of(mockAwb));
 
         // Test
         awbDao.findAllLinkedAwbs(inputGuid);
