@@ -4140,7 +4140,7 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel) {
         PendingNotificationRequest request = (PendingNotificationRequest) commonRequestModel.getData();
-        PendingNotificationResponse response = new PendingNotificationResponse();
+        PendingNotificationResponse<PendingConsolidationActionResponse> response = new PendingNotificationResponse<>();
         if(request.getConsolidationIdList() == null || request.getConsolidationIdList().isEmpty()) {
             log.info("Received empty request for pending notification in consolidation", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(response);
@@ -4160,9 +4160,9 @@ public class ConsolidationService implements IConsolidationService {
             return notificationResultMap;
         }
 
-        ListCommonRequest listRequest = commonUtils.constructListCommonRequest("consolidationId", request.getConsolidationIdList(), "IN");
-        listRequest = commonUtils.andCriteria("requestedType", pushRequestedEnum.name(), "=", listRequest);
-        listRequest = commonUtils.andCriteria("isAttachmentDone", false, "=", listRequest);
+        ListCommonRequest listRequest = constructListCommonRequest("consolidationId", request.getConsolidationIdList(), "IN");
+        listRequest = andCriteria("requestedType", pushRequestedEnum.name(), "=", listRequest);
+        listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
         Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
         Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
@@ -4173,7 +4173,7 @@ public class ConsolidationService implements IConsolidationService {
 
         commonUtils.setInterBranchContextForHub();
 
-        listRequest = commonUtils.constructListCommonRequest("id", shipmentIds, "IN");
+        listRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -4202,7 +4202,7 @@ public class ConsolidationService implements IConsolidationService {
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
             .lat(null)
-            .branch(StringUtility.convertToString(shipment.getTenantId())) // TODO revisit Should display the branch name as per below format - Branch Code - Branch Name
+            .branch(StringUtility.convertToString(shipment.getTenantId()))
             .hazardous(shipment.getContainsHazardous())
             .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + shipment.getPacksUnit())
             .weight(StringUtility.convertToString(shipment.getWeight()) + shipment.getWeightUnit())

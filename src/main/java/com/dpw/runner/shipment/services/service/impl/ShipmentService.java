@@ -4977,7 +4977,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel) {
         PendingNotificationRequest request = (PendingNotificationRequest) commonRequestModel.getData();
-        PendingNotificationResponse response = new PendingNotificationResponse();
+        PendingNotificationResponse<PendingShipmentActionsResponse> response = new PendingNotificationResponse<>();
         if(request.getShipmentIdList() == null || request.getShipmentIdList().isEmpty()) {
             log.info("Received empty request for pending notification in shipments", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(response);
@@ -4996,9 +4996,9 @@ public class ShipmentService implements IShipmentService {
             return notificationResultMap;
         }
 
-        ListCommonRequest listRequest = commonUtils.constructListCommonRequest("shipmentId", request.getShipmentIdList(), "IN");
-        listRequest = commonUtils.andCriteria("requestedType", pullRequestedEnum.name(), "=", listRequest);
-        listRequest = commonUtils.andCriteria("isAttachmentDone", false, "=", listRequest);
+        ListCommonRequest listRequest = constructListCommonRequest("shipmentId", request.getShipmentIdList(), "IN");
+        listRequest = andCriteria("requestedType", pullRequestedEnum.name(), "=", listRequest);
+        listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
         Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
         Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
@@ -5009,7 +5009,7 @@ public class ShipmentService implements IShipmentService {
 
         commonUtils.setInterBranchContextForHub();
 
-        listRequest = commonUtils.constructListCommonRequest("id", consolidationIds, "IN");
+        listRequest = constructListCommonRequest("id", consolidationIds, "IN");
         Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class);
         Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -5038,7 +5038,7 @@ public class ShipmentService implements IShipmentService {
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
             .lat(null)
-            .branch(StringUtility.convertToString(consol.getTenantId())) // TODO revisit Should display the branch name as per below format - Branch Code - Branch Name
+            .branch(StringUtility.convertToString(consol.getTenantId()))
             .hazardous(consol.getHazardous())
             .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())

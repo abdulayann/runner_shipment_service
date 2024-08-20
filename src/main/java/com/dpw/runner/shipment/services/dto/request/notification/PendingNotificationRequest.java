@@ -13,6 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PendingNotificationRequest implements IRunnerRequest {
-    List<Long> shipmentIdList;
-    List<Long> consolidationIdList;
+    private List<Long> shipmentIdList;
+    private List<Long> consolidationIdList;
 }

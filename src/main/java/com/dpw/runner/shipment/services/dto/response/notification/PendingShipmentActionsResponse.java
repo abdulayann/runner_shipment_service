@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.response.notification;
 
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

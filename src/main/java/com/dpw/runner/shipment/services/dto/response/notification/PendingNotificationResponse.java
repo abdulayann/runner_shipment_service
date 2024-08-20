@@ -15,5 +15,5 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PendingNotificationResponse<T extends IPendingActionsResponse> implements IRunnerResponse {
-    private Map<Long, List<T>> notificationMap;
+    private transient Map<Long, List<T>> notificationMap;
 }
