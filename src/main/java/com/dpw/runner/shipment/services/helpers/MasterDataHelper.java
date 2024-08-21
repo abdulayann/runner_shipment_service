@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -165,6 +166,9 @@ public class MasterDataHelper {
             List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
             if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
                 tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()));
+            if(!Objects.isNull(shipmentDetailsResponse.getConsolidationList()) && !shipmentDetailsResponse.getConsolidationList().isEmpty()){
+                tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getConsolidationList().get(0), MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName()));
+            }
 
             Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);

@@ -1611,6 +1611,56 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void attachListShipmentEtaNotNullTransportModeAir_EXP_success() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(true);
+        attachListShipmentRequest.setEtaMatch(true);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setAirDGFlag(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+        mockShipmentSettings();
+        mockTenantSettings();
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
     void attachListShipmentEtaNotNullTransportModeAir_success_dg_user() {
         // Mock data
         long consolidationId = 1L;
