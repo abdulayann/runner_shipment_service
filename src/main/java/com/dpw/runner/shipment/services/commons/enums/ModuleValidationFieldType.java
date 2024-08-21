@@ -8,6 +8,7 @@ import lombok.Getter;
 public enum ModuleValidationFieldType {
     CARRIER("Carrier Details missing"),
     CARRIER_ETA("Carrier ETA Details missing"),
+    CARRIER_ETD("Carrier ETD Details missing"),
     CONTAINER_DETAILS("Container Details missing"),
     MAWB_DETAILS("MAWB Details missing");
 

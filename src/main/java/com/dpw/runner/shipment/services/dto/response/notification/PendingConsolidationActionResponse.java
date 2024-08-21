@@ -1,0 +1,34 @@
+package com.dpw.runner.shipment.services.dto.response.notification;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PendingConsolidationActionResponse implements IPendingActionsResponse {
+    private Long shipmentId;
+
+    private String branch;
+
+    private LocalDateTime ata;
+    private LocalDateTime atd;
+    private LocalDateTime eta;
+    private LocalDateTime etd;
+    private LocalDateTime lat;
+    private LocalDateTime delivery;
+
+    private String packs; // packs and packs unit
+    private String weight; // weight and unit
+    private String volume; // volume and unit
+    private String chargeable; // chargeable wt and unit
+
+    private String requestedBy;
+    private LocalDateTime requestedOn;
+    private Boolean hazardous;
+}

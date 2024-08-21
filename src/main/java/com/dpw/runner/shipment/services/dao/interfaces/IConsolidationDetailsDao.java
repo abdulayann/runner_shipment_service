@@ -2,15 +2,15 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-
+import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
@@ -30,4 +30,5 @@ public interface IConsolidationDetailsDao {
     String getConsolidationNumberFromId(Long id);
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
     ConsolidationDetails findConsolidationsById(Long id);
+    List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
 }

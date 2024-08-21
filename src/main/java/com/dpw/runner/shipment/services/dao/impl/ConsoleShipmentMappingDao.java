@@ -52,7 +52,8 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         return consoleShipmentsMappingRepository.findByConsolidationId(consolidationId);
     }
 
-    private ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
+    @Override
+    public ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }
 

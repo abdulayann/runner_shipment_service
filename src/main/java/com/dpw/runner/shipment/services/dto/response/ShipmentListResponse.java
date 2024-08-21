@@ -129,5 +129,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
+    private Integer pendingActionCount;
 }
