@@ -347,7 +347,7 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.getColoadingStations}")
     private String GET_CO_LOAD_STATIONS;
     @Value("${v1service.url.base}${v1service.url.getTenantDetails}")
-    private String GET_TENANT_INFO;
+    private String getTenantInfoUrl;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2077,7 +2077,7 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
-            responseEntity = this.restTemplate.postForEntity(this.GET_TENANT_INFO, entity, TenantDetailsByListResponse.class);
+            responseEntity = this.restTemplate.postForEntity(this.getTenantInfoUrl, entity, TenantDetailsByListResponse.class);
             log.info("Token time taken in getTenantDetails() function {} ms", System.currentTimeMillis() - time);
             return responseEntity.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
