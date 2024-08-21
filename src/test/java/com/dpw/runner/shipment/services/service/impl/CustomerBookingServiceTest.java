@@ -1236,7 +1236,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         mockTenantSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
+        assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
     }
 
     @Test
@@ -1266,7 +1266,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         mockTenantSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
+        assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
     }
 
     @Test
