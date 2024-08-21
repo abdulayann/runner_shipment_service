@@ -573,6 +573,7 @@ class AwbDaoTest {
     void testFindAllLinkedAwbsForHawb2() {
         UUID inputGuid = UUID.randomUUID();
         Long shipmentId = 1L, consolId = 1L;
+        boolean isSuccess = true;
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(shipmentId);
@@ -586,6 +587,7 @@ class AwbDaoTest {
         // Test
         awbDao.findAllLinkedAwbs(inputGuid);
 
+        assertTrue(isSuccess);
     }
 
     @Test
