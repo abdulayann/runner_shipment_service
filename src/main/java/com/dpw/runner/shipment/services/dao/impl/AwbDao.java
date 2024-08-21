@@ -78,11 +78,11 @@ public class AwbDao implements IAwbDao {
     private ModelMapper modelMapper;
 
     @Autowired
-    private void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
+    public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
         this.v1ServiceUtil = v1ServiceUtil;
     }
     @Autowired
-    private void setModelMapper(ModelMapper modelMapper) {
+    public void setModelMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
     }
 

@@ -78,7 +78,7 @@ public class AwbUtility {
     private CommonUtils commonUtils;
     private ShipmentSettingsDao shipmentSettingsDao;
     @Autowired
-    private void setShipmentSettingsDao(ShipmentSettingsDao shipmentSettingsDao) { this.shipmentSettingsDao = shipmentSettingsDao; }
+    public void setShipmentSettingsDao(ShipmentSettingsDao shipmentSettingsDao) { this.shipmentSettingsDao = shipmentSettingsDao; }
 
     public static String getFormattedAddress(AwbAddressParam addressParam)
     {
