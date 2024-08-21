@@ -289,9 +289,9 @@ class TrackingServiceAdapterTest {
 
         try {
             when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).thenReturn(ResponseEntity.ok(mockResponse));
-            var responseEvents = trackingServiceAdapter.getTrackingEvents(refNumber);
+            var trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(refNumber);
 
-            assertNotNull(responseEvents);
+            assertNotNull(trackingEventsResponse.getEventsList());
         }
         catch (Exception e) {
             fail(e);

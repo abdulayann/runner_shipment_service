@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.runner.Runner;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -117,6 +119,9 @@ class EventServiceTest extends CommonMocks {
 
     @Mock
     private DateTimeChangeLogService dateTimeChangeLogService;
+
+    @Mock
+    private TrackingServiceAdapter trackingServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
@@ -534,12 +539,11 @@ class EventServiceTest extends CommonMocks {
         EventsResponse eventsResponse = new EventsResponse();
 
         TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
-        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
+//        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
 
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<TrackingEventsResponse>>any(),
-                (Object[]) any())).thenReturn(mockResponseEntity);
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
@@ -549,6 +553,43 @@ class EventServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void trackEventsForInputShipmentSavesUpstreamEvents() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setId(1L);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
+        shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEvents(List.of(new EventsRequestV2()));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        Events mockEvent = new Events();
+        mockEvent.setId(1L);
+        mockEvent.setGuid(UUID.randomUUID());
+        mockEvent.setEventCode("EVCODE1");
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+
+        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDao, times(1)).saveAll(any());
         assertNotNull(httpResponse);
         assertEquals(expectedResponse, httpResponse);
     }
@@ -574,14 +615,12 @@ class EventServiceTest extends CommonMocks {
 
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<TrackingEventsResponse>>any(),
-                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.UNAUTHORIZED));
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenThrow(new HttpServerErrorException(HttpStatus.UNAUTHORIZED));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
 
-        var e = assertThrows(V1ServiceException.class, () -> eventService.trackEvents(Optional.of(12L) , Optional.of(12L)));
+        var e = assertThrows(RunnerException.class, () -> eventService.trackEvents(Optional.of(12L) , Optional.of(12L)));
 
         assertNotNull(e);
     }

@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+import java.util.Set;
+
 public class EventConstants {
 
     private EventConstants(){}
@@ -25,4 +28,6 @@ public class EventConstants {
     public static final String EMPTY_REQUEST_ID_ERROR = "Id can't be null in request";
     public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
     public static final String FWB_EVENT_CODE = "FWB";
+
+    public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }
