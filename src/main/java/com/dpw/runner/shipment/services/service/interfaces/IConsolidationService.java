@@ -75,4 +75,5 @@ public interface IConsolidationService extends ICommonService{
     void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException;
     ResponseEntity<IRunnerResponse> consolidationRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> mblCheck(String mblNumber);
+    ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
 }

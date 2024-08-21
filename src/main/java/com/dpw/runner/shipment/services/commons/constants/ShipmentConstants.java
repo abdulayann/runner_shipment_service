@@ -42,6 +42,7 @@ public class ShipmentConstants {
     public static final String DELETE_SUCCESSFUL = "Successful Shipment Delete";
 
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Id";
+    public static final String REQUESTED_INTER_BRANCH_CONSOLE = "Requested inter branch console";
 
     public static final String SHIPMENT_ID = "Shipment Id";
     public static final String SHIPMENT_GUID = "Shipment Guid";
@@ -103,4 +104,5 @@ public class ShipmentConstants {
     public static final String NO_DATA_FOUND_FOR_ORG_CODE = "No Data found for org code {}";
     public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
     public static final String CHECK_CREDIT_LIMIT_FAILED = "Check Credit Limit failed due to : ";
+    public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
 }

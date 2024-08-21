@@ -1,11 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -128,6 +124,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -199,6 +200,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -531,6 +534,7 @@ ShipmentServiceTest extends CommonMocks {
         InvoicePostingValidationResponse validationResponse = responses.get(0);
         assertEquals(guid.toString(), validationResponse.getShipmentGuid());
         assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CARRIER_ETA));
+        assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CARRIER_ETD));
         assertFalse(validationResponse.getMissingFields().contains(ModuleValidationFieldType.CONTAINER_DETAILS));
         assertTrue(validationResponse.getMissingFields().contains(ModuleValidationFieldType.MAWB_DETAILS));
     }
@@ -3295,18 +3299,21 @@ ShipmentServiceTest extends CommonMocks {
     void completeUpdateConsolidationListNotEmpty_success_Air_() throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
 
         ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
         consolidationDetails2.setId(2L);
 
         shipmentDetails.setId(1L);
         ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
                 .setJobType(Constants.SHIPMENT_TYPE_DRT)
                 .setSourceTenantId(1L)
                 .setConsolidationList(Arrays.asList(consolidationDetails2))
                 .setContainersList(new ArrayList<>())
                 .setContainsHazardous(true);
         ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
                 .setTransportMode(Constants.TRANSPORT_MODE_AIR)
                 .setSourceTenantId(1L)
                 .setConsolidationList(Arrays.asList(consolidationDetails2))
@@ -3332,6 +3339,64 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+
+    @Test
+    void completeUpdateConsolidationListNotEmpty_success_Air_NewConsoleAdded() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setCarrierDetails(new CarrierDetails());
+        consolidationDetails2.setTransportMode(Constants.TRANSPORT_MODE_AIR).setShipmentType(Constants.DIRECTION_EXP);
+
+        shipmentDetails.setId(1L);
+        ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
+                .setJobType(Constants.SHIPMENT_TYPE_DRT)
+                .setSourceTenantId(1L)
+                .setConsolidationList(Arrays.asList(consolidationDetails2))
+                .setContainersList(new ArrayList<>())
+                .setContainsHazardous(true);
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
+                .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setConsolidationList(List.of())
+                .setSourceTenantId(1L)
+                .setContainersList(new ArrayList<>())
+                .setContainsHazardous(true);
+        oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
+        oldEntity.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
+        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
+
+//        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
         when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -6408,5 +6473,96 @@ ShipmentServiceTest extends CommonMocks {
         // Assert
         verify(commonUtils, never()).setInterBranchContextForHub();
     }
+
+    @Test
+    void testRequestInterBranchConsole_Success(){
+        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(3L).consolidationId(2L).build()));
+        var response = shipmentService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_ExistingMapping(){
+        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(2L).build()));
+        var response = shipmentService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetPendingNotificationsSuccess() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(List.of(1L,2L));
+
+        ConsolidationDetails mockConsol1 = jsonTestUtility.getTestConsolidation();
+        mockConsol1.setId(1L);
+        var mockConsol2 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
+        mockConsol2.setId(2L);
+        var mockConsol3 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
+        mockConsol3.setId(3L);
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setIsMAWBColoadingEnabled(true);
+        tenantSettingsResponse.setIsColoadingMAWBStationEnabled(true);
+
+        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(2L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+        mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(2L).consolidationId(3L).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).isAttachmentDone(false).build());
+
+        List<ConsolidationDetails> consolidationDetailsList = List.of(mockConsol1, mockConsol2, mockConsol3);
+
+        // mocking
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+        mockTenantSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(consolidationDetailsList));
+        // Test
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        var runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        JavaType javaType = objectMapper.getTypeFactory().constructParametricType(PendingNotificationResponse.class, PendingShipmentActionsResponse.class);
+        PendingNotificationResponse<PendingShipmentActionsResponse> responseBody = objectMapper.convertValue(runnerResponse.getData(), javaType);
+        assertEquals(2, responseBody.getNotificationMap().size()); // number of shipments with pending notifications
+        assertEquals(2, responseBody.getNotificationMap().get(1L).size()); // notification count of shipment with id 1L
+    }
+
+    @Test
+    void testGetPendingNotificationsReturnsEmptyResponseIfTenantSettingsNotEnabled() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(List.of(1L,2L));
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+
+        // Mock
+        mockTenantSettings();
+        // Test
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        var responseBody = objectMapper.convertValue(httpResponse.getBody(), PendingNotificationResponse.class);
+        assertNull(responseBody.getNotificationMap());
+    }
+
+    @Test
+    void testGetPendingNotificationsReturnsEmptyResponseForEmptyList() {
+        PendingNotificationRequest request = new PendingNotificationRequest();
+        request.setShipmentIdList(null);
+
+        var httpResponse = shipmentService.getPendingNotifications(CommonRequestModel.buildRequest(request));
+
+        PendingNotificationResponse mockResponse  = new PendingNotificationResponse();
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
 
 }

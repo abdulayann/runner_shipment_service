@@ -19,6 +19,10 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculatio
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerShipmentADInConsoleRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
@@ -519,6 +523,17 @@ public class ConsolidationController {
             return consolidationService.getGuidFromId(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.GET_PENDING_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> getPendingNotifications(@RequestBody PendingNotificationRequest request) {
+        log.info("Request received for pending notifications for consolidation");
+        try {
+            return consolidationService.getPendingNotifications(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
 

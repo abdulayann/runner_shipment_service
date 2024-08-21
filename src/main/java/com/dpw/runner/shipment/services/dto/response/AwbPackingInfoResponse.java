@@ -56,7 +56,7 @@ public class AwbPackingInfoResponse implements IRunnerResponse {
     private String unNumberAir;
     private String dgClassAir;
     private String dgClassAirDescription;
-
+    private Integer tenantId;
     //Master Data
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
