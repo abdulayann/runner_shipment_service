@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
@@ -100,7 +101,8 @@ class AwbUtilityTest extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
-
+    @Mock
+    private ShipmentSettingsDao shipmentSettingsDao;
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -567,8 +569,6 @@ class AwbUtilityTest extends CommonMocks {
         Awb mockAwb = testHawb;
         mockAwb.setShipmentId(1L);
         ShipmentDetails mockShipment = testShipment;
-//        addShipmentDataForAwbGeneration(mockShipment);
-
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
@@ -603,7 +603,7 @@ class AwbUtilityTest extends CommonMocks {
                         .organizations(responseOrgs).addresses(responseAddrs).build();
 
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
-
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of(new ShipmentSettingsDetails()));
         List<EntityTransferOrganizations> orgsList = new ArrayList<>();
         orgsList.add(EntityTransferOrganizations.builder().build());
         when(masterDataUtils.fetchOrganizations(any(), any())).thenReturn(orgsList);
@@ -634,8 +634,7 @@ class AwbUtilityTest extends CommonMocks {
         EntityTransferCarrier mockCarrier = new EntityTransferCarrier();
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
-        mockShipmentSettings();
-        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
+        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null);
 
         assertNotNull(expectedResponse);
 
@@ -659,6 +658,7 @@ class AwbUtilityTest extends CommonMocks {
 
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of());
 
         //Mock fetchOrgInfoFromV1
         HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
@@ -671,8 +671,7 @@ class AwbUtilityTest extends CommonMocks {
                 .organizations(responseOrgs).addresses(responseAddrs).build();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
-        mockShipmentSettings();
-        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment);
+        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null);
 
         assertNotNull(expectedResponse);
     }
@@ -1143,6 +1142,39 @@ class AwbUtilityTest extends CommonMocks {
         awbUtility.sendAirMessagingFailureEmail(mockAwb, awbList);
 
         verify(emailServiceUtility, times(1)).sendEmail(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testOverrideInfoForCoLoadShipment() {
+
+        var awbResponse = AwbAirMessagingResponse.builder()
+                .meta(AwbAirMessagingResponse.Meta.builder()
+                        .tenantInfo(AwbAirMessagingResponse.TenantInfo.builder().pimaAddress("1234").build())
+                        .build())
+                .build();
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.setPIMAAddress("98765");
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        awbUtility.overrideInfoForCoLoadShipment(awbResponse, true);
+
+        assertEquals(mockTenantModel.getPIMAAddress(), awbResponse.getMeta().getTenantInfo().getPimaAddress());
+    }
+
+    @Test
+    void testOverrideInfoForCoLoadShipment2() {
+
+        var awbResponse = AwbAirMessagingResponse.builder()
+                .meta(AwbAirMessagingResponse.Meta.builder()
+                        .tenantInfo(AwbAirMessagingResponse.TenantInfo.builder().pimaAddress("1234").build())
+                        .build())
+                .build();
+
+
+        awbUtility.overrideInfoForCoLoadShipment(awbResponse, false);
+
+        assertEquals("1234", awbResponse.getMeta().getTenantInfo().getPimaAddress());
     }
 
 

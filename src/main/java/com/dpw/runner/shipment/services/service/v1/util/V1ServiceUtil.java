@@ -7,8 +7,10 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -321,4 +323,24 @@ public class V1ServiceUtil {
                 + (StringUtility.isNotEmpty(container.getCommodityGroup()) ? container.getCommodityGroup() : NPMConstants.FAK);
     }
 
+    public Map<Integer, Object> getTenantDetails(List<Integer> tenantIds) {
+        if (tenantIds.isEmpty())
+            return new HashMap<>();
+
+        try {
+            var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
+            return v1Response.getEntities()
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            TenantDetailsByListResponse.TenantDetails::getTenantId,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> list.get(0).getTenant()
+                            )));
+        }
+        catch (Exception ex) {
+            log.error(ex.getMessage());
+            return new HashMap<>();
+        }
+    }
 }

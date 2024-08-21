@@ -220,7 +220,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         if(Objects.isNull(guid))
             return null;
 
-        List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuid(guid);
+        List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuidByQuery(guid);
         if (logs.size() == 0) {
             return null;
         }

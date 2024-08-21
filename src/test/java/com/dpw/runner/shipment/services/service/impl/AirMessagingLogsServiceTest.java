@@ -244,7 +244,7 @@ class AirMessagingLogsServiceTest {
     @Test
     void testGetRecentLogForEntityGuid_Success() {
         AirMessagingLogs airMessagingLogs = testAirMessagingLogs;
-        when(airMessagingLogsDao.findByEntityGuid(any())).thenReturn(List.of(airMessagingLogs));
+        when(airMessagingLogsDao.findByEntityGuidByQuery(any())).thenReturn(List.of(airMessagingLogs));
         AirMessagingLogs response = airMessagingLogsService.getRecentLogForEntityGuid(airMessagingLogs.getGuid());
         assertEquals(airMessagingLogs, response);
     }
@@ -258,7 +258,7 @@ class AirMessagingLogsServiceTest {
     @Test
     void testGetRecentLogForEntityGuid_Failure_GuidNotExist() {
         AirMessagingLogs airMessagingLogs = testAirMessagingLogs;
-        when(airMessagingLogsDao.findByEntityGuid(any())).thenReturn(List.of());
+        when(airMessagingLogsDao.findByEntityGuidByQuery(any())).thenReturn(List.of());
         AirMessagingLogs response = airMessagingLogsService.getRecentLogForEntityGuid(airMessagingLogs.getGuid());
         assertNull(response);
     }
