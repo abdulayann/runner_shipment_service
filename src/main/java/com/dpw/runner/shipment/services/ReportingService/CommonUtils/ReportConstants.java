@@ -650,8 +650,8 @@ public class ReportConstants {
     public static final String AMOUNT_OF_INSURANCE = "AmountOfInsurance";
     public static final String AOI = "AOI";
     public static final String OTHER_INFORMATION = "OtherInformation";
-    public static final String OPTIONAL_SHIPPING_INFORMATION_OTHER = "OptionalShippingInformationOther";
-    public static final String OPTIONAL_SHIPPING_INFORMATION = "OptionalShippingInformation";
+    public static final String OPTIONAL_SHIPPING_INFORMATION_OTHER = "AWBOSI2";
+    public static final String OPTIONAL_SHIPPING_INFORMATION = "AWBOSI";
 
     public static final String PAYMENTS = "Payments";
     public static final String PORT_OF_DEPARTURE = "PortofDeparture";
@@ -1207,4 +1207,5 @@ public class ReportConstants {
     public static final String CSD_REPORT = "CSD";
     public static final String DATE_OF_PRINT = "DateOfPrint";
     public static final String TIME_OF_PRINT = "TimeOfPrint";
+    public static final String AWB_NOTIFYPARTY = "AWB_NotifyParty";
 }

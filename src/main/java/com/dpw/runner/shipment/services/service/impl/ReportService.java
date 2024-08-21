@@ -421,7 +421,7 @@ public class ReportService implements IReportService {
                     printingForParties = reportRequest.getPrintingFor_str().split(",");
                 }
                 for(String party : printingForParties){
-                    dataRetrived.put(ReportConstants.PRINTING_FOR , MawbPrintFor.getById(Integer.parseInt(party)));
+                    dataRetrived.put(ReportConstants.PRINTING_FOR , MawbPrintFor.getById(Integer.parseInt(party)).getDesc());
                     byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
                     if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                     else{
