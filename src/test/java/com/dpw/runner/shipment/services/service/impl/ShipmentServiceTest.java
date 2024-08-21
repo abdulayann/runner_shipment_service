@@ -6614,5 +6614,55 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
     }
 
+    @Test
+    void testGetLatestCargoDeliveryDate_Success() {
+        // Arrange
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 15, 10, 0));
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        shipmentDetails2.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 16, 10, 0));
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1, shipmentDetails2);
+        when(consolidationDetails.getShipmentsList()).thenReturn(shipmentDetailsList);
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.getLatestCargoDeliveryDate(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testGetLatestCargoDeliveryDate_ConsolidationNotFound() {
+        // Arrange
+        Long consoleId = 1L;
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+                () -> shipmentService.getLatestCargoDeliveryDate(consoleId));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testGetLatestCargoDeliveryDate_NoShipments() {
+        // Arrange
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getShipmentsList()).thenReturn(Collections.emptyList());
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.getLatestCargoDeliveryDate(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
 
 }

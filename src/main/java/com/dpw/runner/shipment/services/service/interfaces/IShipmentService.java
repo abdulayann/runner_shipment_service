@@ -94,6 +94,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> shipmentRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
+    ResponseEntity<IRunnerResponse> getLatestCargoDeliveryDate(Long consoleId);
 
     ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException;
     ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId);
