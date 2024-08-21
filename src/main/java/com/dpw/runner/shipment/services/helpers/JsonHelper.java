@@ -40,6 +40,8 @@ public class JsonHelper {
 
     private final ObjectMapper mapper2 = new ObjectMapper();
 
+    private ObjectMapper platformMapper = new ObjectMapper();
+
     @PostConstruct
     public void intializeMapper() {
         createMapper.registerModule(new JavaTimeModule());
@@ -73,6 +75,14 @@ public class JsonHelper {
         mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+        platformMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        platformMapper.registerModule(new JavaTimeModule());
+        platformMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        platformMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        platformMapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        platformMapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        platformMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         SimpleModule module = new SimpleModule();
         module.addDeserializer(LocalDateTime.class,  new CustomLocalDateTimeDeserializer());
         mapper2.registerModule(new JsonNullableModule());
@@ -103,6 +113,14 @@ public class JsonHelper {
             log.error("Failed Parsed Object: {}", object.toString());
             log.error("Failed to Parse given Json: " + e.getMessage());
             log.info("Exception thrown while parsing json: {}", e.toString());
+            throw new JsonParseException(e);
+        }
+    }
+
+    public <T> String convertToJsonWithNulls(T object) {
+        try {
+            return platformMapper.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
             throw new JsonParseException(e);
         }
     }

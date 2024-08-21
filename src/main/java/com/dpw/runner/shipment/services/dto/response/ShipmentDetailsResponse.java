@@ -174,6 +174,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
 
     private CustomerCategoryRates customerCategory;
     private String contractId;
+    private String parentContractId;
     private String contractType;
     private String clientCountry;
     private String consignorCountry;

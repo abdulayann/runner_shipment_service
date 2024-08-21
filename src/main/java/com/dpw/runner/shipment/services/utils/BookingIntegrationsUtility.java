@@ -17,16 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -57,14 +48,8 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -253,13 +238,13 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonRequestModel createPlatformCreateRequest(CustomerBooking customerBooking) {
-        var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        var carrierDetails = customerBooking.getCarrierDetails();
         PlatformCreateRequest platformCreateRequest = PlatformCreateRequest.builder()
                 .booking_ref_code(customerBooking.getBookingNumber())
-                .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
-                .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
-                .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
-                .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
+                .origin_code(carrierDetails.getOrigin())
+                .destination_code(carrierDetails.getDestination())
+                .pol(carrierDetails.getOriginPort())
+                .pod(carrierDetails.getDestinationPort())
                 .contract_id(customerBooking.getContractId())
                 .created_at(customerBooking.getCreatedAt())
                 .customer_org_id(customerBooking.getCustomer().getOrgCode())
@@ -272,19 +257,19 @@ public class BookingIntegrationsUtility {
                         sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
                         sales_agent_secondary_email(customerBooking.getSecondarySalesAgentEmail()).
                         build())
-                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(carrierDetails.map(CarrierDetails::getShippingLine).orElse(null)))
-                .minTransitHours(carrierDetails.map(CarrierDetails::getMinTransitHours).orElse(null))
-                .maxTransitHours(carrierDetails.map(CarrierDetails::getMaxTransitHours).orElse(null))
+                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(carrierDetails.getShippingLine()))
+                .minTransitHours(carrierDetails.getMinTransitHours())
+                .maxTransitHours(carrierDetails.getMaxTransitHours())
                 .charges(createCharges(customerBooking))
+                .transportMode(customerBooking.getTransportType())
+                .shipmentMovement(customerBooking.getDirection())
+                .isDg(customerBooking.getIsDg())
+                .carrierDisplayName(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
+                .vesselName(masterDataUtils.getVesselName(carrierDetails.getVessel()))
+                .voyage(carrierDetails.getVoyage())
+                .load(createLoad(customerBooking))
+                .route(createRoute(customerBooking))
                 .build();
-        if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
-        {
-            platformCreateRequest.setLoad(createLoad(customerBooking));
-        }
-        if(!Objects.isNull(customerBooking.getRoutingList()) && !customerBooking.getRoutingList().isEmpty())
-        {
-            platformCreateRequest.setRoute(createRoute(customerBooking));
-        }
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
@@ -313,6 +298,8 @@ public class BookingIntegrationsUtility {
         //Container -> FCL
         if (customerBooking.getCargoType() != null && customerBooking.getCargoType().equals("FCL")) {
             List<Containers> containers = customerBooking.getContainersList();
+            if(Objects.isNull(containers) || containers.isEmpty())
+                return loadRequests;
             containers.forEach(container -> {
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
@@ -334,6 +321,8 @@ public class BookingIntegrationsUtility {
 
         if (customerBooking.getCargoType() != null && (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))) {
             List<Packing> packings = customerBooking.getPackingList();
+            if(Objects.isNull(packings) || packings.isEmpty())
+                return loadRequests;
             packings.forEach(packing -> {
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
@@ -361,6 +350,8 @@ public class BookingIntegrationsUtility {
         List<LoadRequest> loadRequests = new ArrayList<>();
         if (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
             List<Containers> containers = shipmentDetails.getContainersList();
+            if(Objects.isNull(containers) || containers.isEmpty())
+                return loadRequests;
             containers.forEach(container -> {
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
@@ -386,6 +377,8 @@ public class BookingIntegrationsUtility {
 
         if (Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LSE)) {
             List<Packing> packings = shipmentDetails.getPackingList();
+            if(Objects.isNull(packings) || packings.isEmpty())
+                return loadRequests;
             packings.forEach(packing -> {
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
@@ -424,6 +417,24 @@ public class BookingIntegrationsUtility {
                     .origin_code(routingsList.get(counter).getPol())
                     .order(String.valueOf(routingsList.get(counter).getLeg()))
                     .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : customerBooking.getTransportType())
+                    .build());
+        }
+
+        return RouteRequest.builder()
+                .legs(legRequestList)
+                .build();
+    }
+
+    private RouteRequest createRoute(ShipmentDetails shipmentDetails) {
+        List<RouteLegRequest> legRequestList = new ArrayList<>();
+        List<Routings> routingsList = shipmentDetails.getRoutingsList();
+
+        for (int counter = 0; counter < routingsList.size(); counter++) {
+            legRequestList.add(RouteLegRequest.builder()
+                    .destination_code(routingsList.get(counter).getPod())
+                    .origin_code(routingsList.get(counter).getPol())
+                    .order(String.valueOf(routingsList.get(counter).getLeg()))
+                    .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : shipmentDetails.getTransportMode())
                     .build());
         }
 
@@ -477,26 +488,32 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonRequestModel createPlatformUpdateRequest(@NonNull final CustomerBooking customerBooking) {
-        var carrierDetails = Optional.ofNullable(customerBooking.getCarrierDetails());
+        var carrierDetails = customerBooking.getCarrierDetails();
         PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
                 .booking_reference_code(customerBooking.getBookingNumber())
-                .origin_code(carrierDetails.map(c -> c.getOrigin()).orElse(null))
-                .destination_code(carrierDetails.map(c -> c.getDestination()).orElse(null))
+                .contractId(customerBooking.getContractId())
+                .parentContractId(customerBooking.getParentContractId())
+                .origin_code(carrierDetails.getOrigin())
+                .destination_code(carrierDetails.getDestination())
                 .customer_email(customerBooking.getCustomerEmail())
-                .pol(carrierDetails.map(c -> c.getOriginPort()).orElse(null))
-                .pod(carrierDetails.map(c -> c.getDestinationPort()).orElse(null))
-                .carrier_code(carrierDetails.map(c -> c.getJourneyNumber()).orElse(null))
+                .pol(carrierDetails.getOriginPort())
+                .pod(carrierDetails.getDestinationPort())
                 .air_carrier_details(null)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .pickup_date(null)
-                .eta(carrierDetails.map(c -> c.getEta()).orElse(null))
-                .ets(carrierDetails.map(c -> c.getEtd()).orElse(null))
+                .eta(carrierDetails.getEta())
+                .etd(carrierDetails.getEtd())
                 .charges(createCharges(customerBooking))
+                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
+                .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
+                .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
+                .voyage(carrierDetails.getVoyage())
+                .transportMode(customerBooking.getTransportType())
+                .shipmentMovement(customerBooking.getDirection())
+                .isDg(customerBooking.getIsDg())
+                .load(createLoad(customerBooking))
+                .route(createRoute(customerBooking))
                 .build();
-        if((!Objects.isNull(customerBooking.getContainersList()) && !customerBooking.getContainersList().isEmpty()) || (!Objects.isNull(customerBooking.getPackingList()) && !customerBooking.getPackingList().isEmpty()))
-        {
-            platformUpdateRequest.setLoad(createLoad(customerBooking));
-        }
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
 
@@ -516,10 +533,60 @@ public class BookingIntegrationsUtility {
                 .status(mapBookingStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())))
                 .pickup_date(null)
                 .eta(carrierDetails.getEta())
-                .ets(carrierDetails.getEtd())
+                .etd(carrierDetails.getEtd())
+                .ata(carrierDetails.getAta())
+                .atd(carrierDetails.getAtd())
+                .contractId(shipmentDetails.getContractId())
+                .parentContractId(shipmentDetails.getParentContractId())
                 .voyage(StringUtility.getNullIfEmpty(carrierDetails.getVoyage()))
+                .transportMode(shipmentDetails.getTransportMode())
+                .isDg(shipmentDetails.getContainsHazardous())
+                .shipmentMovement(shipmentDetails.getDirection())
+                .route(createRoute(shipmentDetails))
+                .referenceNumbers(createReferenceNumbers(shipmentDetails))
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private List<ReferenceNumbersRequest> createReferenceNumbers(ShipmentDetails shipmentDetails) {
+        List<ReferenceNumbersRequest> requestList = new ArrayList<>();
+        if(!StringUtility.isEmpty(shipmentDetails.getHouseBill()))
+        {
+            Map<String, String> metaMap = new HashMap<>();
+            if(Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal())){
+                metaMap.put("Status", "ORIGINAL");
+            }
+            else{
+                metaMap.put("Status", "DRAFT");
+            }
+            requestList.add(ReferenceNumbersRequest.builder()
+                    .key("HBL")
+                    .value(shipmentDetails.getHouseBill())
+                    .meta(metaMap)
+                    .build());
+        }
+        if(!StringUtility.isEmpty(shipmentDetails.getMasterBill()))
+        {
+            requestList.add(ReferenceNumbersRequest.builder()
+                    .key("MBL")
+                    .value(shipmentDetails.getMasterBill())
+                    .meta(new HashMap<>())
+                    .build());
+        }
+        var referenceNumbers = shipmentDetails.getReferenceNumbersList();
+        if(!Objects.isNull(referenceNumbers) && !referenceNumbers.isEmpty())
+        {
+            referenceNumbers.forEach(r -> {
+                Map<String, String> metaMap = new HashMap<>();
+                metaMap.put("country_of_issue", r.getCountryOfIssue());
+                requestList.add(ReferenceNumbersRequest.builder()
+                                .key(r.getType())
+                                .value(r.getReferenceNumber())
+                                .meta(metaMap)
+                        .build());
+            });
+        }
+        return requestList;
     }
 
     private String mapBookingStatus(ShipmentStatus status) {
