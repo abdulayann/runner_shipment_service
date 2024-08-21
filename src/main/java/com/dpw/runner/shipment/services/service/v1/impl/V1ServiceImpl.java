@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -345,6 +346,8 @@ public class V1ServiceImpl implements IV1Service {
     private String ADDRESS_RETRIEVE;
     @Value("${v1service.url.base}${v1service.url.getColoadingStations}")
     private String GET_CO_LOAD_STATIONS;
+    @Value("${v1service.url.base}${v1service.url.getTenantDetails}")
+    private String getTenantInfoUrl;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2061,6 +2064,22 @@ public class V1ServiceImpl implements IV1Service {
                 log.info(String.format("Token time taken in getColoadingStations() function: %d ms", elapsedTime));
             }
             return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public TenantDetailsByListResponse getTenantDetails(Object request) {
+        ResponseEntity<TenantDetailsByListResponse> responseEntity = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            responseEntity = this.restTemplate.postForEntity(this.getTenantInfoUrl, entity, TenantDetailsByListResponse.class);
+            log.info("Token time taken in getTenantDetails() function {} ms", System.currentTimeMillis() - time);
+            return responseEntity.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

@@ -54,17 +54,12 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     ConsolidationDetails getConsolidationFromId(Long id);
 
-    @Query(value = """
-            SELECT
-                tenant_id as tenantId,
-                consolidation_number as consolidationNumber,
-                mawb,
-                bol
-            FROM
-                consolidation_details
-            WHERE
-                bol = :mblNumber
-                AND tenant_id != :tenantId
-            """, nativeQuery = true)
+    @Query(value = "SELECT "
+            + " tenant_id as tenantId, "
+            + " consolidation_number as consolidationNumber, "
+            + " mawb, "
+            + " bol "
+            + " FROM consolidation_details WHERE bol = ?1 AND tenant_id != ?2", nativeQuery = true)
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber, Integer tenantId);
+
 }

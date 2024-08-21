@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -22,10 +23,12 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -71,6 +74,17 @@ public class AwbDao implements IAwbDao {
 
     @Autowired
     private EntityManager entityManager;
+    private V1ServiceUtil v1ServiceUtil;
+    private ModelMapper modelMapper;
+
+    @Autowired
+    public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
+        this.v1ServiceUtil = v1ServiceUtil;
+    }
+    @Autowired
+    public void setModelMapper(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
+    }
 
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
@@ -112,7 +126,7 @@ public class AwbDao implements IAwbDao {
         }
         catch (Exception e)
         {
-            log.error("Error pushing awb to kafka");
+            log.error("Error pushing awb to kafka: {}", e.getMessage());
         }
     }
 
@@ -220,19 +234,20 @@ public class AwbDao implements IAwbDao {
                     if (awb.getConsolidationId() != null) {
                         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
                         if (consolidationDetails.isPresent()) {
-                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get());
+                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
+                            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
+                            var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
-                                this.pushToKafkaForAirMessaging(shipAwb, ship, null);
+                                this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()));
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent");
+                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
                             }
                         }
                     }
@@ -241,11 +256,11 @@ public class AwbDao implements IAwbDao {
                     if (awb.getShipmentId() != null) {
                         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
                         if (shipmentDetails.isPresent()) {
-                            this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null);
+                            this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                            this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent");
+                            this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
                         }
 
                     }
@@ -257,24 +272,16 @@ public class AwbDao implements IAwbDao {
         }
     }
 
-    private void createAirMessagingEvents(Long entityId, String entityType, String eventCode, String description) {
-        Events events = new Events();
-        events.setEntityType(entityType);
-        events.setEntityId(entityId);
-        events.setEventCode(eventCode);
-        events.setDescription(description);
-        events.setEstimated(LocalDateTime.now());
-        events.setActual(LocalDateTime.now());
-        events.setSource(Constants.CARGO_RUNNER);
-        eventDao.save(events);
+    private void createAirMessagingEvents(Long entityId, String entityType, String eventCode, String description, Integer tenantId) {
+        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), entityId, entityType, eventCode, description, LocalDateTime.now(), LocalDateTime.now(), Constants.CARGO_RUNNER, tenantId, null, LocalDateTime.now(), LocalDateTime.now());
     }
 
-    public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, TenantModel tenantModel, boolean overrideData) {
         if(awb.getTenantId() == null)
             awb.setTenantId(TenantContext.getCurrentTenant());
         AwbAirMessagingResponse awbResponse;
         if(shipmentDetails != null) {
-            awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails);
+            awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails, tenantModel);
             awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails, AwbShipConsoleDto.class));
         } else if (consolidationDetails != null) {
             awbResponse = awbUtility.createAirMessagingRequestForConsole(awb, consolidationDetails);
@@ -282,13 +289,14 @@ public class AwbDao implements IAwbDao {
         } else {
             return;
         }
+        awbUtility.overrideInfoForCoLoadShipment(awbResponse, overrideData);
         KafkaResponse kafkaResponse = getKafkaResponseForAirMessaging(awbResponse);
         log.info("RequestId: {} || Event: {} || message: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.AIR_MESSAGING_EVENT_PUSH_TO_KAFKA, jsonHelper.convertToJson(kafkaResponse));
         producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
     }
 
     public Awb getHawb(Long id) {
-        List<Awb> awb = awbRepository.findByShipmentId(id);
+        List<Awb> awb = awbRepository.findByShipmentIdByQuery(id);
         if (awb != null && !awb.isEmpty())
             return awb.get(0);
         return null;
@@ -391,7 +399,7 @@ public class AwbDao implements IAwbDao {
                     List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                     var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                     if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
-                        consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
+                        response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
                     }
                     return response;
                 }
@@ -400,7 +408,7 @@ public class AwbDao implements IAwbDao {
                 List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                 var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
                 if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
-                    consoleShipMappingList.forEach(x -> response.addAll(findByShipmentIdByQuery(x.getShipmentId())));
+                    response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
                 }
                 return response;
             }
