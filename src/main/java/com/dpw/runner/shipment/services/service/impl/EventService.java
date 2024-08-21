@@ -68,47 +68,38 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 public class EventService implements IEventService {
 
-    @Autowired
     private IEventDao eventDao;
-
-    @Autowired
     private JsonHelper jsonHelper;
-
-    @Autowired
     private IAuditLogService auditLogService;
-
-    @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
     private ModelMapper modelMapper;
-
-    @Autowired
     private IShipmentDao shipmentDao;
-
-    @Autowired
     private IShipmentSync shipmentSync;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDao;
-
-    @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
     private SyncConfig syncConfig;
-
-    @Autowired
     private IDateTimeChangeLogService dateTimeChangeLogService;
 
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
     private String trackEventDetailsUrl;
 
-    @Autowired
     private PartialFetchUtils partialFetchUtils;
+    private ITrackingServiceAdapter trackingServiceAdapter;
 
     @Autowired
-    private ITrackingServiceAdapter trackingServiceAdapter;
+    public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao, IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService, PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter) {
+        this.eventDao = eventDao;
+        this.jsonHelper = jsonHelper;
+        this.auditLogService = auditLogService;
+        this.objectMapper = objectMapper;
+        this.modelMapper = modelMapper;
+        this.shipmentDao = shipmentDao;
+        this.shipmentSync = shipmentSync;
+        this.consolidationDao = consolidationDao;
+        this.syncConfig = syncConfig;
+        this.dateTimeChangeLogService = dateTimeChangeLogService;
+        this.partialFetchUtils = partialFetchUtils;
+        this.trackingServiceAdapter = trackingServiceAdapter;
+    }
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
