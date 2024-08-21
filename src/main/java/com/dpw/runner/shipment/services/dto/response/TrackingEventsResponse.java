@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

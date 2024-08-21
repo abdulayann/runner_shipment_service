@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -30,7 +29,5 @@ public class EventConstants {
     public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
     public static final String FWB_EVENT_CODE = "FWB";
 
-    public static Set<String> allowedEventCodes = new HashSet<>(List.of(
-
-    ));
+    public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }

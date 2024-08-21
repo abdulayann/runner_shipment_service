@@ -108,9 +108,6 @@ public class EventService implements IEventService {
     private PartialFetchUtils partialFetchUtils;
 
     @Autowired
-    private CommonUtils commonUtils;
-
-    @Autowired
     private ITrackingServiceAdapter trackingServiceAdapter;
 
     @Transactional
@@ -405,9 +402,7 @@ public class EventService implements IEventService {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
 
-        TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
         TrackingEventsResponse trackingEventsResponse = null;
-        List<Events> trackingEvents = new ArrayList<>();
 
         try {
             trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
@@ -422,7 +417,7 @@ public class EventService implements IEventService {
                     shipmentId.ifPresent(eventsResponse::setShipmentId);
                     res.add(eventsResponse);
                 }
-                saveTrackingEvents(trackingEvents, entityId, entityType);
+                saveTrackingEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
             }
 
             if ((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
@@ -483,7 +478,7 @@ public class EventService implements IEventService {
         if (trackingEvents == null || trackingEvents.isEmpty())
             return;
 
-        var listCriteria = commonUtils.constructListRequestFromEntityId(entityId, entityType);
+        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
         Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
         Page<Events> eventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -504,13 +499,6 @@ public class EventService implements IEventService {
         });
 
         eventDao.saveAll(updatedEvents);
-    }
-
-    private boolean isEventAllowed(String eventCode) {
-        boolean isAllowed = false;
-        if(EventConstants.allowedEventCodes.contains(eventCode))
-            isAllowed = true;
-        return isAllowed;
     }
 
 }

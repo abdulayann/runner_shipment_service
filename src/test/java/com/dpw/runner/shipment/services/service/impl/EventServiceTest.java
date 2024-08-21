@@ -558,6 +558,43 @@ class EventServiceTest extends CommonMocks {
     }
 
     @Test
+    void trackEventsForInputShipmentSavesUpstreamEvents() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setId(1L);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
+        shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEvents(List.of(new EventsRequestV2()));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        Events mockEvent = new Events();
+        mockEvent.setId(1L);
+        mockEvent.setGuid(UUID.randomUUID());
+        mockEvent.setEventCode("EVCODE1");
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+
+        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
     void trackEventsForInputShipmentThrowsException() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setId(1L);
