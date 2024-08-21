@@ -1,2 +1,2 @@
 
-update containers set achieved_volume = '0',achieved_weight = '0', weight_utilization = '0',volume_utilization = '0' where consolidation_id = '4680';
+update containers set achieved_volume = '0',achieved_weight = '0', weight_utilization = '0',volume_utilization = '0' where consolidation_id IN ('4680', '3879');
