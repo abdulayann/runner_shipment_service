@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -41,6 +42,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -87,6 +89,8 @@ class AwbDaoTest {
     private EntityManager entityManager;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private ModelMapper modelMapper;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -388,11 +392,41 @@ class AwbDaoTest {
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
-        when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdByQuery(any())).thenReturn(List.of(mockAwb));
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
 
+        // Test
+        try {
+            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
+        } catch (Exception e) {
+            fail("Unexpected error occured", e);
+        }
+
+    }
+
+    @Test
+    void testAirMessagingIntegrationForMawb2() {
+        Long consolidationId = 1L;
+        String reportType = ReportConstants.MAWB;
+        Boolean fromShipment = false;
+
+        testConsol.setShipmentsList(List.of(testShipment));
+
+        var mockMap = new HashMap<Integer, Object>();
+        mockMap.put(testShipment.getTenantId(), new TenantModel());
+
+        AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+
+        // Mock
+        when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(awbRepository.findByShipmentIdByQuery(any())).thenReturn(List.of(mockAwb));
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockMap);
+        when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         // Test
         try {
             awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
@@ -530,6 +564,24 @@ class AwbDaoTest {
         // Mock
         when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(mockAwb);
         when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
+        // Test
+        awbDao.findAllLinkedAwbs(inputGuid);
+
+    }
+
+    @Test
+    void testFindAllLinkedAwbsForHawb2() {
+        UUID inputGuid = UUID.randomUUID();
+        Long shipmentId = 1L, consolId = 1L;
+
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(shipmentId);
+        consoleShipmentMapping.setConsolidationId(consolId);
+
+        // Mock
+        when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(mockAwb);
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
+        when(consoleShipmentMappingDao.findByConsolidationIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
 
         // Test
         awbDao.findAllLinkedAwbs(inputGuid);
