@@ -152,8 +152,8 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testCreateBookingInPlatform_ROA_TransportType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+//        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+//        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_ROA);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -164,8 +164,8 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testCreateBookingInPlatform_RAI_TransportType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+//        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+//        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_RAI);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
