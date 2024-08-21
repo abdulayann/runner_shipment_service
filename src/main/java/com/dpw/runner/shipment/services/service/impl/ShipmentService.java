@@ -4817,14 +4817,7 @@ public class ShipmentService implements IShipmentService {
         LatestCargoDeliveryInfo latestCargoDeliveryInfo = new LatestCargoDeliveryInfo();
         LocalDateTime latestCargoDeliveryDate = null;
         if(consolidationDetails.isPresent()) {
-            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
-            List<ShipmentDetails> listOfShipmentsAttachedToConsole = new ArrayList<>();
-            for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
-                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(consoleShipmentMapping.getShipmentId());
-                if(shipmentDetails.isPresent()) {
-                    listOfShipmentsAttachedToConsole.add(shipmentDetails.get());
-                }
-            }
+            List<ShipmentDetails> listOfShipmentsAttachedToConsole = consolidationDetails.get().getShipmentsList();
             latestCargoDeliveryDate = getLatestCargoDeliveryDateHelper(listOfShipmentsAttachedToConsole);
             latestCargoDeliveryInfo.setLatestCargoDeliveryDate(latestCargoDeliveryDate);
         } else {
