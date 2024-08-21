@@ -409,15 +409,10 @@ public class EventService implements IEventService {
         TrackingEventsResponse trackingEventsResponse = null;
         List<Events> trackingEvents = new ArrayList<>();
 
-        HttpEntity<V1DataResponse> entity = new HttpEntity(trackingRequest, V1AuthHelper.getHeaders());
         try {
             trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(
-                jsonHelper
-                    .readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class)
-                    .getError()
-                    .getMessage());
+        } catch (Exception ex) {
+            throw new RunnerException(ex.getMessage());
         }
         List<EventsResponse> res = new ArrayList<>();
         if (trackingEventsResponse != null) {
@@ -510,4 +505,12 @@ public class EventService implements IEventService {
 
         eventDao.saveAll(updatedEvents);
     }
+
+    private boolean isEventAllowed(String eventCode) {
+        boolean isAllowed = false;
+        if(EventConstants.allowedEventCodes.contains(eventCode))
+            isAllowed = true;
+        return isAllowed;
+    }
+
 }
