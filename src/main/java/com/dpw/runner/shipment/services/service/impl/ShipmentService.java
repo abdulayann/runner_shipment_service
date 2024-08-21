@@ -553,7 +553,10 @@ public class ShipmentService implements IShipmentService {
             Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build()),
             Map.entry(CONTAINS_HAZARDOUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build()),
             Map.entry("shipmentPackStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(ShipmentPackStatus.class).build()),
-            Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName("tenantId").build())
+            Map.entry(Constants.TENANT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName(Constants.TENANT_ID).build()),
+            Map.entry("cargoReadyDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoReadyDate").build()),
+            Map.entry("cargoDeliveryDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoDeliveryDate").build())
+
     );
 
     @Override
