@@ -82,6 +82,50 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -105,6 +149,7 @@ import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
+import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -355,6 +400,136 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         assertTrue(future.join().getBody() instanceof IRunnerResponse);
         assertEquals(200, future.join().getStatusCodeValue());
     }
+
+    @Test
+    void testMblCheck_MblNumberFoundInDifferentTenant() {
+        String mblNumber = "MBL123";
+        ConsolidationDetailsProjection projection1 = new ConsolidationDetailsProjection() {
+            @Override
+            public Integer getTenantId() { return 2; }
+            @Override
+            public String getConsolidationNumber() { return "CON123"; }
+            @Override
+            public String getMawb() { return "MAWB123"; }
+            @Override
+            public String getBol() { return "BOL123"; }
+        };
+
+        ConsolidationDetailsProjection projection2 = new ConsolidationDetailsProjection() {
+            @Override
+            public Integer getTenantId() { return 3; }
+            @Override
+            public String getConsolidationNumber() { return "CON456"; }
+            @Override
+            public String getMawb() { return "MAWB456"; }
+            @Override
+            public String getBol() { return "BOL456"; }
+        };
+
+        List<ConsolidationDetailsProjection> projections = Arrays.asList(projection1, projection2);
+
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(mblNumber)).thenReturn(projections);
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.mblCheck(mblNumber);
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof RunnerResponse);
+
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+
+        IRunnerResponse data = (IRunnerResponse) runnerResponse.getData();
+        assertTrue(data instanceof MblCheckResponse);
+
+        MblCheckResponse mblCheckResponse = (MblCheckResponse) data;
+        assertNotNull(mblCheckResponse.getMessage());
+
+        verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
+    }
+
+    @Test
+    void testMblCheck_MblNumberNotFoundInDifferentTenant() {
+        String mblNumber = "MBL123";
+        List<ConsolidationDetailsProjection> projections = Collections.emptyList();
+
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(mblNumber)).thenReturn(projections);
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.mblCheck(mblNumber);
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof RunnerResponse);
+
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+
+        IRunnerResponse data = (IRunnerResponse) runnerResponse.getData();
+        assertTrue(data instanceof MblCheckResponse);
+
+        MblCheckResponse mblCheckResponse = (MblCheckResponse) data;
+        assertNull(mblCheckResponse.getMessage());
+
+        verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
+    }
+
+    @Test
+    void testMblCheck_MblNumberIsNull() {
+        String mblNumber = null;
+        List<ConsolidationDetailsProjection> projections = Collections.emptyList();
+
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(mblNumber)).thenReturn(projections);
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.mblCheck(mblNumber);
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof RunnerResponse);
+
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+
+        IRunnerResponse data = (IRunnerResponse) runnerResponse.getData();
+        assertTrue(data instanceof MblCheckResponse);
+
+        MblCheckResponse mblCheckResponse = (MblCheckResponse) data;
+        assertNull(mblCheckResponse.getMessage());
+
+        verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
+    }
+
+    @Test
+    void testMblCheck_MblNumberFoundInDifferentTenantWithSingleEntry() {
+        String mblNumber = "MBL123";
+        ConsolidationDetailsProjection projection = new ConsolidationDetailsProjection() {
+            @Override
+            public Integer getTenantId() { return 2; }
+            @Override
+            public String getConsolidationNumber() { return "CON123"; }
+            @Override
+            public String getMawb() { return "MAWB123"; }
+            @Override
+            public String getBol() { return "BOL123"; }
+        };
+
+        List<ConsolidationDetailsProjection> projections = Collections.singletonList(projection);
+
+        when(consolidationDetailsDao.findMblNumberInDifferentTenant(mblNumber)).thenReturn(projections);
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.mblCheck(mblNumber);
+
+        assertNotNull(response);
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody() instanceof RunnerResponse);
+
+        RunnerResponse runnerResponse = (RunnerResponse) response.getBody();
+
+        IRunnerResponse data = (IRunnerResponse) runnerResponse.getData();
+        assertTrue(data instanceof MblCheckResponse);
+
+        MblCheckResponse mblCheckResponse = (MblCheckResponse) data;
+        assertNotNull(mblCheckResponse.getMessage());
+
+        verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
+    }
+
 
     @Test
     void testValidateCarrierDetails_EmptyCarrierDetails() {
