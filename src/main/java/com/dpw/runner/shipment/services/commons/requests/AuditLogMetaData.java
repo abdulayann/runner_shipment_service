@@ -14,5 +14,5 @@ public class AuditLogMetaData {
     private String operation;
     private String parent;
     private Long parentId;
-
+    private String entityType;
 }
