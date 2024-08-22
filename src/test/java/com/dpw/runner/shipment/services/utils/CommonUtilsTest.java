@@ -9,17 +9,17 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -92,6 +92,15 @@ class CommonUtilsTest {
 
     @Mock
     private Allocations allocations;
+
+    @Mock
+    private ShipmentService shipmentService;
+
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -824,5 +833,106 @@ class CommonUtilsTest {
 
             assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("0");
         }
+    }
+
+    @Test
+    void testUpdateUnLocData() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", new UnlocationsResponse());
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+        commonUtils.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(1)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test1");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data2() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test1");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data3() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test1");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data4() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test1");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data5() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        commonUtils.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
 }

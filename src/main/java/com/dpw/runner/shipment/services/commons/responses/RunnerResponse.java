@@ -32,6 +32,9 @@ public class RunnerResponse<T> implements IRunnerResponse {
     @ApiModelProperty(position = 6, name = "error")
     private ApiError error;
 
+    @ApiModelProperty(position = 7, name = "warning")
+    private String warning;
+
     @SuppressWarnings("unchecked")
     public T getData(@SuppressWarnings("rawtypes") Class clazz) {
         ObjectMapper objectMapper = new ObjectMapper();

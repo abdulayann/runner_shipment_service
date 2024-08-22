@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.notification.request.SendEmailBaseReques
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import java.util.List;
+
 public interface INotificationService {
     NotificationServiceResponse sendEmail(SendEmailBaseRequest request) throws JsonProcessingException;
+    NotificationServiceResponse sendEmail(String body, String subject, List<String> emailIds, List<String> cc) throws JsonProcessingException;
 }

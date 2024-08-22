@@ -151,7 +151,11 @@ public enum MasterDataType {
     SALES_AGENT_MASTER(1014, "SalesAgentMaster"),
     SECURITY_STATUS(159, "SecurityStatus"),
     EXEMPTION_CODES(160, "ExemptionCodes"),
-    SCI(166, "SCI");
+    SCI(166, "SCI"),
+    ConsolidationAttachDefaultToMailId(179, "Consolidation Attach Default To Mail Id"),
+    ConsolidationAttachDefaultCCMailId(180, "Consolidation Attach Default CC Mail Id"),
+    ShipmentAttachDefaultToMailId(181, "Shipment Attach Default To Mail Id"),
+    ShipmentAttachDefaultCCMailId(182, "Shipment Attach Default CC Mail Id");
 
     private int id;
     private String description;

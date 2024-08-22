@@ -52,6 +52,15 @@ public class ResponseHelper {
                 HttpStatus.OK);
     }
 
+    public static ResponseEntity<IRunnerResponse> buildSuccessResponse(String warning) {
+        return new ResponseEntity<>(
+                RunnerResponse.builder().success(true)
+                        .requestId(LoggerHelper.getRequestIdFromMDC())
+                        .warning(warning)
+                        .build(),
+                HttpStatus.OK);
+    }
+
     public static ResponseEntity<IRunnerResponse> buildListSuccessResponse(List<IRunnerResponse> data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
