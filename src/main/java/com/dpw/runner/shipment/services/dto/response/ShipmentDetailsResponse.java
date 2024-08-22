@@ -208,4 +208,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
+    private Integer pendingActionCount;
 }
