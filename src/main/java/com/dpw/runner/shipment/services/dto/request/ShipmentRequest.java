@@ -23,6 +23,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ValidCargoDeliveryDate
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailRequest additionalDetails;
     private String additionalTerms;
@@ -168,7 +169,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
     private LocalDateTime cargoReadyDate;
-
-    @ValidCargoDeliveryDate
     private LocalDateTime cargoDeliveryDate;
 }
