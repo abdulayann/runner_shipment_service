@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
-import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -166,9 +165,4 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
-
-    private LocalDateTime cargoReadyDate;
-
-    @ValidCargoDeliveryDate
-    private LocalDateTime cargoDeliveryDate;
 }

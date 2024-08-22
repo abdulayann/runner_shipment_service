@@ -133,5 +133,4 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
-    private LocalDateTime latDate;
 }

@@ -22,7 +22,10 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @Builder
 @NoArgsConstructor
@@ -71,8 +74,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
-    private LocalDateTime cargoReadyDate;
-    private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;

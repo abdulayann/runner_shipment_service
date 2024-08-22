@@ -88,7 +88,6 @@ public class ShipmentConstants {
     public static final String SHIPMENT_CREATION = "SHPCR";
 
     public static final String ALL_SHIPMENT_COUNT = "All shipment count fetched successfully";
-    public static final String LATEST_CARGO_DELIVERY_DATE = "Latest cargo delivery date out of shipments fetched successfully";
     public static final String UPDATE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
 
     // Shipment Statuses

@@ -490,10 +490,4 @@ public class ShipmentDetails extends MultiTenancy {
      @Enumerated(EnumType.STRING)
      private ShipmentPackStatus shipmentPackStatus;
 
-     @Column(name = "cargo_ready_date")
-     private LocalDateTime cargoReadyDate;
-
-     @Column(name = "cargo_delivery_date")
-     private LocalDateTime cargoDeliveryDate;
-
 }

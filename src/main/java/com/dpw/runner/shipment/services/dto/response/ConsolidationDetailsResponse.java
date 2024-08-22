@@ -155,6 +155,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
-    private LocalDateTime latDate;
 
 }
