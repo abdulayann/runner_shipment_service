@@ -74,10 +74,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = new HashMap<>();
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if(Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
-                    shipmentIds.remove(consoleShipmentMapping.getShipmentId());
-                if(shipmentRequestedType != null) {
-                    consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
+                if(Objects.equals(consolidationId, consoleShipmentMapping.getConsolidationId())) {
+                    if(Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
+                        shipmentIds.remove(consoleShipmentMapping.getShipmentId());
+                    if(shipmentRequestedType != null)
+                        consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
                 }
             }
         }

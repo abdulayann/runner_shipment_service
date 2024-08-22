@@ -720,7 +720,9 @@ public class ConsolidationService implements IConsolidationService {
         // InterBranch context
         ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
-        setInterBranchContext(consolidationDetails.getInterBranchConsole());
+        if(shipmentRequestedType == null) {
+            setInterBranchContext(consolidationDetails.getInterBranchConsole());
+        }
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();
         if(shipmentRequestedType == null) {

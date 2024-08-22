@@ -1319,6 +1319,14 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    private void setColoadingStation(ShipmentDetails request) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
+    }
+
     public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
         try {
             String entityPayload = jsonHelper.convertToJson(shipmentDetails);
@@ -5023,8 +5031,9 @@ public class ShipmentService implements IShipmentService {
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
 
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).get();
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
+        setColoadingStation(shipmentDetails);
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).get();
 
         usernamesList.add(shipmentDetails.getCreatedBy());
         usernamesList.add(shipmentDetails.getAssignedTo());
@@ -5192,7 +5201,7 @@ public class ShipmentService implements IShipmentService {
             consoleShipmentMappingDao.deletePendingStateByShipmentId(request.getShipmentId());
             // one shipment and one console, shipment pull accepted
             // one shipment and multiple console, shipment pull and push rejected
-            sendEmailsForPullRequestAccept(request.getShipmentId(), request.getConsoleIdsList().get(0), shipmentRequestedTypes);
+            sendEmailsForPullRequestAccept(request.getConsoleIdsList().get(0), request.getShipmentId(), shipmentRequestedTypes);
         } else if (ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
             request.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, request.getShipmentId()));
             // one shipment and multiple console, shipment pull rejected
