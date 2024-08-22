@@ -391,6 +391,7 @@ public class AuditLogService implements IAuditLogService {
                 try {
                     temp = PropertyUtils.getProperty(newEntity, fieldName);
                 } catch (NoSuchMethodException e) {
+                    log.error(e.getMessage());
                 }
                 if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
                     newValue = temp.toString();
