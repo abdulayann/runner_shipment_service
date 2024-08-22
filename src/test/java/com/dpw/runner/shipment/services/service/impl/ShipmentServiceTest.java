@@ -125,8 +125,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -199,7 +197,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
@@ -6374,6 +6371,7 @@ ShipmentServiceTest extends CommonMocks {
         request.setShipmentIdList(List.of(1L,2L));
 
         ConsolidationDetails mockConsol1 = jsonTestUtility.getTestConsolidation();
+        mockConsol1.setTenantId(1);
         mockConsol1.setId(1L);
         var mockConsol2 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
         mockConsol2.setId(2L);
