@@ -10,7 +10,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Constraint(validatedBy = CargoDeliveryDateValidator.class)
-@Target({ ElementType.FIELD })
+@Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidCargoDeliveryDate {
     String message() default "Cargo Delivery Date should not be lesser than Cargo Ready Date.";
