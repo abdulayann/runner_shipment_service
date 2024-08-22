@@ -58,11 +58,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
+
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -126,6 +130,47 @@ class BookingIntegrationsUtilityTest {
 
         verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
         verify(integrationResponseDao, times(1)).save(any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideCargoTypes")
+    void testCreateBookingInPlatform(String cargoType) throws RunnerException {
+        CustomerBooking customerBooking = getCustomerBooking(cargoType);
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+        customerBooking.setTransportType(Constants.TRANSPORT_MODE_SEA);
+
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
+    }
+
+    private static Stream<String> provideCargoTypes() {
+        return Stream.of("FCL", "ROR", "BBK");
+    }
+
+    @Test
+    void testCreateBookingInPlatform_ROA_TransportType() throws RunnerException {
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+//        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+//        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+        customerBooking.setTransportType(Constants.TRANSPORT_MODE_ROA);
+
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(0)).createAtPlatform(any(CommonRequestModel.class));
+    }
+
+    @Test
+    void testCreateBookingInPlatform_RAI_TransportType() throws RunnerException {
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+//        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+//        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+        customerBooking.setTransportType(Constants.TRANSPORT_MODE_RAI);
+
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(0)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -206,6 +251,26 @@ class BookingIntegrationsUtilityTest {
     }
 
     @Test
+    void testUpdateBookingInPlatform_fromCustomerBooking_TransportType_ROA() throws RunnerException {
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+        customerBooking.setTransportType(Constants.TRANSPORT_MODE_ROA);
+        bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
+    void testUpdateBookingInPlatform_fromCustomerBooking_TransportType_RAI() throws RunnerException {
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        CustomerBooking customerBooking = getCustomerBooking("FCL");
+        customerBooking.setTransportType(Constants.TRANSPORT_MODE_RAI);
+        bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
+
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_throwsException() throws RunnerException {
         doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any());
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
@@ -232,6 +297,30 @@ class BookingIntegrationsUtilityTest {
         shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
+    void testUpdateBookingInPlatform_fromShipment_LCL_TransportMode_ROA() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipment.setBookingReference("1234");
+        shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
+    }
+
+    @Test
+    void testUpdateBookingInPlatform_fromShipment_LCL_TransportMode_RAI() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipment.setBookingReference("1234");
+        shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
     }
 
     @Test

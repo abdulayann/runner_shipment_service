@@ -273,6 +273,39 @@ class CustomerBookingServiceTest extends CommonMocks {
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
     }
+
+    @Test
+    void testCreateGeneratesBookingNumberFTLCargo() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking inputCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("FTL")
+                .build();
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("FTL")
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBFC-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
     @Test
     void testCreateGeneratesBookingNumberLCLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
@@ -286,6 +319,102 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBLC-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateGeneratesBookingNumberBBKCargo() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking inputCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("BBK")
+                .build();
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("BBK")
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBLC-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateGeneratesBookingNumberRORCargo() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking inputCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("ROR")
+                .build();
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("ROR")
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBLC-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(customerBookingResponse), httpResponse);
+    }
+
+    @Test
+    void testCreateGeneratesBookingNumberLTLCargo() throws RunnerException {
+        CustomerBookingRequest request = new CustomerBookingRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking inputCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("LTL")
+                .build();
+
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .cargoType("LTL")
                 .source(BookingSource.Runner)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
