@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.SpringApplication;
@@ -43,20 +44,11 @@ public class RunnerShipmentServicesApplication {
         modelMapper.getConfiguration().setFieldMatchingEnabled(true);
         modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         modelMapper.getConfiguration().setAmbiguityIgnored(true);
+        modelMapper.getConfiguration().setPropertyCondition(Conditions.isNotNull());
         modelMapper.typeMap(CarrierDetails.class, CustomShipmentSyncRequest.class)
                 .addMappings(mp -> mp.skip(CustomShipmentSyncRequest::setDestination));
         return modelMapper;
     }
-
-//    @Bean
-//    public CommonsRequestLoggingFilter requestLoggingFilter() {
-//        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
-//        loggingFilter.setIncludeQueryString(true);
-//        loggingFilter.setIncludePayload(true);
-//        loggingFilter.setMaxPayloadLength(1000);
-//        loggingFilter.setIncludeHeaders(false);
-//        return loggingFilter;
-//    }
 
 }
 

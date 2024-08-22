@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.modelmapper.Conditions;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -25,14 +24,13 @@ public class PartiesService {
   public PartiesService(V1ServiceUtil v1ServiceUtil, ModelMapper modelMapper) {
     this.v1ServiceUtil = v1ServiceUtil;
     this.modelMapper = modelMapper;
-    modelMapper.getConfiguration().setPropertyCondition(Conditions.isNotNull());
   }
 
   public void partialUpdateParties(ShipmentPatchRequest shipmentPatchRequest,
       ShipmentDetails entity) {
+
     Parties patchClient = Optional.ofNullable(shipmentPatchRequest.getClient())
-        .map(client -> modelMapper.map(client, Parties.class))
-        .orElse(null);
+        .map(client -> modelMapper.map(client, Parties.class)).orElse(null);
     Parties patchConsignee = Optional.ofNullable(shipmentPatchRequest.getConsignee())
         .map(consignee -> modelMapper.map(consignee, Parties.class)).orElse(null);
     Parties patchConsignor = Optional.ofNullable(shipmentPatchRequest.getConsigner())

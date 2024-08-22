@@ -265,6 +265,8 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     private IHblDao hblDao;
     @Mock
+    private PartiesService partiesService;
+    @Mock
     private IShipmentRepository shipmentRepository;
     @Mock
     private IShipmentSync shipmentSync;
