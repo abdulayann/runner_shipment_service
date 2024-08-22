@@ -1969,7 +1969,9 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
-        assertNull(runnerResponse.getData());
+        assertEquals(
+                "DIMS: In CMS\r\n" + "5=400X300X2,1=100X200X10\r\n" + "Total Volumetric Weight 233.33 KGS",
+                runnerResponse.getData());
       }
 
     @Test
