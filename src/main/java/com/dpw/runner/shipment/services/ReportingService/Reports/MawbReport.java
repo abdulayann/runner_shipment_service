@@ -86,7 +86,7 @@ public class MawbReport extends IReport {
                 && Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
 
             shipmentService.validateCarrierDetails(shipment, missingFields);
-            shipmentService.validateContainerDetails(shipment, missingFields);
+            shipmentService.validateMblDetails(shipment, missingFields);
 
         }
     }
@@ -103,7 +103,7 @@ public class MawbReport extends IReport {
                 && Constants.CONSOLIDATION_TYPE_DRT.equalsIgnoreCase(consolidation.getConsolidationType())) {
 
             consolidationService.validateCarrierDetails(consolidation, missingFields);
-            consolidationService.validateContainerDetails(consolidation, missingFields);
+            consolidationService.validateMblDetails(consolidation, missingFields);
 
         }
     }

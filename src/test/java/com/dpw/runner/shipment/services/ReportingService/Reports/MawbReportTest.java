@@ -168,7 +168,7 @@ class MawbReportTest extends CommonMocks {
 
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         doNothing().when(consolidationService).validateCarrierDetails(any(), anyList());
-        doNothing().when(consolidationService).validateContainerDetails(any(), anyList());
+        doNothing().when(consolidationService).validateMblDetails(any(), anyList());
 
         Assertions.assertDoesNotThrow(() -> mawbReport.validatePrinting(123L));
     }

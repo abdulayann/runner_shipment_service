@@ -563,37 +563,27 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidateContainerDetails_EmptyContainersList() {
-        consolidationDetails.setContainersList(null);
+        consolidationDetails.setBol(null);
 
-        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
+        consolidationService.validateMblDetails(consolidationDetails, missingFields);
 
-        assertTrue(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+        assertTrue(missingFields.contains(ModuleValidationFieldType.MAWB_DETAILS));
     }
 
     @Test
     void testValidateContainerDetails_ContainerMissingNumber() {
-        List<Containers> containersList = new ArrayList<>();
-        Containers container1 = new Containers();
-        container1.setContainerNumber(null);
-        containersList.add(container1);
-        consolidationDetails.setContainersList(containersList);
+        consolidationDetails.setBol("");
 
-        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
+        consolidationService.validateMblDetails(consolidationDetails, missingFields);
 
-        assertTrue(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+        assertTrue(missingFields.contains(ModuleValidationFieldType.MAWB_DETAILS));
     }
 
     @Test
     void testValidateContainerDetails_ValidContainersList() {
-        List<Containers> containersList = new ArrayList<>();
-        Containers container1 = new Containers();
-        container1.setContainerNumber("C12345");
-        containersList.add(container1);
-        consolidationDetails.setContainersList(containersList);
-
-        consolidationService.validateContainerDetails(consolidationDetails, missingFields);
-
-        assertFalse(missingFields.contains(ModuleValidationFieldType.CONTAINER_DETAILS));
+        consolidationDetails.setBol("bol");
+        consolidationService.validateMblDetails(consolidationDetails, missingFields);
+        assertFalse(missingFields.contains(ModuleValidationFieldType.MAWB_DETAILS));
     }
 
     @Test

@@ -4222,6 +4222,12 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public void validateMblDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
+        if (ObjectUtils.isEmpty(consolidation.getBol())) {
+            missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
+        }
+    }
+
     private boolean isContainerNumberPresent(List<Containers> containersList) {
         return containersList.stream().allMatch(container -> container.getContainerNumber() != null);
     }
