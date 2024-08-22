@@ -33,14 +33,14 @@ public class NotificationServiceImpl implements INotificationService {
 
     @Override
     @Async
-    public NotificationServiceResponse sendEmail(String body, String subject, List<String> emailIds, List<String> cc) {
+    public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc) {
         SendEmailBaseRequest request = SendEmailBaseRequest.builder()
                 .htmlBody(body)
                 .subject(subject)
                 .to(String.join(";", emailIds))
                 .cc(cc.isEmpty() ? null : String.join(";", cc))
                 .build();
-        return sendEmail(request);
+        sendEmail(request);
     }
 
     @Override

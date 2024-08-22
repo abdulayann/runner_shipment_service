@@ -87,8 +87,12 @@ public class ShipmentDao implements IShipmentDao {
     @Autowired
     private CommonUtils commonUtils;
 
+    private final EntityManager entityManager;
+
     @Autowired
-    private EntityManager entityManager;
+    public ShipmentDao(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {

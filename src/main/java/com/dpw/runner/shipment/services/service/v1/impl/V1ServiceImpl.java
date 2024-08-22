@@ -3,33 +3,6 @@ package com.dpw.runner.shipment.services.service.v1.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -348,11 +321,11 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.getTenantDetails}")
     private String getTenantInfoUrl;
     @Value("${v1service.url.base}${v1service.url.getEmailTemplates}")
-    private String GET_EMAIL_TEMPLATES;
+    private String getEmailTemplates;
     @Value("${v1service.url.base}${v1service.url.getMasterDetails}")
-    private String GET_MASTER_DETAILS;
+    private String getMasterDetails;
     @Value("${v1service.url.base}${v1service.url.getUserDetails}")
-    private String GET_USER_DETAILS;
+    private String getUserDetails;
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2094,13 +2067,13 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse getEmailTemplates(Object request) {
-        ResponseEntity masterDataResponse = null;
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_EMAIL_TEMPLATES, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getEmailTemplates() function " + (System.currentTimeMillis() - time));
-            return (V1DataResponse) masterDataResponse.getBody();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+             masterDataResponse = this.restTemplate.postForEntity(this.getEmailTemplates, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getEmailTemplates() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
@@ -2110,13 +2083,13 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse getMasterDetails(Object request) {
-        ResponseEntity masterDataResponse = null;
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_MASTER_DETAILS, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getEmailTemplates() function " + (System.currentTimeMillis() - time));
-            return (V1DataResponse) masterDataResponse.getBody();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getMasterDetails, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getMasterDetails() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
@@ -2126,13 +2099,13 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse getUserDetails(Object request) {
-        ResponseEntity masterDataResponse = null;
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_USER_DETAILS, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in getEmailTemplates() function " + (System.currentTimeMillis() - time));
-            return (V1DataResponse) masterDataResponse.getBody();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getUserDetails, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getUserDetails() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

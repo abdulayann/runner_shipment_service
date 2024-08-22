@@ -3,23 +3,30 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +56,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -59,6 +68,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
 class CommonUtilsTest {
+
+    @Mock
+    private INotificationService notificationService;
 
     @Mock
     private ModelMapper modelMapper;
@@ -93,6 +105,15 @@ class CommonUtilsTest {
     @Mock
     private Allocations allocations;
 
+    @Mock
+    private ShipmentService shipmentService;
+
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
@@ -117,6 +138,13 @@ class CommonUtilsTest {
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = syncExecutorService;
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
+
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        mockUser.setEmail("email");
+        UserContext.setUser(mockUser);
     }
 
     @Test
@@ -825,4 +853,912 @@ class CommonUtilsTest {
             assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("0");
         }
     }
+
+    @Test
+    void testUpdateUnLocData() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", new UnlocationsResponse());
+        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+        commonUtils.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test1");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data2() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test1");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data3() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test1");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data4() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test1");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData_Data5() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        CarrierDetails oldCarrierDetails = new CarrierDetails();
+        oldCarrierDetails.setOrigin("test");
+        oldCarrierDetails.setOriginPort("test");
+        oldCarrierDetails.setDestination("test");
+        oldCarrierDetails.setDestinationPort("test");
+        commonUtils.updateUnLocData(carrierDetails, oldCarrierDetails);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void testUpdateUnLocData1() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        commonUtils.updateUnLocData(carrierDetails, null);
+        verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusWithoutEmailTemplate() throws Exception {
+        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder().build(),
+                ConsolidationDetails.builder().build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                shipmentRequestedTypes,
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                "username");
+        assertFalse(shipmentRequestedTypes.isEmpty());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullAcceptedNoTemplate() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullAccepted() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullAcceptedCases() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullAcceptedCases2() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullReject() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullRejectNoTemplate() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullRejectCases() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullRejectCases2() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PULL_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRequest() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRequestNoTemplate() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRequestCases() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRequestCases2() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushAccept() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushAcceptNoTemplate() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushAcceptCases() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushAcceptCases2() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_ACCEPTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushReject() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRejectNoTemplate() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>(),
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRejectCases() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("createdConsole", "createdConsole@gmail.com");
+                    put("assigned", "assigned@gmail.com");
+                    put("createdShipment", "createdShipment@gmail.com");
+                    put("username", "username@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushRejectCases2() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setCreatedBy("createdConsole");
+        consolidationDetails1.setTenantId(56);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .assignedTo("assigned")
+                .build();
+        shipmentDetails.setCreatedBy("createdShipment");
+        shipmentDetails.setTenantId(56);
+        UserContext.getUser().setEmail(null);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                consolidationDetails1,
+                SHIPMENT_PUSH_REJECTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatus() throws Exception {
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatus_Cases() throws Exception {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .assignedTo("assigned")
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        shipmentDetails.setCreatedBy("created");
+        shipmentDetails.setTenantId(56);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put("assigned", "assigned@gmail.com");
+                    put("created", "created@gmail.com");
+                }},
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatus_Cases2() throws Exception {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .assignedTo("assigned")
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        shipmentDetails.setCreatedBy("created");
+        shipmentDetails.setTenantId(56);
+        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
+        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
+        UserContext.getUser().setEmail(null);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                shipmentDetails,
+                ConsolidationDetails.builder()
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .allocations(Allocations.builder().build())
+                        .build(),
+                SHIPMENT_PULL_REQUESTED,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>() {{
+                    put(56, entityTransferMasterLists);
+                }},
+                "username");
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void getEmailTemplate() {
+        List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE).build());
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE).build());
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PULL_REJECTED_EMAIL_TYPE).build());
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE).build());
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE).build());
+        emailTemplatesRequests.add(EmailTemplatesRequest.builder().type(SHIPMENT_PUSH_REJECTED_EMAIL_TYPE).build());
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().entities(emailTemplatesRequests).build());
+        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(emailTemplatesRequests);
+        Map<ShipmentRequestedType, EmailTemplatesRequest> response = new HashMap<>();
+        commonUtils.getEmailTemplate(response);
+        assertEquals(6, response.size());
+    }
+
+    @Test
+    void getToAndCCEmailIds() {
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(1);
+        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+        toAndCcMailIds.add(EntityTransferMasterLists.builder().build());
+        when(iv1Service.getMasterDetails(any())).thenReturn(V1DataResponse.builder().entities(toAndCcMailIds).build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(toAndCcMailIds);
+        List<EntityTransferMasterLists> response = new ArrayList<>();
+        commonUtils.getToAndCCEmailIds(tenantIds, response);
+        assertEquals(1, response.size());
+    }
+
+    @Test
+    void getUserDetails() {
+        Set<String> usernamesList = new HashSet<>();
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        List<UsersDto> usersDtos = new ArrayList<>();
+        usersDtos.add(UsersDto.builder().Username("username").Email("email").build());
+        when(iv1Service.getUserDetails(any())).thenReturn(V1DataResponse.builder().entities(usersDtos).build());
+        when(jsonHelper.convertValueToList(any(), eq(UsersDto.class))).thenReturn(usersDtos);
+        commonUtils.getUserDetails(usernamesList, usernameEmailsMap);
+        assertFalse(usernameEmailsMap.isEmpty());
+    }
+
+    @Test
+    void getUnLocationsData() {
+        Map<String, UnlocationsResponse> map = new HashMap<>();
+        commonUtils.getUnLocationsData(null, map);
+        assertTrue(map.isEmpty());
+    }
+
+    @Test
+    void getUnLocationsData_Empty() {
+        Map<String, UnlocationsResponse> map = new HashMap<>();
+        commonUtils.getUnLocationsData(new ArrayList<>(), map);
+        assertTrue(map.isEmpty());
+    }
+
+    @Test
+    void getUnLocationsData_Value() {
+        Map<String, UnlocationsResponse> map = new HashMap<>();
+        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>() {{ put("unloc", UnlocationsResponse.builder().build()); }});
+        commonUtils.getUnLocationsData(List.of("unloc"), map);
+        assertFalse(map.isEmpty());
+    }
+
+    @Test
+    void getCarriersData() {
+        Map<String, CarrierMasterData> map = new HashMap<>();
+        commonUtils.getCarriersData(null, map);
+        assertTrue(map.isEmpty());
+    }
+
+    @Test
+    void getCarriersData_Empty() {
+        Map<String, CarrierMasterData> map = new HashMap<>();
+        commonUtils.getCarriersData(new ArrayList<>(), map);
+        assertTrue(map.isEmpty());
+    }
+
+    @Test
+    void getCarriersData_Value() {
+        Map<String, CarrierMasterData> map = new HashMap<>();
+        when(masterDataUtils.getCarriersData(any())).thenReturn(new HashMap<>() {{ put("carrier", CarrierMasterData.builder().build()); }});
+        commonUtils.getCarriersData(List.of("carrier"), map);
+        assertFalse(map.isEmpty());
+    }
+
 }

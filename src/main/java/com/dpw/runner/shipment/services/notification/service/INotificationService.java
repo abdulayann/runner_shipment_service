@@ -8,5 +8,5 @@ import java.util.List;
 
 public interface INotificationService {
     NotificationServiceResponse sendEmail(SendEmailBaseRequest request) throws JsonProcessingException;
-    NotificationServiceResponse sendEmail(String body, String subject, List<String> emailIds, List<String> cc) throws JsonProcessingException;
+    void sendEmail(String body, String subject, List<String> emailIds, List<String> cc);
 }
