@@ -4216,22 +4216,11 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public void validateContainerDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(consolidation.getContainersList()) || !isContainerNumberPresent(consolidation.getContainersList())) {
-            missingFields.add(ModuleValidationFieldType.CONTAINER_DETAILS);
-        }
-    }
-
     public void validateMblDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(consolidation.getBol())) {
             missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
         }
     }
-
-    private boolean isContainerNumberPresent(List<Containers> containersList) {
-        return containersList.stream().allMatch(container -> container.getContainerNumber() != null);
-    }
-
 
     @Override
     public ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel) {
