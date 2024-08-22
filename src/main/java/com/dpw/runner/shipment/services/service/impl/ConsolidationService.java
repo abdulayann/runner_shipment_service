@@ -24,10 +24,23 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.Criteria;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -84,6 +97,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
@@ -101,14 +115,9 @@ import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.request.*;
-import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -4193,13 +4202,17 @@ public class ConsolidationService implements IConsolidationService {
 
         if (ObjectUtils.isEmpty(carrierDetails)) {
             missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else {
-            if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
-            }
-            if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
-            }
+            return;
+        }
+
+        if (ObjectUtils.isEmpty(carrierDetails.getShippingLine())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
         }
     }
 

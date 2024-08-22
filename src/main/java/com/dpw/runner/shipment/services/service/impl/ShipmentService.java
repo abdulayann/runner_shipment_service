@@ -4960,13 +4960,17 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isEmpty(carrierDetails)) {
             missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else {
-            if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
-            }
-            if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
-            }
+            return;
+        }
+
+        if (ObjectUtils.isEmpty(carrierDetails.getShippingLine())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
         }
     }
 
