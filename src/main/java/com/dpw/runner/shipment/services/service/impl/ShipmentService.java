@@ -2823,6 +2823,9 @@ public class ShipmentService implements IShipmentService {
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+        id = shipmentDetails.get().getId();
+        var notificationMap = getNotificationMap(PendingNotificationRequest.builder().shipmentIdList(List.of(id)).build());
+        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
         if(measurmentBasis) {
@@ -5163,7 +5166,7 @@ public class ShipmentService implements IShipmentService {
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
-            .lat(null)
+            .lat(consol.getLatDate())
             .branch(tenantData.getCode() + " " + tenantData.getTenantName())
             .hazardous(consol.getHazardous())
             .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())

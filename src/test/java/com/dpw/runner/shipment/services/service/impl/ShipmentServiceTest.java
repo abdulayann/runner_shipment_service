@@ -3182,9 +3182,11 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByIdTest() {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));

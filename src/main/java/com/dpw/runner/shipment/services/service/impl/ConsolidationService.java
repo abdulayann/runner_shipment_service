@@ -2303,6 +2303,9 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            id = consolidationDetails.get().getId();
+            var notificationMap = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(List.of(id)).build());
+            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
             createConsolidationPayload(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -4244,7 +4247,7 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
-            List<Long> shipmentIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+            List<Long> shipmentIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getShipmentId).toList();
             final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
                 ConsoleShipmentMapping::getShipmentId, Function.identity(), (oldVal, newVal) -> oldVal)
             );
