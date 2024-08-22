@@ -443,6 +443,9 @@ public class ShipmentService implements IShipmentService {
     private PartialFetchUtils partialFetchUtils;
 
     @Autowired
+    private PartiesService partiesService;
+
+    @Autowired
     private RestTemplate restTemplate;
 
     @Autowired
@@ -2942,6 +2945,8 @@ public class ShipmentService implements IShipmentService {
                 entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
             }
             entity.setCarrierDetails(oldEntity.get().getCarrierDetails());
+
+            partiesService.partialUpdateParties(shipmentRequest, entity);
             validateBeforeSave(entity);
 
             ConsolidationDetails consolidationDetails = updateLinkedShipmentData(entity, oldEntity.get(), null);
@@ -3012,6 +3017,7 @@ public class ShipmentService implements IShipmentService {
             throw new RunnerException(responseMsg);
         }
     }
+
 
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
@@ -5043,6 +5049,13 @@ public class ShipmentService implements IShipmentService {
             .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())
             .build();
+    }
+
+
+    private AddressTranslationRequest.OrgAddressCode createV1OrgRequest(PartiesRequest parties) {
+        if (Objects.isNull(parties) || Objects.isNull(parties.getOrgCode()) || Objects.isNull(parties.getAddressCode()))
+            return null;
+        return AddressTranslationRequest.OrgAddressCode.builder().OrgCode(parties.getOrgCode()).AddressCode(parties.getAddressCode()).build();
     }
 
 }

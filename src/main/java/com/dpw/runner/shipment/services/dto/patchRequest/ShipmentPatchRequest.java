@@ -33,6 +33,7 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private PartiesRequest client;
     private PartiesRequest consignee;
     private PartiesRequest consigner;
+    private PartiesRequest notifyParty;
     private JsonNullable<String> consolRef;
     private JsonNullable<Boolean> containerAutoWeightVolumeUpdate;
     private List<ContainerRequest> containersList;
