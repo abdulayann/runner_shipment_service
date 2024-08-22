@@ -71,7 +71,9 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadyDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
