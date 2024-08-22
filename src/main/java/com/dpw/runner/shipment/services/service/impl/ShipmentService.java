@@ -1768,6 +1768,7 @@ public class ShipmentService implements IShipmentService {
                                     .prevData(null)
                                     .parent(ShipmentDetails.class.getSimpleName())
                                     .parentId(shipmentDetails.getId())
+                                    .entityType(MblDuplicatedLog.class.getSimpleName())
                                     .operation(DBOperationType.LOG.name()).build()
                     );
                 } catch (Exception e) {
