@@ -29,8 +29,6 @@ public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
     List<ConsoleShipmentMapping> findByConsolidationIdAll(Long consolidationId);
     List<ConsoleShipmentMapping> findByShipmentIdAll(Long shipmentId);
-
-    void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId);
     void deletePendingStateByConsoleId(Long consoleId);
     void deletePendingStateByShipmentId(Long shipmentId);
     void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId);

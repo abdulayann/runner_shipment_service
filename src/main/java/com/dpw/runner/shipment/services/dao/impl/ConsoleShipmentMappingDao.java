@@ -71,15 +71,23 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
+        Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = new HashMap<>();
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if(Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationId))
+                if(Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
                     shipmentIds.remove(consoleShipmentMapping.getShipmentId());
+                if(shipmentRequestedType != null) {
+                    consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
+                }
             }
         }
         if (!shipmentIds.isEmpty()) {
             for (Long id : shipmentIds) {
-                ConsoleShipmentMapping entity = new ConsoleShipmentMapping();
+                ConsoleShipmentMapping entity;
+                if(shipmentRequestedType != null && consoleShipmentMappingMap.containsKey(id))
+                    entity = consoleShipmentMappingMap.get(id);
+                else
+                    entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
                 if(interBranchShipIds.contains(id)) {
@@ -89,10 +97,9 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity.setIsAttachmentDone(true);
                 }
                 if(shipmentRequestedType != null) {
-                    consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedType.getValue(), consolidationId, id);
-                } else {
-                    save(entity);
+                    entity.setRequestedType(shipmentRequestedType);
                 }
+                save(entity);
             }
         }
         return shipmentIds;
@@ -130,13 +137,6 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 delete(mapping);
             }
         }
-    }
-
-    @Override
-    @Transactional
-    public void updateConsoleShipments(ShipmentRequestedType shipmentRequestedType, Long consoleId, Long shipmentId) {
-        Integer shipmentRequestedTypeValue = shipmentRequestedType.getValue();
-        consoleShipmentsMappingRepository.updateConsoleShipmentStatus(shipmentRequestedTypeValue, consoleId, shipmentId);
     }
 
     @Override

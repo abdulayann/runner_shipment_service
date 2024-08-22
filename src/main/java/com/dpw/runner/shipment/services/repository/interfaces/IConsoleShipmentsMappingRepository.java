@@ -8,7 +8,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 @Generated
@@ -29,11 +28,6 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE console_shipment_mapping SET request_type = ?1, is_attachment_done = true WHERE consolidation_id = ?2 AND shipment_id = ?3", nativeQuery = true)
-    void updateConsoleShipmentStatus(Integer requestedType, Long consoleId, Long shipmentId);
 
     @Modifying
     @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.consolidation_id = ?1 and csm.is_attachment_done = false", nativeQuery = true)

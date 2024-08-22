@@ -30,4 +30,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
+    void entityDetach(List<ShipmentDetails> shipmentDetails);
 }
