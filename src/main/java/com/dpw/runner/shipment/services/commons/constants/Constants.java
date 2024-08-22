@@ -317,6 +317,7 @@ public class Constants {
 
     public static final String CONTAINER_CODE = "containerCode";
     public static final String IS_DELETED = "isDeleted";
+    public static final String ID = "id";
     public static final String SHIPMENT_ID = "shipmentId";
     public static final String TENANT_ID = "tenantId";
     public static final String CONSOLIDATION_ID = "consolidationId";

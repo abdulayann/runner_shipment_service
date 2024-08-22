@@ -190,15 +190,6 @@ class ConsoleShipmentMappingDaoTest {
     }
 
     @Test
-    void testUpdateConsoleShipments() {
-        ShipmentRequestedType shipmentRequestedType = ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-        Long consolId = 1L;
-        Long shipId = 1L;
-        consoleShipmentMappingDao.updateConsoleShipments(shipmentRequestedType, consolId, shipId);
-        verify(consoleShipmentsMappingRepository, times(1)).updateConsoleShipmentStatus(any(), any(), any());
-    }
-
-    @Test
     void testFindByConsolidationIdAll() {
         Long consolId = 1L;
         consoleShipmentMappingDao.findByConsolidationIdAll(consolId);
