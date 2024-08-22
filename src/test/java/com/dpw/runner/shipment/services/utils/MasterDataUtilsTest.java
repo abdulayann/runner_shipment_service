@@ -1993,6 +1993,26 @@ class MasterDataUtilsTest {
         masterDataUtils.setLocationData(List.of(CarrierDetailResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
         assertTrue(isSuccess);
     }
+    @Test
+    void setLocationData8() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(ConsolidationDetailsResponse.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData9() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(ConsolidationDetailsResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
 
     @Test
     void fetchVesselForList() {

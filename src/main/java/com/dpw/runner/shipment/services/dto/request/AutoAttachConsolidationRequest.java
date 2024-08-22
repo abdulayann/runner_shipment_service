@@ -24,4 +24,5 @@ public class AutoAttachConsolidationRequest implements IRunnerRequest {
     private PartiesRequest consigner;
     private String direction;
     private String shipmentType;
+    private Long shipId;
 }
