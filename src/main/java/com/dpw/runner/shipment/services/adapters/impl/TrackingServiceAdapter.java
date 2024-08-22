@@ -476,7 +476,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             ForkJoinPool customThreadPool = new ForkJoinPool(4);
 
             try {
-                if(res.getContainers() != null) {
+                if(res.getContainers() != null && !res.getContainers().isEmpty()) {
                     customThreadPool.submit(() ->
                         res.getContainers().parallelStream().forEach(container -> {
                             if (container == null || container.getEvents() == null || container.getPlaces() == null) return;
@@ -505,7 +505,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                 .build()
                                             );
                                     })
-                                ).collect(Collectors.toList());
+                                ).toList();
 
                             eventsRows.addAll(rows);
                         })
