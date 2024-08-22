@@ -31,6 +31,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -47,6 +48,9 @@ class ShipmentDaoTest extends CommonMocks {
 
     @InjectMocks
     private ShipmentDao shipmentDao;
+
+    @Mock
+    private EntityManager entityManager;
 
     @Mock
     private IShipmentRepository shipmentRepository;
@@ -1081,5 +1085,11 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         assertEquals(shipmentDetailsPage, shipmentDao.findAll(pair.getLeft(), pair.getRight()));
+    }
+
+    @Test
+    void entityDetach() {
+        shipmentDao.entityDetach(List.of(ShipmentDetails.builder().build()));
+        verify(entityManager).detach(any());
     }
 }

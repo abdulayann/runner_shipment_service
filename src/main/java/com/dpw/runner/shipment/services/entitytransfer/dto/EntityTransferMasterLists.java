@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.io.Serializable;
@@ -26,4 +27,6 @@ public class EntityTransferMasterLists implements IEntityTranferBaseEntity, Seri
     public Boolean IsUnionTerritory;
     public String TypeOfPayLoad;
     public String DPAManifestMaster;
+    @JsonProperty("TenantId")
+    public Integer tenantId;
 }

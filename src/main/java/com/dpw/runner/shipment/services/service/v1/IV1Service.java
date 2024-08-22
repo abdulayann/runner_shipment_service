@@ -32,9 +32,10 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+
+import java.util.UUID;
 
 public interface IV1Service {
     ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
@@ -191,4 +192,7 @@ public interface IV1Service {
     EntityTransferAddress fetchAddress(String entityId);
     V1DataResponse getCoLoadingStations(Object request);
     TenantDetailsByListResponse getTenantDetails(Object request);
+    V1DataResponse getEmailTemplates(Object request);
+    V1DataResponse getMasterDetails(Object request);
+    V1DataResponse getUserDetails(Object request);
 }

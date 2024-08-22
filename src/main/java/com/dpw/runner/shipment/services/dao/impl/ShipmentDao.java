@@ -39,6 +39,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -85,6 +86,13 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    private final EntityManager entityManager;
+
+    @Autowired
+    public ShipmentDao(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
@@ -633,6 +641,14 @@ public class ShipmentDao implements IShipmentDao {
     @Transactional
     public List<ShipmentDetails> findShipmentsByIds(Set<Long> ids) {
         return shipmentRepository.findShipmentsByIds(ids);
+    }
+
+    @Override
+    @Transactional
+    public void entityDetach(List<ShipmentDetails> shipmentDetails) {
+        for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+            entityManager.detach(shipmentDetails1);
+        }
     }
 
 }

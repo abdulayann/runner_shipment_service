@@ -13,7 +13,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -27,6 +30,18 @@ public class NotificationServiceImpl implements INotificationService {
 
     @Autowired
     private NotificationRestClient restClient;
+
+    @Override
+    @Async
+    public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc) {
+        SendEmailBaseRequest request = SendEmailBaseRequest.builder()
+                .htmlBody(body)
+                .subject(subject)
+                .to(String.join(";", emailIds))
+                .cc(cc.isEmpty() ? null : String.join(";", cc))
+                .build();
+        sendEmail(request);
+    }
 
     @Override
     public NotificationServiceResponse sendEmail(SendEmailBaseRequest request) {

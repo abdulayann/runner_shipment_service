@@ -319,6 +319,7 @@ public class Constants {
 
     public static final String CONTAINER_CODE = "containerCode";
     public static final String IS_DELETED = "isDeleted";
+    public static final String ID = "id";
     public static final String SHIPMENT_ID = "shipmentId";
     public static final String TENANT_ID = "tenantId";
     public static final String CONSOLIDATION_ID = "consolidationId";
@@ -439,6 +440,45 @@ public class Constants {
     public static final String Active = "Active";
     public static final String FILE_STATUS = "FileStatus";
     public static final String FLOW = "Flow";
+
+    public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
+    public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
+    public static final String CONSOL_BRANCH_CODE = "Consol_Branch_Code";
+    public static final String CONSOL_BRANCH_NAME = "Consol_Branch_Name";
+    public static final String CONSOLIDATION_NUMBER = "Consolidation_Number";
+    public static final String SOURCE_CONSOLIDATION_NUMBER = "Source_Consolidation_Number";
+    public static final String MAWB_NUMBER = "MAWB_Number";
+    public static final String HAWB_NUMBER = "HAWB_Number";
+    public static final String INTERBRANCH_SHIPMENT_NUMBER = "Interbranch_Shipment_Number";
+    public static final String CARRIER_CODE = "Carrier_Code";
+    public static final String CARRIER_NAME = "Carrier_name";
+    public static final String FLIGHT_NUMBER1 = "Flight_Number";
+    public static final String POL_NAME = "POL_Name";
+    public static final String POD_NAME = "POD_Name";
+    public static final String ALLOCATED_WEIGHT = "Allocated_Weight";
+    public static final String ALLOCATED_VOLUME = "Allocated_Volume";
+    public static final String ALLOCATED_WEIGHT_UNIT = "Allocated_Weight_Unit";
+    public static final String ALLOCATED_VOLUME_UNIT = "Allocated_Volume_Unit";
+    public static final String REQUEST_DATE_TIME = "Request_Date_Time";
+    public static final String USER_NAME = "User_name";
+    public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
+    public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
+    public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";
+    public static final String INTERBRANCH_CONSOLIDATION_NUMBER = "Interbranch_Consolidation_Number";
+    public static final String SHIPMENT_NUMBER = "Shipment_Number";
+    public static final String SHIPMENT_WEIGHT = "Shipment_Weight";
+    public static final String SHIPMENT_WEIGHT_UNIT = "Shipment_Weight_Unit";
+    public static final String SHIPMENT_VOLUME = "Shipment_Volume";
+    public static final String SHIPMENT_VOLUME_UNIT = "Shipment_Volume_Unit";
+    public static final String ACTIONED_USER_NAME = "Actioned_User_name";
+    public static final String REJECT_REMARKS = "Reject_remarks";
+    public static final String ERROR_WHILE_SENDING_EMAIL = "Error while sending email";
+    public static final String SHIPMENT_PULL_REQUESTED_EMAIL_TYPE = "Attach Shipment Request";
+    public static final String SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE = "Consolidation Request - Accept";
+    public static final String SHIPMENT_PULL_REJECTED_EMAIL_TYPE = "Consolidation Request - Rejected";
+    public static final String SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE = "Attach Consolidation Request";
+    public static final String SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE = "Shipment Request Accept";
+    public static final String SHIPMENT_PUSH_REJECTED_EMAIL_TYPE = "Shipment Request Reject";
 
     private Constants() {
     }

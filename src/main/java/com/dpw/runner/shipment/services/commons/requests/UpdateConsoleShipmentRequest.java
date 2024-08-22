@@ -19,4 +19,5 @@ public class UpdateConsoleShipmentRequest implements IRunnerRequest{
     private Long shipmentId;
     private List<Long> listOfShipments;
     private ShipmentRequestedType shipmentRequestedType;
+    private String rejectRemarks;
 }
