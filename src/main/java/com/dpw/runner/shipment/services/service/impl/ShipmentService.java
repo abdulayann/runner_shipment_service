@@ -463,7 +463,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
 
-    public static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
@@ -5037,7 +5037,7 @@ public class ShipmentService implements IShipmentService {
 
     private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
         var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
-        var tenantData = Optional.ofNullable(v1TenantData.get(consol.getTenantId().toString())).orElse(new TenantModel());
+        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
         return PendingShipmentActionsResponse.builder()
             .consolId(consol.getId())
             .ata(carrierDetails.getAta())

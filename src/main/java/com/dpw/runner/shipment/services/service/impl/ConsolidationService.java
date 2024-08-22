@@ -400,7 +400,7 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
 
-    public static Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
 //            Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build()),
@@ -846,7 +846,7 @@ public class ConsolidationService implements IConsolidationService {
             this.checkSciForAttachConsole(consolidationId);
             updateLinkedShipmentData(consolidationDetails, null, true);
             // Update pack utilisation if user accepts any pull or push request
-            if(ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED.equals(shipmentRequestedType) || ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED.equals(shipmentRequestedType)) {
+            if(ShipmentRequestedType.APPROVE.equals(shipmentRequestedType)) {
                 packingService.savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest.builder()
                     .consolidationId(consolidationId)
                     .shipmentIdList(shipmentIds)
@@ -4214,7 +4214,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private PendingConsolidationActionResponse mapToNotification(ShipmentDetails shipment, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
         var carrierDetails = Optional.ofNullable(shipment.getCarrierDetails()).orElse(new CarrierDetails());
-        var tenantData = Optional.ofNullable(v1TenantData.get(shipment.getTenantId())).orElse(new TenantModel());
+        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(shipment.getTenantId()))).orElse(new TenantModel());
         return PendingConsolidationActionResponse.builder()
             .shipmentId(shipment.getId())
             .ata(carrierDetails.getAta())
