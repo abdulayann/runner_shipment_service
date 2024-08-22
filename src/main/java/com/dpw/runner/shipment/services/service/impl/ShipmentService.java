@@ -4986,13 +4986,13 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isForHubRequest(UpdateConsoleShipmentRequest request) {
-        return request.getIsForHub() != null;
+        return request.isForHub();
     }
 
     private void processHubRequest(UpdateConsoleShipmentRequest updateConsoleShipmentRequest) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(updateConsoleShipmentRequest.getConsoleId());
         if (consolidationDetails.isPresent()) {
-            if (Boolean.TRUE.equals(updateConsoleShipmentRequest.getIsForHub()) && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+            if (Boolean.TRUE.equals(updateConsoleShipmentRequest.isForHub()) && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
             if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
@@ -5015,6 +5015,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processShipmentRequest(UpdateConsoleShipmentRequest request) throws RunnerException {
+        if(Boolean.FALSE.equals(request.isForHub())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
         if(request.getConsoleIdsList() == null || request.getConsoleIdsList().isEmpty()) {
             throw new InvalidDataAccessApiUsageException("Console Ids list should not be empty!!!");
         }
