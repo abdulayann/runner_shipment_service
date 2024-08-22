@@ -125,8 +125,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.notification.IPendingActionsResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -200,7 +198,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
@@ -1603,6 +1600,56 @@ ShipmentServiceTest extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         mockShipmentSettings();
+        // Execute the method under test
+        ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void attachListShipmentEtaNotNullTransportModeAir_EXP_success() {
+        // Mock data
+        long consolidationId = 1L;
+        AttachListShipmentRequest attachListShipmentRequest = new AttachListShipmentRequest();
+        attachListShipmentRequest.setConsolidationId(consolidationId);
+        attachListShipmentRequest.setEtdMatch(true);
+        attachListShipmentRequest.setEtaMatch(true);
+        attachListShipmentRequest.setScheduleMatch(true);
+        attachListShipmentRequest.setFilterCriteria(new ArrayList<>());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setAirDGFlag(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        // Set up shipmentDetailsList as needed for your test
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+        mockShipmentSettings();
+        mockTenantSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -3135,9 +3182,11 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByIdTest() {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
@@ -6262,7 +6311,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Approve() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6279,7 +6328,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Reject() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6294,7 +6343,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Withdraw() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6309,7 +6358,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_DataRetrievalFailure() {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
@@ -6323,7 +6372,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Approve() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null); // Non-hub request
+        updateConsoleShipmentRequest.setForHub(false); // Non-hub request
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6337,7 +6386,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Reject() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6350,7 +6399,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Withdraw() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6363,7 +6412,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_InvalidDataException() {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setConsoleIdsList(null); // Invalid data
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6377,7 +6426,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_InvalidDataException2() {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of()); // Invalid data
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6391,7 +6440,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_AttachShipmentsThrowsRunnerException() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6445,7 +6494,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testUpdateShipments_HubRequest_SetInterBranchContextForHub_True() throws RunnerException {
         // Arrange
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetails.getInterBranchConsole()).thenReturn(true);
@@ -6461,7 +6510,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testUpdateShipments_HubRequest_SetInterBranchContextForHub_False() throws RunnerException {
         // Arrange
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetails.getInterBranchConsole()).thenReturn(false);
@@ -6496,6 +6545,7 @@ ShipmentServiceTest extends CommonMocks {
         request.setShipmentIdList(List.of(1L,2L));
 
         ConsolidationDetails mockConsol1 = jsonTestUtility.getTestConsolidation();
+        mockConsol1.setTenantId(1);
         mockConsol1.setId(1L);
         var mockConsol2 = objectMapper.convertValue(mockConsol1, ConsolidationDetails.class);
         mockConsol2.setId(2L);
@@ -6562,6 +6612,56 @@ ShipmentServiceTest extends CommonMocks {
         PendingNotificationResponse mockResponse  = new PendingNotificationResponse();
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+    }
+
+    @Test
+    void testGetLatestCargoDeliveryDate_Success() {
+        // Arrange
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 15, 10, 0));
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        shipmentDetails2.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 16, 10, 0));
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1, shipmentDetails2);
+        when(consolidationDetails.getShipmentsList()).thenReturn(shipmentDetailsList);
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.getLatestCargoDeliveryDate(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
+    }
+
+    @Test
+    void testGetLatestCargoDeliveryDate_ConsolidationNotFound() {
+        // Arrange
+        Long consoleId = 1L;
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+                () -> shipmentService.getLatestCargoDeliveryDate(consoleId));
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testGetLatestCargoDeliveryDate_NoShipments() {
+        // Arrange
+        Long consoleId = 1L;
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        when(consolidationDetails.getShipmentsList()).thenReturn(Collections.emptyList());
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.getLatestCargoDeliveryDate(consoleId);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCodeValue());
     }
 
 

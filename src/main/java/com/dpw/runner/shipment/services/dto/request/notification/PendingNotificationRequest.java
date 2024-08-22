@@ -15,4 +15,5 @@ import java.util.List;
 public class PendingNotificationRequest implements IRunnerRequest {
     private List<Long> shipmentIdList;
     private List<Long> consolidationIdList;
+    private String containsText;
 }

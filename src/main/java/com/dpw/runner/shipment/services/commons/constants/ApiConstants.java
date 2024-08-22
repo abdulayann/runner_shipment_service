@@ -107,6 +107,7 @@ public class ApiConstants {
     public static final String X_CLIENT_TYPE = "X-Client-Type";
 
     public static final String GET_ALL_SHIPMENTS_COUNT = "/all/shipments/count";
+    public static final String GET_ALL_CONSOLE_SHIPMENTS_LATEST_DATE = "/console/shipments/latestDate";
     public static final String UPDATE_SHIPMENT_STATUS = "/status/update";
     public static final String REQUEST_INTER_BRANCH_CONSOLE = "/request-inter-branch-console";
 

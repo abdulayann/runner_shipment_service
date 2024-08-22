@@ -28,6 +28,8 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
 
     List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
 
+    List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
+
     @Modifying
     @Transactional
     @Query(value = "UPDATE console_shipment_mapping SET request_type = ?1, is_attachment_done = true WHERE consolidation_id = ?2 AND shipment_id = ?3", nativeQuery = true)

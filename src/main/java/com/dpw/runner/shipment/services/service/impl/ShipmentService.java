@@ -24,13 +24,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -108,21 +102,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
@@ -471,7 +451,8 @@ public class ShipmentService implements IShipmentService {
     private Map<String, Object> ORG = Map.ofEntries(
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
-    private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
@@ -567,7 +548,10 @@ public class ShipmentService implements IShipmentService {
             Map.entry("shipperRef", RunnerEntityMapping.builder().tableName(Constants.PICKUP_DETAILS).dataType(String.class).fieldName("shipperRef").build()),
             Map.entry(CONTAINS_HAZARDOUS, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Boolean.class).build()),
             Map.entry("shipmentPackStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(ShipmentPackStatus.class).build()),
-            Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName("tenantId").build())
+            Map.entry(Constants.TENANT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName(Constants.TENANT_ID).build()),
+            Map.entry("cargoReadyDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoReadyDate").build()),
+            Map.entry("cargoDeliveryDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoDeliveryDate").build())
+
     );
 
     @Override
@@ -2840,6 +2824,9 @@ public class ShipmentService implements IShipmentService {
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+        id = shipmentDetails.get().getId();
+        var notificationMap = getNotificationMap(PendingNotificationRequest.builder().shipmentIdList(List.of(id)).build());
+        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
         if(measurmentBasis) {
@@ -3998,6 +3985,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
         boolean setShipmentTypefilter = false;
         boolean isFcl = true;
         boolean isLcl = true;
@@ -4021,14 +4009,7 @@ public class ShipmentService implements IShipmentService {
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
         defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
-        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
-            CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
-        else
-            CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
-        if(!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
-            CommonUtils.andCriteria(Constants.DESTINATION_PORT, consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
-        else
-            CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
+
         if(!Objects.isNull(consolidationDetails.getShipmentType()))
             CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), "=", defaultRequest);
         else
@@ -4058,33 +4039,71 @@ public class ShipmentService implements IShipmentService {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
 
-        if(Boolean.TRUE.equals(request.getEtaMatch())){
-            innerFilers1 = new ArrayList<>();
-            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
-                criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || !Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                || Boolean.FALSE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            if (!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
             else
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
+            if (!Objects.isNull(consolidationDetails.getCarrierDetails().getDestinationPort()))
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, consolidationDetails.getCarrierDetails().getDestinationPort(), "=", defaultRequest);
+            else
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
+        }
+
+        if(Boolean.TRUE.equals(request.getEtaMatch())){
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEta())) {
+                    LocalDateTime eta = consolidationDetails.getCarrierDetails().getEta();
+                    var thresholdETAFrom = eta.plusDays(-1);
+                    var thresholdETATo = eta.plusDays(1);
+
+                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", defaultRequest);
+                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETATo, "<=", defaultRequest);
+                }
+            }
+            else {
+                innerFilers1 = new ArrayList<>();
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEta()))
+                    criteria = Criteria.builder().fieldName("eta").operator("=").value(consolidationDetails.getCarrierDetails().getEta()).build();
+                else
+                    criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
                 criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-            innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-            innerFilers1.add(filterCriteria);
-            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-            innerFilters.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
         }
         if(Boolean.TRUE.equals(request.getEtdMatch())){
-            innerFilers1 = new ArrayList<>();
-            if(!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
-                criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
-            else
+
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd())) {
+                    LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();
+                    var thresholdETDFrom = etd.plusDays(-1);
+                    var thresholdETDTo = etd.plusDays(1);
+                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", defaultRequest);
+                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", defaultRequest);
+                }
+            }
+            else {
+                innerFilers1 = new ArrayList<>();
+                if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd()))
+                    criteria = Criteria.builder().fieldName("etd").operator("=").value(consolidationDetails.getCarrierDetails().getEtd()).build();
+                else
+                    criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
+                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                innerFilers1.add(filterCriteria);
                 criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-            innerFilers1.add(filterCriteria);
-            criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-            filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-            innerFilers1.add(filterCriteria);
-            filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-            innerFilters.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                innerFilers1.add(filterCriteria);
+                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
+                innerFilters.add(filterCriteria);
+            }
         }
         if(Boolean.TRUE.equals(request.getScheduleMatch())){
             if(Objects.equals(consolidationDetails.getTransportMode(),Constants.TRANSPORT_MODE_AIR)){
@@ -4854,6 +4873,29 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(allShipmentCountResponse);
     }
 
+    public ResponseEntity<IRunnerResponse> getLatestCargoDeliveryDate(Long consoleId) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        LatestCargoDeliveryInfo latestCargoDeliveryInfo = new LatestCargoDeliveryInfo();
+        LocalDateTime latestCargoDeliveryDate = null;
+        if(consolidationDetails.isPresent()) {
+            List<ShipmentDetails> listOfShipmentsAttachedToConsole = consolidationDetails.get().getShipmentsList();
+            latestCargoDeliveryDate = getLatestCargoDeliveryDateHelper(listOfShipmentsAttachedToConsole);
+            latestCargoDeliveryInfo.setLatestCargoDeliveryDate(latestCargoDeliveryDate);
+        } else {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        return ResponseHelper.buildSuccessResponse(latestCargoDeliveryInfo);
+    }
+
+    private LocalDateTime getLatestCargoDeliveryDateHelper(List<ShipmentDetails> listOfShipmentsAttachedToConsole) {
+        return listOfShipmentsAttachedToConsole.stream()
+                .map(ShipmentDetails::getCargoDeliveryDate)
+                .filter(Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(null);
+    }
+
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException {
@@ -4922,13 +4964,17 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isEmpty(carrierDetails)) {
             missingFields.add(ModuleValidationFieldType.CARRIER);
-        } else {
-            if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
-            }
-            if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
-                missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
-            }
+            return;
+        }
+
+        if (ObjectUtils.isEmpty(carrierDetails.getShippingLine())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEtd())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETD);
+        }
+        if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
+            missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
         }
     }
 
@@ -4943,13 +4989,13 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isForHubRequest(UpdateConsoleShipmentRequest request) {
-        return request.getIsForHub() != null;
+        return request.isForHub();
     }
 
     private void processHubRequest(UpdateConsoleShipmentRequest updateConsoleShipmentRequest) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(updateConsoleShipmentRequest.getConsoleId());
         if (consolidationDetails.isPresent()) {
-            if (Boolean.TRUE.equals(updateConsoleShipmentRequest.getIsForHub()) && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
+            if (Boolean.TRUE.equals(updateConsoleShipmentRequest.isForHub()) && Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
             if (ShipmentRequestedType.APPROVE.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
@@ -4972,6 +5018,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processShipmentRequest(UpdateConsoleShipmentRequest request) throws RunnerException {
+        if(Boolean.FALSE.equals(request.isForHub())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
         if(request.getConsoleIdsList() == null || request.getConsoleIdsList().isEmpty()) {
             throw new InvalidDataAccessApiUsageException("Console Ids list should not be empty!!!");
         }
@@ -5069,49 +5118,61 @@ public class ShipmentService implements IShipmentService {
             return notificationResultMap;
         }
 
-        ListCommonRequest listRequest = constructListCommonRequest("shipmentId", request.getShipmentIdList(), "IN");
-        listRequest = andCriteria("requestedType", pullRequestedEnum.name(), "=", listRequest);
-        listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
-        Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
-        Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
+        try {
+            ListCommonRequest listRequest = constructListCommonRequest("shipmentId", request.getShipmentIdList(), "IN");
+            listRequest = andCriteria("requestedType", pullRequestedEnum.name(), "=", listRequest);
+            listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
+            Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
+            Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
-        List<Long> consolidationIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
-        final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
-            ConsoleShipmentMapping::getConsolidationId, Function.identity(), (oldVal, newVal) -> oldVal)
-        );
+            List<Long> consolidationIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+            final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
+                ConsoleShipmentMapping::getConsolidationId, Function.identity(), (oldVal, newVal) -> oldVal)
+            );
 
-        commonUtils.setInterBranchContextForHub();
+            commonUtils.setInterBranchContextForHub();
 
-        listRequest = constructListCommonRequest("id", consolidationIds, "IN");
-        Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class);
-        Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
+            listRequest = constructListCommonRequest("id", consolidationIds, "IN");
+            listRequest.setContainsText(request.getContainsText());
+            Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class, ConsolidationService.tableNames);
+            Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
 
-        var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap)).collect(
-            Collectors.toMap(PendingShipmentActionsResponse::getConsolId, Function.identity()));
+            var tenantIdList = consolPage.getContent().stream().map(i -> i.getTenantId().toString()).toList();
+            Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
 
-        // generate mapping for shipment id vs list of pulling consol(s)
-        for(var mapping : mappingPage.getContent()) {
-            if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
-                notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
+            var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData)).collect(
+                Collectors.toMap(PendingShipmentActionsResponse::getConsolId, Function.identity()));
+
+            // generate mapping for shipment id vs list of pulling consol(s)
+            for(var mapping : mappingPage.getContent()) {
+                if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
+                    notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
+                }
+                notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
             }
-            notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
-        }
 
-        commonUtils.removeInterBranchContext();
+            commonUtils.removeInterBranchContext();
+
+        }
+        catch(Exception e) {
+            log.error("Error while generating notification map for input Shipment", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+        }
 
         return notificationResultMap;
     }
 
-    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap) {
+    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
         var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
+        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
         return PendingShipmentActionsResponse.builder()
             .consolId(consol.getId())
             .ata(carrierDetails.getAta())
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
-            .lat(null)
-            .branch(StringUtility.convertToString(consol.getTenantId()))
+            .lat(consol.getLatDate())
+            .branch(tenantData.getCode() + " " + tenantData.getTenantName())
             .hazardous(consol.getHazardous())
             .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())

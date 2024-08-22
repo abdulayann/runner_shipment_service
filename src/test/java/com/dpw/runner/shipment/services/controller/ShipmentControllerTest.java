@@ -9,10 +9,11 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.mockito.MockitoAnnotations;
+import org.springframework.test.web.servlet.MockMvc;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -68,6 +69,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
@@ -92,6 +94,14 @@ class ShipmentControllerTest {
     private IConsolidationService consolidationService;
     @InjectMocks
     private ShipmentController shipmentController;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(shipmentController).build();
+    }
 
     /**
      * Method under test: {@link ShipmentController#create(ShipmentRequest)}
@@ -1169,6 +1179,32 @@ class ShipmentControllerTest {
         when(shipmentService.getPendingNotifications(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = shipmentController.getPendingNotifications(new PendingNotificationRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllConsolShipmentsLatestDate_Success() throws Exception {
+        // Arrange
+        Long consoleId = 1L;
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(new UpstreamDateUpdateResponse());
+        when(shipmentService.getLatestCargoDeliveryDate(consoleId)).thenReturn(expectedResponse);
+
+        // Test
+        var responseEntity = shipmentController.getAllConsolShipmentsLatestDate(consoleId);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetAllConsolShipmentsLatestDate_Exception() throws Exception {
+        // Arrange
+        Long consoleId = 1L;
+        String errorMessage = "Service error";
+        when(shipmentService.getLatestCargoDeliveryDate(consoleId)).thenThrow(new RuntimeException(errorMessage));
+
+        // Test
+        var responseEntity = shipmentController.getAllConsolShipmentsLatestDate(consoleId);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

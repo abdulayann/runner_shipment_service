@@ -640,7 +640,17 @@ public class ShipmentController {
             log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
             return consolidationService.consolidationRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
         }
+    }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LATEST_CARGO_DELIVERY_DATE, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.GET_ALL_CONSOLE_SHIPMENTS_LATEST_DATE)
+    public ResponseEntity<IRunnerResponse> getAllConsolShipmentsLatestDate(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for all consol shipments");
+        try {
+            return shipmentService.getLatestCargoDeliveryDate(consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})

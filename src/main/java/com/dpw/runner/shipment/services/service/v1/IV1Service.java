@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
@@ -189,4 +190,5 @@ public interface IV1Service {
     OrgAddressResponse fetchOrgAddresses(Object request);
     EntityTransferAddress fetchAddress(String entityId);
     V1DataResponse getCoLoadingStations(Object request);
+    TenantDetailsByListResponse getTenantDetails(Object request);
 }

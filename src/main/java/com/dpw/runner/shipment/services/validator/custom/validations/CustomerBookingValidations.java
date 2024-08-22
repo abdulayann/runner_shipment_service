@@ -98,10 +98,10 @@ public class CustomerBookingValidations {
         if (Objects.isNull(entity.getTransportType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
 
-        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_ROA))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
 
-        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR))
+        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(entity.getTransportType(), Constants.TRANSPORT_MODE_ROA))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
 
         if (Objects.isNull(entity.getCargoType()))

@@ -676,6 +676,7 @@ public class PackingService implements IPackingService {
                 if (i + 1 < sortedKeys.size())
                     packsCount.append(", ");
             }
+            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null? packsUnit : ""));
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(volumeWeight), v1TenantSettingsResponse), toVolumeUnit));
@@ -1082,7 +1083,8 @@ public class PackingService implements IPackingService {
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
-            packingList.addAll(consol.getPackingList());
+            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks()))
+                packingList.addAll(consol.getPackingList());
             packingList.addAll(getShipmentPacks(attachingShipments));
         }
         else {

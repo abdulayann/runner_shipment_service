@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -236,9 +237,9 @@ public class HawbReport extends IReport{
             EntityTransferMasterLists paymentCodeDetails = null;
             if(cargoInfoRows != null){
                 dictionary.put(ReportConstants.REFERENCE_NUMBER, cargoInfoRows.getReferenceNumber());
-                dictionary.put(ReportConstants.OPTIONAL_SHIPPING_INFORMATION, cargoInfoRows.getShippingInformation());
-                dictionary.put(ReportConstants.OPTIONAL_SHIPPING_INFORMATION_OTHER, cargoInfoRows.getShippingInformationOther());
-                dictionary.put(ReportConstants.OTHER_INFORMATION, cargoInfoRows.getOtherInfo());
+                dictionary.put(ReportConstants.OPTIONAL_SHIPPING_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getShippingInformation()));
+                dictionary.put(ReportConstants.OPTIONAL_SHIPPING_INFORMATION_OTHER, StringUtility.toUpperCase(cargoInfoRows.getShippingInformationOther()));
+                dictionary.put(ReportConstants.OTHER_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getOtherInfo()));
                 BigDecimal amountOfInsurance = cargoInfoRows.getInsuranceAmount();
                 BigDecimal carriageValue = cargoInfoRows.getCarriageValue();
                 BigDecimal customsValue = cargoInfoRows.getCustomsValue();
@@ -262,8 +263,8 @@ public class HawbReport extends IReport{
                 }
                 dictionary.put(ReportConstants.CURRENCY, cargoInfoRows.getCurrency());
                 dictionary.put(ReportConstants.CHARGE_CODE, cargoInfoRows.getChargeCode());
-                dictionary.put(ReportConstants.ACCOUNTING_INFORMATION,  cargoInfoRows.getAccountingInfo());
-                dictionary.put(ReportConstants.HANDLING_INFORMATION, cargoInfoRows.getHandlingInfo());
+                dictionary.put(ReportConstants.ACCOUNTING_INFORMATION,  StringUtility.toUpperCase(cargoInfoRows.getAccountingInfo()));
+                dictionary.put(ReportConstants.HANDLING_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getHandlingInfo()));
                 NtrQtyGoods = cargoInfoRows.getNtrQtyGoods();
                 dictionary.put(ReportConstants.NATURE_OF_GOODS, NtrQtyGoods);
                 dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
@@ -438,7 +439,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.TO_FIRST, locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()).getIataCode() : null);
                 dictionary.put(ReportConstants.TO, dictionary.get(ReportConstants.TO_FIRST));
                 dictionary.put(ReportConstants.AO_DEPT_CODE, locCodeMap.get(routingInfoRows.get(0).getOriginPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getOriginPortName()).getIataCode() : null);
-                dictionary.put(ReportConstants.ISSUED_BY, routingInfoRows.get(0).getByCarrier());
+                dictionary.put(ReportConstants.ISSUED_BY, carrierDetailModel.getShippingLine());
                 dictionary.put(ReportConstants.FLIGHT_NO1, routingInfoRows.get(0).getFlightNumber());
                 dictionary.put(ReportConstants.FLIGHT_DATE1, ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat));
 
@@ -446,7 +447,7 @@ public class HawbReport extends IReport{
                 String carrierCode = carrier != null && carrierRow.containsKey(carrier) ? carrierRow.get(carrier).IATACode : "";
                 String flightNumber = routingInfoRows.get(0).getFlightNumber();
                 String day = routingInfoRows.get(0).getFlightDate() != null ? String.valueOf(routingInfoRows.get(0).getFlightDate().getDayOfMonth()) : "";
-                dictionary.put(ReportConstants.FIRST_FLIGHT_AND_DAY, String.format("%s %s/%s", carrierCode, flightNumber, day));
+                dictionary.put(ReportConstants.FIRST_FLIGHT_AND_DAY, String.format("%s%s/%s", carrierCode, flightNumber, day));
                 dictionary.put(ReportConstants.BY_FIRST_CARRIER_NAME, carrier);
 
                 if (!carrierRow.isEmpty() && carrier != null && carrierRow.containsKey(carrier))
@@ -486,7 +487,7 @@ public class HawbReport extends IReport{
                     String carrierCode2 = carrier2 != null && carrierRow.containsKey(carrier2) ? carrierRow.get(carrier2).IATACode : "";
                     String flightNumber2 = routingInfoRows.get(1).getFlightNumber();
                     String day2 = routingInfoRows.get(1).getFlightDate() != null ? String.valueOf(routingInfoRows.get(1).getFlightDate().getDayOfMonth()) : "";
-                    dictionary.put(ReportConstants.SECOND_FLIGHT_AND_DAY, String.format("%s %s/%s", carrierCode2, flightNumber2, day2));
+                    dictionary.put(ReportConstants.SECOND_FLIGHT_AND_DAY, String.format("%s%s/%s", carrierCode2, flightNumber2, day2));
                 }
                 if(routingInfoRows.size()>=3){
                     locCodes = new HashSet<>();
@@ -621,7 +622,7 @@ public class HawbReport extends IReport{
                 locCodeMap = getLocationData(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
                 dictionary.put(ReportConstants.EXECUTED_AT, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ?  locCodeMap.get(otherInfoRows.getExecutedAt()).getIataCode() : null);
                 dictionary.put(ReportConstants.EXECUTED_AT_NAME, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ? locCodeMap.get(otherInfoRows.getExecutedAt()).getName() : null);
-                dictionary.put(ReportConstants.EXECUTED_ON, ConvertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat));
+                dictionary.put(ReportConstants.EXECUTED_ON, ConvertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
                 dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());
                 dictionary.put(ReportConstants.SIGN_OF_ISSUING_CARRIER, StringUtility.toUpperCase(otherInfoRows.getCarrier()));
             }
@@ -651,6 +652,11 @@ public class HawbReport extends IReport{
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
             populateRaKcData(dictionary, hawbModel.shipmentDetails);
         }
+
+        var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();
+
+        if(!CommonUtils.listIsNullOrEmpty(awbNotifParty))
+            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName(), hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getAddress()));
 
         return dictionary;
     }

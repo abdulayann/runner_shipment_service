@@ -21,4 +21,6 @@ public class TrackingEventsResponse {
     private LocalDateTime ShipmentAta;
     @JsonProperty("ShipmentAtd")
     private LocalDateTime ShipmentAtd;
+
+    private List<com.dpw.runner.shipment.services.entity.Events> eventsList;
 }

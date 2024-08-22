@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
@@ -75,6 +76,9 @@ public class AwbUtility {
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private CommonUtils commonUtils;
+    private ShipmentSettingsDao shipmentSettingsDao;
+    @Autowired
+    public void setShipmentSettingsDao(ShipmentSettingsDao shipmentSettingsDao) { this.shipmentSettingsDao = shipmentSettingsDao; }
 
     public static String getFormattedAddress(AwbAddressParam addressParam)
     {
@@ -363,9 +367,10 @@ public class AwbUtility {
                 .build();
     }
 
-    public AwbAirMessagingResponse createAirMessagingRequestForShipment(Awb awb, ShipmentDetails shipmentDetails) {
-        TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+    public AwbAirMessagingResponse createAirMessagingRequestForShipment(Awb awb, ShipmentDetails shipmentDetails, TenantModel tenantModel) {
+        if (Objects.isNull(tenantModel))
+            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        var shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(shipmentDetails.getTenantId())).stream().findFirst().orElse(new ShipmentSettingsDetails());
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
@@ -765,5 +770,12 @@ public class AwbUtility {
             }
         }
         awbDao.updateAirMessageStatus(awb.getGuid(), status.name());
+    }
+
+    public void overrideInfoForCoLoadShipment(AwbAirMessagingResponse awbResponse, boolean override) {
+        if (Boolean.TRUE.equals(override)) {
+            var tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            awbResponse.getMeta().getTenantInfo().setPimaAddress(tenantModel.getPIMAAddress());
+        }
     }
 }

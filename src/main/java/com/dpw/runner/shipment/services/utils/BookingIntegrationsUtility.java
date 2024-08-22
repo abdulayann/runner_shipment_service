@@ -141,11 +141,13 @@ public class BookingIntegrationsUtility {
     public void createBookingInPlatform(CustomerBooking customerBooking) {
         var request = createPlatformCreateRequest(customerBooking);
         try {
-            platformServiceAdapter.createAtPlatform(request);
-            int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
-            if(count == 0)
-                throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
-            this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
+            if (!Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_RAI)) {
+                platformServiceAdapter.createAtPlatform(request);
+                int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
+                if (count == 0)
+                    throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
+                this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
+            }
         } catch (Exception ex) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, ex.getLocalizedMessage());
             log.error("Booking Creation error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), ex.getMessage());
@@ -156,7 +158,8 @@ public class BookingIntegrationsUtility {
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
         var request = createPlatformUpdateRequest(customerBooking);
         try {
-            platformServiceAdapter.updateAtPlaform(request);
+            if(!Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_RAI))
+                platformServiceAdapter.updateAtPlaform(request);
         } catch (Exception e) {
             this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
             log.error("Booking Update error from Platform for booking number: {} with error message: {}", customerBooking.getBookingNumber(), e.getMessage());
@@ -168,7 +171,8 @@ public class BookingIntegrationsUtility {
         if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipmentDetails.getBookingReference())) {
             var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
             try {
-                platformServiceAdapter.updateAtPlaform(request);
+                if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
+                    platformServiceAdapter.updateAtPlaform(request);
             } catch (Exception e) {
                 this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
@@ -610,6 +614,8 @@ public class BookingIntegrationsUtility {
             case "FCL" -> fclBusinessCode;
             case "LCL" -> lclBusinessCode;
             case "LSE" -> lseBusinessCode;
+            case "BBK" -> lclBusinessCode;
+            case "ROR" -> lclBusinessCode;
             default -> null;
         };
     }
