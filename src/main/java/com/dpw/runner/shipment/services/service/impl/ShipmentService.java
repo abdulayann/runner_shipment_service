@@ -5051,11 +5051,4 @@ public class ShipmentService implements IShipmentService {
             .build();
     }
 
-
-    private AddressTranslationRequest.OrgAddressCode createV1OrgRequest(PartiesRequest parties) {
-        if (Objects.isNull(parties) || Objects.isNull(parties.getOrgCode()) || Objects.isNull(parties.getAddressCode()))
-            return null;
-        return AddressTranslationRequest.OrgAddressCode.builder().OrgCode(parties.getOrgCode()).AddressCode(parties.getAddressCode()).build();
-    }
-
 }
