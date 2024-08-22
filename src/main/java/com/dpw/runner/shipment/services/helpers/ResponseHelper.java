@@ -52,7 +52,7 @@ public class ResponseHelper {
                 HttpStatus.OK);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildSuccessResponse(String warning) {
+    public static ResponseEntity<IRunnerResponse> buildSuccessResponseWithWarning(String warning) {
         return new ResponseEntity<>(
                 RunnerResponse.builder().success(true)
                         .requestId(LoggerHelper.getRequestIdFromMDC())

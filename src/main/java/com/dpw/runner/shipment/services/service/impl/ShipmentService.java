@@ -5061,7 +5061,7 @@ public class ShipmentService implements IShipmentService {
         if(!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
         }
-        return ResponseHelper.buildSuccessResponse(warning);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     @Override
@@ -5270,7 +5270,7 @@ public class ShipmentService implements IShipmentService {
         if(!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
         }
-        return ResponseHelper.buildSuccessResponse(warning);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     @Override

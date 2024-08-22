@@ -10,23 +10,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.Criteria;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -38,42 +25,6 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
-import com.dpw.runner.shipment.services.dto.request.JobRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
-import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.AutoAttachConsolidationResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -844,7 +795,7 @@ public class ConsolidationService implements IConsolidationService {
         if(!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
         }
-        return ResponseHelper.buildSuccessResponse(warning);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     private void setInterBranchContext(Boolean isInterBranchConsole) {
