@@ -441,6 +441,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "open_for_interbranch_attachment")
     private Boolean interBranchConsole;
 
-    @Column(name = "lat_Date")
+    @Column(name = "lat_date")
     private LocalDateTime latDate;
 }
