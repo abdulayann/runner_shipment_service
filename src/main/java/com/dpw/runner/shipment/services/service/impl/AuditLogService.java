@@ -159,39 +159,59 @@ public class AuditLogService implements IAuditLogService {
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
-            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-            if(auditLogChangesMap.size() > 0)
-                addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
-            auditLog.setChanges(auditLogChangesMap);
-            auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
-            auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
+            prepareAuditLogOfCreate(auditLogMetaData, auditLog, ops);
         } else if (ops.equals(DBOperationType.UPDATE.name())) {
-            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
-            if(auditLogChangesMap.size() > 0)
-                addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData());
-            auditLog.setChanges(auditLogChangesMap);
-            auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
-            auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
+            prepareAuditLogOfUpdate(auditLogMetaData, auditLog, ops);
         } else if (ops.equals(DBOperationType.DELETE.name())) {
-            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
-            if(auditLogChangesMap.size() > 0)
-                addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null);
-            auditLog.setChanges(auditLogChangesMap);
-            auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
-            auditLog.setEntityId(getEntityId(auditLogMetaData.getPrevData()));
+            prepareAuditLogOfDelete(auditLogMetaData, auditLog, ops);
         } else if (ops.equals(DBOperationType.LOG.name())) {
-            Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-            if (auditLogChangesMap.size() > 0) {
-                addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
-            }
-            auditLog.setChanges(auditLogChangesMap);
-            auditLog.setEntity(auditLogMetaData.getEntityType());
+            prepareAuditLogOfLog(auditLogMetaData, auditLog, ops);
         } else {
             throw new RunnerException("Not a valid operation performed");
         }
         if(ops.equals(DBOperationType.UPDATE.name()) && (auditLog.getChanges() == null || auditLog.getChanges().size() == 0))
             return;
         auditLogDao.save(auditLog);
+    }
+
+    private void prepareAuditLogOfLog(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
+            throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
+        if (auditLogChangesMap.size() > 0) {
+            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
+        }
+        auditLog.setChanges(auditLogChangesMap);
+        auditLog.setEntity(auditLogMetaData.getEntityType());
+    }
+
+    private void prepareAuditLogOfDelete(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
+            throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
+        Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
+        if(auditLogChangesMap.size() > 0)
+            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null);
+        auditLog.setChanges(auditLogChangesMap);
+        auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
+        auditLog.setEntityId(getEntityId(auditLogMetaData.getPrevData()));
+    }
+
+    private void prepareAuditLogOfUpdate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
+            throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
+        Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
+        if(auditLogChangesMap.size() > 0)
+            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData());
+        auditLog.setChanges(auditLogChangesMap);
+        auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
+        auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
+    }
+
+    private void prepareAuditLogOfCreate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
+            throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
+        Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
+        if(auditLogChangesMap.size() > 0)
+            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
+        auditLog.setChanges(auditLogChangesMap);
+        auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
+        auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
     }
 
     public void addBaseEntityFields(Map<String, AuditLogChanges> auditLogChangesMap, BaseEntity oldEntity, BaseEntity newEntity)
