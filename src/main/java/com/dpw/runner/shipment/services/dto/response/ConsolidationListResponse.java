@@ -127,5 +127,6 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
     private Integer pendingActionCount;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latDate;
 }
