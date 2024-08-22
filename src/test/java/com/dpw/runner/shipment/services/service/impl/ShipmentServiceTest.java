@@ -6312,7 +6312,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Approve() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6329,7 +6329,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Reject() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6344,7 +6344,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_Withdraw() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6359,7 +6359,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_DataRetrievalFailure() {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
@@ -6373,7 +6373,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Approve() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null); // Non-hub request
+        updateConsoleShipmentRequest.setForHub(false); // Non-hub request
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6387,7 +6387,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Reject() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6400,7 +6400,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_Withdraw() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6413,7 +6413,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_InvalidDataException() {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setConsoleIdsList(null); // Invalid data
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6427,7 +6427,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_NonHubRequest_InvalidDataException2() {
-        updateConsoleShipmentRequest.setIsForHub(null);
+        updateConsoleShipmentRequest.setForHub(false);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of()); // Invalid data
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setShipmentId(1L);
@@ -6441,7 +6441,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testUpdateShipments_HubRequest_AttachShipmentsThrowsRunnerException() throws RunnerException {
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
@@ -6495,7 +6495,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testUpdateShipments_HubRequest_SetInterBranchContextForHub_True() throws RunnerException {
         // Arrange
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetails.getInterBranchConsole()).thenReturn(true);
@@ -6511,7 +6511,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testUpdateShipments_HubRequest_SetInterBranchContextForHub_False() throws RunnerException {
         // Arrange
-        updateConsoleShipmentRequest.setIsForHub(true);
+        updateConsoleShipmentRequest.setForHub(true);
         updateConsoleShipmentRequest.setConsoleId(1L);
 
         when(consolidationDetails.getInterBranchConsole()).thenReturn(false);
