@@ -390,7 +390,8 @@ public class ConsolidationService implements IConsolidationService {
     private Map<String, Object> ORG = Map.ofEntries(
             Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
     );
-    private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Long.class).build()),
 //            Map.entry("type", RunnerEntityMapping.builder().tableName("parties").dataType(String.class).build()),
             Map.entry("cutoffDate", RunnerEntityMapping.builder().tableName("allocations").dataType(LocalDateTime.class).build()),
@@ -837,6 +838,14 @@ public class ConsolidationService implements IConsolidationService {
             }
             this.checkSciForAttachConsole(consolidationId);
             updateLinkedShipmentData(consolidationDetails, null, true);
+            // Update pack utilisation if user accepts any pull or push request
+            if(ShipmentRequestedType.APPROVE.equals(shipmentRequestedType)) {
+                packingService.savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest.builder()
+                    .consolidationId(consolidationId)
+                    .shipmentIdList(shipmentIds)
+                    .build()
+                );
+            }
         }
         if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
             List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(x -> Boolean.TRUE.equals(x.getContainsHazardous())).toList();
@@ -4219,7 +4228,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private Map<Long, List<PendingConsolidationActionResponse>> getNotificationMap(PendingNotificationRequest request) {
-        // Get data of all consolidation pulling this shipment that are not yet attached
+        // Get data of all shipments pushing to be attached to this consol
         var pushRequestedEnum = ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
         Map<Long, List<PendingConsolidationActionResponse>> notificationResultMap = new HashMap<>();
 
@@ -4228,41 +4237,52 @@ public class ConsolidationService implements IConsolidationService {
             return notificationResultMap;
         }
 
-        ListCommonRequest listRequest = constructListCommonRequest("consolidationId", request.getConsolidationIdList(), "IN");
-        listRequest = andCriteria("requestedType", pushRequestedEnum.name(), "=", listRequest);
-        listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
-        Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
-        Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
+        try {
+            ListCommonRequest listRequest = constructListCommonRequest("consolidationId", request.getConsolidationIdList(), "IN");
+            listRequest = andCriteria("requestedType", pushRequestedEnum.name(), "=", listRequest);
+            listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
+            Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
+            Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
-        List<Long> shipmentIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
-        final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
-            ConsoleShipmentMapping::getShipmentId, Function.identity(), (oldVal, newVal) -> oldVal)
-        );
+            List<Long> shipmentIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+            final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
+                ConsoleShipmentMapping::getShipmentId, Function.identity(), (oldVal, newVal) -> oldVal)
+            );
 
-        commonUtils.setInterBranchContextForHub();
+            commonUtils.setInterBranchContextForHub();
 
-        listRequest = constructListCommonRequest("id", shipmentIds, "IN");
-        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class);
-        Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            listRequest = constructListCommonRequest("id", shipmentIds, "IN");
+            listRequest.setContainsText(request.getContainsText());
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
+            Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-        var pushingShipmentMap = shipmentsPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap)).collect(
-            Collectors.toMap(PendingConsolidationActionResponse::getShipmentId, Function.identity()));
+            var tenantIdList = shipmentsPage.getContent().stream().map(i -> i.getTenantId().toString()).toList();
+            Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
 
-        // generate mapping for consol id vs list of pushing shipment(s)
-        for(var mapping : mappingPage.getContent()) {
-            if(!notificationResultMap.containsKey(mapping.getConsolidationId())) {
-                notificationResultMap.put(mapping.getConsolidationId(), new ArrayList<>());
+            var pushingShipmentMap = shipmentsPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData)).collect(
+                Collectors.toMap(PendingConsolidationActionResponse::getShipmentId, Function.identity()));
+
+            // generate mapping for consol id vs list of pushing shipment(s)
+            for(var mapping : mappingPage.getContent()) {
+                if(!notificationResultMap.containsKey(mapping.getConsolidationId())) {
+                    notificationResultMap.put(mapping.getConsolidationId(), new ArrayList<>());
+                }
+                notificationResultMap.get(mapping.getConsolidationId()).add(pushingShipmentMap.get(mapping.getShipmentId()));
             }
-            notificationResultMap.get(mapping.getConsolidationId()).add(pushingShipmentMap.get(mapping.getShipmentId()));
-        }
 
-        commonUtils.removeInterBranchContext();
+            commonUtils.removeInterBranchContext();
+        }
+        catch(Exception e) {
+            log.error("Error while generating notification map for input Consolidation", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+        }
 
         return notificationResultMap;
     }
 
-    private PendingConsolidationActionResponse mapToNotification(ShipmentDetails shipment, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap) {
+    private PendingConsolidationActionResponse mapToNotification(ShipmentDetails shipment, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
         var carrierDetails = Optional.ofNullable(shipment.getCarrierDetails()).orElse(new CarrierDetails());
+        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(shipment.getTenantId()))).orElse(new TenantModel());
         return PendingConsolidationActionResponse.builder()
             .shipmentId(shipment.getId())
             .ata(carrierDetails.getAta())
@@ -4270,7 +4290,7 @@ public class ConsolidationService implements IConsolidationService {
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
             .lat(null)
-            .branch(StringUtility.convertToString(shipment.getTenantId()))
+            .branch(tenantData.getCode() + " " + tenantData.getTenantName())
             .hazardous(shipment.getContainsHazardous())
             .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + shipment.getPacksUnit())
             .weight(StringUtility.convertToString(shipment.getWeight()) + shipment.getWeightUnit())

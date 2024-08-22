@@ -1,12 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -129,11 +124,8 @@ import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
@@ -1466,6 +1458,52 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachShipments_Success_Air_SavesPackUtilisation() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setId(2L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.setInterBranchConsole(false);
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails, shipmentDetails1)));
+        when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        verify(packingService, times(1)).savePackUtilisationCalculationInConsole(any());
     }
 
     @Test
@@ -3998,6 +4036,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         request.setConsolidationIdList(List.of(1L,2L));
 
         ShipmentDetails mockShip1 = jsonTestUtility.getTestShipment();
+        mockShip1.setTenantId(1);
         mockShip1.setId(1L);
         var mockShip2 = objectMapperTest.convertValue(mockShip1, ShipmentDetails.class);
         mockShip2.setId(2L);
