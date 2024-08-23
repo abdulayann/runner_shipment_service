@@ -6628,8 +6628,8 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void sendEmailForPushRequested() throws Exception {
         ShipmentService spyService = spy(shipmentService);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForPushRequested(1L, 2L, new HashSet<>());
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());

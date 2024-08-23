@@ -848,7 +848,9 @@ public class ConsolidationService implements IConsolidationService {
         // InterBranch context
         ListCommonRequest shiplistCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
-        setInterBranchContext(consolidationDetails.getInterBranchConsole());
+        if(shipmentRequestedType == null) {
+            setInterBranchContext(consolidationDetails.getInterBranchConsole());
+        }
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();
         if(shipmentRequestedType == null) {
@@ -1730,6 +1732,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
+            commonUtils.setInterBranchContextForHub();
             PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
             CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
