@@ -7,10 +7,7 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -209,4 +206,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;
+    private FileStatus fileStatus;
 }
