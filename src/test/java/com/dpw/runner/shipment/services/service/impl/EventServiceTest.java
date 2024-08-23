@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
@@ -24,13 +25,8 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -38,7 +34,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +44,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.runner.Runner;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -59,7 +53,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
@@ -122,6 +115,9 @@ class EventServiceTest extends CommonMocks {
 
     @Mock
     private TrackingServiceAdapter trackingServiceAdapter;
+
+    @Mock
+    private IEventDumpDao eventDumpDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
@@ -575,12 +571,14 @@ class EventServiceTest extends CommonMocks {
         mockEvent.setGuid(UUID.randomUUID());
         mockEvent.setEventCode("EVCODE1");
 
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
         when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
-        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
-        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
@@ -589,7 +587,7 @@ class EventServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
-        verify(eventDao, times(1)).saveAll(any());
+        verify(eventDumpDao, times(1)).saveAll(any());
         assertNotNull(httpResponse);
         assertEquals(expectedResponse, httpResponse);
     }

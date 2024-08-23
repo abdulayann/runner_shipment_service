@@ -298,5 +298,22 @@ class TrackingServiceAdapterTest {
         }
     }
 
+    @Test
+    void getTrackingEventsShouldNotFailForEmptyTrackingResponse() {
+        String refNumber = "refNum";
+        TrackingServiceApiResponse mockResponse = jsonTestUtility.getJson("TRACKING_SERVICE_SHIPMENT_RESPONSE", TrackingServiceApiResponse.class);
+        mockResponse.setContainers(Collections.emptyList());
+
+        try {
+            when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).thenReturn(ResponseEntity.ok(mockResponse));
+            var trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(refNumber);
+
+            assertNotNull(trackingEventsResponse.getEventsList());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
 
 }

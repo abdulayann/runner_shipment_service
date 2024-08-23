@@ -14,17 +14,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
-import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -35,7 +32,6 @@ import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -46,15 +42,11 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -84,9 +76,10 @@ public class EventService implements IEventService {
 
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
+    private IEventDumpDao eventDumpDao;
 
     @Autowired
-    public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao, IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService, PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter) {
+    public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao, IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService, PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -99,6 +92,7 @@ public class EventService implements IEventService {
         this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.partialFetchUtils = partialFetchUtils;
         this.trackingServiceAdapter = trackingServiceAdapter;
+        this.eventDumpDao = eventDumpDao;
     }
 
     @Transactional
@@ -463,22 +457,22 @@ public class EventService implements IEventService {
      * @param trackingEvents
      * @param entityId
      * @param entityType
-     * save tracking response events and update if any existing event that's already saved
+     * save tracking response events into separate table and update if any existing event that's already saved
      */
     private void saveTrackingEvents(List<Events> trackingEvents, Long entityId, String entityType) {
         if (trackingEvents == null || trackingEvents.isEmpty())
             return;
 
         var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
-        Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
-        Page<Events> eventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+        Pair<Specification<EventsDump>, Pageable> pair = fetchData(listCriteria, EventsDump.class);
+        Page<EventsDump> eventsDumpPage = eventDumpDao.findAll(pair.getLeft(), pair.getRight());
 
-        Map<String, Events> existingEvents = eventsPage.getContent().stream().collect(
-            Collectors.toMap(Events::getEventCode, Function.identity(), (oldVal, newVal) -> newVal));
+        Map<String, EventsDump> existingEvents = eventsDumpPage.getContent().stream().collect(
+            Collectors.toMap(EventsDump::getEventCode, Function.identity(), (oldVal, newVal) -> newVal));
 
-        List<Events> updatedEvents = new ArrayList<>();
+        List<EventsDump> updatedEvents = new ArrayList<>();
         trackingEvents.forEach(e -> {
-            Events event = modelMapper.map(e, Events.class);
+            EventsDump event = modelMapper.map(e, EventsDump.class);
             if (existingEvents.containsKey(e.getEventCode())) {
                 event.setId(existingEvents.get(e.getEventCode()).getId());
                 event.setGuid(existingEvents.get(e.getEventCode()).getGuid());
@@ -489,7 +483,7 @@ public class EventService implements IEventService {
             updatedEvents.add(event);
         });
 
-        eventDao.saveAll(updatedEvents);
+        eventDumpDao.saveAll(updatedEvents);
     }
 
 }
