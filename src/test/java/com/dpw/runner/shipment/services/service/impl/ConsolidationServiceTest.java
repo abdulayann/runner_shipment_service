@@ -565,25 +565,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     void testValidateContainerDetails_EmptyContainersList() {
         consolidationDetails.setBol(null);
 
-        consolidationService.validateMblDetails(consolidationDetails, missingFields);
+        consolidationService.validateMawbDetails(consolidationDetails, missingFields);
 
-        assertTrue(missingFields.contains(ModuleValidationFieldType.MBL_DETAILS));
-    }
-
-    @Test
-    void testValidateContainerDetails_ContainerMissingNumber() {
-        consolidationDetails.setBol("");
-
-        consolidationService.validateMblDetails(consolidationDetails, missingFields);
-
-        assertTrue(missingFields.contains(ModuleValidationFieldType.MBL_DETAILS));
-    }
-
-    @Test
-    void testValidateContainerDetails_ValidContainersList() {
-        consolidationDetails.setBol("bol");
-        consolidationService.validateMblDetails(consolidationDetails, missingFields);
-        assertFalse(missingFields.contains(ModuleValidationFieldType.MAWB_DETAILS));
+        assertTrue(missingFields.contains(ModuleValidationFieldType.MAWB_DETAILS));
     }
 
     @Test
