@@ -4275,12 +4275,6 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public void validateMblDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
-        if (ObjectUtils.isEmpty(consolidation.getBol())) {
-            missingFields.add(ModuleValidationFieldType.MBL_DETAILS);
-        }
-    }
-
     public void validateMawbDetails(ConsolidationDetails consolidation, List<ModuleValidationFieldType> missingFields) {
         if (ObjectUtils.isEmpty(consolidation.getBol())) {
             missingFields.add(ModuleValidationFieldType.MAWB_DETAILS);
