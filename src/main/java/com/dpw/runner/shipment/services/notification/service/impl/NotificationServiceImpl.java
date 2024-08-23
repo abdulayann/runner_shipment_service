@@ -34,6 +34,7 @@ public class NotificationServiceImpl implements INotificationService {
     @Override
     @Async
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc) {
+        cc.removeAll(emailIds);
         SendEmailBaseRequest request = SendEmailBaseRequest.builder()
                 .htmlBody(body)
                 .subject(subject)
