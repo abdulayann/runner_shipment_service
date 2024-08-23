@@ -4323,11 +4323,22 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
             Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-            var tenantIdList = shipmentsPage.getContent().stream().map(i -> i.getTenantId().toString()).toList();
+            var tenantIdList = new ArrayList<String>();
+            var locCodeList =  new ArrayList<String>();
+            final CarrierDetails nullCarrierDetails = new CarrierDetails();
+            shipmentsPage.getContent().stream().forEach(i -> {
+                tenantIdList.add(StringUtility.convertToString(i.getTenantId()));
+                var carrierDetails = Optional.ofNullable(i.getCarrierDetails()).orElse(nullCarrierDetails);
+                locCodeList.add(carrierDetails.getOriginPort());
+                locCodeList.add(carrierDetails.getDestinationPort());
+            });
             Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
-            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
+            Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locCodeList, EntityTransferConstants.LOCATION_SERVICE_GUID);
 
-            var pushingShipmentMap = shipmentsPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData)).collect(
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
+            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS);
+
+            var pushingShipmentMap = shipmentsPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData)).collect(
                 Collectors.toMap(PendingConsolidationActionResponse::getShipmentId, Function.identity()));
 
             // generate mapping for consol id vs list of pushing shipment(s)
@@ -4335,7 +4346,8 @@ public class ConsolidationService implements IConsolidationService {
                 if(!notificationResultMap.containsKey(mapping.getConsolidationId())) {
                     notificationResultMap.put(mapping.getConsolidationId(), new ArrayList<>());
                 }
-                notificationResultMap.get(mapping.getConsolidationId()).add(pushingShipmentMap.get(mapping.getShipmentId()));
+                if(pushingShipmentMap.get(mapping.getShipmentId()) != null)
+                    notificationResultMap.get(mapping.getConsolidationId()).add(pushingShipmentMap.get(mapping.getShipmentId()));
             }
 
             commonUtils.removeInterBranchContext();
@@ -4347,22 +4359,24 @@ public class ConsolidationService implements IConsolidationService {
         return notificationResultMap;
     }
 
-    private PendingConsolidationActionResponse mapToNotification(ShipmentDetails shipment, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
+    private PendingConsolidationActionResponse mapToNotification(ShipmentDetails shipment, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData, Map<String, EntityTransferUnLocations> v1LocationData) {
         var carrierDetails = Optional.ofNullable(shipment.getCarrierDetails()).orElse(new CarrierDetails());
         var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(shipment.getTenantId()))).orElse(new TenantModel());
         return PendingConsolidationActionResponse.builder()
             .shipmentId(shipment.getId())
+            .shipmentNumber(shipment.getShipmentId())
             .ata(carrierDetails.getAta())
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
-            .lat(null)
+            .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
+            .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
             .branch(tenantData.getCode() + " " + tenantData.getTenantName())
             .hazardous(shipment.getContainsHazardous())
-            .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + shipment.getPacksUnit())
-            .weight(StringUtility.convertToString(shipment.getWeight()) + shipment.getWeightUnit())
-            .volume(StringUtility.convertToString(shipment.getVolume()) + shipment.getVolumeUnit())
-            .chargeable(StringUtility.convertToString(shipment.getChargable()) + shipment.getChargeableUnit())
+            .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + StringUtility.convertToString(shipment.getPacksUnit()))
+            .weight(StringUtility.convertToString(shipment.getWeight()) + StringUtility.convertToString(shipment.getWeightUnit()))
+            .volume(StringUtility.convertToString(shipment.getVolume()) + StringUtility.convertToString(shipment.getVolumeUnit()))
+            .chargeable(StringUtility.convertToString(shipment.getChargable()) + StringUtility.convertToString(shipment.getChargeableUnit()))
             .requestedBy(consoleShipmentsMap.get(shipment.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(shipment.getId()).getCreatedAt())
             .build();
