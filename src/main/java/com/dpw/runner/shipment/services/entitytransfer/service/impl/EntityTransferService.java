@@ -1469,7 +1469,14 @@ public class EntityTransferService implements IEntityTransferService {
             else {
                 Boolean sendConsolidationError = false;
                 Boolean hblGenerationError = false;
+                List<String> shipmentIds = new ArrayList<>();
                 for (var shipment: consolidationDetails.get().getShipmentsList()) {
+                    Boolean isShipmentError = false;
+                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()))
+                    {
+                        sendConsolidationError = true;
+                        isShipmentError = true;
+                    }
                     if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
                             shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                         String shipFlightNumber = null;
@@ -1508,26 +1515,34 @@ public class EntityTransferService implements IEntityTransferService {
                                 shipVoyage == null || shipFlightNumber == null || shipEta == null || shipEtd == null ||
                                 Strings.isNullOrEmpty(shipPolId) || Strings.isNullOrEmpty(shipPodId)) {
                             sendConsolidationError = true;
+                            isShipmentError = true;
                         }
                         if(hblGenerationError){
                             sendConsolidationError = true;
+                            isShipmentError = true;
                         }
+                    }
+                    if(isShipmentError)
+                    {
+                        shipmentIds.add(shipment.getShipmentId());
                     }
                 }
 
-
                 if(sendConsolidationError){
+                    String interBranch = "";
+                    if (consolidationDetails.get().getInterBranchConsole())
+                        interBranch = "Receiving Branch, ";
                     if(hblGenerationError){
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments and generate the Original HBL before sending consolidation");
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, " + interBranch + "Vessel & Voyage details in the attached shipments: " + String.join(", ", shipmentIds) + " and generate the Original HBL before sending consolidation");
                         } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments and generate the Original HAWB before sending consolidation");
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, " + interBranch + "Airline and Flight number details in the attached shipments: " + String.join(", ", shipmentIds) + " and generate the Original HAWB before sending consolidation");
                         }
                     } else {
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments before sending consolidation");
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, " + interBranch + "Vessel & Voyage details in the attached shipments: " + String.join(", ", shipmentIds) + " before sending consolidation");
                         } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments before sending consolidation");
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, " + interBranch + "Airline and Flight number details in the attached shipments: " + String.join(", ", shipmentIds) + " before sending consolidation");
                         }
                     }
                 }
