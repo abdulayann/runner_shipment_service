@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -24,6 +26,7 @@ public class AwbOtherChargesInfo implements Serializable {
     private BigDecimal amount;
     private String modeOfPayment;
     private Integer chargeDue;
+    @MasterData(type = MasterDataType.IATA_CHARGE_CODES)
     private String iataDescription;
     private String chargeTypeDescription;
     private BigDecimal awbChargeCodeDefaultVat;
