@@ -190,6 +190,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -5496,11 +5497,22 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class, ConsolidationService.tableNames);
             Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
 
-            var tenantIdList = consolPage.getContent().stream().map(i -> i.getTenantId().toString()).toList();
+            var tenantIdList = new ArrayList<String>();
+            var locCodeList =  new ArrayList<String>();
+            final CarrierDetails nullCarrierDetails = new CarrierDetails();
+            consolPage.getContent().stream().forEach(i -> {
+                tenantIdList.add(StringUtility.convertToString(i.getTenantId()));
+                var carrierDetails = Optional.ofNullable(i.getCarrierDetails()).orElse(nullCarrierDetails);
+                locCodeList.add(carrierDetails.getOriginPort());
+                locCodeList.add(carrierDetails.getDestinationPort());
+            });
             Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
-            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
+            Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locCodeList, EntityTransferConstants.LOCATION_SERVICE_GUID);
 
-            var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData)).collect(
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
+            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS);
+
+            var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData)).collect(
                 Collectors.toMap(PendingShipmentActionsResponse::getConsolId, Function.identity()));
 
             // generate mapping for shipment id vs list of pulling consol(s)
@@ -5508,7 +5520,8 @@ public class ShipmentService implements IShipmentService {
                 if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
                     notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
                 }
-                notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
+                if(pullingConsolMap.get(mapping.getConsolidationId()) != null)
+                    notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
             }
 
             commonUtils.removeInterBranchContext();
@@ -5521,15 +5534,18 @@ public class ShipmentService implements IShipmentService {
         return notificationResultMap;
     }
 
-    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData) {
+    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData, Map<String, EntityTransferUnLocations> v1LocationData) {
         var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
         var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
         return PendingShipmentActionsResponse.builder()
             .consolId(consol.getId())
+            .consolidationNumber(consol.getReferenceNumber())
             .ata(carrierDetails.getAta())
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
             .etd(carrierDetails.getEtd())
+            .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
+            .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
             .lat(consol.getLatDate())
             .branch(tenantData.getCode() + " " + tenantData.getTenantName())
             .hazardous(consol.getHazardous())
