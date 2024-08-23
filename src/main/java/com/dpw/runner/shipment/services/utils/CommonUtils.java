@@ -605,7 +605,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -633,7 +633,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPullReject(SendEmailDto sendEmailDto) {
@@ -661,7 +661,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto) {
@@ -687,7 +687,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushAccept(SendEmailDto sendEmailDto) {
@@ -713,7 +713,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushReject(SendEmailDto sendEmailDto) {
@@ -739,7 +739,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), toEmailIds.stream().toList(), ccEmailIds.stream().toList());
+                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
