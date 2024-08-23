@@ -10,7 +10,8 @@ public enum ModuleValidationFieldType {
     CARRIER_ETA("Carrier ETA Details missing"),
     CARRIER_ETD("Carrier ETD Details missing"),
     CONTAINER_DETAILS("Container Details missing"),
-    MAWB_DETAILS("MAWB Details missing");
+    MAWB_DETAILS("MAWB Details missing"),
+    MBL_DETAILS("MBL Details missing");
 
     private final String description;
 }
