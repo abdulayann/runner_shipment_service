@@ -1931,19 +1931,21 @@ public class ShipmentService implements IShipmentService {
 
             consolidations.forEach(consolidation -> {
                 try {
-                    auditLogService.addAuditLog(
-                            AuditLogMetaData.builder()
-                                    .newData(MblDuplicatedLog.builder()
-                                            .tenantId(consolidation.getTenantId())
-                                            .consolidationNo(consolidation.getConsolidationNumber())
-                                            .mblNumber(shipmentDetails.getMasterBill())
-                                            .shipmentId(shipmentDetails.getShipmentId()).build())
-                                    .prevData(null)
-                                    .parent(ShipmentDetails.class.getSimpleName())
-                                    .parentId(shipmentDetails.getId())
-                                    .entityType(MblDuplicatedLog.class.getSimpleName())
-                                    .operation(DBOperationType.LOG.name()).build()
-                    );
+                    if( ObjectUtils.isEmpty(oldEntity) || ObjectUtils.notEqual(oldEntity.getMasterBill(), shipmentDetails.getMasterBill())) {
+                        auditLogService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .newData(MblDuplicatedLog.builder()
+                                                .tenantId(consolidation.getTenantId())
+                                                .consolidationNo(consolidation.getConsolidationNumber())
+                                                .mblNumber(shipmentDetails.getMasterBill())
+                                                .shipmentId(shipmentDetails.getShipmentId()).build())
+                                        .prevData(null)
+                                        .parent(ShipmentDetails.class.getSimpleName())
+                                        .parentId(shipmentDetails.getId())
+                                        .entityType(MblDuplicatedLog.class.getSimpleName())
+                                        .operation(DBOperationType.LOG.name()).build()
+                        );
+                    }
                 } catch (Exception e) {
                     log.error("Unable to store mbl check audit for shipment id: " + shipmentDetails.getId());
                 }
