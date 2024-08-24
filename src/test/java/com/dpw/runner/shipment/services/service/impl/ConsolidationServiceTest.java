@@ -1287,7 +1287,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
-        consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setInterBranchConsole(true);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
