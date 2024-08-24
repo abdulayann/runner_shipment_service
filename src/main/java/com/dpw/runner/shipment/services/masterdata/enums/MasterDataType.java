@@ -156,6 +156,9 @@ public enum MasterDataType {
     ConsolidationAttachDefaultCCMailId(180, "Consolidation Attach Default CC Mail Id"),
     ShipmentAttachDefaultToMailId(181, "Shipment Attach Default To Mail Id"),
     ShipmentAttachDefaultCCMailId(182, "Shipment Attach Default CC Mail Id"),
+    MODULE_MASTER(183, "MODULE MASTER"),
+    DEPARTMENT_MASTER_LIST(184, "DEPARTMENT MASTER LIST"),
+    NATURE_OF_GOODS(185, "NATURE OF GOODS"),
     IATA_CHARGE_CODES(186, "IATA Charge Codes");
 
     private int id;
