@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -10,15 +11,14 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
@@ -32,10 +32,12 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -48,10 +50,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 @Service
 @Slf4j
@@ -88,6 +94,12 @@ public class EntityTransferService implements IEntityTransferService {
     private ILogsHistoryService logsHistoryService;
     @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private IV1Service iv1Service;
+    @Autowired
+    private INotificationService notificationService;
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -1990,5 +2002,93 @@ public class EntityTransferService implements IEntityTransferService {
                 .orderNumber(shipmentDetails.getOrderNumber())
                 .build();
     }
+
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails) {
+        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+        List<String> emailList = getRoleListByRoleId(tenantSettings.getShipmentConsoleImportApproverRole());
+        List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), CONSOLIDATION_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        //String userEmail = userContext.getUser().getEmail();
+        if(!emailList.isEmpty()) {
+            createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
+            notificationService.sendEmail(emailTemplateModel.getBody(),
+                    emailTemplateModel.getSubject(), emailList, null);
+        }
+    }
+
+    private void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getHouseBill)
+                        .collect(Collectors.joining(","));
+
+        String shipmentNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getShipmentId)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        subject = subject.replace("{#CONSOLIDATION_NUMBER}", consolidationDetails.getConsolidationNumber());
+        subject = subject.replace("{#NUMBER_OF_SHIPMENTS}", (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
+        body = body.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        body = body.replace("{#SENDER_USER_NAME}", user.getDisplayName());
+        body = body.replace("{#NUMBER_OF_SHIPMENTS}", (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+        body = body.replace("{#BL_NUMBER}", blNumbers);
+        body = body.replace("{#MBL_NUMBER}", "SEA".equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace("{#SENT_DATE}", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace("{#CONSOLIDATION_NUMBER}", consolidationDetails.getConsolidationNumber());
+        body = body.replace("{#SHIPMENT_NUMBERS}", shipmentNumbers);
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
+    private List<String> getRoleListByRoleId(String roleId) {
+        List<String> emailIds = new ArrayList<>();
+        emailIds.add("anandaditya444@gmail.com");
+        return emailIds;
+    }
+
+//    private List<String> fetchUserEmailForRoleList(List<String> roleList) {
+//        StringJoiner userEmails = new StringJoiner(";");
+//
+//        UserRepository repo = new UserRepository();
+//        for (UserRole role : roleList) {
+//            User response = connection.list(User.class, "UserId = ?", role.getUserId()).get(0);
+//            if (response.getEmail() == null || response.getIsActive() == 0) {
+//                continue;
+//            }
+//            userEmails.add(response.getEmail());
+//        }
+//        return userEmails.toString();
+//    }
 
 }
