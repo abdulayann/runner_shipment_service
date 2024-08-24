@@ -632,6 +632,7 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.NEW_OTHER_CHARGES, getOtherChargesDetails(otherChargesInfoRows,hawbModel.awb, cargoInfoRows, v1TenantSettingsResponse).getNewOtherChargesItems());
             dictionary.put(ReportConstants.OTHER_CHARGES_IATA, getOtherChargesDetailsIATA(otherChargesInfoRows, hawbModel.awb, v1TenantSettingsResponse, cargoInfoRows).getOtherChargesItems());
             dictionary.put(ReportConstants.NEW_OTHER_CHARGES_IATA, getOtherChargesDetailsIATA(otherChargesInfoRows, hawbModel.awb, v1TenantSettingsResponse, cargoInfoRows).getNewOtherChargesItems());
+            dictionary.put(ReportConstants.IATA_DESCRIPTION, getIATADescription(otherChargesInfoRows));
             dictionary.put(ReportConstants.OTHER_CHARGES_OAT, getOtherChargesDetailsOAT(otherChargesInfoRows,OtherAmountText));
             dictionary.put(ReportConstants.OTHER_CHARGES_IATA_OAT, getOtherChargesDetailsIATAOAT(otherChargesInfoRows, OtherAmountText));
             List<AwbSpecialHandlingCodesMappingInfo> specialHandlingCodesRows = hawbModel.awb.getAwbSpecialHandlingCodesMappings();
@@ -894,6 +895,27 @@ public class HawbReport extends IReport{
         return specialHandlingCodesBuilder.toString();
     }
 
+    private List<String> getIATADescription(List<AwbOtherChargesInfo> otherChargesRows) {
+
+        List<String> iataDescriptionList = new ArrayList<>();
+
+        for (AwbOtherChargesInfo chargeRow : emptyIfNull(otherChargesRows)) {
+            ChargesDue chargeDue = ChargesDue.getById(chargeRow.getChargeDue());
+            if (chargeRow.getIataDescription() != null) {
+                chargeRow.setIataDescription(chargeRow.getIataDescription().toUpperCase());
+                String chargeKey = chargeRow.getIataDescription();
+                String prefix = chargeDue == ChargesDue.AGENT ? Constants.AGENT_PREFIX
+                    : Constants.CARRIER_PREFIX;
+
+                if (chargeKey.length() < 3) {
+                    chargeKey = chargeKey + prefix;
+                    iataDescriptionList.add(chargeKey);
+                }
+            }
+        }
+
+        return iataDescriptionList;
+    }
     private Map<String, EntityTransferMasterLists> getMasterData(Set<String> querySet) {
         MasterListRequestV2 requests = new MasterListRequestV2();
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
