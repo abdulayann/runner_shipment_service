@@ -549,6 +549,7 @@ public class ReportConstants {
     public static final String OTHER_CHARGES_IATA_OAT = "OtherChargesIATAOAT";
     public static final String OTHER_CHARGES_OAT = "OtherChargesOAT";
     public static final String NEW_OTHER_CHARGES_IATA = "NewOtherChargesIATA";
+    public static final String IATA_DESCRIPTION = "IATA_DESCRIPTION";
     public static final String OTHER_CHARGES_IATA = "OtherChargesIATA";
     public static final String NEW_OTHER_CHARGES = "NewOtherCharges";
     public static final String OTHER_CHARGES = "OtherCharges";
