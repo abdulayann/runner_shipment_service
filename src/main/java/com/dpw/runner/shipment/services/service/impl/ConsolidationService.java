@@ -1239,7 +1239,10 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
-                        !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs())
+                        !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
+                        !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
+                        !Objects.equals(console.getTriangulationPartner(), oldEntity.getTriangulationPartner()) ||
+                        !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner())
                 )))) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
@@ -1247,6 +1250,12 @@ public class ConsolidationService implements IConsolidationService {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
                 i.setDirection(console.getShipmentType());
+                if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
+                    i.setTriangulationPartner(console.getTriangulationPartner());
+                    i.setDocumentationPartner(console.getDocumentationPartner());
+                    if (!Boolean.TRUE.equals(i.getIsReceivingBranchAdded()))
+                        i.setReceivingBranch(console.getReceivingBranch());
+                }
                 if (console.getCarrierDetails() != null) {
                     i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
                     i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());

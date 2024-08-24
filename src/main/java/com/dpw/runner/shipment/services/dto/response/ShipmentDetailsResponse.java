@@ -209,4 +209,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;
+    private Boolean isReceivingBranchAdded;
 }
