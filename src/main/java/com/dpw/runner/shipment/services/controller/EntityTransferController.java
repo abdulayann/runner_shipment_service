@@ -6,10 +6,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import io.swagger.annotations.ApiResponse;
@@ -174,6 +171,20 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
 
-
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.VALIDATION_SUCCESSFUL, response = CheckEntityExistResponse.class)
+    })
+    @PostMapping(EntityTransferConstants.CHECK_ENTIRY_EXIST)
+    public ResponseEntity<IRunnerResponse> checkEntityExists(@RequestBody @Valid CheckEntityExistRequest request) {
+        String responseMsg;
+        try {
+            return entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 
 }

@@ -572,4 +572,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findMblNumberInDifferentTenant(mblNumber, TenantContext.getCurrentTenant());
     }
 
+    @Override
+    public List<ConsolidationDetails> findBySourceGuid(UUID guid) {
+        return consolidationRepository.findBySourceGuid(guid);
+    }
 }

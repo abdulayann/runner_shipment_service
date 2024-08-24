@@ -651,4 +651,8 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
+    @Override
+    public List<ShipmentDetails> findBySourceGuid(UUID guid) {
+        return shipmentRepository.findBySourceGuid(guid);
+    }
 }

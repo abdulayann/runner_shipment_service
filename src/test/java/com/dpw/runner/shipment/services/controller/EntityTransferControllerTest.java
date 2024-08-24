@@ -210,4 +210,33 @@ class EntityTransferControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void checkEntityExists() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkEntityExists(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.checkEntityExists(CheckEntityExistRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkEntityExists2() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkEntityExists(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.checkEntityExists(CheckEntityExistRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+    @Test
+    void checkEntityExists3() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkEntityExists(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.checkEntityExists(CheckEntityExistRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

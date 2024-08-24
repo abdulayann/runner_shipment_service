@@ -1991,4 +1991,27 @@ public class EntityTransferService implements IEntityTransferService {
                 .build();
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> checkEntityExists(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CheckEntityExistRequest request = (CheckEntityExistRequest) commonRequestModel.getData();
+            if (request == null || Objects.isNull(request.getEntityId()) || Objects.isNull(request.getEntityType())) {
+                log.error("Request is empty for Check entity exists with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+            }
+            boolean isPresent = false;
+            switch (request.getEntityType()) {
+                case Constants.Shipment -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                case Constants.Consolidation -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+            }
+
+            return ResponseHelper.buildSuccessResponse(CheckEntityExistResponse.builder().isEntityExists(isPresent).message(isPresent ? String.format(EntityTransferConstants.TRANSFERRED_ENTITY_ALREADY_PRESENT, request.getEntityType()) : null).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

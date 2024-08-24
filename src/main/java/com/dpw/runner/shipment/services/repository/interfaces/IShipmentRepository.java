@@ -62,4 +62,6 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> findShipmentsByIds(Set<Long> id);
+
+    List<ShipmentDetails> findBySourceGuid(UUID guid);
 }

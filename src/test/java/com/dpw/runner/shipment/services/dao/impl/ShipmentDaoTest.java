@@ -1092,4 +1092,11 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDao.entityDetach(List.of(ShipmentDetails.builder().build()));
         verify(entityManager).detach(any());
     }
+
+    @Test
+    void findBySourceGuid() {
+        when(shipmentRepository.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
+        var response = shipmentDao.findBySourceGuid(UUID.randomUUID());
+        assertFalse(response.isEmpty());
+    }
 }

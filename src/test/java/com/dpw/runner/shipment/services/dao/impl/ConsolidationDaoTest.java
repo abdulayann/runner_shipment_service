@@ -641,4 +641,11 @@ class ConsolidationDaoTest extends CommonMocks {
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertNotNull(responseEntity);
     }
+
+    @Test
+    void findBySourceGuid() {
+        when(consolidationRepository.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
+        var response = consolidationsDao.findBySourceGuid(UUID.randomUUID());
+        assertFalse(response.isEmpty());
+    }
 }
