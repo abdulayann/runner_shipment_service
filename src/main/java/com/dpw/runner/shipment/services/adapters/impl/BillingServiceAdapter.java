@@ -332,7 +332,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT));
     }
 
-    private Boolean checkActiveCharges(BillingSummary billingSummary) {
+    public Boolean checkActiveCharges(BillingSummary billingSummary) {
         return (!Objects.equals(null, billingSummary.getTotalCount()) && !Objects.equals(0, billingSummary.getTotalCount())) ||
                 (!Objects.equals(null, billingSummary.getTotalRevenue()) && Double.compare(billingSummary.getTotalRevenue(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getTotalCost()) && Double.compare(billingSummary.getTotalCost(), 0.0) > 0) ||
