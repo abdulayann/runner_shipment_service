@@ -20,7 +20,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @ToString
 public class EntityTransferConsolidationDetails implements IEntityTranferBaseEntity {
-    private Long id;
     private UUID guid;
     private Integer tenantId;
     private String consolidationNumber;
@@ -153,6 +152,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private LocalDateTime latDate;
 
     private List<EntityTransferShipmentDetails> shipmentsList;
+    private Map<UUID, UUID> packingVsContainerGuid;
     private Map<UUID, List<UUID>> containerVsShipmentGuid;
 
     private Map<String, Object> masterData; // plug in response from Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse);

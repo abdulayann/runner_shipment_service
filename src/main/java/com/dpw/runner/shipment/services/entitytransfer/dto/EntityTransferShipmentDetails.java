@@ -84,6 +84,9 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     public EntityTransferParties client;
     public EntityTransferParties consigner;
     public EntityTransferParties consignee;
+
+    private String sourceBranchTenantName;
+
     private Map<String, EntityTransferMasterLists> masterData;
     private Map<String, EntityTransferUnLocations> unlocationData;
     private Map<String, EntityTransferUser> userMasterData;

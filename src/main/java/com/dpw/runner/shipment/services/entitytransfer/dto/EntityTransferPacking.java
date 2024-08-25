@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @ToString
@@ -12,6 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferPacking implements IEntityTranferBaseEntity {
+    private UUID guid;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
