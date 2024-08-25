@@ -20,6 +20,16 @@ public class EventConstants {
     public static final String MASTER_SEAWAY_BILL_OR_NOT = "MASSEA";
     public static final String SHIPPING_ADVISE_SENT_OR_NOT = "SHPSI";
     public static final String SR_SENT_OR_NOT = "SHPRSC";
+    public static final String INVGNTD = "INVGNTD";
+    public static final String TAXSG = "TAXSG";
+    public static final String CSEDI = "CSEDI";
+    public static final String AMSEDI = "AMSEDI";
+    public static final String SHPCNFRM = "SHPCNFRM";
+    public static final String SHPCMPLT = "SHPCMPLT";
+    public static final String CONCRTD = "CONCRTD";
+    public static final String SHPCRTD = "SHPCRTD";
+    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
+    public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
     public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
     public static final String TRACK_EVENT_DETAILS = "/trackEvents";
     public static final String EVENT_RETRIEVE_BY_ID_ERROR = "Event is null for Id {} with Request Id {}";

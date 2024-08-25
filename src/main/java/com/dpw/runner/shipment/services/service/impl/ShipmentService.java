@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -705,13 +706,13 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetail.getEventsList() != null) {
             for (Events events : shipmentDetail.getEventsList()) {
                 if (StringUtility.isNotEmpty(events.getEventCode())) {
-                    if (events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+                    if (events.getEventCode().equalsIgnoreCase(EventConstants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.TAXSG)) {
                         response.setTaxDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.CSEDI)) {
                         response.setCustomsFilingDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
                     }
                 }
@@ -4425,10 +4426,10 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getStatus() != null) {
             if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
                 if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCNFRM);
+                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCNFRM);
                 }
                 if (shipmentDetails.getStatus().equals(ShipmentStatus.Completed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, Constants.SHPCMPLT);
+                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCMPLT);
                 }
             }
             if(response != null) {
@@ -4441,7 +4442,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, Constants.SHPCRTD);
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCRTD);
 
         if(response != null) {
             if (shipmentDetails.getEventsList() == null)

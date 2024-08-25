@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -4093,7 +4094,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
         Events response = null;
-        response = createAutomatedEvents(consolidationDetails, Constants.CONCRTD);
+        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
 
         if(response != null) {
             if (consolidationDetails.getEventsList() == null)

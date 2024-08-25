@@ -186,22 +186,6 @@ public class Constants {
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
 
-    /**
-     * Events
-     **/
-
-    public static final String INVGNTD = "INVGNTD";
-    public static final String TAXSG = "TAXSG";
-    public static final String CSEDI = "CSEDI";
-    public static final String AMSEDI = "AMSEDI";
-    public static final String SHPCNFRM = "SHPCNFRM";
-    public static final String SHPCMPLT = "SHPCMPLT";
-    public static final String CONCRTD = "CONCRTD";
-    public static final String SHPCRTD = "SHPCRTD";
-    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
-    public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
-
-
     public static final String COMMODITY_TYPE_MASTER_DATA = "CommodityType";
     public static final String WARE_HOUSE_DATA = "WareHouse";
     public static final String DG_SUBSTANCE = "DGSubstance";
