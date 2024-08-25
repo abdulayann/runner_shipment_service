@@ -14,7 +14,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private UUID guid;
-    private UUID containerGuid;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
