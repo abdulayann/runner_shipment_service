@@ -482,7 +482,9 @@ public class Constants {
     public static final String CONSOLIDATION_IMPORT_EMAIL_TYPE = "CONSOLIDATION_IMPORT";
     public static final String DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT = "Received consolidation {#CONSOLIDATION_NUMBER} with {#NUMBER_OF_SHIPMENTS} shipments from {#SOURCE_BRANCH}";
     public static final String DEFAULT_CONSOLIDATION_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a consolidation with {#NUMBER_OF_SHIPMENTS} shipments has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Consolidation Details:</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Consolidation number:</strong>&nbsp;{#CONSOLIDATION_NUMBER}</p>  <p><strong>BL Numbers</strong>: {#BL_NUMBER}</p>  <p><strong>Shipment numbers:&nbsp;</strong>{#SHIPMENT_NUMBERS}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
-
+    public static final String SHIPMENT_IMPORT_EMAIL_TYPE = "SHIPMENT_IMPORT";
+    public static final String DEFAULT_SHIPMENT_RECEIVED_SUBJECT = "Received shipment {#SHIPMENT_NUMBER} from {#SOURCE_BRANCH}";
+    public static final String DEFAULT_SHIPMENT_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a shipment with following details has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Shipment Details:</strong><strong>&nbsp;&nbsp;</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Shipment number:</strong>&nbsp;{#SHIPMENT_NUMBER}</p>  <p><strong>BL Number</strong>: {#BL_NUMBER}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
 
     private Constants() {
     }

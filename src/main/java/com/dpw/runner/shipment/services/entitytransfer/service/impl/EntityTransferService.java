@@ -2034,6 +2034,60 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
+        List<String> emailList = getRoleListByRoleId(tenantSettings.getShipmentConsoleImportApproverRole());
+        List<String> requests = new ArrayList<>(List.of(SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        //String userEmail = userContext.getUser().getEmail();
+        if(!emailList.isEmpty()) {
+            createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
+            notificationService.sendEmail(emailTemplateModel.getBody(),
+                    emailTemplateModel.getSubject(), emailList, null);
+        }
+    }
+
+    private void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        subject = subject.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
+        body = body.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        body = body.replace("{#SENDER_USER_NAME}", user.getDisplayName());
+        body = body.replace("{#BL_NUMBER}", shipmentDetails.getHouseBill());
+        body = body.replace("{#MBL_NUMBER}", shipmentDetails.getMasterBill());
+        body = body.replace("{#SENT_DATE}", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
     private void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
         UsersDto user = UserContext.getUser();
 
