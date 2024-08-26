@@ -443,4 +443,9 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "lat_date")
     private LocalDateTime latDate;
+
+    @Column(name = "department")
+    @Size(max=32, message = "max size is 32 for department")
+    @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
+    private String department;
 }

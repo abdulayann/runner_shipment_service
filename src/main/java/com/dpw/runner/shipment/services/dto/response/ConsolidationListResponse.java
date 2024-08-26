@@ -129,4 +129,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Integer pendingActionCount;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latDate;
+    private String department;
 }
