@@ -1479,7 +1479,7 @@ public class ShipmentService implements IShipmentService {
 
     private void setColoadingStation(ShipmentRequest request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
@@ -1653,7 +1653,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
                 shipmentDetails.getCarrierDetails().setCfs(consolidationDetails1.getCarrierDetails().getCfs());
 
-                if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                     shipmentDetails.getCarrierDetails().setFlightNumber(consolidationDetails1.getCarrierDetails().getFlightNumber());
                     shipmentDetails.getCarrierDetails().setOriginPort(consolidationDetails1.getCarrierDetails().getOriginPort());
                     shipmentDetails.getCarrierDetails().setDestinationPort(consolidationDetails1.getCarrierDetails().getDestinationPort());
@@ -4046,7 +4046,7 @@ public class ShipmentService implements IShipmentService {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
 
-        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || !Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 || Boolean.FALSE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             if (!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
                 CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
@@ -4087,7 +4087,7 @@ public class ShipmentService implements IShipmentService {
         }
         if(Boolean.TRUE.equals(request.getEtdMatch())){
 
-            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                     && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
                 if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd())) {
                     LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();

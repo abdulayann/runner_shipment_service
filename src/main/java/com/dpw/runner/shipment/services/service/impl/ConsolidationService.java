@@ -1260,7 +1260,7 @@ public class ConsolidationService implements IConsolidationService {
                         i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
                         i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
                     }
-                    if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getShipmentType(), Constants.DIRECTION_EXP)) {
+                    if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                         i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
                         i.getCarrierDetails().setOriginPort(console.getCarrierDetails().getOriginPort());
                         i.getCarrierDetails().setDestinationPort(console.getCarrierDetails().getDestinationPort());
@@ -3653,7 +3653,7 @@ public class ConsolidationService implements IConsolidationService {
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
 
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
@@ -3687,7 +3687,7 @@ public class ConsolidationService implements IConsolidationService {
 
             consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
             consolListRequest = CommonUtils.andCriteria(Constants.OPEN_FOR_ATTACHMENT, true, "=", consolListRequest);
-            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+            if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                     && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) && InterBranchContext.getContext().getHubTenantIds() != null
                     && !InterBranchContext.getContext().getHubTenantIds().isEmpty()) {
                 List<FilterCriteria> criterias = consolListRequest.getFilterCriteria();
