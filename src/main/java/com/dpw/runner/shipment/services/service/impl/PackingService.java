@@ -126,7 +126,7 @@ public class PackingService implements IPackingService {
         Boolean isHazardous = packingRow.getHazardous();
         if (isHazardous != null && isHazardous) {
 
-                boolean dgUser = UserContext.isDgUser();
+                boolean dgUser = UserContext.isAirDgUser();
                 if(!dgUser)
                     throw new ValidationException("You do not have Air DG permissions for this.");
 

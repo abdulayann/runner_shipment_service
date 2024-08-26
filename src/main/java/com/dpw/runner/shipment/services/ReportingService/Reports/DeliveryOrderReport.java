@@ -70,7 +70,7 @@ public class DeliveryOrderReport extends IReport{
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
         validateAirDGCheckShipments(deliveryOrderModel.shipmentDetails);
-        validateAirDGCheck(deliveryOrderModel.shipmentDetails);
+        validateAirAndOceanDGCheck(deliveryOrderModel.shipmentDetails);
         deliveryOrderModel.usersDto = UserContext.getUser();
         deliveryOrderModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
