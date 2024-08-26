@@ -289,7 +289,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Non dg user cannot save dg shipment
-        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isDgUser())
+        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
             errors.add("You don't have permission to update DG Shipment");
         
         // Routings leg no can not be repeated

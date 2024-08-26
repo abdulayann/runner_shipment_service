@@ -46,7 +46,7 @@ public class PackingListReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         PackingListModel packingListModel = new PackingListModel();
         var shipment = getShipment(id);
-        validateAirDGCheck(shipment);
+        validateAirAndOceanDGCheck(shipment);
         packingListModel.setShipmentDetails(shipment);
         if(shipment.getConsolidationList() != null && shipment.getConsolidationList().size() > 0) {
             packingListModel.setConsolidation(getConsolidation(shipment.getConsolidationList().get(0).getId()));

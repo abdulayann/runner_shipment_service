@@ -38,7 +38,7 @@ public class CommercialInvoiceReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         CommercialInvoiceModel commercialInvoiceModel = new CommercialInvoiceModel();
         commercialInvoiceModel.setShipmentDetails(getShipment(id));
-        validateAirDGCheck(commercialInvoiceModel.shipmentDetails);
+        validateAirAndOceanDGCheck(commercialInvoiceModel.shipmentDetails);
         commercialInvoiceModel.setTenant(getTenant());
         String commercialInvoiceNumber = getRandomString(7);
         commercialInvoiceModel.setCommercialInvoiceNumber(commercialInvoiceNumber);
