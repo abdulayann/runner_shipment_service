@@ -15,4 +15,5 @@ public class SyncKafkaDto {
     private Integer tenantId;
     private String userName;
     private String transactionId;
+    private String updateUsername;
 }

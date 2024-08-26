@@ -36,14 +36,15 @@ public class V1AuthHelper {
         return headers;
     }
     
-    public HttpHeaders getHeadersForDataSyncFromKafka(String userName, Integer tenantId) {
+    public HttpHeaders getHeadersForDataSyncFromKafka(String userName, Integer tenantId, String updateUsername) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.add(ApiConstants.X_API_KEY, xApiKey);
         headers.add("X-USER-NAME", userName);
+        headers.add("X-UPDATE-USER", updateUsername);
         headers.add("X-TENANT-ID", StringUtility.convertToString(tenantId));
-        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         headers.add("X-SYNC-REQUEST", "true");
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }
 }
