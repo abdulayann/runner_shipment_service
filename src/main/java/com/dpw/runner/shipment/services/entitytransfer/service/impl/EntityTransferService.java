@@ -742,7 +742,6 @@ public class EntityTransferService implements IEntityTransferService {
 //                throw new RuntimeException(ex.getMessage());
 //            }
             Set<Integer> tenantIds = new HashSet<>(sendConsolidationRequest.getSendToBranch());
-            tenantIds.addAll(sendConsolidationRequest.getShipmentIdSendToBranch().values().stream().flatMap(List::stream).collect(Collectors.toSet()));
             validationsBeforeSendTask(tenantIds);
             // TODO uncomment below v2 code
 //                if (consolidationDetails.get().getContainersList() != null) {
@@ -797,14 +796,18 @@ public class EntityTransferService implements IEntityTransferService {
 //    }
 
     private void validationsBeforeSendTask(Set<Integer> sendBranches) {
+        List<Integer> nonApprovalTenants = new ArrayList<>();
         for (Integer tenantId: sendBranches) {
             Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
             if (approverRoleId == null || approverRoleId == 0) {
-                List<String> tenantNames = getTenantName(List.of(tenantId));
-                assert tenantNames != null;
-                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED + tenantNames.get(0));
+                nonApprovalTenants.add(tenantId);
             }
         }
+        if(nonApprovalTenants.isEmpty())
+            return;
+        List<String> tenantNames = getTenantName(nonApprovalTenants);
+        assert tenantNames != null;
+        throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED + String.join(", ", tenantNames));
     }
 //    private SendEntityResponse sendConsoleTaskToV1 (int tenantId, int approverRole, List<Integer> tenantIds, EntityTransferConsolidationDetails entityTransferConsolidationDetails, Boolean sendToOrganization, String consolidationNumber, List<String> houseBill, String MAWB, long id, List<String> shipmentIds) {
 //        CreateConsolidationTaskRequest createConsolidationTaskRequest = CreateConsolidationTaskRequest.builder()
