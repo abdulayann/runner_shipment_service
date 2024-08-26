@@ -1493,6 +1493,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1500,8 +1506,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
-        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1519,6 +1523,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1526,7 +1538,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
@@ -1546,6 +1557,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
@@ -1554,7 +1574,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1574,11 +1593,21 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
 
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(2L);
         shipmentDetails1.setContainsHazardous(false);
         shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(2);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1589,7 +1618,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1610,6 +1638,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1619,7 +1655,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1640,6 +1675,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1649,9 +1692,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(createTestBillingSummary()));
-
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(true);
 
         assertThrows(BillingException.class, () -> consolidationService.detachShipments(1L, shipmentIds));
@@ -1699,6 +1739,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
@@ -1706,7 +1755,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        when(billingServiceAdapter.fetchBillingBulkSummary(any())).thenReturn(List.of(sampleBillingSummary));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));

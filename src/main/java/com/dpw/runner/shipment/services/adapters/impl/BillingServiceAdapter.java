@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.Book
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
@@ -47,6 +48,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -54,6 +56,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +97,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
+    @Autowired
+    private V2AuthHelper v2AuthHelper;
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
@@ -238,6 +243,52 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         } catch (Exception e) {
             log.error("Error occurred while fetching billing bulk summary", e);
             throw new BillingException("Error occurred while fetching billing bulk summary", e);
+        }
+    }
+
+    @Override
+    public List<BillingSummary> fetchBillingBulkSummaryBranchWise(BillingBulkSummaryBranchWiseRequest request) {
+        // Construct the URL for the billing bulk summary endpoint
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummaryBranchWise();
+        log.info("Sending billing bulk summary branch wise request to URL: {}", url);
+
+        // Create an HttpEntity object with the request payload and authentication headers
+        HttpEntity<BillingBulkSummaryBranchWiseRequest> httpEntity = new HttpEntity<>(request, v2AuthHelper.getInvoiceServiceXApiKeyHeader());
+        log.debug(REQUEST_PAYLOAD, request);
+
+        try {
+            // Send the POST request and get the response body
+            log.info(EXECUTING_POST_REQUEST);
+            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
+
+            // Check the response status and body
+            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
+
+            if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
+                // Handle the errors by throwing an exception
+                String errorMsg = "Response contains errors: " + billingEntityResponse.getErrors().toString();
+                log.error(errorMsg);
+                throw new BillingException(errorMsg);
+            }
+
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get("billingSummary"))) {
+                log.info("Received billingEntityResponse from billing service");
+                Map<String, Object> data = billingEntityResponse.getData();
+                log.debug("Response data: {}", data);
+
+                // Convert the billingSummary object to a List<Map<String, Object>>
+                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get("billingSummary");
+
+                // Map the list of maps to a list of BillingSummary objects
+                return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {}.getType());
+            } else {
+                log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            log.error("Error occurred while fetching billing bulk summary branch wise", e);
+            throw new BillingException("Error occurred while fetching billing bulk summary branch wise", e);
         }
     }
 

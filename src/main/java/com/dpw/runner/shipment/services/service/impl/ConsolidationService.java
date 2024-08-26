@@ -100,7 +100,8 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest.ModuleData;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
@@ -1026,38 +1027,47 @@ public class ConsolidationService implements IConsolidationService {
      * @throws BillingException if any active charges or invoices are present.
      */
     private void validateActiveCharges(List<ShipmentDetails> shipmentDetails) {
-        // Check if the shipmentDetails list is empty or null. If so, no validation is needed.
-        if (ObjectUtils.isEmpty(shipmentDetails)) {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+
+        if (ObjectUtils.isEmpty(shipmentDetails) || !Boolean.TRUE.equals(tenantSettings.getConsolSplitBillCharge())) {
             return;
         }
 
-        // Extract GUIDs from the shipmentDetails list, filtering out any empty GUIDs.
-        List<UUID> shipmentDetailGuids = shipmentDetails.stream()
-                .map(ShipmentDetails::getGuid)  // Get the GUID from each ShipmentDetails object.
-                .filter(ObjectUtils::isNotEmpty) // Filter out any null or empty GUIDs.
-                .toList();
+        // Filter shipment details that are not empty
+        List<ShipmentDetails> filteredShipments = shipmentDetails.stream().filter(ObjectUtils::isNotEmpty)
+                // Keep only those with transport mode "AIR"
+                .filter(shp -> Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shp.getTransportMode()))
+                // Further filter to include only those with direction "EXP" or "IMP"
+                .filter(shp -> Constants.DIRECTION_EXP.equalsIgnoreCase(shp.getDirection()) ||
+                        Constants.DIRECTION_IMP.equalsIgnoreCase(shp.getDirection())).toList();
 
-        // If no valid GUIDs are found, no further validation is needed.
-        if (shipmentDetailGuids.isEmpty()) {
+        if (filteredShipments.isEmpty()) {
             return;
         }
 
-        // Fetch billing summaries based on the shipment detail GUIDs.
-        List<BillingSummary> billingSummaries = billingServiceAdapter.fetchBillingBulkSummary(
-                BillingBulkSummaryRequest.builder()
-                        .moduleGuids(shipmentDetailGuids.stream().map(UUID::toString).toList()) // Convert GUIDs to strings for the request.
-                        .moduleType(Constants.SHIPMENT)
-                        .build()
-        );
+        BillingBulkSummaryBranchWiseRequest branchWiseRequest = createBillingBulkSummaryBranchWiseRequest(filteredShipments);
 
-        // Check if any of the fetched billing summaries have active charges or invoices.
-        boolean hasAnyActiveCharges = billingSummaries.stream()
-                .anyMatch(billingServiceAdapter::checkActiveCharges); // Check for active charges in each billing summary.
+        List<BillingSummary> billingSummaries = billingServiceAdapter.fetchBillingBulkSummaryBranchWise(branchWiseRequest);
 
-        // If active charges are found, throw an exception with a relevant message.
+        boolean hasAnyActiveCharges = billingSummaries.stream().anyMatch(billingServiceAdapter::checkActiveCharges);
+
         if (hasAnyActiveCharges) {
             throw new BillingException("Shipment has active charges/invoices present. Please remove the charges or cancel the invoices to proceed.");
         }
+    }
+
+    private BillingBulkSummaryBranchWiseRequest createBillingBulkSummaryBranchWiseRequest(List<ShipmentDetails> shipmentDetails) {
+        BillingBulkSummaryBranchWiseRequest branchWiseRequest = new BillingBulkSummaryBranchWiseRequest();
+        branchWiseRequest.setModuleType(Constants.SHIPMENT);
+
+        branchWiseRequest.setModuleData(
+                shipmentDetails.stream()
+                        .map(shp -> ModuleData.builder()
+                                .branchId(shp.getTenantId().toString())
+                                .moduleGuid(shp.getGuid().toString()).build())
+                        .toList()
+        );
+        return branchWiseRequest;
     }
 
     @Override
