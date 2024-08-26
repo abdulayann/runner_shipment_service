@@ -2003,9 +2003,7 @@ public class EntityTransferService implements IEntityTransferService {
                 .build();
     }
 
-    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails) {
-        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
-        List<String> emailList = getRoleListByRoleId(tenantSettings.getShipmentConsoleImportApproverRole());
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
         List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
@@ -2026,17 +2024,17 @@ public class EntityTransferService implements IEntityTransferService {
         }
         if(emailTemplateModel == null)
             emailTemplateModel = new EmailTemplatesRequest();
-        //String userEmail = userContext.getUser().getEmail();
-        if(!emailList.isEmpty()) {
-            createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
-            notificationService.sendEmail(emailTemplateModel.getBody(),
-                    emailTemplateModel.getSubject(), emailList, null);
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if(!emailList.isEmpty()) {
+                createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), emailList, null);
+            }
         }
     }
 
-    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails) {
-        ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
-        List<String> emailList = getRoleListByRoleId(tenantSettings.getShipmentConsoleImportApproverRole());
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches) {
         List<String> requests = new ArrayList<>(List.of(SHIPMENT_IMPORT_EMAIL_TYPE));
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
@@ -2057,11 +2055,13 @@ public class EntityTransferService implements IEntityTransferService {
         }
         if(emailTemplateModel == null)
             emailTemplateModel = new EmailTemplatesRequest();
-        //String userEmail = userContext.getUser().getEmail();
-        if(!emailList.isEmpty()) {
-            createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
-            notificationService.sendEmail(emailTemplateModel.getBody(),
-                    emailTemplateModel.getSubject(), emailList, null);
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if (!emailList.isEmpty()) {
+                createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), emailList, null);
+            }
         }
     }
 
@@ -2125,7 +2125,7 @@ public class EntityTransferService implements IEntityTransferService {
         template.setBody(body);
     }
 
-    private List<String> getRoleListByRoleId(String roleId) {
+    private List<String> getRoleListByRoleId(Integer roleId) {
         List<String> emailIds = new ArrayList<>();
         emailIds.add("anandaditya444@gmail.com");
         return emailIds;
