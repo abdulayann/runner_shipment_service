@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import org.springframework.stereotype.Component;
 
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGApprover;
 
 @Component
 public class UserContext {
@@ -14,9 +15,14 @@ public class UserContext {
         return user.get();
     }
 
-    public static boolean isDgUser() {
+    public static boolean isAirDgUser() {
         return getUser().getPermissions().containsKey(airDG)
                 && getUser().getPermissions().get(airDG);
+    }
+
+    public static boolean isOceanDgUser() {
+        return getUser().getPermissions().containsKey(oceanDGApprover)
+                && getUser().getPermissions().get(oceanDGApprover);
     }
 
     public static void setUser(UsersDto userId) {

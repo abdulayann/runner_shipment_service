@@ -74,7 +74,7 @@ public class FreightCertificationReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         FreightCertificationModel freightCertificationModel = new FreightCertificationModel();
         freightCertificationModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(freightCertificationModel.shipmentDetails);
+        validateAirAndOceanDGCheck(freightCertificationModel.shipmentDetails);
         freightCertificationModel.tenantDetails = getTenant();
         freightCertificationModel.setAllContainersList(new ArrayList<>());
         if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
