@@ -10,17 +10,18 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
@@ -2017,4 +2018,68 @@ public class EntityTransferService implements IEntityTransferService {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+    private EntityTransferConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails) {
+        EntityTransferConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
+
+        // Map container guid vs List<shipmentGuid>
+        Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
+        // List EntityTransferShipmentDetails
+        List<EntityTransferShipmentDetails> transferShipmentDetails = new ArrayList<>();
+        if(!consolidationDetails.getShipmentsList().isEmpty()) {
+            for(var shipment : consolidationDetails.getShipmentsList()) {
+                Long id = shipment.getId();
+                Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+                transferShipmentDetails.add(prepareShipmentPayload(shipmentDetailsOptional.get()));
+
+                // populate container vs shipment guid map
+                var shipmentGuid = shipmentDetailsOptional.get().getGuid();
+                shipmentDetailsOptional.get().getContainersList().stream().map(Containers::getGuid).forEach(
+                        containerGuid -> {
+                            if(!containerVsShipmentGuid.containsKey(containerGuid)) {
+                                containerVsShipmentGuid.put(containerGuid, new ArrayList<>());
+                            }
+                            containerVsShipmentGuid.get(containerGuid).add(shipmentGuid);
+                        }
+                );
+            }
+        }
+        payload.setContainerVsShipmentGuid(containerVsShipmentGuid);
+
+        // packing guid vs container guid
+        Map<UUID, UUID> packsVsContainerGuid = new HashMap<>();
+        consolidationDetails.getContainersList().forEach(container -> {
+            container.getPacksList().stream().forEach(pack -> {
+                packsVsContainerGuid.put(pack.getGuid(), container.getGuid());
+            });
+        });
+        payload.setPackingVsContainerGuid(packsVsContainerGuid);
+
+        // populate master data and other fields
+        payload.setMasterData(getConsolMasterData(consolidationDetails));
+
+        return payload;
+    }
+
+    private Map<String, Object> getConsolMasterData(ConsolidationDetails consolidationDetails) {
+        ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+        Map<String, Object> response = consolidationService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+        return response;
+    }
+
+    private EntityTransferShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) {
+        EntityTransferShipmentDetails payload = jsonHelper.convertValue(shipmentDetails, EntityTransferShipmentDetails.class);
+
+        // populate master data and other fields
+        payload.setMasterData(getShipmentMasterData(shipmentDetails));
+
+        return payload;
+    }
+
+    private Map<String, Object> getShipmentMasterData(ShipmentDetails shipmentDetails) {
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        Map<String, Object> response = shipmentService.fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+        return response;
+    }
+
+
 }
