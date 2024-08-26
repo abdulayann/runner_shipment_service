@@ -198,6 +198,8 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Map<String, String> currenciesMasterData;
     private Map<String, String> tenantIdsData;
 
+    private Integer sendToBranch;
+
     // Previous fields
 //    private Map<String, EntityTransferUnLocations> unlocationData;
 //    private Map<String, EntityTransferUser> userMasterData;

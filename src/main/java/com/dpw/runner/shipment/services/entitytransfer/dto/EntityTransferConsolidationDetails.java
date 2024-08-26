@@ -159,4 +159,6 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
 //    private Map<String, String> currenciesMasterData;
 //    private Map<String, String> tenantIdsData;
 //    private Map<String, String> textData;
+
+    private Integer sendToBranch;
 }
