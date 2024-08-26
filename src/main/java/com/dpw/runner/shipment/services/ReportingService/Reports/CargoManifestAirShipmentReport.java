@@ -45,7 +45,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         CargoManifestAirShipmentModel cargoManifestAirShipmentModel = new CargoManifestAirShipmentModel();
         cargoManifestAirShipmentModel.setShipmentDetails(getShipment(id));
         validateAirDGCheckShipments(cargoManifestAirShipmentModel.getShipmentDetails());
-        validateAirDGCheck(cargoManifestAirShipmentModel.getShipmentDetails()); // check if for consolidation required
+        validateAirAndOceanDGCheck(cargoManifestAirShipmentModel.getShipmentDetails()); // check if for consolidation required
         cargoManifestAirShipmentModel.setTenantModel(getTenant());
         List<Awb> awbList = awbDao.findByShipmentId(id);
         if(awbList != null && !awbList.isEmpty())

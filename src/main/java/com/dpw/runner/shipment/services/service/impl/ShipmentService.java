@@ -193,16 +193,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1659,7 +1651,7 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
         }
 
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && !isDgUser()) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && !isAirDgUser()) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 if((removedConsolIds != null && !removedConsolIds.isEmpty()) || Boolean.TRUE.equals(isNewConsolAttached.getValue()))
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
@@ -4003,7 +3995,7 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isDgUser())
+            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isAirDgUser())
                 throw new ValidationException("You do not have necessary permissions for this.");
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setId(null);
@@ -4611,8 +4603,8 @@ public class ShipmentService implements IShipmentService {
         return defaultRequest;
     }
 
-    private boolean isDgUser() {
-        return UserContext.isDgUser();
+    private boolean isAirDgUser() {
+        return UserContext.isAirDgUser();
     }
 
     private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails consolidationDetails) {
@@ -4622,7 +4614,7 @@ public class ShipmentService implements IShipmentService {
             return false;
         if(Boolean.TRUE.equals(consolidationDetails.getHazardous()))
             return false;
-        return !isDgUser();
+        return !isAirDgUser();
     }
 
     public boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){

@@ -50,7 +50,7 @@ public class CargoManifestReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         CargoManifestModel cargoManifestModel = new CargoManifestModel();
         cargoManifestModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(cargoManifestModel.shipmentDetails); // check
+        validateAirAndOceanDGCheck(cargoManifestModel.shipmentDetails); // check
         cargoManifestModel.tenantDetails = getTenant();
         cargoManifestModel.usersDto = UserContext.getUser();
         cargoManifestModel.awb = getHawb(id);

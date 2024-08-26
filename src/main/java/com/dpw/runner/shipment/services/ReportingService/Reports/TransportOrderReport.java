@@ -38,7 +38,7 @@ public class TransportOrderReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         transportOrderModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(transportOrderModel.shipmentDetails);
+        validateAirAndOceanDGCheck(transportOrderModel.shipmentDetails);
         return transportOrderModel;
     }
 
