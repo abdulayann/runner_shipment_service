@@ -54,7 +54,7 @@ public class ShippingInstructionReport extends IReport{
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShippingInstructionModel model = (ShippingInstructionModel) documentModel;
-        validateAirDGCheck(model.getShipment());
+        validateAirAndOceanDGCheck(model.getShipment());
         Map<String, Object> dictionary = new HashMap<>();
 
         PartiesModel consignerParty = model.getShipment().getConsigner();

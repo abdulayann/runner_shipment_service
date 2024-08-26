@@ -26,15 +26,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -122,6 +115,8 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -2130,6 +2125,7 @@ public class ConsolidationService implements IConsolidationService {
                 else {
                     container = attachContainer(request, shipmentsIncluded, container, weight, volume);
                 }
+                makeShipmentsDG(container, shipmentsIncluded);
             }
             else {
                 response.setContainer(jsonHelper.convertValue(request.getContainer(), ContainerResponse.class));
@@ -2143,6 +2139,29 @@ public class ConsolidationService implements IConsolidationService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void makeShipmentsDG(Containers container, Set<Long> shipIds) throws RunnerException {
+        if(Boolean.TRUE.equals(container.getHazardous())) {
+            ListCommonRequest listCommonRequest = andCriteria(Constants.CONTAINS_HAZARDOUS, false, "=", null);
+            listCommonRequest = andCriteria(Constants.ID, shipIds, "IN", listCommonRequest);
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            List<ShipmentDetails> shipmentDetails = shipmentDetailsPage.getContent();
+            if(shipmentDetails.isEmpty())
+                return;
+            shipmentDetails.forEach(e -> {
+                e.setContainsHazardous(true);
+            });
+            shipmentDao.saveAll(shipmentDetails);
+            for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
+                try {
+                    shipmentSync.sync(shipmentDetails1, null, null, StringUtility.convertToString(UUID.randomUUID()), false);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
+            }
         }
     }
 
