@@ -268,7 +268,6 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
-        doReturn(sampleResponse).when(spyReport).getCurrentTenantSettings();
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
     }
@@ -282,7 +281,6 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcData(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
-        doReturn(sampleResponse).when(spyReport).getCurrentTenantSettings();
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
     }
