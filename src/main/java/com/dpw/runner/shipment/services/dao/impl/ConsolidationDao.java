@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -570,6 +571,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber) {
         return consolidationRepository.findMblNumberInDifferentTenant(mblNumber, TenantContext.getCurrentTenant());
+    }
+
+    @Override
+    public List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+        return consolidationRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
     }
 
 }

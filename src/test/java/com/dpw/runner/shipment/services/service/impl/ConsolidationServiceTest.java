@@ -2396,6 +2396,28 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
+    void testListReturnsConsolWithPendingNotifications() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        List<String> includeColumns = new ArrayList<>();
+        includeColumns.add("id");
+        includeColumns.add("consolidationNumber");
+        sampleRequest.setIncludeColumns(includeColumns);
+        sampleRequest.setNotificationFlag(true);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+        Map<String, Object>  responseMap = new HashMap<>();
+        responseMap.put("id", 1);
+        responseMap.put("consolidationNumber", "CONS000231188");
+
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(List.of(1L));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testList_Success_BookingIdFilter() {
         ListCommonRequest sampleRequest = constructListCommonRequest("bookingId", 1, "=");
 

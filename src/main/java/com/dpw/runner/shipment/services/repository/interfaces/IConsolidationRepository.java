@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
@@ -61,5 +62,10 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             + " bol "
             + " FROM consolidation_details WHERE bol = ?1 AND tenant_id != ?2", nativeQuery = true)
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber, Integer tenantId);
+
+    @Query(value = "SELECT c.id from ConsolidationDetails c inner join ConsoleShipmentMapping csm " +
+        "on c.id = csm.consolidationId " +
+        "where csm.isAttachmentDone = false and csm.requestedType = ?1")
+    List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
 }

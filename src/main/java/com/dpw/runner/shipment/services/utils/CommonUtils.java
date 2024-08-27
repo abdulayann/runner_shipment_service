@@ -193,6 +193,9 @@ public class CommonUtils {
         }
 
         List<FilterCriteria> criterias = request.getFilterCriteria();
+        if(criterias.isEmpty()) {
+            criterias.add(FilterCriteria.builder().innerFilter(new ArrayList<>()).build());
+        }
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
