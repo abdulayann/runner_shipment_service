@@ -4264,7 +4264,7 @@ public class ConsolidationService implements IConsolidationService {
             .etd(carrierDetails.getEtd())
             .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
             .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
-            .branch(tenantData.getCode() + " " + tenantData.getTenantName())
+            .branch(tenantData.getCode() + "-" + tenantData.getTenantName())
             .hazardous(shipment.getContainsHazardous())
             .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + StringUtility.convertToString(shipment.getPacksUnit()))
             .weight(StringUtility.convertToString(shipment.getWeight()) + StringUtility.convertToString(shipment.getWeightUnit()))
