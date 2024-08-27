@@ -1087,14 +1087,16 @@ public class ShipmentService implements IShipmentService {
                     shipmentRequest.setReferenceNumbersList(referenceNumbersList);
                 }
 
-                if(shipmentDetails.getAdditionalDetails().getImportBroker()!=null){
-                    PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
-                    shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
-                }
+                if(shipmentDetails.getAdditionalDetails()!=null){
+                    if(shipmentDetails.getAdditionalDetails().getImportBroker()!=null){
+                        PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
+                    }
 
-                if(shipmentDetails.getAdditionalDetails().getExportBroker()!=null){
-                    PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
-                    shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
+                    if(shipmentDetails.getAdditionalDetails().getExportBroker()!=null){
+                        PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
+                    }
                 }
             }
 
