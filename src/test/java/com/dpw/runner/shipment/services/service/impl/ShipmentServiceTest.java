@@ -3086,7 +3086,7 @@ ShipmentServiceTest extends CommonMocks {
         AdditionalDetails additionalDetails = new AdditionalDetails();
         additionalDetails.setImportBroker(importBroker);
         additionalDetails.setExportBroker(importBroker);
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
         shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetailsResponse mockConsolidationDetailsResponse = new ConsolidationDetailsResponse();
 
