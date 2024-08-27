@@ -4220,6 +4220,14 @@ public class ShipmentService implements IShipmentService {
                 .shipmentRequest(shipmentRequest).build();
             packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
         }
+        else if(oldEntity != null && oldEntity.getConsolidationList() != null && !oldEntity.getConsolidationList().isEmpty()) {
+            var oldConsolId = oldEntity.getConsolidationList().get(0).getId();
+            CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
+                    .consolidationId(oldConsolId)
+                    .saveConsol(true)
+                    .shipmentRequest(ShipmentRequest.builder().id(shipment.getId()).build()).build();
+            packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
+        }
         boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment);
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(checkForNonDGShipmentAndAirDgFlag(shipment));
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(shipment.getAdditionalDetails() != null && Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1));
@@ -5539,6 +5547,7 @@ public class ShipmentService implements IShipmentService {
         return PendingShipmentActionsResponse.builder()
             .consolId(consol.getId())
             .consolidationNumber(consol.getReferenceNumber())
+            .masterBill(consol.getMawb())
             .ata(carrierDetails.getAta())
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
