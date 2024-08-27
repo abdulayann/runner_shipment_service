@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -9,18 +11,23 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchTenantIdDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
@@ -36,6 +43,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -47,7 +55,9 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import javax.json.*;
 import javax.transaction.Transactional;
+import java.io.StringReader;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
@@ -87,7 +97,13 @@ public class EntityTransferService implements IEntityTransferService {
     @Autowired
     private ILogsHistoryService logsHistoryService;
     @Autowired
+    private IContainerDao containerDao;
+    @Autowired
+    private IPackingDao packingDao;
+    @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    private CommonUtils commonUtils;
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -1217,32 +1233,294 @@ public class EntityTransferService implements IEntityTransferService {
 //    }
 //
 //
-//    @Override
-//    @Transactional
-//    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
-//        String responseMsg;
-//        ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
-//        if(importConsolidationRequest == null || importConsolidationRequest.getEntityTransferConsolidationDetails() == null) {
-//            throw new ValidationException("No consolidation is attached please check");
-//        }
-//        EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityTransferConsolidationDetails();
-//        String consolidationNumber = null;
-//        try {
-//            ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
-//            if(consolidationDetailsResponse == null) {
-//                throw new RunnerException("Create Consolidation failed for " + commonRequestModel.getId());
-//            }
-//            consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
+
+    /*
+          check for existing console based on sourceGuid
+          Create OldContainerGuidVsOldShipmentGuidMap
+
+          create Shipments {
+                Create OldShipmentGuidVsNewShipmentGuidMap
+                Create OldShipmentGuidVsNewShipmentIdMap
+                Create OldContainerGuidVsListofNewPackingGuid;
+                List of NewShipmentIds;
+                foreach shipment:
+                {
+
+                    check for existing shipment based on sourceGuid
+                    create {
+
+                        createShipment //TODO: can we use service create for shipment
+
+                    }
+                    update {
+                        setId, Guid of existing // TODO: mapper for payload transformation
+
+                        updateShipment
+                    }
+                    Create Shipment imported Event (Tenant Name of source branch from payload)
+
+                }
+                Shipment document create using OldShipmentGuidVsNewShipmentGuidMap; // TODO: document service api
+
+                return NewShipmentIds;
+            }
+
+
+
+            console Create {
+            }
+            console Update {
+            }
+
+            Attach Shipment and console; // TODO: test attachment of packs with console
+
+            Attach Containers to shipments
+            If containers Exists {
+                container.setShipmentIds(OldShipmentGuidVsNewShipmentIdMap(OldContainerGuidVsOldShipmentGuidMap));
+            }
+            Attach Packs to container
+
+            Create Consolidation imported Event (Tenant Name of source branch from payload)
+
+            Console document create ; // TODO: document service api
+
+            sendEmail();
+
+            return;
+
+         */
+
+
+
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
+        if (importConsolidationRequest == null || importConsolidationRequest.getEntityTransferConsolidationDetails() == null) {
+            throw new ValidationException("No consolidation is attached please check");
+        }
+        EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityTransferConsolidationDetails();
+
+        String consolidationNumber = null;
+        try {
+            ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
+            if(consolidationDetailsResponse == null) {
+                throw new RunnerException("Create Consolidation failed for " + commonRequestModel.getId());
+            }
+            consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
 //
 //            this.createAllConsolidationMasterData(entityTransferConsolidationDetails);
-//            return ResponseHelper.buildSuccessResponse(ImportConsolidationResponse.builder().consolidationNumber(consolidationNumber).build());
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            throw new RuntimeException(e);
-//        }
-//    }
+            return ResponseHelper.buildSuccessResponse(ImportConsolidationResponse.builder().consolidationNumber(consolidationNumber).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) throws RunnerException {
+
+        List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
+        Map<UUID, List<UUID>> oldContVsOldShipGuidMap = new HashMap<>();
+        Map<UUID, UUID> oldPackVsOldContGuidMap = new HashMap<>();
+
+        Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
+        Map<UUID, UUID> newVsOldPackingGuid = new HashMap<>();
+        Map<UUID, UUID> newVsOldContainerGuid = new HashMap<>();
+        Map<UUID, Long> oldGuidVsNewContainerId = new HashMap<>();
+
+        List<Long> shipmentIds = new ArrayList<>();
+        List<ShipmentDetailsResponse> shipmentDetailsResponseList = new ArrayList<>();
+
+        // Create Shipments
+        if(!Objects.isNull(entityTransferConsolidationDetails.getShipmentsList()) && !entityTransferConsolidationDetails.getShipmentsList().isEmpty()) {
+            entityTransferConsolidationDetails.getShipmentsList().forEach(ship -> {
+                try {
+                    ship.setContainersList(null);
+
+                    // replaced old packing guid with new
+                    if(ship.getPackingList() != null && !ship.getPackingList().isEmpty()) {
+                        ship.getPackingList().forEach(pack -> {
+                            UUID newGuid = UUID.randomUUID();
+                            newVsOldPackingGuid.put(newGuid, pack.getGuid());
+                            pack.setGuid(newGuid);
+                        });
+                    }
+
+                    ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship);
+                    shipmentDetailsResponseList.add(shipmentDetailsResponse);
+
+                    oldVsNewShipIds.put(ship.getGuid(), shipmentDetailsResponse.getId());
+                    shipmentIds.add(shipmentDetailsResponse.getId());
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        if(entityTransferConsolidationDetails.getContainersList() != null && !entityTransferConsolidationDetails.getContainersList().isEmpty()) {
+            entityTransferConsolidationDetails.getContainersList().forEach(cont -> {
+                UUID newGuid = UUID.randomUUID();
+                newVsOldContainerGuid.put(newGuid, cont.getGuid());
+                cont.setGuid(newGuid);
+            });
+        }
+
+        ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = null;
+        // create or update console
+        if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
+            ResponseEntity<IRunnerResponse> response = consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+            consolidationDetailsRequest.setShipmentsList(null);
+            consolidationDetailsResponse = (ConsolidationDetailsResponse) response.getBody();
+        } else {
+            consolidationDetailsRequest = jsonHelper.convertValue(oldConsolidationDetailsList.get(0), ConsolidationDetailsRequest.class);
+            modelMapper.map(entityTransferConsolidationDetails, consolidationDetailsRequest);
+            consolidationDetailsRequest.setShipmentsList(null);
+            ResponseEntity<IRunnerResponse> response = consolidationService.completeUpdate(CommonRequestModel.buildRequest(consolidationDetailsRequest));
+            consolidationDetailsResponse = (ConsolidationDetailsResponse) response.getBody();
+        }
+
+        // attach console and shipment
+        if(consolidationDetailsResponse != null) {
+            consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds);
+
+            if (consolidationDetailsResponse.getContainersList() != null && !consolidationDetailsResponse.getContainersList().isEmpty()) {
+                this.attachShipmentToContainers(consolidationDetailsResponse, newVsOldContainerGuid, oldContVsOldShipGuidMap, oldVsNewShipIds, oldGuidVsNewContainerId);
+            }
+
+
+            if(!shipmentDetailsResponseList.isEmpty()) {
+                List<PackingResponse> packingResponseList = new ArrayList<>();
+                shipmentDetailsResponseList.forEach(ship -> packingResponseList.addAll(ship.getPackingList()));
+                this.attachPackToContainers(packingResponseList, newVsOldPackingGuid, oldPackVsOldContGuidMap, oldGuidVsNewContainerId);
+            }
+
+
+        }
+
+        this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
+
+        //TODO: create document
+
+        return consolidationDetailsResponse;
+    }
+
+
+    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails) throws RunnerException {
+        ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
+        var tenantId = UserContext.getUser().getTenantId();
+        if(!Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
+            // TODO : isHub or isCoload
+            commonUtils.setInterBranchContextForHub();
+            InterBranchTenantIdContext.setContext(InterBranchTenantIdDto.builder().tenantId(entityTransferShipmentDetails.getSendToBranch()).build());
+//            shipmentRequest = replaceTenantIdInShipment(shipmentRequest, entityTransferShipmentDetails.getSendToBranch());
+        }
+        List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
+
+        ShipmentDetailsResponse shipmentDetailsResponse = null;
+        if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
+            ResponseEntity<IRunnerResponse> response = shipmentService.create(CommonRequestModel.buildRequest(shipmentRequest));
+            shipmentDetailsResponse = (ShipmentDetailsResponse) response.getBody();
+        } else {
+            shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentRequest.class);
+            modelMapper.map(entityTransferShipmentDetails, shipmentRequest);
+            ResponseEntity<IRunnerResponse> response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(shipmentRequest));
+            shipmentDetailsResponse = (ShipmentDetailsResponse) response.getBody();
+        }
+
+        this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), Constants.SHIPMENT_IMPORTED, Constants.SHIPMENT);
+
+        //TODO: create document
+
+        InterBranchTenantIdContext.removeContext();
+
+        return shipmentDetailsResponse;
+    }
+
+    private void attachShipmentToContainers(ConsolidationDetailsResponse consolidationDetailsResponse, Map<UUID, UUID> newVsOldContainerGuid, Map<UUID, List<UUID>> oldContVsOldShipGuidMap, Map<UUID, Long> oldVsNewShipIds, Map<UUID, Long> oldGuidVsNewContainerId) {
+        List<Containers> containersList = jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class);
+        containersList.forEach(cont -> {
+            List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+            List<UUID> shipmentGuids = new ArrayList<>();
+            oldGuidVsNewContainerId.put(newVsOldContainerGuid.get(cont.getGuid()), cont.getId());
+            if(oldContVsOldShipGuidMap.containsKey(newVsOldContainerGuid.get(cont.getGuid()))) {
+                shipmentGuids = oldContVsOldShipGuidMap.get(newVsOldContainerGuid.get(cont.getGuid()));
+            }
+            if (shipmentGuids != null && !shipmentGuids.isEmpty()) {
+                shipmentGuids.forEach(shipGuid -> {
+                    var shipmentDetail = new ShipmentDetails();
+                    shipmentDetail.setId(oldVsNewShipIds.get(shipGuid));
+                    shipmentDetails.add(shipmentDetail);
+                });
+            }
+            cont.setShipmentsList(shipmentDetails);
+        });
+        containerDao.saveAll(containersList);
+    }
+
+    private void attachPackToContainers(List<PackingResponse> packingResponseList, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, UUID> oldPackVsOldContGuidMap, Map<UUID, Long> oldGuidVsNewContainerId) {
+        List<Packing> packingList = jsonHelper.convertValueToList(packingResponseList, Packing.class);
+        if(packingList != null && !packingList.isEmpty()) {
+            packingList.forEach(pack -> {
+                if(oldPackVsOldContGuidMap.containsKey(newVsOldPackingGuid.get(pack.getGuid())) && oldGuidVsNewContainerId.containsKey(oldPackVsOldContGuidMap.get(newVsOldPackingGuid.get(pack.getGuid())))) {
+                    Long id = oldGuidVsNewContainerId.get(oldPackVsOldContGuidMap.get(newVsOldPackingGuid.get(pack.getGuid())));
+                    pack.setContainerId(id);
+                }
+            });
+            packingDao.saveAll(packingList);
+        }
+    }
+
+    private ShipmentRequest replaceTenantIdInShipment(ShipmentRequest shipmentRequest, Integer tenantId) {
+        var json = jsonHelper.convertToJson(shipmentRequest);
+        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
+            JsonObject jsonObject = jsonReader.readObject();
+            generateMap(jsonObject, tenantId);
+            return jsonHelper.convertValue(jsonObject, ShipmentRequest.class);
+        }
+    }
+
+
+    private void generateMap(JsonObject jsonObject, Integer tenantId) {
+        boolean containKey = false;
+        for (String key : jsonObject.keySet()) {
+            if (Objects.equals(key, Constants.TENANT_ID)) {
+                containKey = true;
+                jsonObject.put(Constants.TENANT_ID, Json.createValue(tenantId));
+            }
+            if (jsonObject.get(key).getValueType() == JsonValue.ValueType.OBJECT) {
+                generateMap(jsonObject.getJsonObject(key), tenantId);
+            } else if (jsonObject.get(key).getValueType() == JsonValue.ValueType.ARRAY) {
+                JsonArray objectArray = jsonObject.getJsonArray(key);
+                objectArray.forEach(x -> {
+                    if(x.getValueType() == JsonValue.ValueType.OBJECT){
+                        generateMap(x.asJsonObject(), tenantId);
+                    }
+                });
+            }
+        }
+        if(!containKey) {
+            jsonObject.put(Constants.TENANT_ID, Json.createValue(tenantId));
+        }
+    }
+
+    private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
+            CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+            eventReq.entityId = entityId;
+            eventReq.entityType = entityType;
+            eventReq.eventCode = eventCode;
+            eventReq.isActualRequired = true;
+            eventReq.placeName = tenantName;
+            eventReq.createDuplicate = true;
+            eventDao.autoGenerateEvents(eventReq);
+    }
+
+
+
+
 //
 //    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        ConsolidationDetailsRequest request = jsonHelper.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);

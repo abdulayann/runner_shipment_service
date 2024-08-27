@@ -11,4 +11,6 @@ import lombok.*;
 @NoArgsConstructor
 public class ImportConsolidationRequest implements IRunnerRequest {
     EntityTransferConsolidationDetails entityTransferConsolidationDetails;
+    Long taskId;
+
 }

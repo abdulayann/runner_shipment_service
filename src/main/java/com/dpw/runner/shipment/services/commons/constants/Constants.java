@@ -311,6 +311,8 @@ public class Constants {
     public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
     public static final String SHIPMENT_SENT = "ShipmentSent";
     public static final String CONSOLIDATION_SENT = "ConsolidationSent";
+    public static final String SHIPMENT_IMPORTED = "ShipmentImported";
+    public static final String CONSOLIDATION_IMPORTED = "ConsolidationImported";
 
     public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
 
