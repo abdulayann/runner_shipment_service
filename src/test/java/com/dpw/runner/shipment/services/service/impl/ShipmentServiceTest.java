@@ -1605,6 +1605,7 @@ ShipmentServiceTest extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         mockShipmentSettings();
+        mockTenantSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -1699,6 +1700,7 @@ ShipmentServiceTest extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         mockShipmentSettings();
+        mockTenantSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
 
@@ -1743,6 +1745,7 @@ ShipmentServiceTest extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         mockShipmentSettings();
+        mockTenantSettings();
 
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
@@ -5213,6 +5216,7 @@ ShipmentServiceTest extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
         assertEquals(expectedResponse, result);
     }
