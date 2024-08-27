@@ -6438,16 +6438,24 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRequestInterBranchConsole_Success(){
         ShipmentService spyService = spy(shipmentService);
-        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
-                .shipmentId(3L).consolidationId(2L).build()));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
         var response = spyService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
+    void testRequestInterBranchConsole_Success_Error() {
+        ShipmentService spyService = spy(shipmentService);
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+                .shipmentId(1L).consolidationId(3L).isAttachmentDone(true).build()));
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
     void testRequestInterBranchConsole_ExistingMapping(){
-        when(consoleShipmentMappingDao.findByConsolidationId(2L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
                 .shipmentId(1L).consolidationId(2L).build()));
         var response = shipmentService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
