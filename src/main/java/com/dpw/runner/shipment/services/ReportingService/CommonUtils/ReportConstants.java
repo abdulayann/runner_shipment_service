@@ -1209,4 +1209,7 @@ public class ReportConstants {
     public static final String DATE_OF_PRINT = "DateOfPrint";
     public static final String TIME_OF_PRINT = "TimeOfPrint";
     public static final String AWB_NOTIFYPARTY = "AWB_NotifyParty";
+
+    public static final String ORDER_MANAGEMENT_NUMBER = "Order_Management_Number";
+
 }

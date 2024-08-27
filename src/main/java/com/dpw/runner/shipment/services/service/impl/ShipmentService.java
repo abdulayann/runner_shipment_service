@@ -234,6 +234,7 @@ import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -1072,6 +1073,33 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
         shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
         shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
+
+        if(customerBookingRequest.getOrderManagementId()!=null){
+            ShipmentDetails shipmentDetails = null;
+            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
+
+            if(shipmentDetails!=null){
+                if(shipmentDetails.getGoodsDescription()!=null)
+                    shipmentRequest.setGoodsDescription(shipmentDetails.getGoodsDescription());
+
+                if(shipmentDetails.getReferenceNumbersList()!=null){
+                    List<ReferenceNumbersRequest> referenceNumbersList = jsonHelper.convertValue(shipmentDetails.getReferenceNumbersList(), new TypeReference<List<ReferenceNumbersRequest>>() {});
+                    shipmentRequest.setReferenceNumbersList(referenceNumbersList);
+                }
+
+                if(shipmentDetails.getAdditionalDetails().getImportBroker()!=null){
+                    PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
+                    shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
+                }
+
+                if(shipmentDetails.getAdditionalDetails().getExportBroker()!=null){
+                    PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
+                    shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
+                }
+            }
+
+        }
+
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }

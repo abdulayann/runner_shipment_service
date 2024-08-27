@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.QuantityPair;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -247,5 +248,57 @@ class OrderManagementAdapterTest {
 
         doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         assertNotNull(orderManagementAdapter.getOrderForBooking("123"));
+    }
+
+
+    @Test
+    void getOrderShipmentForBooking() throws RunnerException {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        var referenceResponse = new ReferencesResponse();
+        var goodsDescription = "GoodsDescription";
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .supplierCode("supCode")
+                .buyerCode("buyCode")
+                .notifyPartyCode("notifyCode")
+                .sendingAgentCode("sendingCode")
+                .receivingAgentCode("receivingCode")
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .references(Arrays.asList(referenceResponse))
+                .goodsDescription(goodsDescription)
+                .build();
+
+        response.setOrder(orderManagementDTO);
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        List<Map<String, Object>> responseMap = new ArrayList<>();
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrganizationCode", "supCode");
+        responseMap.add(map);
+        map = new HashMap<>();
+        map.put("OrganizationCode", "buyCode");
+        responseMap.add(map);
+        map = new HashMap<>();
+        map.put("OrganizationCode", "notifyCode");
+        responseMap.add(map);
+        map = new HashMap<>();
+        map.put("OrganizationCode", "sendingCode");
+        responseMap.add(map);
+        map = new HashMap<>();
+        map.put("OrganizationCode", "receivingCode");
+        responseMap.add(map);
+        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        ShipmentDetails shipmentDetails = orderManagementAdapter.getOrder("123");
+        assertNotNull(shipmentDetails);
+        assertNotNull(shipmentDetails.getReferenceNumbersList());
+        assertNotNull(shipmentDetails.getAdditionalDetails().getImportBroker());
+        assertNotNull(shipmentDetails.getAdditionalDetails().getExportBroker());
+        assertEquals(goodsDescription, shipmentDetails.getGoodsDescription());
     }
 }
