@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.Book
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity.BillCharge;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
@@ -51,6 +52,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -89,6 +91,8 @@ class BillingServiceAdapterTest {
     @Mock
     private RestTemplate restTemplate;
     @Mock
+    private V2AuthHelper v2AuthHelper;
+    @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @InjectMocks
     private BillingServiceAdapter billingServiceAdapter;
@@ -106,6 +110,7 @@ class BillingServiceAdapterTest {
     private LastPostedInvoiceDateRequest lastPostedInvoiceDateRequest;
     private ChargeTypeFilterRequest chargeTypeFilterRequest;
     private BillingBulkSummaryRequest billingBulkSummaryRequest;
+    private BillingBulkSummaryBranchWiseRequest billingBulkSummaryBranchWiseRequest;
     private ExternalBillPayloadRequest externalBillPayloadRequest;
     private BillingEntityResponse billingEntityResponse;
     private String baseUrl;
@@ -121,12 +126,35 @@ class BillingServiceAdapterTest {
         lastPostedInvoiceDateRequest = new LastPostedInvoiceDateRequest();
         chargeTypeFilterRequest = new ChargeTypeFilterRequest();
         billingBulkSummaryRequest = new BillingBulkSummaryRequest();
+        billingBulkSummaryBranchWiseRequest = new BillingBulkSummaryBranchWiseRequest();
         externalBillPayloadRequest = new ExternalBillPayloadRequest();
         billingEntityResponse = new BillingEntityResponse();
         baseUrl = "http://mockurl.com";
         billChargesFilterRequest = new BillChargesFilterRequest();
         billChargesBaseResponseBillingListResponse = new BillingListResponse<>();
     }
+
+    @Test
+    void testFetchBillingBulkSummaryBranchWise_SuccessfulResponse() {
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getBillingBulkSummaryBranchWise()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        BillingSummary billingSummary = new BillingSummary();
+        billingEntityResponse.setData(Map.of("billingSummary", List.of(Map.of("totalCount", 1, "totalRevenue", 100.0))));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingSummary> billingSummaries = List.of(billingSummary);
+        when(modelMapper.map(anyList(), any(Type.class)))
+                .thenReturn(billingSummaries);
+
+        List<BillingSummary> result = billingServiceAdapter.fetchBillingBulkSummaryBranchWise(billingBulkSummaryBranchWiseRequest);
+        assertEquals(billingSummaries, result);
+    }
+
 
     @Test
     void fetchShipmentBillingData_Success() {
