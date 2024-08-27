@@ -997,6 +997,7 @@ class CommonUtilsTest {
 
     @Test
     void sendEmailForPullPushRequestStatusPullAccepted() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
                         .carrierDetails(CarrierDetails.builder().build())
@@ -1008,7 +1009,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1035,13 +1036,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PULL_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1075,13 +1077,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PULL_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1107,7 +1110,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1162,7 +1165,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1202,7 +1205,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1217,6 +1220,7 @@ class CommonUtilsTest {
 
     @Test
     void sendEmailForPullPushRequestStatusPushRequest() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
                         .carrierDetails(CarrierDetails.builder().build())
@@ -1228,7 +1232,7 @@ class CommonUtilsTest {
                 SHIPMENT_PUSH_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1278,13 +1282,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PUSH_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1319,13 +1324,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PUSH_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1340,6 +1346,7 @@ class CommonUtilsTest {
 
     @Test
     void sendEmailForPullPushRequestStatusPushAccept() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
                         .carrierDetails(CarrierDetails.builder().build())
@@ -1351,7 +1358,7 @@ class CommonUtilsTest {
                 SHIPMENT_PUSH_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1401,13 +1408,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PUSH_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1442,13 +1450,14 @@ class CommonUtilsTest {
         UserContext.getUser().setEmail(null);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
                 SHIPMENT_PUSH_ACCEPTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_ACCEPTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1474,7 +1483,7 @@ class CommonUtilsTest {
                 SHIPMENT_PUSH_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1530,7 +1539,7 @@ class CommonUtilsTest {
                 SHIPMENT_PUSH_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1571,7 +1580,7 @@ class CommonUtilsTest {
                 SHIPMENT_PUSH_REJECTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PUSH_REJECTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1586,6 +1595,7 @@ class CommonUtilsTest {
 
     @Test
     void sendEmailForPullPushRequestStatus() throws Exception {
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 ShipmentDetails.builder()
                         .carrierDetails(CarrierDetails.builder().build())
@@ -1597,7 +1607,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1618,6 +1628,7 @@ class CommonUtilsTest {
         shipmentDetails.setTenantId(56);
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 ConsolidationDetails.builder()
@@ -1627,7 +1638,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
@@ -1654,6 +1665,7 @@ class CommonUtilsTest {
         List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
         entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
         UserContext.getUser().setEmail(null);
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 ConsolidationDetails.builder()
@@ -1663,7 +1675,7 @@ class CommonUtilsTest {
                 SHIPMENT_PULL_REQUESTED,
                 "rejectRemarks",
                 new HashMap<>() {{
-                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").build());
+                    put(SHIPMENT_PULL_REQUESTED, EmailTemplatesRequest.builder().body("").subject("").build());
                 }},
                 new HashSet<>(),
                 new HashMap<>(),
