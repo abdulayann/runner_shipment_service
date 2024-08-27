@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
@@ -43,6 +44,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -2144,5 +2146,94 @@ public class EntityTransferService implements IEntityTransferService {
 //        }
 //        return userEmails.toString();
 //    }
+
+
+
+    public void sendGroupedEmailForShipmentImport(ConsolidationDetails consolidationDetails, List<UUID> shipmentGuids) {
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
+        for(UUID guid: shipmentGuids) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
+            if(shipmentDetails.isPresent()) {
+                shipmentDetailsList.add(shipmentDetails.get());
+                tenantIds.add(shipmentDetails.get().getTenantId());
+            }
+        }
+
+        for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
+            tenantShipmentMapping.computeIfAbsent(shipmentDetails.getTenantId(), shipmentDetail -> new ArrayList<>()).add(shipmentDetails);
+        }
+
+        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+        commonUtils.getToAndCCEmailIds(tenantIds, toAndCcMailIds);
+        Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+
+
+        List<String> requests = new ArrayList<>(List.of(GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+
+
+        for(Integer tenantId: tenantIds) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, toAndCCMasterDataMap, tenantId, false);
+            List<String> importerEmailIds = getRoleListByRoleId(tenantId);
+            List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
+
+            List<String> toEmailIdsList = new ArrayList<>(toEmailIds);
+            importerEmailIds.addAll(toEmailIdsList);
+            List<String> ccEmailIdsList = new ArrayList<>(ccEmailIds);
+
+            if (!importerEmailIds.isEmpty()) {
+                createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), importerEmailIds, ccEmailIdsList);
+            }
+
+        }
+
+    }
+
+    private void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        subject = subject.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
+        body = body.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
+        body = body.replace("{#SENDER_USER_NAME}", user.getDisplayName());
+        body = body.replace("{#BL_NUMBER}", shipmentDetails.getHouseBill());
+        body = body.replace("{#MBL_NUMBER}", shipmentDetails.getMasterBill());
+        body = body.replace("{#SENT_DATE}", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
 
 }
