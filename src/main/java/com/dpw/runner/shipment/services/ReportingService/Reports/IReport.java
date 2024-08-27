@@ -2198,6 +2198,14 @@ public abstract class IReport {
         }
         return null;
     }
+
+    public static String ConvertToWeightNumberFormat(Object weight, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(weight != null && !CommonUtils.IsStringNullOrEmpty(weight.toString())) {
+            return GetDPWWeightVolumeFormat(new BigDecimal(weight.toString()), numberDecimalDigits, v1TenantSettingsResponse);
+        }
+        return null;
+    }
+
     public static String ConvertToWeightNumberFormat(BigDecimal weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(weight != null) {
             int numberDecimalDigits = 0;
