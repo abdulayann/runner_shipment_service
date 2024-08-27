@@ -1,12 +1,10 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -98,9 +96,9 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private String placeOfIssue;
 
 
-    private CarrierDetailResponse carrierDetails;
-    private AchievedQuantitiesResponse achievedQuantities;
-    private AllocationsResponse allocations;
+    private EntityTransferCarrierDetails carrierDetails;
+    private EntityTransferAchievedQuantities achievedQuantities;
+    private EntityTransferAllocations allocations;
     private EntityTransferArrivalDepartureDetails arrivalDetails;
     private EntityTransferArrivalDepartureDetails departureDetails;
     private EntityTransferParties sendingAgent;
@@ -161,4 +159,6 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
 //    private Map<String, String> currenciesMasterData;
 //    private Map<String, String> tenantIdsData;
 //    private Map<String, String> textData;
+
+    private Integer sendToBranch;
 }
