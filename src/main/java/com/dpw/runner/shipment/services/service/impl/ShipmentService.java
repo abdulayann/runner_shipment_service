@@ -5453,9 +5453,12 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) {
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipId);
         for (var consoleShip: consoleShipmentMappings) {
-            if (Objects.equals(consoleShip.getShipmentId(), shipId)) {
+            if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
+                return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+            }
+            if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
                 return ResponseHelper.buildSuccessResponse();
             }
         }
