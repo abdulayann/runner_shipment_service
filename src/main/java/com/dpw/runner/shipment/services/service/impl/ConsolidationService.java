@@ -4251,6 +4251,7 @@ public class ConsolidationService implements IConsolidationService {
         return PendingConsolidationActionResponse.builder()
             .shipmentId(shipment.getId())
             .shipmentNumber(shipment.getShipmentId())
+            .houseBill(shipment.getHouseBill())
             .ata(carrierDetails.getAta())
             .atd(carrierDetails.getAtd())
             .eta(carrierDetails.getEta())
