@@ -850,8 +850,8 @@ public class CommonUtils {
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(HAWB_NUMBER, shipmentDetails.getHouseBill());
-        dictionary.put(ETD_CAPS, ConvertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
-        dictionary.put(ETA_CAPS, ConvertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+        dictionary.put(ETD_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+        dictionary.put(ETA_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
         if(!IsStringNullOrEmpty(shipmentDetails.getCarrierDetails().getShippingLine()) && carrierMasterDataMap.containsKey(shipmentDetails.getCarrierDetails().getShippingLine())) {
             String carrierCode = carrierMasterDataMap.get(shipmentDetails.getCarrierDetails().getShippingLine()).getIataCode();
             if(IsStringNullOrEmpty(carrierCode))
@@ -872,7 +872,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_WEIGHT_UNIT, shipmentDetails.getWeightUnit());
         dictionary.put(SHIPMENT_VOLUME, shipmentDetails.getVolume());
         dictionary.put(SHIPMENT_VOLUME_UNIT, shipmentDetails.getVolumeUnit());
-        dictionary.put(REQUEST_DATE_TIME, ConvertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
+        dictionary.put(REQUEST_DATE_TIME, convertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
         dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
     }
 
@@ -886,8 +886,8 @@ public class CommonUtils {
         dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
-        dictionary.put(ETD_CAPS, ConvertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
-        dictionary.put(ETA_CAPS, ConvertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+        dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+        dictionary.put(ETA_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
         dictionary.put(LAT, consolidationDetails.getLatDate());
         if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine()) && carrierMasterDataMap.containsKey(consolidationDetails.getCarrierDetails().getShippingLine())) {
             String carrierCode = carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getIataCode();
@@ -909,7 +909,7 @@ public class CommonUtils {
         dictionary.put(ALLOCATED_WEIGHT_UNIT, consolidationDetails.getAllocations().getWeightUnit());
         dictionary.put(ALLOCATED_VOLUME, consolidationDetails.getAllocations().getVolume());
         dictionary.put(ALLOCATED_VOLUME_UNIT, consolidationDetails.getAllocations().getVolumeUnit());
-        dictionary.put(REQUEST_DATE_TIME, ConvertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
+        dictionary.put(REQUEST_DATE_TIME, convertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
         dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
     }
 
@@ -1040,7 +1040,7 @@ public class CommonUtils {
         }
     }
 
-    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
+    public String convertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
     {
         String strDate = "";
         if (date != null)
@@ -1048,12 +1048,12 @@ public class CommonUtils {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
                 strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
             else
-                strDate = date.format(GetDPWDateFormatOrDefault());
+                strDate = date.format(getDPWDateFormatOrDefault());
         }
         return strDate;
     }
 
-    public DateTimeFormatter GetDPWDateFormatOrDefault()
+    public DateTimeFormatter getDPWDateFormatOrDefault()
     {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
