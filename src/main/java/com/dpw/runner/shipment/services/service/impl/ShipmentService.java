@@ -1442,6 +1442,9 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
 
+            if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(oldEntity.get().getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(oldEntity.get())) {
+                throw new ValidationException("Push request is already in progress, Cannot change Consolidation Type.");
+            }
             boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
 
             entity = shipmentDao.update(entity, false);
@@ -5248,6 +5251,11 @@ public class ShipmentService implements IShipmentService {
             warning = "Template not found, please inform the region users manually";
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    private boolean checkIfAlreadyPushRequested(ShipmentDetails oldEntity) {
+        Integer allMappingsCount = consoleShipmentMappingDao.countAllStateMappings(oldEntity.getId());
+        return allMappingsCount > 0;
     }
 
     @Override
