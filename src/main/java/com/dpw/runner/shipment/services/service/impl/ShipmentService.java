@@ -1442,6 +1442,9 @@ public class ShipmentService implements IShipmentService {
 
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
 
+            if(checkIfAlreadyPushRequested(oldEntity.get()) && Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType())) {
+                throw new ValidationException("Push request is already in progress, Cannot change Consolidation Type.");
+            }
             boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
 
             entity = shipmentDao.update(entity, false);
@@ -5228,8 +5231,6 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException {
-        if(checkIfAlreadyPushRequested(request))
-            throw new ValidationException("Push request is already in progress, Cannot change Consolidation Type.");
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         if (isForHubRequest(request)) {
             processHubRequest(request, shipmentRequestedTypes);
@@ -5243,8 +5244,8 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    private boolean checkIfAlreadyPushRequested(UpdateConsoleShipmentRequest request) {
-        Integer allMappingsCount = consoleShipmentMappingDao.countAllStateMappings(request.getListOfShipments().get(0));
+    private boolean checkIfAlreadyPushRequested(ShipmentDetails oldEntity) {
+        Integer allMappingsCount = consoleShipmentMappingDao.countAllStateMappings(oldEntity.getId());
         return allMappingsCount > 0;
     }
 
