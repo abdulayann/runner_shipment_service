@@ -5490,7 +5490,7 @@ public class ShipmentService implements IShipmentService {
                 ConsoleShipmentMapping::getConsolidationId, Function.identity(), (oldVal, newVal) -> oldVal)
             );
 
-            commonUtils.setInterBranchContextForHub();
+            commonUtils.setInterBranchContextForColoadStation();
 
             listRequest = constructListCommonRequest("id", consolidationIds, "IN");
             listRequest.setContainsText(request.getContainsText());
@@ -5524,7 +5524,6 @@ public class ShipmentService implements IShipmentService {
                     notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
             }
 
-            commonUtils.removeInterBranchContext();
 
         }
         catch(Exception e) {
