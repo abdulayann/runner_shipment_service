@@ -5228,6 +5228,8 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException {
+        if(checkIfAlreadyPushRequested(request))
+            throw new ValidationException("Push request is already in progress, Cannot change Consolidation Type.");
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         if (isForHubRequest(request)) {
             processHubRequest(request, shipmentRequestedTypes);
@@ -5239,6 +5241,11 @@ public class ShipmentService implements IShipmentService {
             warning = "Template not found, please inform the region users manually";
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    private boolean checkIfAlreadyPushRequested(UpdateConsoleShipmentRequest request) {
+        Integer allMappingsCount = consoleShipmentMappingDao.countAllStateMappings(request.getListOfShipments().get(0));
+        return allMappingsCount > 0;
     }
 
     @Override
