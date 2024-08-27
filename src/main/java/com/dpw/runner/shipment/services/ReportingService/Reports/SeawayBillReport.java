@@ -74,10 +74,7 @@ public class SeawayBillReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId) {
-
-        if (tenantSettings == null) {
-            tenantSettings = getCurrentTenantSettings();
-        }
+        tenantSettings = getCurrentTenantSettings();
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
@@ -146,9 +143,7 @@ public class SeawayBillReport extends IReport {
     }
 
     private void processShipmentContainerList(SeawayBillModel model, Map<String, Object> dict) {
-        if (tenantSettings == null) {
-            tenantSettings = getCurrentTenantSettings();
-        }
+        tenantSettings = getCurrentTenantSettings();
         List<Map<String, Object>> values = jsonHelper.convertValue(model.shipment.getShipmentContainersList(), new TypeReference<>() {
         });
         values.forEach(v -> {
