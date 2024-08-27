@@ -2108,7 +2108,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
                 List<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
-                    PageRequest.of(request.getPageNo(), request.getPageSize()));
+                    PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
                 andCriteria("id", eligibleConsolId, "IN", request);
             }
             checkBookingIdCriteria(request);

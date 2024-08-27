@@ -64,7 +64,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> findShipmentsByIds(Set<Long> id);
 
-    @Query(value = "SELECT s.id from ShipmentDetails s inner join ConsoleShipmentMapping csm " +
+    @Query(value = "SELECT distinct s.id from ShipmentDetails s inner join ConsoleShipmentMapping csm " +
             "on s.id = csm.shipmentId " +
             "where csm.isAttachmentDone = false and csm.requestedType = ?1")
     List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);

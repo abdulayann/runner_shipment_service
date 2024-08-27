@@ -2672,7 +2672,7 @@ public class ShipmentService implements IShipmentService {
             }
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
                 List<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
-                    PageRequest.of(request.getPageNo(), request.getPageSize()));
+                    PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
                 andCriteria("id", eligibleShipmentId, "IN", request);
             }
             request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
