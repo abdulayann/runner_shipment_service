@@ -73,7 +73,6 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     public ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
-            System.out.println("url: "+ url);
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
             return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
