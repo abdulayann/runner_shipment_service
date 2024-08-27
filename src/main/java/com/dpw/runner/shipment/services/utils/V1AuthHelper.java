@@ -25,14 +25,6 @@ public class V1AuthHelper {
         return headers;
     }
 
-    public static HttpHeaders getXApiKeyHeader(String xApiKey) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key", xApiKey);
-        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
-        return headers;
-    }
-
     public HttpHeaders getHeadersForDataSync() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
