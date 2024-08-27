@@ -1669,6 +1669,8 @@ public class ShipmentService implements IShipmentService {
                     Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
                 throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
             }
+            if(!isCreate)
+                consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
         }
 
         if(shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)

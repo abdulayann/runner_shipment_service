@@ -722,6 +722,7 @@ public class ConsolidationService implements IConsolidationService {
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
+            consoleShipmentMappingDao.deletePendingStateByShipmentIds(shipmentIds);
         }
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();

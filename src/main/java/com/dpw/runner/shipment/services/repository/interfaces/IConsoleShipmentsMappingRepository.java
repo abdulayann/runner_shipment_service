@@ -8,6 +8,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 @Generated
@@ -36,6 +37,11 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     @Modifying
     @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.shipment_id = ?1 and csm.is_attachment_done = false", nativeQuery = true)
     void deletePendingStateByShipmentId(Long shipmentId);
+
+    @Modifying
+    @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.shipment_id IN (:shipmentIds) AND csm.is_attachment_done = false", nativeQuery = true)
+    void deletePendingStateByShipmentIds(@Param("shipmentIds") List<Long> shipmentIds);
+
 
     @Modifying
     @Query(value = "DELETE FROM console_shipment_mapping csm WHERE csm.consolidation_id = ?1 and csm.shipment_id = ?2 and csm.is_attachment_done = false", nativeQuery = true)
