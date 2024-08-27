@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -99,6 +100,8 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest.ModuleData;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
@@ -117,6 +120,7 @@ import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -156,6 +160,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -207,6 +212,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -318,6 +324,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private ISBUtils sbUtils;
+
+    @Autowired
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Autowired
     private ISBProperties isbProperties;
@@ -944,29 +953,44 @@ public class ConsolidationService implements IConsolidationService {
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
-        if(consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole()))
+
+        List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
+                .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
+                .orElse(Collections.emptyList());
+
+        validateShipmentDetachment(shipmentDetails);
+
+        Map<Long, ShipmentDetails> idToShipmentDetailsMap = shipmentDetails.stream().filter(ObjectUtils::isNotEmpty)
+                .collect(Collectors.toMap(
+                        ShipmentDetails::getId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+
+        if (consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
+        }
         List<Packing> packingList = null;
-        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+        if (consolidationId != null && ObjectUtils.isNotEmpty(shipmentIds)) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
-            for(Long shipId : removedShipmentIds) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
-                if(shipmentDetails.getContainersList() != null) {
-                    List<Containers> containersList = shipmentDetails.getContainersList();
-                    for(Containers container : containersList) {
-                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
+            for (Long removedShipmentId : removedShipmentIds) {
+                ShipmentDetails removedShipmentDetail = idToShipmentDetailsMap.get(removedShipmentId);
+                if (removedShipmentDetail.getContainersList() != null) {
+                    List<Containers> containersList = removedShipmentDetail.getContainersList();
+                    for (Containers container : containersList) {
+                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(removedShipmentId), false);
                     }
                     containersList = containerDao.saveAll(containersList);
                     containerService.afterSaveList(containersList, false);
                 }
-                if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getPackingList() != null) {
-                    packingList = shipmentDetails.getPackingList();
-                    for(Packing packing : packingList) {
+                if (removedShipmentDetail.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && removedShipmentDetail.getPackingList() != null) {
+                    packingList = removedShipmentDetail.getPackingList();
+                    for (Packing packing : packingList) {
                         packing.setConsolidationId(null);
                     }
                     packingList = packingDao.saveAll(packingList);
                 }
-                this.createLogHistoryForShipment(shipmentDetails);
+                this.createLogHistoryForShipment(removedShipmentDetail);
             }
         }
         if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
@@ -985,12 +1009,65 @@ public class ConsolidationService implements IConsolidationService {
         }
         try {
             consolidationSync.sync(consol.get(), transactionId, false);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error Syncing Consol");
         }
 
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
+        validateActiveCharges(shipmentDetails);
+    }
+
+    /**
+     * Validates shipment detachment by checking if there are any active charges or invoices.
+     *
+     * @param shipmentDetails A list of {@link ShipmentDetails} objects to be validated.
+     * @throws BillingException if any active charges or invoices are present.
+     */
+    private void validateActiveCharges(List<ShipmentDetails> shipmentDetails) {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+
+        if (ObjectUtils.isEmpty(shipmentDetails) || !Boolean.TRUE.equals(tenantSettings.getConsolSplitBillCharge())) {
+            return;
+        }
+
+        // Filter shipment details that are not empty
+        List<ShipmentDetails> filteredShipments = shipmentDetails.stream().filter(ObjectUtils::isNotEmpty)
+                // Keep only those with transport mode "AIR"
+                .filter(shp -> Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shp.getTransportMode()))
+                // Further filter to include only those with direction "EXP" or "IMP"
+                .filter(shp -> Constants.DIRECTION_EXP.equalsIgnoreCase(shp.getDirection()) ||
+                        Constants.DIRECTION_IMP.equalsIgnoreCase(shp.getDirection())).toList();
+
+        if (filteredShipments.isEmpty()) {
+            return;
+        }
+
+        BillingBulkSummaryBranchWiseRequest branchWiseRequest = createBillingBulkSummaryBranchWiseRequest(filteredShipments);
+
+        List<BillingSummary> billingSummaries = billingServiceAdapter.fetchBillingBulkSummaryBranchWise(branchWiseRequest);
+
+        boolean hasAnyActiveCharges = billingSummaries.stream().anyMatch(billingServiceAdapter::checkActiveCharges);
+
+        if (hasAnyActiveCharges) {
+            throw new BillingException("Shipment has active charges/invoices present. Please remove the charges or cancel the invoices to proceed.");
+        }
+    }
+
+    private BillingBulkSummaryBranchWiseRequest createBillingBulkSummaryBranchWiseRequest(List<ShipmentDetails> shipmentDetails) {
+        BillingBulkSummaryBranchWiseRequest branchWiseRequest = new BillingBulkSummaryBranchWiseRequest();
+        branchWiseRequest.setModuleType(Constants.SHIPMENT);
+
+        branchWiseRequest.setModuleData(
+                shipmentDetails.stream()
+                        .map(shp -> ModuleData.builder()
+                                .branchId(shp.getTenantId().toString())
+                                .moduleGuid(shp.getGuid().toString()).build())
+                        .toList()
+        );
+        return branchWiseRequest;
     }
 
     @Override
@@ -999,9 +1076,10 @@ public class ConsolidationService implements IConsolidationService {
         List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
         List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consoleId);
-        if(consol.isPresent() && mawbs != null && !mawbs.isEmpty()){
+        if (consol.isPresent() && mawbs != null && !mawbs.isEmpty()) {
             Awb mawb = mawbs.get(0);
-            if(mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+            if (mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(),
+                    AwbConstants.T1)) {
                 if (!shipIdList.isEmpty()) {
                     List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
                     if (awbs != null && !awbs.isEmpty()) {

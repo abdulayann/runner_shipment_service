@@ -10,10 +10,12 @@ import org.springframework.stereotype.Component;
 public class BillingServiceUrlConfig {
 
     private String baseUrl;
+    private String xApiKey;
     private String getInvoiceData;
     private String externalCreateOrUpdate;
     private String chargeTypeFilter;
     private String billingBulkSummary;
+    private String billingBulkSummaryBranchWise;
     private String lastPostedInvoiceDate;
     private Boolean enableBillingIntegration;
     private String getBillByEntity;
