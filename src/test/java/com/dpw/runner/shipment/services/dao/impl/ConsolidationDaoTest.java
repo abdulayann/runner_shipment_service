@@ -646,10 +646,10 @@ class ConsolidationDaoTest extends CommonMocks {
 
     @Test
     void testGetIdWithPendingActions() {
-        var response = consolidationsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED, PageRequest.of(1, 25));
         List<Long> eligibleShipmentId = List.of(1L, 2L, 3L);
 
         when(consolidationRepository.getIdWithPendingActions(any(), any())).thenReturn(eligibleShipmentId);
+        var response = consolidationsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED, PageRequest.of(1, 25));
 
         assertEquals(eligibleShipmentId, response);
     }

@@ -1097,10 +1097,10 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void testGetIdWithPendingActions() {
-        var response = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED, PageRequest.of(1, 25));
         List<Long> eligibleShipmentId = List.of(1L, 2L, 3L);
 
         when(shipmentRepository.getIdWithPendingActions(any(), any())).thenReturn(eligibleShipmentId);
+        var response = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED, PageRequest.of(1, 25));
 
         assertEquals(eligibleShipmentId, response);
     }
