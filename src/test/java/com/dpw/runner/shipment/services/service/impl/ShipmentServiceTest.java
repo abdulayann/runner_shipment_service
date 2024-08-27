@@ -1633,6 +1633,7 @@ ShipmentServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
 
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
 
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();

@@ -4015,7 +4015,8 @@ public class ShipmentService implements IShipmentService {
         }
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, consolidationDetails.getTransportMode(), "=", request);
-        defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
+        if(excludeShipments != null && !excludeShipments.isEmpty())
+            defaultRequest = CommonUtils.andCriteria("id", excludeShipments, "NOTIN", defaultRequest);
 
         if(!Objects.isNull(consolidationDetails.getShipmentType()))
             CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), "=", defaultRequest);
