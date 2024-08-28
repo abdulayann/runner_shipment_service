@@ -114,7 +114,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_ID;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
@@ -737,7 +736,7 @@ public class ConsolidationService implements IConsolidationService {
             var newShipmentIds = new ArrayList<>(shipmentIds);
             newShipmentIds.removeAll(interBranchShipIds);
             if (!newShipmentIds.isEmpty()) {
-                ListCommonRequest listCommonRequest = andCriteria(SHIPMENT_ID, newShipmentIds, "IN", null);
+                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, newShipmentIds, "IN", null);
                 listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
