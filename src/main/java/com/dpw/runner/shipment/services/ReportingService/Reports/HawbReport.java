@@ -77,7 +77,7 @@ public class HawbReport extends IReport{
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
-            hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
+            hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), false));
         }
         hawbModel.awb = getHawb(id);
         hawbModel.setEntityType("HAWB");

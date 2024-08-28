@@ -2031,10 +2031,12 @@ public abstract class IReport {
         return null;
     }
 
-    public Awb getMawb(Long Id) {
+    public Awb getMawb(Long Id, boolean withPacks) {
         List<Awb> awb = awbDao.findByConsolidationId(Id);
         if(awb != null && !awb.isEmpty()) {
-            awbService.getMawnLinkPacks(awb.get(0));
+            if(withPacks) {
+                awbService.getMawnLinkPacks(awb.get(0));
+            }
             return awb.get(0);
         }
         return null;
