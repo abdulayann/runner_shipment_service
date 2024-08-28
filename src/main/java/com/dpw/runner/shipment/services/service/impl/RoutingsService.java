@@ -48,7 +48,8 @@ public class RoutingsService implements IRoutingsService {
         return routings;
     }
 
-    private void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException {
+    @Override
+    public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException {
         if (shipmentId == null || routings == null || routings.isEmpty()) return;
 
         // Fetch shipment details

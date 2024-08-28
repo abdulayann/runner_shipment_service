@@ -7,4 +7,6 @@ import java.util.List;
 public interface IRoutingsService {
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException;
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException;
+
+    void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException;
 }
