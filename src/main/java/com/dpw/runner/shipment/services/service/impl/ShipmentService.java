@@ -1524,10 +1524,8 @@ public class ShipmentService implements IShipmentService {
                 if(!consoleShipmentMappingsForEmails.isEmpty()) {
                     consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
                     List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
-                    listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, "IN");
-                    Pair<Specification<ConsolidationDetails>, Pageable> pair3 = fetchData(listCommonRequest, ConsolidationDetails.class);
-                    Page<ConsolidationDetails> otherConsolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
-                    commonUtils.sendRejectionEmailsExplicitly(List.of(shipmentDetails), consoleShipmentMappingsForEmails, new HashSet<>(), otherConsolidationDetailsPage.getContent());
+                    List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
+                    commonUtils.sendRejectionEmailsExplicitly(List.of(shipmentDetails), consoleShipmentMappingsForEmails, new HashSet<>(), otherConsolidationDetails);
                 }
             }
         }

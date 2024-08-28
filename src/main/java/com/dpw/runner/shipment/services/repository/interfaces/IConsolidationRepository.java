@@ -6,11 +6,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -18,6 +13,12 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Repository @Generated @InterBranchEntity
@@ -51,6 +52,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
 
     @Query(value = "SELECT * FROM consolidation_details WHERE guid IN ?1", nativeQuery = true)
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
+
+    @Query(value = "SELECT * FROM consolidation_details WHERE id IN ?1", nativeQuery = true)
+    List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
 
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     ConsolidationDetails getConsolidationFromId(Long id);

@@ -116,7 +116,6 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -802,10 +801,8 @@ public class ConsolidationService implements IConsolidationService {
             sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
-            ListCommonRequest listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, "IN");
-            Pair<Specification<ConsolidationDetails>, Pageable> pair3 = fetchData(listCommonRequest, ConsolidationDetails.class);
-            Page<ConsolidationDetails> otherConsolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
-            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList.getContent(), consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetailsPage.getContent());
+            List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList.getContent(), consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
         }
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
