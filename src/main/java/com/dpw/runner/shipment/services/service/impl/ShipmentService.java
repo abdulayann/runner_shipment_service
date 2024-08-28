@@ -1013,7 +1013,7 @@ public class ShipmentService implements IShipmentService {
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(customerBookingRequest.getRoutingList()).
-                consolidationList(customerBookingRequest.getCargoType().equals("FCL") ? consolidationDetails : null).
+                consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
