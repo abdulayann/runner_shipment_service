@@ -1,16 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1;
 
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
@@ -195,4 +186,5 @@ public interface IV1Service {
     V1DataResponse getEmailTemplates(Object request);
     V1DataResponse getMasterDetails(Object request);
     V1DataResponse getUserDetails(Object request);
+    V1DataResponse getUserEmailsByRoleId(V1UsersEmailRequest request);
 }
