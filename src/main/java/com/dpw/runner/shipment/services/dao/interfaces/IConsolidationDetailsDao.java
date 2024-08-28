@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,4 +32,5 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
     ConsolidationDetails findConsolidationsById(Long id);
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
+    Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }

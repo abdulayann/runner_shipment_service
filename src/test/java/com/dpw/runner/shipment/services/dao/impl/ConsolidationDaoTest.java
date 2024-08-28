@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -70,6 +71,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -641,4 +643,15 @@ class ConsolidationDaoTest extends CommonMocks {
         ConsolidationDetails responseEntity = spyService.update(consolidationDetails, false);
         assertNotNull(responseEntity);
     }
+
+    @Test
+    void testGetIdWithPendingActions() {
+        List<Long> eligibleId = List.of(1L, 2L, 3L);
+        Page<Long> consolIdPage = new PageImpl<>(eligibleId);
+        when(consolidationRepository.getIdWithPendingActions(any(), any())).thenReturn(consolIdPage);
+        var response = consolidationsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED, PageRequest.of(1, 25));
+
+        assertEquals(consolIdPage, response);
+    }
+
 }

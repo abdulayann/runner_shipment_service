@@ -78,6 +78,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -2389,6 +2390,29 @@ import static org.mockito.Mockito.*;
         responseMap.put("consolidationNumber", "CONS000231188");
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListReturnsConsolWithPendingNotifications() {
+        ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
+        List<String> includeColumns = new ArrayList<>();
+        includeColumns.add("id");
+        includeColumns.add("consolidationNumber");
+        sampleRequest.setIncludeColumns(includeColumns);
+        sampleRequest.setNotificationFlag(true);
+        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
+        Map<String, Object>  responseMap = new HashMap<>();
+        responseMap.put("id", 1);
+        responseMap.put("consolidationNumber", "CONS000231188");
+
+        Page<Long> consolIdPage = new PageImpl<>(List.of(1L));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
+        when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(consolIdPage);
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));

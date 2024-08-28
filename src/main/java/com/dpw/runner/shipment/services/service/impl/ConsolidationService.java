@@ -85,6 +85,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -2099,6 +2100,8 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
+        int totalPages = 0;
+        long totalElements = 0;
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -2106,9 +2109,20 @@ public class ConsolidationService implements IConsolidationService {
                 log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
             }
+            if(Boolean.TRUE.equals(request.getNotificationFlag())) {
+                Page<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
+                    PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
+                andCriteria("id", eligibleConsolId.getContent(), "IN", request);
+                totalPages = eligibleConsolId.getTotalPages();
+                totalElements = eligibleConsolId.getTotalElements();
+            }
             checkBookingIdCriteria(request);
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
+                totalPages = consolidationDetailsPage.getTotalPages();
+                totalElements = consolidationDetailsPage.getTotalElements();
+            }
             if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
                 List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
                 log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -4259,7 +4273,7 @@ public class ConsolidationService implements IConsolidationService {
             .etd(carrierDetails.getEtd())
             .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
             .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
-            .branch(tenantData.getCode() + " " + tenantData.getTenantName())
+            .branch(tenantData.getCode() + "-" + tenantData.getTenantName())
             .hazardous(shipment.getContainsHazardous())
             .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + StringUtility.convertToString(shipment.getPacksUnit()))
             .weight(StringUtility.convertToString(shipment.getWeight()) + StringUtility.convertToString(shipment.getWeightUnit()))
