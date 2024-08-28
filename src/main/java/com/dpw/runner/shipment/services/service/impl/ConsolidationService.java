@@ -751,7 +751,7 @@ public class ConsolidationService implements IConsolidationService {
 
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
-                    return ResponseHelper.buildFailedResponse(String.format("Shipment {} Cargo Delivery Date is lesser than LAT Date.", shipmentDetails.getShipmentId()));
+                    return ResponseHelper.buildFailedResponse("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
                 }
             }
 

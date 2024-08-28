@@ -2031,8 +2031,8 @@ public abstract class IReport {
         return null;
     }
 
-    public Awb getMawb(Long Id, boolean withPacks) {
-        List<Awb> awb = awbDao.findByConsolidationId(Id);
+    public Awb getMawb(Long id, boolean withPacks) {
+        List<Awb> awb = awbDao.findByConsolidationId(id);
         if(awb != null && !awb.isEmpty()) {
             if(withPacks) {
                 awbService.getMawnLinkPacks(awb.get(0));

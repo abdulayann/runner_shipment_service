@@ -369,6 +369,8 @@ public class ReportService implements IReportService {
             {
                 dataRetrived.put(ReportConstants.OTHER_CHARGES, dataRetrived.get(ReportConstants.OTHER_CHARGES_IATA));
                 dataRetrived.put(ReportConstants.NEW_OTHER_CHARGES, dataRetrived.get(ReportConstants.NEW_OTHER_CHARGES_IATA));
+            } else {
+                dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
             }
             if(reportRequest.getDisplayFreightAmount()!=null && !reportRequest.getDisplayFreightAmount())
             {
@@ -465,7 +467,7 @@ public class ReportService implements IReportService {
         }
         else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB))
         {
-
+            dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
             if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
             {
                 dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
