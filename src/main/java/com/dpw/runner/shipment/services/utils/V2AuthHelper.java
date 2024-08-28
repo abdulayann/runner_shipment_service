@@ -30,6 +30,4 @@ public class V2AuthHelper {
         return headers;
     }
 
-
-
 }

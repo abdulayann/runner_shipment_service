@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -34,6 +35,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -54,6 +57,9 @@ class OrderManagementAdapterTest {
 
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private V2AuthHelper v2AuthHelper;
 
     @Mock
     private JsonHelper jsonHelper;
@@ -300,5 +306,36 @@ class OrderManagementAdapterTest {
         assertNotNull(shipmentDetails.getAdditionalDetails().getImportBroker());
         assertNotNull(shipmentDetails.getAdditionalDetails().getExportBroker());
         assertEquals(goodsDescription, shipmentDetails.getGoodsDescription());
+    }
+
+    @Test
+    void getOrderUsingGuid() throws Exception {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .supplierCode("supCode")
+                .buyerCode("buyCode")
+                .notifyPartyCode("notifyCode")
+                .sendingAgentCode("sendingCode")
+                .receivingAgentCode("receivingCode")
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+        response.setOrder(orderManagementDTO);
+        HttpHeaders headers = new HttpHeaders();
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull1234-5678-9123-4567", HttpMethod.GET, httpEntity, OrderManagementResponse.class);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        List<Map<String, Object>> responseMap = new ArrayList<>();
+        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        ShipmentDetails shipmentDetails = orderManagementAdapter.getOrderByGuid("1234-5678-9123-4567");
+        assertNotNull(shipmentDetails);
+        assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
     }
 }
