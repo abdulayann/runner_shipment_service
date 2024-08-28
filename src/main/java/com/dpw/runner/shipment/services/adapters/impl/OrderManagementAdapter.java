@@ -27,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -55,6 +57,9 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     @Autowired
     private JsonHelper jsonHelper;
 
+    public static final String X_SOURCE= "x-source";
+    public static final String X_SOURCE_VALUE= "shipment-service";
+
 
     @Override
     public ShipmentDetails getOrder(String orderId) throws RunnerException {
@@ -73,7 +78,12 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     public ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
-            var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(X_SOURCE, X_SOURCE_VALUE);
+            HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+            log.info("Request to Order Service: {}", url);
+            var response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, OrderManagementResponse.class);
+            log.info("Response from Order Service: {}", response.getBody());
             return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
