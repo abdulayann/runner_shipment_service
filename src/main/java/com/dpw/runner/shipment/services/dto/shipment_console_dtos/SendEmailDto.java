@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dto.shipment_console_dtos;
 
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -30,6 +29,6 @@ public class SendEmailDto {
     private Map<String, UnlocationsResponse> unLocMap;
     private Map<String, CarrierMasterData> carrierMasterDataMap;
     private Map<String, String> usernameEmailsMap;
-    private Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap;
+    private Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap;
     private String requestedUser;
 }
