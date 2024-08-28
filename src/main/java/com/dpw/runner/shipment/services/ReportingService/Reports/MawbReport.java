@@ -113,7 +113,7 @@ public class MawbReport extends IReport {
             hawbModel.setConsolidationDetails(getConsolidation(id));
             validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
             String entityType = "MAWB";
-            hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
+            hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), true));
             hawbModel.awb = hawbModel.getMawb();
             hawbModel.setEntityType(entityType);
         } else {
@@ -124,7 +124,7 @@ public class MawbReport extends IReport {
             if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
             {
                 hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
-                hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId()));
+                hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), true));
                 hawbModel.awb = hawbModel.getMawb();
             }
             if(hawbModel.getMawb() == null){
