@@ -67,5 +67,5 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT distinct s.id from ShipmentDetails s inner join ConsoleShipmentMapping csm " +
             "on s.id = csm.shipmentId " +
             "where csm.isAttachmentDone = false and csm.requestedType = ?1")
-    List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+    Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }

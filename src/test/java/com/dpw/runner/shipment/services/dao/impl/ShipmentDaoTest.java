@@ -28,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -1099,9 +1100,10 @@ class ShipmentDaoTest extends CommonMocks {
     void testGetIdWithPendingActions() {
         List<Long> eligibleShipmentId = List.of(1L, 2L, 3L);
 
-        when(shipmentRepository.getIdWithPendingActions(any(), any())).thenReturn(eligibleShipmentId);
+        Page<Long> shipmentIdPage = new PageImpl<>(eligibleShipmentId);
+        when(shipmentRepository.getIdWithPendingActions(any(), any())).thenReturn(shipmentIdPage);
         var response = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED, PageRequest.of(1, 25));
 
-        assertEquals(eligibleShipmentId, response);
+        assertEquals(shipmentIdPage, response);
     }
 }

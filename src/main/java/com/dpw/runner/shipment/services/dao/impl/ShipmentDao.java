@@ -653,7 +653,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
         return shipmentRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
     }
 

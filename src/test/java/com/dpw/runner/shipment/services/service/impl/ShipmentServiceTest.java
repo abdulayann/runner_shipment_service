@@ -3829,8 +3829,9 @@ ShipmentServiceTest extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         shipmentDetailsList.add(new ShipmentDetails());
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        PageImpl<Long> shipmentIdPage = new PageImpl<>(List.of(1L));
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-        when(shipmentDao.getIdWithPendingActions(eq(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED), any())).thenReturn(List.of(1L));
+        when(shipmentDao.getIdWithPendingActions(eq(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED), any())).thenReturn(shipmentIdPage);
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
             convertEntityListToDtoList(shipmentDetailsPage.getContent()),

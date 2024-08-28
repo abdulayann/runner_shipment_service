@@ -78,6 +78,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -2409,8 +2410,9 @@ import static org.mockito.Mockito.*;
         responseMap.put("id", 1);
         responseMap.put("consolidationNumber", "CONS000231188");
 
+        Page<Long> consolIdPage = new PageImpl<>(List.of(1L));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(List.of(1L));
+        when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(consolIdPage);
         when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));

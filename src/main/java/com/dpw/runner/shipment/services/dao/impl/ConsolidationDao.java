@@ -574,7 +574,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
         return consolidationRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
     }
 

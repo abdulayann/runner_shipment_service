@@ -32,5 +32,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
     void entityDetach(List<ShipmentDetails> shipmentDetails);
-    List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+    Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }

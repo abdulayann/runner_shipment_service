@@ -66,6 +66,6 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT distinct c.id from ConsolidationDetails c inner join ConsoleShipmentMapping csm " +
         "on c.id = csm.consolidationId " +
         "where csm.isAttachmentDone = false and csm.requestedType = ?1")
-    List<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+    Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
 }

@@ -2663,6 +2663,8 @@ public class ShipmentService implements IShipmentService {
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
+        int totalPage = 0;
+        long totalElements = 0;
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -2671,9 +2673,11 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
-                List<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
+                Page<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
                     PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
-                andCriteria("id", eligibleShipmentId, "IN", request);
+                andCriteria("id", eligibleShipmentId.getContent(), "IN", request);
+                totalPage = eligibleShipmentId.getTotalPages();
+                totalElements = eligibleShipmentId.getTotalElements();
             }
             request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);
@@ -2681,11 +2685,15 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
+                totalPage = shipmentDetailsPage.getTotalPages();
+                totalElements = shipmentDetailsPage.getTotalElements();
+            }
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToDtoList(shipmentDetailsPage.getContent()),
-                        shipmentDetailsPage.getTotalPages(),
-                        shipmentDetailsPage.getTotalElements());
+                        totalPage,
+                        totalElements);
             else {
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
@@ -2696,8 +2704,8 @@ public class ShipmentService implements IShipmentService {
                 }
                 return ResponseHelper.buildListSuccessResponse(
                         filtered_list,
-                        shipmentDetailsPage.getTotalPages(),
-                        shipmentDetailsPage.getTotalElements());
+                        totalPage,
+                        totalElements);
             }
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

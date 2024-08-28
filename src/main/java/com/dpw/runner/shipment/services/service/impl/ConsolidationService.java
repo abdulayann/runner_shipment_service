@@ -2099,6 +2099,8 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
+        int totalPages = 0;
+        long totalElements = 0;
         try {
             // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -2107,13 +2109,19 @@ public class ConsolidationService implements IConsolidationService {
                 throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
             }
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
-                List<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
+                Page<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
                     PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
-                andCriteria("id", eligibleConsolId, "IN", request);
+                andCriteria("id", eligibleConsolId.getContent(), "IN", request);
+                totalPages = eligibleConsolId.getTotalPages();
+                totalElements = eligibleConsolId.getTotalElements();
             }
             checkBookingIdCriteria(request);
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
+                totalPages = consolidationDetailsPage.getTotalPages();
+                totalElements = consolidationDetailsPage.getTotalElements();
+            }
             if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
                 List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
                 log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
