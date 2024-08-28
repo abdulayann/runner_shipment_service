@@ -127,7 +127,7 @@ class CommonUtilsTest {
 
     @AfterAll
     void tearDown() {
-        commonUtils.executorService.shutdown();
+        commonUtils.syncExecutorService.shutdown();
     }
 
     @BeforeEach
