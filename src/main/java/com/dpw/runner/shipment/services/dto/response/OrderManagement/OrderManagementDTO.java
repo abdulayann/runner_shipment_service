@@ -80,6 +80,7 @@ public class OrderManagementDTO implements IRunnerResponse {
     private List<OrderEventsResponse> events;
     private List<OrderDocumentResponse> documents;
     private List<OrderManagementDTO> splitOrders;
+    private List<ReferencesResponse> references;
     public Boolean isLocked;
     public String createdBy;
 
