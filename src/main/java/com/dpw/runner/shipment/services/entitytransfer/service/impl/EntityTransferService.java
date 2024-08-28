@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -89,6 +91,9 @@ public class EntityTransferService implements IEntityTransferService {
     private ILogsHistoryService logsHistoryService;
     @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    V1ServiceUtil v1ServiceUtil;
+
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -677,6 +682,7 @@ public class EntityTransferService implements IEntityTransferService {
         // TODO : emails already present implemented by Aditya
         // TODO : importer role for TASK (pending !)
 
+        successTenantIds.addAll(sendToBranch);
 
         // ~~~~~~~~~~ KEEP IT AS IS ~~~~~~~~~~~~~
         this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
@@ -2046,6 +2052,10 @@ public class EntityTransferService implements IEntityTransferService {
     private EntityTransferConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, int index, SendConsolidationRequest sendConsolidationRequest) {
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
         Map<String, List<Integer>> shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
+        List<Integer> tenantIds = new ArrayList<>();
+        tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
+        var tenantMap = getTenantMap(tenantIds);
         EntityTransferConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
         payload.setSendToBranch(sendToBranch.get(index));
         if(sendConsolidationRequest.getSendToBranch().get(index).equals(consolidationDetails.getReceivingBranch())) {
@@ -2062,8 +2072,13 @@ public class EntityTransferService implements IEntityTransferService {
                 UUID guid = shipment.getGuid();
                 Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
                 var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
+                if(sendConsolidationRequest.getSendToBranch().get(index).equals(entityTransferShipment.getReceivingBranch())) {
+                    entityTransferShipment.setDirection(reverseDirection(shipment.getDirection()));
+                }
                 entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                entityTransferShipment.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                 transferShipmentDetails.add(entityTransferShipment);
+
 
                 // populate container vs shipment guid map
                 var shipmentGuid = shipmentDetailsOptional.get().getGuid();
@@ -2077,6 +2092,8 @@ public class EntityTransferService implements IEntityTransferService {
                 );
             }
         }
+        payload.setSourceBranchTenantName(tenantMap.get(consolidationDetails.getTenantId()).getTenantName());
+        payload.setShipmentsList(transferShipmentDetails);
         payload.setContainerVsShipmentGuid(containerVsShipmentGuid);
 
         // packing guid vs container guid
@@ -2087,7 +2104,6 @@ public class EntityTransferService implements IEntityTransferService {
             });
         });
         payload.setPackingVsContainerGuid(packsVsContainerGuid);
-
         // populate master data and other fields
         payload.setMasterData(getConsolMasterData(consolidationDetails));
 
@@ -2126,6 +2142,12 @@ public class EntityTransferService implements IEntityTransferService {
         return res;
     }
 
+    private Map<Integer, V1TenantResponse> getTenantMap(List<Integer> tenantId) {
+        var v1Map = v1ServiceUtil.getTenantDetails(tenantId);
+        return v1Map.keySet().stream().collect(
+            Collectors.toMap(Function.identity(), k -> jsonHelper.convertValue(v1Map.get(k), V1TenantResponse.class))
+        );
+    }
 
 
 }

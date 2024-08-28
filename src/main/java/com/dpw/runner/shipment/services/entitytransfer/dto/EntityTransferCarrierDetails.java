@@ -16,7 +16,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferCarrierDetails implements IEntityTranferBaseEntity {
-    private UUID guid;
     private String shippingLine;
     private String vessel;
     private String voyage;

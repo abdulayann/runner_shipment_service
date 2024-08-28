@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -83,7 +84,7 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     public Integer copy;
     public String BLChargesDisplay;
     public String BLExporterShipment;
-    public String screeningStatus;
+    public List<String> screeningStatus;
     public String paidPlace;
     public String placeOfIssue;
     public String placeOfSupply;

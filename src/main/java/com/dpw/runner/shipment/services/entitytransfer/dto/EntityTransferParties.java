@@ -10,9 +10,9 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferParties implements IEntityTranferBaseEntity {
-    public String type;
-    public String orgCode;
-    public String addressCode;
+    private String type;
+    private String orgCode;
+    private String addressCode;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
 }
