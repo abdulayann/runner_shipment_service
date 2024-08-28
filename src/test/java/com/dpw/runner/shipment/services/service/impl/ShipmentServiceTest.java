@@ -6602,7 +6602,7 @@ ShipmentServiceTest extends CommonMocks {
     void sendEmailsForPullRequestAccept() throws Exception {
         ShipmentService spyService = spy(shipmentService);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));

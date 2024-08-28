@@ -5076,7 +5076,7 @@ public class ShipmentService implements IShipmentService {
 
         // fetching data from db
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).get();
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).get();
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consoleId);
         String requestedUsername = fetchShipmentsAndConsolidationsForPullRequestEmails(tenantIds, usernamesList, consoleId, shipmentId, shipmentDetails, consolidationDetails, consoleShipmentMappings, otherConsolidationdetails);
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
