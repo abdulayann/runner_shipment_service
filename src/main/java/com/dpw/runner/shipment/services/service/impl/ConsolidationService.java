@@ -1235,7 +1235,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private ConsolidationDetails getConsoleForCalculations(ConsoleCalculationsRequest request) {
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getId()).get();
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getId()).orElse(new ConsolidationDetails());
         consolidationDetails.setAllocations(jsonHelper.convertValue(request.getAllocations(), Allocations.class));
         consolidationDetails.setAchievedQuantities(jsonHelper.convertValue(request.getAchievedQuantities(), AchievedQuantities.class));
         consolidationDetails.setTransportMode(request.getTransportMode());
