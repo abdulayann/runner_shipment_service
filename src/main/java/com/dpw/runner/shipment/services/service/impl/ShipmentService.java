@@ -1076,10 +1076,10 @@ public class ShipmentService implements IShipmentService {
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
 
-    private boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
+    public boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
         return (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ||
-                (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_ROA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FTL)) ||
-                (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_ROA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ||
+                (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_ROA) &&
+                        (Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FTL) || Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ) ||
                 (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_RAI) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL));
     }
 
