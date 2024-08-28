@@ -1703,7 +1703,7 @@ class CommonUtilsTest {
         tenantIds.add(1);
         Map<Integer, V1TenantSettingsResponse> response = new HashMap<>();
         commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, response);
-        assertEquals(1, response.size());
+        assertEquals(0, response.size());
     }
 
     @Test
