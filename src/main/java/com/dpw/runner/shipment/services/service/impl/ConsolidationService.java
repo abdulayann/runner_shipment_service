@@ -723,7 +723,6 @@ public class ConsolidationService implements IConsolidationService {
         Pair<Specification<ShipmentDetails>, Pageable> shipPair = fetchData(shiplistCommonRequest, ShipmentDetails.class);
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
-            consoleShipmentMappingDao.deletePendingStateByShipmentIds(shipmentIds);
         }
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();
@@ -731,6 +730,10 @@ public class ConsolidationService implements IConsolidationService {
             interBranchShipIds = shipmentDetailsList.stream()
                     .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
                     .map(ShipmentDetails::getId).collect(Collectors.toSet());
+            var newShipmentIds = new ArrayList<>(shipmentIds);
+            newShipmentIds.removeAll(interBranchShipIds);
+            if (!newShipmentIds.isEmpty())
+                consoleShipmentMappingDao.deletePendingStateByShipmentIds(newShipmentIds);
         }
 
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {

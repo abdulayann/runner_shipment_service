@@ -6706,4 +6706,67 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    @Test
+    void testIsConsoleCreationNeeded() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_SEA);
+        mockRequest.setCargoType(Constants.CARGO_TYPE_FCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertTrue(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded2() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_ROA);
+        mockRequest.setCargoType(Constants.CARGO_TYPE_FCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertTrue(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded3() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_ROA);
+        mockRequest.setCargoType(Constants.CARGO_TYPE_FTL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertTrue(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded4() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_RAI);
+        mockRequest.setCargoType(Constants.CARGO_TYPE_FCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertTrue(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded5() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_SEA);
+        mockRequest.setCargoType(Constants.SHIPMENT_TYPE_LCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertFalse(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded6() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_ROA);
+        mockRequest.setCargoType(Constants.SHIPMENT_TYPE_LCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertFalse(response);
+    }
+
+    @Test
+    void testIsConsoleCreationNeeded7() {
+        var mockRequest = new CustomerBookingRequest();
+        mockRequest.setTransportType(Constants.TRANSPORT_MODE_RAI);
+        mockRequest.setCargoType(Constants.SHIPMENT_TYPE_LCL);
+        var response = shipmentService.isConsoleCreationNeeded(mockRequest);
+        assertFalse(response);
+    }
+
 }
