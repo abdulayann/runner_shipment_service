@@ -1086,9 +1086,13 @@ public class PackingService implements IPackingService {
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
-            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks()))
+            Set<Long> packingIdSet = new HashSet<>();
+            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks())) {
                 packingList.addAll(consol.getPackingList());
-            packingList.addAll(getShipmentPacks(attachingShipments));
+                packingIdSet = consol.getPackingList().stream().map(Packing::getId).collect(Collectors.toSet());
+            }
+            Set<Long> finalPackingIdSet = packingIdSet;
+            packingList.addAll(getShipmentPacks(attachingShipments).stream().filter(i -> !finalPackingIdSet.contains(i.getId())).toList());
         }
         else {
             // Default case of packs updated from consol

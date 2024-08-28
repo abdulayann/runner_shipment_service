@@ -212,14 +212,6 @@ public class AwbDao implements IAwbDao {
             }
         }
 
-        // max size for IATA description is 3 in otherChargesInfo
-        if(awb.getAwbOtherChargesInfo() != null) {
-            for(var otherCharges : awb.getAwbOtherChargesInfo()) {
-                if(otherCharges.getIataDescription() != null && otherCharges.getIataDescription().length() > 3) {
-                    errors.add(AwbConstants.IATA_DESCRIPTION_FIELD_VALIDATION);
-                }
-            }
-        }
 
         if(!errors.isEmpty())
             throw new RunnerException(errors.toString());

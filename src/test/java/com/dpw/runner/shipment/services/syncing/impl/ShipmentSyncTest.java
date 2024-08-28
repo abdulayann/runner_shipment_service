@@ -113,7 +113,7 @@ class ShipmentSyncTest {
 
         when(modelMapper.map(any(), eq(ShipmentServiceRequestV2.class))).thenReturn(new ShipmentServiceRequestV2());
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(new ConsolidationDetails());
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(new TruckDriverDetailsRequestV2());
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(EventsRequestV2.class))).thenReturn(new EventsRequestV2());
@@ -167,7 +167,7 @@ class ShipmentSyncTest {
         when(modelMapper.map(any(), eq(CustomShipmentSyncRequest.class))).thenReturn(mockCustomShipmentSyncRequest);
         doNothing().when(modelMapper).map(inputShipment.getAdditionalDetails(), mockCustomShipmentSyncRequest);
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(new ConsolidationDetails());
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
 
@@ -211,7 +211,7 @@ class ShipmentSyncTest {
         when(modelMapper.map(any(), eq(CustomShipmentSyncRequest.class))).thenReturn(mockCustomShipmentSyncRequest);
         doNothing().when(modelMapper).map(inputShipment.getAdditionalDetails(), mockCustomShipmentSyncRequest);
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(new ConsolidationDetails());
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(new TruckDriverDetailsRequestV2());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
@@ -267,7 +267,7 @@ class ShipmentSyncTest {
         when(modelMapper.map(any(), eq(CustomShipmentSyncRequest.class))).thenReturn(mockCustomShipmentSyncRequest);
         doNothing().when(modelMapper).map(inputShipment.getAdditionalDetails(), mockCustomShipmentSyncRequest);
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(new ConsolidationDetails());
         when(modelMapper.map(any(), eq(PartyRequestV2.class))).thenReturn(new PartyRequestV2());
         when(modelMapper.map(any(), eq(TruckDriverDetailsRequestV2.class))).thenReturn(new TruckDriverDetailsRequestV2());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
@@ -296,7 +296,7 @@ class ShipmentSyncTest {
 
         when(modelMapper.map(any(), eq(CustomShipmentSyncRequest.class))).thenReturn(mockCustomShipmentSyncRequest);
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(new ConsolidationDetails());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
         when(consolidationSync.createConsoleSyncReq(any())).thenReturn(new CustomConsolidationRequest());

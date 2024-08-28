@@ -38,8 +38,8 @@ public class NotificationServiceImpl implements INotificationService {
         SendEmailBaseRequest request = SendEmailBaseRequest.builder()
                 .htmlBody(body)
                 .subject(subject)
-                .to(String.join(";", emailIds))
-                .cc(cc.isEmpty() ? null : String.join(";", cc))
+                .to(String.join(",", emailIds))
+                .cc(cc.isEmpty() ? null : String.join(",", cc))
                 .build();
         sendEmail(request);
     }

@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class PendingShipmentActionsResponse implements IPendingActionsResponse {
     private Long consolId;
     private String consolidationNumber;
+    private String masterBill;
 
     private String branch;
 

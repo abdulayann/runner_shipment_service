@@ -198,7 +198,7 @@ public class ShipmentSync implements IShipmentSync {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(request.getId());
         response.setConsolidationGuids(new HashMap<>());
         consoleShipmentMappings.forEach(mapping -> {
-            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mapping.getConsolidationId()).get();
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(mapping.getConsolidationId());
             response.getConsolidationGuids().put(consolidationDetails.getGuid(), consolidationDetails.getTenantId());
         });
     }

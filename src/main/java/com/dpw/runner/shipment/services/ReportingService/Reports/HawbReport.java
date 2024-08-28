@@ -166,6 +166,8 @@ public class HawbReport extends IReport{
                 }
                 else {
                     dictionary.put(ReportConstants.HAWB_NO, shipmentInfo.getAwbNumber());
+                    // Also show MAWB number when printing HAWB
+                    dictionary.put(ReportConstants.MAWB_NO, hawbModel.getShipmentDetails().getMasterBill());
                     AwbNumber = hawbModel.getMawb() == null || hawbModel.getMawb().getAwbShipmentInfo() == null || StringUtility.isEmpty(hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber()) ? "" : hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber();
                 }
                 dictionary.put(ReportConstants.NEUTRAL_AWB_NO, shipmentInfo.getAwbNumber());
@@ -275,6 +277,8 @@ public class HawbReport extends IReport{
                 if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
                     dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
 
+                dictionary.put(SLAC, cargoInfoRows.getSlac());
+
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
             AtomicInteger TotalPieces = new AtomicInteger();
@@ -361,7 +365,7 @@ public class HawbReport extends IReport{
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }
                     if(value.get(ReportConstants.CHARGEABLE_WT) != null){
-                        value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), v1TenantSettingsResponse));
+                        value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
                     }
                     if(value.get(ReportConstants.RATE_CHARGE) != null){
                         value.put(ReportConstants.RATE_CHARGE, AmountNumberFormatter.Format(new BigDecimal(value.get(ReportConstants.RATE_CHARGE).toString()), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
@@ -387,7 +391,7 @@ public class HawbReport extends IReport{
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }
                     if(value.get(ReportConstants.CHARGEABLE_WT) != null){
-                        value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), v1TenantSettingsResponse));
+                        value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
                     }
                     if (value.get(ReportConstants.RATE_CHARGE) != null)
                     {
@@ -536,8 +540,10 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.TOTAL_OTHERS_P, null);
             dictionary.put(ReportConstants.TOTAL_OTHERS_C, null);
             if(paymentInfoRows != null){
-                dictionary.put(ReportConstants.TOTAL_COLLECT, AmountNumberFormatter.Format(paymentInfoRows.getTotalCollect(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
-                dictionary.put(ReportConstants.TOTAL_PREPAID, AmountNumberFormatter.Format(paymentInfoRows.getTotalPrepaid(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
+                if(!BigDecimal.ZERO.equals(paymentInfoRows.getTotalCollect()))
+                    dictionary.put(ReportConstants.TOTAL_COLLECT, AmountNumberFormatter.Format(paymentInfoRows.getTotalCollect(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
+                if(!BigDecimal.ZERO.equals(paymentInfoRows.getTotalPrepaid()))
+                    dictionary.put(ReportConstants.TOTAL_PREPAID, AmountNumberFormatter.Format(paymentInfoRows.getTotalPrepaid(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.AGENT_DUE_POAT, OtherAmountText);
                 dictionary.put(ReportConstants.CARRIER_DUE_POAT, OtherAmountText);
                 dictionary.put(ReportConstants.WT_CHARGE_CFAT, FreightAmountText);

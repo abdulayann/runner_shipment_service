@@ -63,6 +63,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
@@ -193,6 +194,9 @@ public class CommonUtils {
         }
 
         List<FilterCriteria> criterias = request.getFilterCriteria();
+        if(criterias.isEmpty()) {
+            criterias.add(FilterCriteria.builder().innerFilter(new ArrayList<>()).build());
+        }
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
@@ -605,7 +609,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -633,7 +637,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPullReject(SendEmailDto sendEmailDto) {
@@ -661,7 +665,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushRequest(SendEmailDto sendEmailDto) {
@@ -687,7 +691,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushAccept(SendEmailDto sendEmailDto) {
@@ -713,7 +717,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailShipmentPushReject(SendEmailDto sendEmailDto) {
@@ -739,7 +743,7 @@ public class CommonUtils {
         getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-                emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
@@ -841,18 +845,22 @@ public class CommonUtils {
 
     public void populateDictionaryForEmailFromShipment(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(CONSOLIDATION_CREATE_USER, consolidationDetails.getCreatedBy());
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(HAWB_NUMBER, shipmentDetails.getHouseBill());
-        dictionary.put(ETD_CAPS, shipmentDetails.getCarrierDetails().getEtd());
-        dictionary.put(ETA_CAPS, shipmentDetails.getCarrierDetails().getEta());
-        if(!IsStringNullOrEmpty(shipmentDetails.getCarrierDetails().getShippingLine())) {
-            dictionary.put(CARRIER_CODE, shipmentDetails.getCarrierDetails().getShippingLine());
-            if(carrierMasterDataMap.containsKey(shipmentDetails.getCarrierDetails().getShippingLine()))
-                dictionary.put(CARRIER_NAME, carrierMasterDataMap.get(shipmentDetails.getCarrierDetails().getShippingLine()).getItemDescription());
+        dictionary.put(ETD_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+        dictionary.put(ETA_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+        if(!IsStringNullOrEmpty(shipmentDetails.getCarrierDetails().getShippingLine()) && carrierMasterDataMap.containsKey(shipmentDetails.getCarrierDetails().getShippingLine())) {
+            String carrierCode = carrierMasterDataMap.get(shipmentDetails.getCarrierDetails().getShippingLine()).getIataCode();
+            if(IsStringNullOrEmpty(carrierCode))
+                carrierCode = carrierMasterDataMap.get(shipmentDetails.getCarrierDetails().getShippingLine()).getItemValue();
+            dictionary.put(CARRIER_CODE, carrierCode);
+            dictionary.put(CARRIER_NAME, carrierMasterDataMap.get(shipmentDetails.getCarrierDetails().getShippingLine()).getItemDescription());
         }
         dictionary.put(FLIGHT_NUMBER1, shipmentDetails.getCarrierDetails().getFlightNumber());
         if(!IsStringNullOrEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
@@ -867,24 +875,29 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_WEIGHT_UNIT, shipmentDetails.getWeightUnit());
         dictionary.put(SHIPMENT_VOLUME, shipmentDetails.getVolume());
         dictionary.put(SHIPMENT_VOLUME_UNIT, shipmentDetails.getVolumeUnit());
-        dictionary.put(REQUEST_DATE_TIME, convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        dictionary.put(REQUEST_DATE_TIME, convertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
+        dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
     }
 
     public void populateDictionaryForEmailFromConsolidation(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                        Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
         dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
         dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
-        dictionary.put(ETD_CAPS, consolidationDetails.getCarrierDetails().getEtd());
-        dictionary.put(ETA_CAPS, consolidationDetails.getCarrierDetails().getEta());
-        // LAT to be added
-        if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine())) {
-            dictionary.put(CARRIER_CODE, consolidationDetails.getCarrierDetails().getShippingLine());
-            if(carrierMasterDataMap.containsKey(consolidationDetails.getCarrierDetails().getShippingLine()))
-                dictionary.put(CARRIER_NAME, carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getItemDescription());
+        dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+        dictionary.put(ETA_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+        dictionary.put(LAT, consolidationDetails.getLatDate());
+        if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine()) && carrierMasterDataMap.containsKey(consolidationDetails.getCarrierDetails().getShippingLine())) {
+            String carrierCode = carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getIataCode();
+            if(IsStringNullOrEmpty(carrierCode))
+                carrierCode = carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getItemValue();
+            dictionary.put(CARRIER_CODE, carrierCode);
+            dictionary.put(CARRIER_NAME, carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getItemDescription());
         }
         dictionary.put(FLIGHT_NUMBER1, consolidationDetails.getCarrierDetails().getFlightNumber());
         if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
@@ -899,7 +912,8 @@ public class CommonUtils {
         dictionary.put(ALLOCATED_WEIGHT_UNIT, consolidationDetails.getAllocations().getWeightUnit());
         dictionary.put(ALLOCATED_VOLUME, consolidationDetails.getAllocations().getVolume());
         dictionary.put(ALLOCATED_VOLUME_UNIT, consolidationDetails.getAllocations().getVolumeUnit());
-        dictionary.put(REQUEST_DATE_TIME, convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        dictionary.put(REQUEST_DATE_TIME, convertToDPWDateFormat(convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false), tsDateTimeFormat));
+        dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
     }
 
     public void getUnLocationsData(List<String> unLocGuids, Map<String, UnlocationsResponse> map) {
@@ -931,6 +945,7 @@ public class CommonUtils {
             if(!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
                 val = val.replace("{" + entry.getKey() + "}", entry.getValue().toString());
         }
+        val = val.replaceAll("\\{.*?\\}", "");
         return val;
     }
 
@@ -1026,6 +1041,27 @@ public class CommonUtils {
         catch (Exception e) {
             log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
         }
+    }
+
+    public String convertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
+    {
+        String strDate = "";
+        if (date != null)
+        {
+            if(!IsStringNullOrEmpty(tsDatetimeFormat))
+                strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
+            else
+                strDate = date.format(getDPWDateFormatOrDefault());
+        }
+        return strDate;
+    }
+
+    public DateTimeFormatter getDPWDateFormatOrDefault()
+    {
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
+        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
     public static double roundOffAirShipment(double charge) {
