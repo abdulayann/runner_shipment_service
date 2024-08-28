@@ -226,7 +226,7 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("TransportInstructionId")
     private Long transportInstructionId;
     @JsonProperty("OrderManagementNumber")
-    private Long orderManagementNumber;
+    private String orderManagementNumber;
 
     private String document;
 }

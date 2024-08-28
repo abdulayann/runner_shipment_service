@@ -43,4 +43,11 @@ class V2AuthHelperTest {
         assertEquals("Shipment", headers.getFirst("SourceServiceType"));
         assertEquals("sampleXApiKey", headers.getFirst("x-api-key"));
     }
+
+    @Test
+    void testGetOrderManagementServiceSourceHeader() {
+        HttpHeaders headers = v2AuthHelper.getOrderManagementServiceSourceHeader();
+        assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
+        assertEquals("Shipment", headers.getFirst("SourceServiceType"));
+    }
 }

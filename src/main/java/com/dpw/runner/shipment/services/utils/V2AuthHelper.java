@@ -23,4 +23,13 @@ public class V2AuthHelper {
         return headers;
     }
 
+    public HttpHeaders getOrderManagementServiceSourceHeader() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        return headers;
+    }
+
+
+
 }

@@ -32,6 +32,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -50,6 +51,9 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderUrl;
     @Value("${order.management.getOrderbyGuid}")
     private String getOrderbyGuidUrl;
+
+    @Autowired
+    private V2AuthHelper v2AuthHelper;
 
     @Autowired
     private IV1Service v1Service;
@@ -78,9 +82,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     public ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException {
         try {
             String url = baseUrl + getOrderbyGuidUrl + orderGuid;
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(X_SOURCE, X_SOURCE_VALUE);
-            HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+            HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
             log.info("Request to Order Service: {}", url);
             var response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, OrderManagementResponse.class);
             log.info("Response from Order Service: {}", response.getBody());
