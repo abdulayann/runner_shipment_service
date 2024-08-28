@@ -16,7 +16,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EntityTransferRoutings implements IEntityTranferBaseEntity {
-    private UUID guid;
     private Long shipmentId;
     private Long bookingId;
     private Long leg;

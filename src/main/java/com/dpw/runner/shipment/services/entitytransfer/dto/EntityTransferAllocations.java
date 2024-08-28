@@ -18,7 +18,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAllocations implements IEntityTranferBaseEntity {
-    private UUID guid;
     private Integer shipmentsCount;
     private Boolean hazardous;
     private LocalDateTime cutoffDate;
