@@ -4026,7 +4026,7 @@ import static org.mockito.Mockito.*;
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
         spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)));
-        verify(consolidationSync).sync(any(), any(), any());
+        verify(consolidationSync).sync(any(), any(), anyBoolean());
     }
 
     private Runnable mockRunnable() {
