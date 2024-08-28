@@ -460,12 +460,14 @@ public class Constants {
     public static final String ALLOCATED_WEIGHT_UNIT = "Allocated_Weight_Unit";
     public static final String ALLOCATED_VOLUME_UNIT = "Allocated_Volume_Unit";
     public static final String REQUEST_DATE_TIME = "Request_Date_Time";
+    public static final String BRANCH_TIME_ZONE = "Branch_TimeZone";
     public static final String USER_NAME = "User_name";
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
     public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";
     public static final String INTERBRANCH_CONSOLIDATION_NUMBER = "Interbranch_Consolidation_Number";
     public static final String SHIPMENT_NUMBER = "Shipment_Number";
+    public static final String LAT = "LAT";
     public static final String SHIPMENT_WEIGHT = "Shipment_Weight";
     public static final String SHIPMENT_WEIGHT_UNIT = "Shipment_Weight_Unit";
     public static final String SHIPMENT_VOLUME = "Shipment_Volume";
