@@ -6236,7 +6236,7 @@ ShipmentServiceTest extends CommonMocks {
 
         consolidationDetails.setInterBranchConsole(true);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(testConsol));
-        doNothing().when(spyService).sendEmailsForPushRequestAccept(any(), any(), any());
+        doNothing().when(spyService).sendEmailsForPushRequestAccept(any(), any(), any(), any());
 
         ResponseEntity<IRunnerResponse> response = spyService.updateShipments(updateConsoleShipmentRequest);
 
@@ -6298,7 +6298,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
-        doNothing().when(spyService).sendEmailsForPullRequestAccept(any(), any(), any());
+        doNothing().when(spyService).sendEmailsForPullRequestAccept(any(), any(), any(), any());
 
         ResponseEntity<IRunnerResponse> response = spyService.updateShipments(updateConsoleShipmentRequest);
 
@@ -6607,7 +6607,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        spyService.sendEmailsForPushRequestAccept(testConsol, List.of(1L), new HashSet<>());
+        spyService.sendEmailsForPushRequestAccept(testConsol, List.of(1L), new HashSet<>(), new ArrayList<>());
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
@@ -6620,7 +6620,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        spyService.sendEmailsForPullRequestAccept(1L, 2L, new HashSet<>());
+        spyService.sendEmailsForPullRequestAccept(1L, 2L, new HashSet<>(), new ArrayList<>());
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
