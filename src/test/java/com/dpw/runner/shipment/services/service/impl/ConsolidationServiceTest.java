@@ -4014,6 +4014,20 @@ import static org.mockito.Mockito.*;
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
+    @Test
+    void attachShipmentsWithAutoRejectionMail() throws RunnerException {
+        var spyService = Mockito.spy(consolidationService);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+        when(shipmentDao.findAll(any(), any()))
+                .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build()).build()))));
+        when(consoleShipmentMappingDao.findAll(any(), any()))
+                .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build()))));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
+        spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)));
+    }
+
     private Runnable mockRunnable() {
         return null;
     }

@@ -85,13 +85,11 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class CommonUtils {
     private final ICarrierDetailsDao carrierDetailsDao;
     private final INotificationService notificationService;
-    private final ExecutorService executorService;
 
     @Autowired
-    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService, ExecutorService executorService) {
+    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService) {
         this.carrierDetailsDao = carrierDetailsDao;
         this.notificationService = notificationService;
-        this.executorService = executorService;
     }
 
     @Autowired
