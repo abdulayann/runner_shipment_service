@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -89,7 +88,7 @@ public class CommonUtils {
     private final ExecutorService executorService;
 
     @Autowired
-    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService, ExecutorService executorService, IConsolidationDetailsDao consolidationDetailsDao) {
+    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService, ExecutorService executorService) {
         this.carrierDetailsDao = carrierDetailsDao;
         this.notificationService = notificationService;
         this.executorService = executorService;
