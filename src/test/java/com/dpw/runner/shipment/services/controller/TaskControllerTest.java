@@ -30,7 +30,7 @@ class TaskControllerTest {
     @Test
     void create() {
         // Mock
-        when(tasksService.createTask(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(tasksService.createTaskForHbl(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = taskController.create(SendShipmentRequest.builder().build());
         // Assert
@@ -40,7 +40,7 @@ class TaskControllerTest {
     @Test
     void create2() {
         // Mock
-        when(tasksService.createTask(any())).thenThrow(new RuntimeException());
+        when(tasksService.createTaskForHbl(any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = taskController.create(SendShipmentRequest.builder().build());
         // Assert
@@ -50,7 +50,7 @@ class TaskControllerTest {
     @Test
     void create3() {
         // Mock
-        when(tasksService.createTask(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(tasksService.createTaskForHbl(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = taskController.create(SendShipmentRequest.builder().build());
         // Assert
