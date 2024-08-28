@@ -20,19 +20,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class RoutingsService implements IRoutingsService {
 
-    private final IRoutingsDao routingsDao;
-    private final ITrackingServiceAdapter trackingServiceAdapter;
-    private final ShipmentDao shipmentDao;
+    @Autowired
+    private IRoutingsDao routingsDao;
+    @Autowired
+    private ITrackingServiceAdapter trackingServiceAdapter;
+    @Autowired
+    private ShipmentDao shipmentDao;
 
     @Override
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException {
