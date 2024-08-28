@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -103,24 +104,32 @@ public class RoutingsService implements IRoutingsService {
         String description = event.getDescription();
         String descriptionFromSource = event.getDescriptionFromSource();
 
-        // Check and update POL routing
-        if (isVesselDepartureEvent(eventType, description, descriptionFromSource) && event.getProjectedEventTime() != null) {
-            LocalDateTime projectedEventTime = event.getProjectedEventTime().getDateTime();
-            Routings routing = polToRoutingMap.get(code);
-            if (routing != null) {
-                routing.setEtd(projectedEventTime);
-                routing.setAtd(projectedEventTime);
-            }
+        if (isVesselDepartureEvent(eventType, description, descriptionFromSource)) {
+            updatePolRouting(code, event.getProjectedEventTime(), polToRoutingMap);
+        } else if (isVesselArrivalEvent(eventType, description, descriptionFromSource)) {
+            updatePodRouting(code, event.getActualEventTime(), podToRoutingMap);
         }
+    }
 
-        // Check and update POD routing
-        if (isVesselArrivalEvent(eventType, description, descriptionFromSource) && event.getActualEventTime() != null) {
-            LocalDateTime actualEventTime = event.getActualEventTime().getDateTime();
-            Routings routing = podToRoutingMap.get(code);
-            if (routing != null) {
-                routing.setEta(actualEventTime);
-                routing.setAta(actualEventTime);
-            }
+    private void updatePolRouting(String code, DateAndSources projectedEventTime, Map<String, Routings> polToRoutingMap) {
+        if (projectedEventTime == null) return;
+
+        LocalDateTime eventTime = projectedEventTime.getDateTime();
+        Routings routing = polToRoutingMap.get(code);
+        if (routing != null) {
+            routing.setEtd(routing.getEtd() == null ? eventTime : routing.getEtd());
+            routing.setAtd(routing.getAtd() == null ? eventTime : routing.getAtd());
+        }
+    }
+
+    private void updatePodRouting(String code, DateAndSources actualEventTime, Map<String, Routings> podToRoutingMap) {
+        if (actualEventTime == null) return;
+
+        LocalDateTime eventTime = actualEventTime.getDateTime();
+        Routings routing = podToRoutingMap.get(code);
+        if (routing != null) {
+            routing.setEta(routing.getEta() == null ? eventTime : routing.getEta());
+            routing.setAta(routing.getAta() == null ? eventTime : routing.getAta());
         }
     }
 
