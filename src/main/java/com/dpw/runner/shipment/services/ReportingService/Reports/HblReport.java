@@ -278,10 +278,7 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
-
-        if (tenantSettings == null) {
-            tenantSettings = getCurrentTenantSettings();
-        }
+        tenantSettings = getCurrentTenantSettings();
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
