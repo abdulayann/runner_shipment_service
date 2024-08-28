@@ -835,14 +835,18 @@ public class CommonUtils {
     private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
         if(v1TenantSettingsMap.containsKey(tenantId)) {
             if(isShipment) {
-                toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId()))
+                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
                         .filter(s -> !s.isEmpty()).toList());
-                ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId()))
+                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
                         .filter(s -> !s.isEmpty()).toList());
             } else {
-                toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId()))
+                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
                         .filter(s -> !s.isEmpty()).toList());
-                ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId()))
+                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
                         .filter(s -> !s.isEmpty()).toList());
             }
         }
@@ -1032,7 +1036,7 @@ public class CommonUtils {
     public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
         Map<Integer, Object> map = getTenantSettings(new ArrayList<>(tenantIds));
         map.forEach((key, value) -> {
-            tenantSettingsMap.put(key, jsonHelper.convertValue(value, V1TenantSettingsResponse.class));
+            tenantSettingsMap.put(key, modelMapper.map(value, V1TenantSettingsResponse.class));
         });
     }
 
