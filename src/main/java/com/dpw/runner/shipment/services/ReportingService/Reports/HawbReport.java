@@ -168,7 +168,7 @@ public class HawbReport extends IReport{
                     dictionary.put(ReportConstants.HAWB_NO, shipmentInfo.getAwbNumber());
                     // Also show MAWB number when printing HAWB
                     dictionary.put(ReportConstants.MAWB_NO, hawbModel.getShipmentDetails().getMasterBill());
-                    AwbNumber = hawbModel.getMawb() == null || hawbModel.getMawb().getAwbShipmentInfo() == null || StringUtility.isEmpty(hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber()) ? "" : hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber();
+                    AwbNumber = hawbModel.getMawb() == null || hawbModel.getMawb().getAwbShipmentInfo() == null || StringUtility.isEmpty(hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber()) ? StringUtility.convertToString(hawbModel.getShipmentDetails().getMasterBill()) : hawbModel.getMawb().getAwbShipmentInfo().getAwbNumber();
                 }
                 dictionary.put(ReportConstants.NEUTRAL_AWB_NO, shipmentInfo.getAwbNumber());
 
