@@ -655,4 +655,19 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.SHIPMENT_SUMMARY)
+    public ResponseEntity<IRunnerResponse> calculateShipmentSummary(@RequestBody CalculateShipmentSummaryRequest calculateShipmentSummaryRequest) {
+        String responseMsg;
+        try {
+            return shipmentService.calculateShipmentSummary(CommonRequestModel.buildRequest(calculateShipmentSummaryRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }

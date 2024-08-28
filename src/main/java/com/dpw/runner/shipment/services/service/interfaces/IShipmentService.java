@@ -104,4 +104,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request);
 
     ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateShipmentSummary(CommonRequestModel commonRequestModel) throws RunnerException;
+
 }
