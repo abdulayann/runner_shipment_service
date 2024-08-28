@@ -1785,6 +1785,7 @@ class CommonUtilsTest {
         when(masterDataUtils.withMdc(any())).thenReturn(mockRunnable());
         spyService.sendRejectionEmailsExplicitly(List.of(ShipmentDetails.builder().build()), List.of(ConsoleShipmentMapping.builder().build()),
                 new HashSet<>(), List.of(ConsolidationDetails.builder().build()));
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
     private Runnable mockRunnable() {

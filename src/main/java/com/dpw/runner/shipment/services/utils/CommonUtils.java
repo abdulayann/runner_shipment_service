@@ -619,7 +619,7 @@ public class CommonUtils {
         Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
         Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
         Map<String, String> usernameEmailsMap = new HashMap<>();
-        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests = new HashMap<>();
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
         List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
