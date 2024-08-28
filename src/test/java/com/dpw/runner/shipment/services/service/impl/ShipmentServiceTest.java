@@ -71,17 +71,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AssignAllDialogDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
@@ -6665,6 +6655,55 @@ ShipmentServiceTest extends CommonMocks {
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForPushRequested(1L, 2L, new HashSet<>());
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testCalculateShipmentSummary_success_emptyList() throws RunnerException {
+        CalculateShipmentSummaryRequest calculateShipmentSummaryRequest = CalculateShipmentSummaryRequest.builder()
+                .shipmentIdList(List.of())
+                .build();
+
+        var response = shipmentService.calculateShipmentSummary(CommonRequestModel.buildRequest(calculateShipmentSummaryRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testCalculateShipmentSummary_success_nullList() throws RunnerException {
+        CalculateShipmentSummaryRequest calculateShipmentSummaryRequest = CalculateShipmentSummaryRequest.builder()
+                .shipmentIdList(null)
+                .build();
+
+        var response = shipmentService.calculateShipmentSummary(CommonRequestModel.buildRequest(calculateShipmentSummaryRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testCalculateShipmentSummary_success() throws RunnerException {
+        CalculateShipmentSummaryRequest calculateShipmentSummaryRequest = CalculateShipmentSummaryRequest.builder()
+                .shipmentIdList(List.of(1L))
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .noOfPacks(2)
+                .packsUnit("BAG")
+                .weight(BigDecimal.valueOf(123L))
+                .weightUnit(Constants.WEIGHT_UNIT_KG)
+                .volume(BigDecimal.valueOf(3L))
+                .volumeUnit(Constants.VOLUME_UNIT_M3)
+                .chargable(BigDecimal.valueOf(123L))
+                .chargeableUnit(Constants.WEIGHT_UNIT_KG)
+                .build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(Constants.VOLUME_UNIT_M3);
+
+
+        mockTenantSettings();
+        mockShipmentSettings();
+        when(shipmentDao.findShipmentsByIds(Set.of(1L))).thenReturn(List.of(shipmentDetails));
+
+        var response = shipmentService.calculateShipmentSummary(CommonRequestModel.buildRequest(calculateShipmentSummaryRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test

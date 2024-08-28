@@ -1064,4 +1064,14 @@ public class CommonUtils {
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
     }
 
+    public static double roundOffAirShipment(double charge) {
+        if (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) {
+            charge = Math.floor(charge) + 0.5;
+        } else {
+            charge = Math.ceil(charge);
+        }
+        return charge;
+    }
+
+
 }
