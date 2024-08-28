@@ -713,6 +713,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -726,14 +727,20 @@ public class ConsolidationService implements IConsolidationService {
         }
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();
+        List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted
         if(shipmentRequestedType == null) {
             interBranchShipIds = shipmentDetailsList.stream()
                     .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
                     .map(ShipmentDetails::getId).collect(Collectors.toSet());
             var newShipmentIds = new ArrayList<>(shipmentIds);
             newShipmentIds.removeAll(interBranchShipIds);
-            if (!newShipmentIds.isEmpty())
+            if (!newShipmentIds.isEmpty()) {
+                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, newShipmentIds, "IN", null);
+                listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
+                Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
+                consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
                 consoleShipmentMappingDao.deletePendingStateByShipmentIds(newShipmentIds);
+            }
         }
 
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
@@ -770,6 +777,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
             this.checkSciForAttachConsole(consolidationId);
+            // detaching the shipmentDetailsList but still able to access raw entity data, fetch any lazy load data beforehand if need to be used
             shipmentDao.entityDetach(shipmentDetailsList.getContent());
             updateLinkedShipmentData(consolidationDetails, null, true);
             // Update pack utilisation if user accepts any pull or push request
@@ -788,10 +796,14 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
-        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         interBranchShipIds.retainAll(attachedShipmentIds);
-        if(!interBranchShipIds.isEmpty())
+        if(!interBranchShipIds.isEmpty()) // send email for pull requested when called from controller directly
             sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
+        if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
+            List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
+            List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList.getContent(), consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
+        }
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
         }
