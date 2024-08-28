@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsoli
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor

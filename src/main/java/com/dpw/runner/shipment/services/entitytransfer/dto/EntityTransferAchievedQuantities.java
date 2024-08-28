@@ -17,7 +17,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EntityTransferAchievedQuantities implements IEntityTranferBaseEntity {
-    private UUID guid;
     private BigDecimal weightVolume;
     private String weightVolumeUnit;
     private BigDecimal consolidatedWeight;

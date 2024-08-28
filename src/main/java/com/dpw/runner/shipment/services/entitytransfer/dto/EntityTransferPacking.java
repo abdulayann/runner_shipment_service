@@ -85,7 +85,6 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private Boolean assigned;
     private DateBehaviorType dateType;
     private LocalDateTime cargoGateInDate;
-    private Integer tenantId;
 
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;

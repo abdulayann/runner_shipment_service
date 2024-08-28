@@ -31,8 +31,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @ToString
 public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, Serializable {
-    private Long id;
-    private Integer tenantId;
     private UUID guid;
     private String houseBill;
     private String transportMode;
@@ -109,22 +107,10 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private List<EntityTransferContainers> containersList;
 
     // ~~~~~~ confirm on the entities to keep ~~~~~~~~~
-    private PickupDeliveryDetailsResponse pickupDetails;
-    private PickupDeliveryDetailsResponse deliveryDetails;
-    private List<EventsResponse> eventsList;
-    private List<NotesResponse> notesList;
-    private List<TruckDriverDetailsResponse> truckDriverDetails;
     private List<ServiceDetailsResponse> servicesList;
     private List<ELDetailsResponse> elDetailsList;
-    private List<JobResponse> jobsList;
     // ~~~~~~~          END            ~~~~~~~~~~~~~~
 
-    private Long container20Count;
-    private Long container40Count;
-    private Long container20GPCount;
-    private Long container20RECount;
-    private Long container40GPCount;
-    private Long container40RECount;
     private String jobStatus;
     private BigDecimal goodsValue;
     private String goodsValueCurrency;
@@ -133,7 +119,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<EntityTransferParties> shipmentAddresses;
-    private List<AuditLogResponse> logsList;
     private String flightStatus;
     private Boolean containsHazardous;
     private String fmcTlcId;
@@ -147,14 +132,10 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Map<String, String> textData;
     private List<NotesResponse> customerBookingNotesList;
     private Map<String, Long> containerData;
-    private Long containerCount;
-    private BigDecimal teuCount;
-    private Integer packCount;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    private CustomerCategoryRates customerCategory;
     private String contractId;
     private String contractType;
     private String clientCountry;
@@ -176,7 +157,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private AwbStatus awbStatus;
 
     private String currentPartyForQuote;
-    private Map<String, Object> masterDataMap;
     private Boolean entityTransfer;
     private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
@@ -193,13 +173,13 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String sourceBranchTenantName;
 
     private Map<String, Object> masterData;
-//    private Map<String, String> masterData;
-    private Map<String, String> unlocationData;
-    private Map<String, String> currenciesMasterData;
-    private Map<String, String> tenantIdsData;
-
     private Integer sendToBranch;
 
+
+//    private Map<String, String> masterData;
+//    private Map<String, String> unlocationData;
+//    private Map<String, String> currenciesMasterData;
+//    private Map<String, String> tenantIdsData;
     // Previous fields
 //    private Map<String, EntityTransferUnLocations> unlocationData;
 //    private Map<String, EntityTransferUser> userMasterData;
