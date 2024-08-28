@@ -24,16 +24,15 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
@@ -75,7 +74,6 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.MasterDataConstants.ITEM_TYPE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -85,11 +83,13 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 public class CommonUtils {
     private final ICarrierDetailsDao carrierDetailsDao;
     private final INotificationService notificationService;
+    private final V1ServiceUtil v1ServiceUtil;
 
     @Autowired
-    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService) {
+    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService, V1ServiceUtil v1ServiceUtil) {
         this.carrierDetailsDao = carrierDetailsDao;
         this.notificationService = notificationService;
+        this.v1ServiceUtil = v1ServiceUtil;
     }
 
     @Autowired
@@ -593,7 +593,7 @@ public class CommonUtils {
     private void fetchDataForRejectionExplicitEmails(List<ShipmentDetails> shipmentDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
                                                      Set<Integer> tenantIds, Set<String> usernamesList, List<ConsolidationDetails> otherConsolidationDetails,
                                                      Map<String, String> usernameEmailsMap, Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests,
-                                                     List<EntityTransferMasterLists> toAndCcMailIds) {
+                                                     Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap) {
         for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
             usernamesList.add(shipmentDetails1.getCreatedBy());
             usernamesList.add(shipmentDetails1.getAssignedTo());
@@ -609,7 +609,7 @@ public class CommonUtils {
         }
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplatesRequests)), syncExecutorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getToAndCCEmailIds(tenantIds, toAndCcMailIds)), syncExecutorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), syncExecutorService);
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getUserDetails(usernamesList, usernameEmailsMap)), syncExecutorService);
         CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
     }
@@ -620,14 +620,13 @@ public class CommonUtils {
         Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
         Map<String, String> usernameEmailsMap = new HashMap<>();
         Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests = new HashMap<>();
-        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
 
         // fetch data from db and v1
-        fetchDataForRejectionExplicitEmails(shipmentDetails, consoleShipmentMappings, tenantIds, usernamesList, otherConsolidationDetails, usernameEmailsMap, emailTemplatesRequests, toAndCcMailIds);
+        fetchDataForRejectionExplicitEmails(shipmentDetails, consoleShipmentMappings, tenantIds, usernamesList, otherConsolidationDetails, usernameEmailsMap, emailTemplatesRequests, v1TenantSettingsMap);
 
-        Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
         if(!otherConsolidationDetails.isEmpty()) {
             Map<Long, ConsolidationDetails> finalConsolidationDetailsMap = otherConsolidationDetails.stream().collect(Collectors.toMap(BaseEntity::getId, y -> y));
             Map<Long, ShipmentDetails> finalShipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(BaseEntity::getId, e1 -> e1));
@@ -635,9 +634,9 @@ public class CommonUtils {
                 try {
                     if(finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId()) && finalShipmentDetailsMap.containsKey(consoleShipmentMapping.getShipmentId())) {
                         if(consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, toAndCCMasterDataMap, consoleShipmentMapping.getCreatedBy());
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy());
                         else
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, toAndCCMasterDataMap, consoleShipmentMapping.getCreatedBy());
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy());
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -664,7 +663,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -692,7 +691,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -720,7 +719,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -746,7 +745,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -772,7 +771,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -798,7 +797,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -806,7 +805,7 @@ public class CommonUtils {
 
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
                                                   Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequestMap, Set<ShipmentRequestedType> shipmentRequestedTypes, Map<String, UnlocationsResponse> unLocMap,
-                                                  Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap, String requestedUser) throws Exception{
+                                                  Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap , String requestedUser) throws Exception{
         SendEmailDto sendEmailDto = SendEmailDto.builder()
                 .shipmentDetails(shipmentDetails)
                 .consolidationDetails(consolidationDetails)
@@ -817,7 +816,7 @@ public class CommonUtils {
                 .unLocMap(unLocMap)
                 .carrierMasterDataMap(carrierMasterDataMap)
                 .usernameEmailsMap(usernameEmailsMap)
-                .toAndCCMasterDataMap(toAndCCMasterDataMap)
+                .v1TenantSettingsMap(v1TenantSettingsMap)
                 .requestedUser(requestedUser)
                 .build();
         sendEmailForPullPushRequestStatus(sendEmailDto);
@@ -834,25 +833,18 @@ public class CommonUtils {
         }
     }
 
-    private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap,
-                                            Integer tenantId, boolean isShipment) {
-        int toId = MasterDataType.ConsolidationAttachDefaultToMailId.getId();
-        int ccId = MasterDataType.ConsolidationAttachDefaultCCMailId.getId();
-        if(isShipment) {
-            toId = MasterDataType.ShipmentAttachDefaultToMailId.getId();
-            ccId = MasterDataType.ShipmentAttachDefaultCCMailId.getId();
-        }
-        if(toAndCCMasterDataMap.containsKey(tenantId)) {
-            for(EntityTransferMasterLists entityTransferMasterLists : toAndCCMasterDataMap.get(tenantId)) {
-                if(!IsStringNullOrEmpty(entityTransferMasterLists.getItemValue())) {
-                    if(entityTransferMasterLists.getItemType() == toId)
-                        toEmailIds.addAll(Arrays.stream(entityTransferMasterLists.getItemValue().split(",")).map(String::trim)
-                                .filter(s -> !s.isEmpty()).toList());
-
-                    if(entityTransferMasterLists.getItemType() == ccId)
-                        ccEmailIds.addAll(Arrays.stream(entityTransferMasterLists.getItemValue().split(",")).map(String::trim)
-                                .filter(s -> !s.isEmpty()).toList());
-                }
+    private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
+        if(v1TenantSettingsMap.containsKey(tenantId)) {
+            if(isShipment) {
+                toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+                ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+            } else {
+                toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+                ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
             }
         }
     }
@@ -1038,22 +1030,11 @@ public class CommonUtils {
         }
     }
 
-    public void getToAndCCEmailIds(Set<Integer> tenantIds, List<EntityTransferMasterLists> toAndCcMailIds) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        request.setTake(tenantIds.size() * 4);
-
-        List<Object> field = new ArrayList<>(List.of("TenantId"));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria1 = new ArrayList<>(List.of(field, operator, List.of(tenantIds.stream().toList())));
-
-        field = new ArrayList<>(List.of(ITEM_TYPE));
-        List<Object> criteria2 = new ArrayList<>(List.of(field, operator, List.of(List.of(MasterDataType.ConsolidationAttachDefaultToMailId.getId(),
-                MasterDataType.ConsolidationAttachDefaultCCMailId.getId(), MasterDataType.ShipmentAttachDefaultToMailId.getId(),
-                MasterDataType.ShipmentAttachDefaultCCMailId.getId()))));
-
-        request.setCriteriaRequests(new ArrayList<>(List.of(criteria1, "and", criteria2)));
-        V1DataResponse v1DataResponse = iv1Service.getMasterDetails(request);
-        toAndCcMailIds.addAll(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class));
+    public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
+        Map<Integer, Object> map = v1ServiceUtil.getTenantSettings(new ArrayList<>(tenantIds));
+        map.forEach((key, value) -> {
+            tenantSettingsMap.put(key, jsonHelper.convertValue(value, V1TenantSettingsResponse.class));
+        });
     }
 
     public void getUserDetails(Set<String> usernamesList, Map<String, String> usernameEmailsMap) {

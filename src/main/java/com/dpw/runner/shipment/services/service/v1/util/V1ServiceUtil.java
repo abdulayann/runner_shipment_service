@@ -343,4 +343,25 @@ public class V1ServiceUtil {
             return new HashMap<>();
         }
     }
+
+    public Map<Integer, Object> getTenantSettings(List<Integer> tenantIds) {
+        if (tenantIds.isEmpty())
+            return new HashMap<>();
+
+        try {
+            var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
+            return v1Response.getEntities()
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            TenantDetailsByListResponse.TenantDetails::getTenantId,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> list.get(0).getTenantSettings()
+                            )));
+        }
+        catch (Exception ex) {
+            log.error(ex.getMessage());
+            return new HashMap<>();
+        }
+    }
 }
