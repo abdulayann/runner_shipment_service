@@ -34,7 +34,7 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -125,7 +125,7 @@ class CommonUtilsTest {
     private ByteArrayOutputStream outputStream;
     private byte[] pdfBytes;
 
-    @AfterAll
+    @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
     }
@@ -142,7 +142,7 @@ class CommonUtilsTest {
         pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
-        commonUtils.syncExecutorService = Executors.newFixedThreadPool(1);
+        commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
         commonUtils.shipmentSettingsDao = shipmentSettingsDao;
 
         UsersDto mockUser = new UsersDto();
