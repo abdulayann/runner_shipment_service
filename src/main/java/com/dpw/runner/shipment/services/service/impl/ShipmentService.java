@@ -2063,7 +2063,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (routingsRequestList != null) {
-            List<Routings> updatedRoutings = routingsService.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
+            List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
             shipmentDetails.setRoutingsList(updatedRoutings);
         }
         if (serviceDetailsRequestList != null) {
@@ -3036,7 +3036,7 @@ public class ShipmentService implements IShipmentService {
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (routingsRequestList != null) {
-                List<Routings> updatedRoutings = routingsService.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id);
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id);
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {
@@ -3331,7 +3331,8 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
                 Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
-                List<Routings> updatedRoutings = routingsService.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id,
+                        oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {

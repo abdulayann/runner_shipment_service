@@ -2460,7 +2460,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(mockShipmentResponse);
 
         when(routingsDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
-        when(routingsService.updateEntityFromShipment(routingsList, 1L, new ArrayList<>())).thenReturn(routingsList);
+        when(routingsDao.updateEntityFromShipment(routingsList, 1L, new ArrayList<>())).thenReturn(routingsList);
         when(jsonHelper.convertValueToList(anyList(), any())).thenReturn(List.of());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeV1ShipmentCreateAndUpdate(request, new HashMap<UUID, String>(), new ArrayList<NotesRequest>(), true, new ArrayList<AuditLogRequestV2>(), "user");
@@ -3010,7 +3010,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-        when(routingsService.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(routings));
+        when(routingsDao.updateEntityFromShipment(any(), any())).thenReturn(List.of(routings));
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);

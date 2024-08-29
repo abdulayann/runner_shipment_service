@@ -1,12 +1,20 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.RoutingsUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 
 public interface IRoutingsService {
-    List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException;
-    List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException;
 
     void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException;
+
+    ResponseEntity<IRunnerResponse> updateRoutings(RoutingsUpdateRequest routingsUpdateRequest);
+
+    RoutingsResponse routingsToRoutingsResponse(Routings routings);
+
+    List<RoutingsResponse> routingsListToRoutingsResponseList(List<Routings> list);
 }

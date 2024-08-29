@@ -2,9 +2,12 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dto.request.RoutingsUpdateRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
@@ -12,9 +15,14 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,6 +31,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -36,27 +45,20 @@ public class RoutingsService implements IRoutingsService {
     @Autowired
     private ShipmentDao shipmentDao;
 
-    @Override
-    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException {
-        List<Routings> routings = routingsDao.updateEntityFromShipment(routingsList, shipmentId, oldEntityList);
-        updateRoutingsBasedOnTracking(shipmentId, routings);
-        return routings;
-    }
-
-    @Override
-    public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException {
-        List<Routings> routings = routingsDao.updateEntityFromShipment(routingsList, shipmentId);
-        updateRoutingsBasedOnTracking(shipmentId, routings);
-        return routings;
-    }
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException {
-        if (shipmentId == null || routings == null || routings.isEmpty()) return;
+        if (shipmentId == null || routings == null || routings.isEmpty()) {
+            return;
+        }
 
         // Fetch shipment details
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).orElse(null);
-        if (shipmentDetails == null) return;
+        if (shipmentDetails == null) {
+            return;
+        }
 
         // Fetch tracking data
         TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceAdapter.fetchTrackingData(
@@ -72,6 +74,29 @@ public class RoutingsService implements IRoutingsService {
         for (Container container : trackingServiceApiResponse.getContainers()) {
             processContainerEvents(container, polToRoutingMap, podToRoutingMap);
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> updateRoutings(RoutingsUpdateRequest routingsUpdateRequest) {
+
+        List<Routings> routingsRequest;
+        try {
+            routingsRequest = commonUtils.convertToEntityList(routingsUpdateRequest.getRoutings(), Routings.class);
+
+            Long shipmentId = routingsRequest.stream().findFirst().map(Routings::getShipmentId).orElse(null);
+
+            updateRoutingsBasedOnTracking(shipmentId, routingsRequest);
+        } catch (RuntimeException | RunnerException e) {
+            throw new RoutingException(e);
+        }
+
+        List<RoutingsResponse> routingsResponses = routingsListToRoutingsResponseList(routingsRequest);
+
+        return ResponseHelper.buildListSuccessResponse(
+                new ArrayList<>(routingsResponses != null ? routingsResponses : Collections.emptyList()),
+                0,
+                routingsResponses != null ? routingsResponses.size() : 0
+        );
     }
 
     private Map<String, Routings> createRoutingMap(List<Routings> routings, boolean isPol) {
@@ -149,4 +174,49 @@ public class RoutingsService implements IRoutingsService {
                 && (Constants.VESSEL_ARRIVAL_AT_TS_PORT.equalsIgnoreCase(descriptionFromSource)
                 || Constants.VESSEL_ARRIVAL_AT_POD.equalsIgnoreCase(descriptionFromSource));
     }
+
+    @Override
+    public RoutingsResponse routingsToRoutingsResponse(Routings routings) {
+        if (routings == null) {
+            return null;
+        }
+
+        RoutingsResponse.RoutingsResponseBuilder routingsResponse = RoutingsResponse.builder();
+
+        routingsResponse.id(routings.getId());
+        routingsResponse.guid(routings.getGuid());
+        routingsResponse.shipmentId(routings.getShipmentId());
+        routingsResponse.bookingId(routings.getBookingId());
+        routingsResponse.leg(routings.getLeg());
+        routingsResponse.mode(routings.getMode());
+        routingsResponse.routingStatus(routings.getRoutingStatus());
+        routingsResponse.vesselName(routings.getVesselName());
+        routingsResponse.pol(routings.getPol());
+        routingsResponse.pod(routings.getPod());
+        routingsResponse.isDomestic(routings.getIsDomestic());
+        routingsResponse.eta(routings.getEta());
+        routingsResponse.etd(routings.getEtd());
+        routingsResponse.ata(routings.getAta());
+        routingsResponse.atd(routings.getAtd());
+        routingsResponse.consolidationId(routings.getConsolidationId());
+        routingsResponse.isLinked(routings.getIsLinked());
+        routingsResponse.voyage(routings.getVoyage());
+        routingsResponse.aircraftRegistration(routings.getAircraftRegistration());
+        routingsResponse.flightNumber(routings.getFlightNumber());
+        routingsResponse.aircraftType(routings.getAircraftType());
+        routingsResponse.routeLegId(routings.getRouteLegId());
+        routingsResponse.transitDays(routings.getTransitDays());
+        routingsResponse.carrier(routings.getCarrier());
+        routingsResponse.truckReferenceNumber(routings.getTruckReferenceNumber());
+        routingsResponse.carrierCountry(routings.getCarrierCountry());
+
+        return routingsResponse.build();
+    }
+
+    @Override
+    public List<RoutingsResponse> routingsListToRoutingsResponseList(List<Routings> routings) {
+        return (routings == null) ? null : routings.stream()
+                .map(this::routingsToRoutingsResponse).toList();
+    }
+
 }

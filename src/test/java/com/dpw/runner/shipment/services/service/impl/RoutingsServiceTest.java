@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -97,39 +96,6 @@ class RoutingsServiceTest extends CommonMocks {
 
         trackingServiceApiResponse = new TrackingServiceApiResponse();
         trackingServiceApiResponse.setContainers(List.of(container));
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_withOldEntityList() throws RunnerException {
-        Long shipmentId = 123L;
-        List<Routings> oldEntityList = List.of(new Routings());
-        List<Routings> updatedRoutings = List.of(new Routings());
-
-        Mockito.when(routingsDao.updateEntityFromShipment(routingsList, shipmentId, oldEntityList)).thenReturn(routingsList);
-        Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
-        Mockito.when(trackingServiceAdapter.fetchTrackingData(Mockito.any())).thenReturn(trackingServiceApiResponse);
-
-        List<Routings> result = routingsService.updateEntityFromShipment(routingsList, shipmentId, oldEntityList);
-
-        assertEquals(updatedRoutings, result);
-        assertNotNull(result.get(0).getEtd());
-        assertNotNull(result.get(0).getAtd());
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_withoutOldEntityList() throws RunnerException {
-        Long shipmentId = 123L;
-        List<Routings> updatedRoutings = List.of(new Routings());
-
-        Mockito.when(routingsDao.updateEntityFromShipment(routingsList, shipmentId)).thenReturn(routingsList);
-        Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
-        Mockito.when(trackingServiceAdapter.fetchTrackingData(Mockito.any())).thenReturn(trackingServiceApiResponse);
-
-        List<Routings> result = routingsService.updateEntityFromShipment(routingsList, shipmentId);
-
-        assertEquals(updatedRoutings, result);
-        assertNotNull(result.get(0).getEtd());
-        assertNotNull(result.get(0).getAtd());
     }
 
     @Test
