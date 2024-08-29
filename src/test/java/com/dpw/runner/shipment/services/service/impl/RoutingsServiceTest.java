@@ -1,13 +1,19 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.RoutingsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsUpdateRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
@@ -15,8 +21,10 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,6 +36,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -54,12 +64,17 @@ class RoutingsServiceTest extends CommonMocks {
     private Place place;
     private Place place2;
     private TrackingServiceApiResponse trackingServiceApiResponse;
+    private RoutingsUpdateRequest routingsUpdateRequest;
+    private RoutingsRequest routingsRequest;
+    private List<RoutingsRequest> routingsRequests;
+    private List<RoutingsResponse> routingsResponseList;
 
     @BeforeEach
     void setUp() {
         routings = new Routings();
         routings.setPol("POL1");
         routings.setPod("POD1");
+        routings.setShipmentId(123L);
         routingsList = List.of(routings);
 
         shipmentDetails = new ShipmentDetails();
@@ -96,6 +111,17 @@ class RoutingsServiceTest extends CommonMocks {
 
         trackingServiceApiResponse = new TrackingServiceApiResponse();
         trackingServiceApiResponse.setContainers(List.of(container));
+
+        routingsRequest = new RoutingsRequest();
+        routingsRequest.setShipmentId(123L);
+
+        routingsRequests = new ArrayList<>();
+        routingsRequests.add(routingsRequest);
+
+        routingsUpdateRequest = new RoutingsUpdateRequest();
+        routingsUpdateRequest.setRoutingsRequests(routingsRequests);
+
+        routingsResponseList = List.of(new RoutingsResponse());
     }
 
     @Test
@@ -168,5 +194,51 @@ class RoutingsServiceTest extends CommonMocks {
         assertNull(routingsList.get(0).getEtd());
         assertNull(routingsList.get(0).getAtd());
     }
+
+    @Test
+    void testUpdateRoutings_success() throws RunnerException {
+        Mockito.when(commonUtils.convertToEntityList(Mockito.anyList(), Mockito.eq(Routings.class)))
+                .thenReturn(routingsList);
+        Mockito.when(shipmentDao.findById(Mockito.anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Mockito.when(trackingServiceAdapter.fetchTrackingData(Mockito.any())).thenReturn(new TrackingServiceApiResponse());
+
+        ResponseEntity<IRunnerResponse> response = routingsService.updateRoutings(routingsUpdateRequest);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateRoutings_trackingException() throws RunnerException {
+        Mockito.when(commonUtils.convertToEntityList(Mockito.anyList(), Mockito.eq(Routings.class)))
+                .thenReturn(routingsList);
+        Mockito.when(shipmentDao.findById(Mockito.anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Mockito.doThrow(new RunnerException("Tracking update failed"))
+                .when(trackingServiceAdapter).fetchTrackingData(Mockito.any());
+
+        assertThrows(RoutingException.class, () -> routingsService.updateRoutings(routingsUpdateRequest));
+    }
+
+    @Test
+    void testUpdateRoutings_emptyRoutingsList() {
+        routingsUpdateRequest.setRoutingsRequests(new ArrayList<>());
+
+        Mockito.when(commonUtils.convertToEntityList(Mockito.anyList(), Mockito.eq(Routings.class)))
+                .thenReturn(new ArrayList<>());
+
+        ResponseEntity<IRunnerResponse> response = routingsService.updateRoutings(routingsUpdateRequest);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateRoutings_runtimeException() {
+        Mockito.when(commonUtils.convertToEntityList(Mockito.anyList(), Mockito.eq(Routings.class)))
+                .thenThrow(new RuntimeException("Conversion failed"));
+
+        assertThrows(RoutingException.class, () -> routingsService.updateRoutings(routingsUpdateRequest));
+    }
+
 
 }

@@ -79,18 +79,18 @@ public class RoutingsService implements IRoutingsService {
     @Override
     public ResponseEntity<IRunnerResponse> updateRoutings(RoutingsUpdateRequest routingsUpdateRequest) {
 
-        List<Routings> routingsRequest;
+        List<Routings> routings;
         try {
-            routingsRequest = commonUtils.convertToEntityList(routingsUpdateRequest.getRoutings(), Routings.class);
+            routings = commonUtils.convertToEntityList(routingsUpdateRequest.getRoutingsRequests(), Routings.class);
 
-            Long shipmentId = routingsRequest.stream().findFirst().map(Routings::getShipmentId).orElse(null);
+            Long shipmentId = routings.stream().findFirst().map(Routings::getShipmentId).orElse(null);
 
-            updateRoutingsBasedOnTracking(shipmentId, routingsRequest);
+            updateRoutingsBasedOnTracking(shipmentId, routings);
         } catch (RuntimeException | RunnerException e) {
             throw new RoutingException(e);
         }
 
-        List<RoutingsResponse> routingsResponses = routingsListToRoutingsResponseList(routingsRequest);
+        List<RoutingsResponse> routingsResponses = routingsListToRoutingsResponseList(routings);
 
         return ResponseHelper.buildListSuccessResponse(
                 new ArrayList<>(routingsResponses != null ? routingsResponses : Collections.emptyList()),

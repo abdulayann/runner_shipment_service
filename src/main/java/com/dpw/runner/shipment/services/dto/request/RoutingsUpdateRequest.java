@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
 import java.util.List;
 import javax.validation.constraints.NotEmpty;
@@ -21,5 +22,6 @@ import lombok.ToString;
 public class RoutingsUpdateRequest implements IRunnerRequest {
 
     @NotEmpty(message = "routings cannot be blank / null")
-    private List<RoutingsRequest> routings;
+    @JsonProperty("routings")
+    private List<RoutingsRequest> routingsRequests;
 }
