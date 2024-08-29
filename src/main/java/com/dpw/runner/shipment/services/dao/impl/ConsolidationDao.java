@@ -166,14 +166,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
             consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
         }
-        consolidationDetails = consolidationRepository.save(consolidationDetails);
-        if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
-            setMawbStock(consolidationDetails);
-        }
         if (!Objects.isNull(oldConsole)
                 && (!Objects.equals(consolidationDetails.getInterBranchConsole(), oldConsole.getInterBranchConsole()) || !Objects.equals(consolidationDetails.getOpenForAttachment(), oldConsole.getOpenForAttachment()))
                 && (Boolean.FALSE.equals(consolidationDetails.getInterBranchConsole()) || Boolean.FALSE.equals(consolidationDetails.getOpenForAttachment()))) {
             consoleShipmentMappingDao.deletePendingStateByConsoleId(consolidationDetails.getId());
+        }
+        consolidationDetails = consolidationRepository.save(consolidationDetails);
+        if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
+            setMawbStock(consolidationDetails);
         }
     }
 

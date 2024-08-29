@@ -725,6 +725,8 @@ public class ConsolidationService implements IConsolidationService {
         if(shipmentRequestedType == null) {
             setInterBranchContext(consolidationDetails.getInterBranchConsole());
         }
+        if (!Objects.isNull(consolidationId))
+            awbDao.validateAirMessaging(consolidationId);
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
         Set<Long> interBranchShipIds = new HashSet<>();
         List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted

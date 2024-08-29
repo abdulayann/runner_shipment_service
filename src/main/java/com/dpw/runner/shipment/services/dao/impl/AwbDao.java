@@ -536,4 +536,13 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
         return awbRepository.findAwbByAwbNumbers(awbNumbers);
     }
+
+    @Override
+    public void validateAirMessaging(Long id) throws RunnerException {
+        List<Awb> awb = findByConsolidationId(id);
+        if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+                Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
+            throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
+        }
+    }
 }
