@@ -480,8 +480,6 @@ public class Constants {
     public static final String SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE = "Shipment Request Accept";
     public static final String SHIPMENT_PUSH_REJECTED_EMAIL_TYPE = "Shipment Request Reject";
 
-    public static final String USING_LEG_FOR_REPORTS = "Using Leg For Reports";
-
     private Constants() {
     }
 

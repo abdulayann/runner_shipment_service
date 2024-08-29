@@ -367,6 +367,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -588,8 +589,8 @@ public abstract class IReport {
             dictionary.put(TI_ISAIR, shipment.getTransportMode().equals(AIR));
         }
 
-        dictionary.putIfAbsent(ReportConstants.REPORT_TYPE, ReportConstants.DEFAULT);
-        populateRoutingData(shipment.getRoutingsList(), shipment.getCarrierDetails(), dictionary);
+        if(shipment.getCarrierDetails() != null)
+            dictionary.put(TI_FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
 
         if(shipment.getOrderManagementNumber()!=null)
             dictionary.put(ORDER_MANAGEMENT_NUMBER, shipment.getOrderManagementNumber());
@@ -629,15 +630,12 @@ public abstract class IReport {
         {
             dictionary.put(VesselsNameFlightName, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
         }
-
-        if(dictionary.get(Constants.USING_LEG_FOR_REPORTS)=="False"){
-            if(vesselsResponse != null){
-                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-            }
-            var array = new String[] {"" + dictionary.get(VESSEL_NAME), shipment.getCarrierDetails().getVoyage()};
-            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
+        if(vesselsResponse != null) {
+            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            if(!Objects.equals(shipment.getTransportMode(), AIR))
+                dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
         }
-
+        dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
         if(vesselsResponse != null && !Objects.equals(shipment.getTransportMode(), AIR))
                 dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
 
@@ -767,7 +765,7 @@ public abstract class IReport {
             masterData = masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).get(shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_TYPE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipment.getShipmentId());
-
+        dictionary.put(ReportConstants.FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
         dictionary.put(ReportConstants.ADDITIONAL_TERMS, shipment.getAdditionalTerms());
 
         dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse));
@@ -858,6 +856,11 @@ public abstract class IReport {
             dictionary.put(PaymentTermsDescription,  StringUtility.toUpperCase(masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms()).getItemDescription()));
         }
         dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, StringUtility.toUpperCase(shipment.getMarksNum()));
+
+
+
+        var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
+        dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
 
         masterData = null;
         if(placeOfIssue != null && masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(placeOfIssue.getCountry()))  {
@@ -1151,30 +1154,34 @@ public abstract class IReport {
     }
 
 
-    public Map<String, Object> populateRoutingData(List<RoutingsModel> routingsList, CarrierDetailModel carrierDetails,
+    public Map<String, Object> populateFromRouting(List<RoutingsModel> routingsList, CarrierDetailModel carrierDetails,
                                                    Map<String, Object> dictionary){
-        RoutingsModel routingObject = null;
-        if(routingsList!=null){
+        RoutingsModel routingSelectedForDocument = null;
+        if(ObjectUtils.isNotEmpty(routingsList)){
             for (RoutingsModel routing: routingsList){
                 if(Boolean.TRUE.equals(routing.getIsSelectedForDocument())){
-                    routingObject = routing;
+                    routingSelectedForDocument = routing;
                     break;
                 }
             }
         }
-        if(routingObject!=null && Objects.equals(dictionary.get(ReportConstants.REPORT_TYPE), ReportConstants.HBL)) {
-            dictionary.put(TI_FLIGHT_NUMBER, routingObject.getFlightNumber());
-            dictionary.put(ReportConstants.VOYAGE, routingObject.getVoyage());
-            dictionary.put(ReportConstants.FLIGHT_NUMBER, routingObject.getFlightNumber());
-            dictionary.put(VESSEL_NAME, routingObject.getVesselName());
-            var array = new String[] {"" + routingObject.getVesselName(), routingObject.getVoyage()};
+        if(routingSelectedForDocument!=null) {
+            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
+            dictionary.put(ReportConstants.VOYAGE, routingSelectedForDocument.getVoyage());
+            dictionary.put(ReportConstants.FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
+            dictionary.put(VESSEL_NAME, routingSelectedForDocument.getVesselName());
+            var array = new String[] {"" + routingSelectedForDocument.getVesselName(), routingSelectedForDocument.getVoyage()};
             dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
-            dictionary.put(Constants.USING_LEG_FOR_REPORTS, "True");
         } else if (carrierDetails != null) {
-            dictionary.put(TI_FLIGHT_NUMBER, carrierDetails.getFlightNumber());
+            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, carrierDetails.getFlightNumber());
             dictionary.put(ReportConstants.VOYAGE, carrierDetails.getVoyage());
             dictionary.put(ReportConstants.FLIGHT_NUMBER, carrierDetails.getFlightNumber());
-            dictionary.put(Constants.USING_LEG_FOR_REPORTS, "False");
+            VesselsResponse vesselsResponse = getVesselsData(carrierDetails.getVessel());
+            if(vesselsResponse!=null){
+                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            }
+            var array = new String[] {"" + dictionary.get(VESSEL_NAME), carrierDetails.getVoyage()};
+            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
         }
         return dictionary;
     }
