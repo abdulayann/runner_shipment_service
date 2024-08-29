@@ -5222,7 +5222,7 @@ public class ShipmentService implements IShipmentService {
                         consolidationService.attachShipments(updateConsoleShipmentRequest.getShipmentRequestedType(), updateConsoleShipmentRequest.getConsoleId(), List.of(shipmentId));
                     } catch (RunnerException e) {
                         log.error("Error while attaching shipments: {}", e.getMessage(), e);
-                        throw new BillingException(e);
+                        throw new BillingException(e.getMessage());
                     }
                 });
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, updateConsoleShipmentRequest.getListOfShipments(), "IN");
@@ -5254,7 +5254,12 @@ public class ShipmentService implements IShipmentService {
             throw new InvalidDataAccessApiUsageException("Console Ids list should not be empty!!!");
         }
         if (ShipmentRequestedType.APPROVE.equals(request.getShipmentRequestedType())) {
-            consolidationService.attachShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), List.of(request.getShipmentId()));
+            try {
+                consolidationService.attachShipments(request.getShipmentRequestedType(), request.getConsoleIdsList().get(0), List.of(request.getShipmentId()));
+            } catch (RunnerException e) {
+                log.error("Error while attaching shipments: {}", e.getMessage(), e);
+                throw new BillingException(e.getMessage());
+            }
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, request.getShipmentId(), "=");
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
