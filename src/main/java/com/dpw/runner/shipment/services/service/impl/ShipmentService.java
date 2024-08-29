@@ -1514,7 +1514,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             var console = shipmentDetails.getConsolidationList().get(0);
-            if (Objects.isNull(console) && Objects.isNull(console.getId()))
+            if (!Objects.isNull(console) && !Objects.isNull(console.getId()))
                 awbDao.validateAirMessaging(console.getId());
             if(!isCreate) {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipmentDetails.getId(), "=", null);
