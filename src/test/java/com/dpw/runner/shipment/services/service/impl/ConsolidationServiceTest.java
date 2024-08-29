@@ -1331,9 +1331,12 @@ import static org.mockito.Mockito.*;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.EMPTY_LIST));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds);
 
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds);
+        });
+
+        assertEquals("Multiple consolidations are attached to the shipment, please verify.", exception.getMessage());
     }
 
     @Test
