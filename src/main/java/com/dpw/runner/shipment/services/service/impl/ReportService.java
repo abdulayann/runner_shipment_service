@@ -1534,7 +1534,7 @@ public class ReportService implements IReportService {
     }
 
     private void setPrintTypeForAwb(ReportRequest reportRequest, Boolean isOriginalPrint) {
-        var originalPrintedAt = getCurrentTimeInTenantTimeZone();
+        var originalPrintedAt = LocalDateTime.now();
         if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
                 awbDao.updateAwbPrintInformation(null, Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED, isOriginalPrint, originalPrintedAt);
