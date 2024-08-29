@@ -3331,8 +3331,7 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, entity.getId(), "=");
                 Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
                 Page<Routings> oldRoutings = routingsDao.findAll(pair.getLeft(), pair.getRight());
-                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id,
-                        oldRoutings.stream().toList());
+                List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(jsonHelper.convertValueToList(routingsRequestList, Routings.class), id, oldRoutings.stream().toList());
                 entity.setRoutingsList(updatedRoutings);
             }
             if (serviceDetailsRequestList != null) {

@@ -28,6 +28,8 @@ public class RoutingController {
     @Autowired
     private IRoutingsService routingsService;
 
+    private class MyListResponseClass extends RunnerListResponse<RoutingsResponse> {}
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = MyListResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -35,10 +37,6 @@ public class RoutingController {
     @PostMapping("/update-routings")
     public ResponseEntity<IRunnerResponse> updateRoutings(@RequestBody @Valid RoutingsUpdateRequest routingsUpdateRequest) {
         return routingsService.updateRoutings(routingsUpdateRequest);
-    }
-
-    private class MyListResponseClass extends RunnerListResponse<RoutingsResponse> {
-
     }
 
 }
