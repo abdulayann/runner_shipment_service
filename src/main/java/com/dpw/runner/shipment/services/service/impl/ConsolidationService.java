@@ -997,6 +997,8 @@ public class ConsolidationService implements IConsolidationService {
             long id = oldEntity.get().getId();
             consolidationDetailsMapper.update(consolidationDetailsRequest, entity);
 
+            setInterBranchContext(entity.getInterBranchConsole());
+
             // Carrier Details Update
             CarrierPatchRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
             CarrierDetails updatedCarrierDetails = null;
@@ -1129,7 +1131,6 @@ public class ConsolidationService implements IConsolidationService {
     private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
-        setInterBranchContext(console.getInterBranchConsole());
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
             shipments = getShipmentsList(console.getId());
             var shipmentlist = shipments.stream().filter(x-> Objects.equals(x.getAdditionalDetails().getEfreightStatus(), Constants.NON)).toList();
