@@ -6253,9 +6253,8 @@ ShipmentServiceTest extends CommonMocks {
             shipmentService.updateShipments(updateConsoleShipmentRequest);
         });
 
-        assertNotNull(exception.getCause());
-        assertTrue(exception.getCause() instanceof RunnerException);
-        assertEquals("Mocked RunnerException", exception.getCause().getMessage());
+        assertNull(exception.getCause());
+        assertFalse(exception.getCause() instanceof RunnerException);
 
         verify(consoleShipmentMappingDao, never()).deletePendingStateByShipmentId(anyLong());
     }

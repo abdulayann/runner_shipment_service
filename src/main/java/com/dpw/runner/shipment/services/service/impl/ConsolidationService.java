@@ -752,13 +752,13 @@ public class ConsolidationService implements IConsolidationService {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
                 for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
                     if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
-                        return ResponseHelper.buildFailedResponse("Multiple consolidations are attached to the shipment, please verify.");
+                        throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
                 }
             }
 
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
-                    return ResponseHelper.buildFailedResponse("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
+                    throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
                 }
             }
 
