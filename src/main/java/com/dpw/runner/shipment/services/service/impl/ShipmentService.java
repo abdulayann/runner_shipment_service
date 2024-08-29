@@ -3586,6 +3586,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.getAdditionalDetails().setSurrenderPrinted(null);
             cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             cloneShipmentDetails.setAutoUpdateWtVol(false);
+            cloneShipmentDetails.setFileStatus(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
             
