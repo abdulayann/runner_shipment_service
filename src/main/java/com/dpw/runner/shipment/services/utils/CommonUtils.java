@@ -1035,9 +1035,7 @@ public class CommonUtils {
 
     public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
         Map<Integer, Object> map = getTenantSettings(new ArrayList<>(tenantIds));
-        map.forEach((key, value) -> {
-            tenantSettingsMap.put(key, modelMapper.map(value, V1TenantSettingsResponse.class));
-        });
+        map.forEach((key, value) -> tenantSettingsMap.put(key, modelMapper.map(value, V1TenantSettingsResponse.class)));
     }
 
     public Map<Integer, Object> getTenantSettings(List<Integer> tenantIds) {

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -47,8 +48,12 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
     private Boolean isModuleValidationEnabled;
-    private String ConsolidationAttachDefaultToMailId;
-    private String ConsolidationAttachDefaultCCMailId;
-    private String ShipmentAttachDefaultToMailId;
-    private String ShipmentAttachDefaultCCMailId;
+    @JsonProperty("ConsolidationAttachDefaultToMailId")
+    private String consolidationAttachDefaultToMailId;
+    @JsonProperty("ConsolidationAttachDefaultCCMailId")
+    private String consolidationAttachDefaultCCMailId;
+    @JsonProperty("ShipmentAttachDefaultToMailId")
+    private String shipmentAttachDefaultToMailId;
+    @JsonProperty("ShipmentAttachDefaultCCMailId")
+    private String shipmentAttachDefaultCCMailId;
 }

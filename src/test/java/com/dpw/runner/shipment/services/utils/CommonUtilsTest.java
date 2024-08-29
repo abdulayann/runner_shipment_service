@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -1769,6 +1770,21 @@ class CommonUtilsTest {
         spyService.sendRejectionEmailsExplicitly(List.of(ShipmentDetails.builder().build()), List.of(ConsoleShipmentMapping.builder().build()),
                 new HashSet<>(), List.of(ConsolidationDetails.builder().build()));
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void testGetTenantSettings() {
+        Map<Integer, Object> response = commonUtils.getTenantSettings(new ArrayList<>());
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantSettings1() {
+        when(iv1Service.getTenantDetails(any()))
+                .thenReturn(TenantDetailsByListResponse.builder()
+                        .entities(new ArrayList<>(List.of(TenantDetailsByListResponse.TenantDetails.builder().tenantId(2).build()))).build());
+        Map<Integer, Object> response = commonUtils.getTenantSettings(List.of(2));
+        assertFalse(response.isEmpty());
     }
 
     private Runnable mockRunnable() {
