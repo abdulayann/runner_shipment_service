@@ -636,9 +636,6 @@ public abstract class IReport {
                 dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
         }
         dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
-        if(vesselsResponse != null && !Objects.equals(shipment.getTransportMode(), AIR))
-                dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
-
         if(!Objects.isNull(pol)) {
             dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
             if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
