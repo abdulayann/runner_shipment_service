@@ -14,10 +14,8 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -91,6 +89,9 @@ public class EntityTransferService implements IEntityTransferService {
     private ILogsHistoryService logsHistoryService;
     @Autowired
     MasterDataFactory masterDataFactory;
+    @Autowired
+    IV1Service iv1Service;
+
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -1967,6 +1968,18 @@ public class EntityTransferService implements IEntityTransferService {
                 .jobType(shipmentDetails.getJobType())
                 .orderNumber(shipmentDetails.getOrderNumber())
                 .build();
+    }
+
+    private List<String> getRoleListByRoleId(Integer roleId) {
+
+        V1UsersEmailRequest request = new V1UsersEmailRequest();
+        request.setRoleId(roleId);
+        request.setTake(10);
+        List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
+
+        return emailIds;
     }
 
 }
