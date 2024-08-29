@@ -19,8 +19,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class EntityTransferContainers implements IEntityTranferBaseEntity {
     private UUID guid;
-    private Long consolidationId;
-    private Long bookingId;
     private Long loggingId;
     private String containerCode;
     private String containerNumber;
@@ -102,7 +100,6 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     private Map<String, String> textFieldData;
     private Boolean isPart;
     private Boolean isAttached;
-    //    private List<TruckDriverDetailsResponse> truckingDetails;
     private List<EventsResponse> eventsList;
     private String hblNumber;
     private String invoiceNumber;

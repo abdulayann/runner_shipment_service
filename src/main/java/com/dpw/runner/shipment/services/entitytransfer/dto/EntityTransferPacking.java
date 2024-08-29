@@ -1,12 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
-import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -21,9 +16,6 @@ import java.util.UUID;
 @NoArgsConstructor
 public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private UUID guid;
-    private Long consolidationId;
-    private Long shipmentId;
-    private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
@@ -61,7 +53,6 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
     private String vinNumber;
-    private Long containerId;
     private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;

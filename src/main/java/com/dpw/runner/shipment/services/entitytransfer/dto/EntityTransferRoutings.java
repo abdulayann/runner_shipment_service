@@ -1,14 +1,11 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.UUID;
 
 @ToString
 @Data
@@ -16,8 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EntityTransferRoutings implements IEntityTranferBaseEntity {
-    private Long shipmentId;
-    private Long bookingId;
     private Long leg;
     private String mode;
     private String routingStatus;
@@ -30,7 +25,6 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private LocalDateTime etd;
     private LocalDateTime ata;
     private LocalDateTime atd;
-    private Long consolidationId;
     private Boolean isLinked;
     private String voyage;
     private String aircraftRegistration;

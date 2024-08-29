@@ -1,26 +1,16 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
-import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -102,13 +92,12 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private List<EntityTransferRoutings> routingsList;
     private List<EntityTransferReferenceNumbers> referenceNumbersList;
     private List<EntityTransferPacking> packingList;
-    private List<EntityTransferFileRepo> fileRepoList;
     private List<EntityTransferBookingCarriage> bookingCarriagesList;
     private List<EntityTransferContainers> containersList;
 
     // ~~~~~~ confirm on the entities to keep ~~~~~~~~~
-    private List<ServiceDetailsResponse> servicesList;
-    private List<ELDetailsResponse> elDetailsList;
+    private List<EntityTransferServiceDetails> servicesList;
+//    private List<ELDetailsResponse> elDetailsList;
     // ~~~~~~~          END            ~~~~~~~~~~~~~~
 
     private String jobStatus;
@@ -126,15 +115,10 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
-    private String createdBy;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private Map<String, String> textData;
-    private List<NotesResponse> customerBookingNotesList;
     private Map<String, Long> containerData;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     private String contractId;
     private String contractType;
@@ -145,7 +129,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String salesBranch;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
-    private UUID sourceGuid;
     private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
@@ -154,17 +137,14 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
-    private AwbStatus awbStatus;
 
     private String currentPartyForQuote;
-    private Boolean entityTransfer;
     private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
     private String destinationSecondarySalesAgentEmail;
     private String destinationCurrentPartyForQuote;
     private String destinationContractId;
     private String destinationContractType;
-    private String updatedBy;
     private DateBehaviorType dateType;
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
