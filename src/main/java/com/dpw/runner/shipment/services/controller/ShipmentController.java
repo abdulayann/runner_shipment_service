@@ -22,7 +22,10 @@ import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValid
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -83,6 +86,9 @@ public class ShipmentController {
     IConsolidationService consolidationService;
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
+
+    @Autowired
+    EntityTransferService entityTransferService;
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
@@ -653,6 +659,17 @@ public class ShipmentController {
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
+    }
+
+    //@ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @PostMapping("/getUsers")
+    public List<String> requestInterBranchConsole(@RequestBody V1UsersEmailRequest request) {
+        log.info("Request received for interBrnach console request");
+//        try {
+            return entityTransferService.getRoleListRoleId(request);
+//        } catch (Exception ex) {
+//            return ResponseHelper.buildFailedResponse(ex.getMessage());
+//        }
     }
 
 }

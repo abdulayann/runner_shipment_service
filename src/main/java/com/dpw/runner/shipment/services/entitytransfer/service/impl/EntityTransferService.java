@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -45,11 +46,9 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -62,8 +61,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -2137,14 +2134,27 @@ public class EntityTransferService implements IEntityTransferService {
     private List<String> getRoleListByRoleId(Integer roleId) {
 
         V1UsersEmailRequest request = new V1UsersEmailRequest();
-        request.setRoleId(String.valueOf(roleId));
-        request.setTake("10");
-        V1DataResponse v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
+        request.setRoleId(roleId);
+        request.setTake(10);
+//        V1DataResponse v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
+//        List<UsersRoleListResponse> usersEmailIds = jsonHelper.convertValueToList(v1DataResponse.entities, UsersRoleListResponse.class);
+//
+//        List<String> emailIds = new ArrayList<>();
+//        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
 
+        List<String> emailIds = new ArrayList<>();
+      //  emailIds.add("anandaditya444@gmail.com");
+        return emailIds;
+    }
+
+    public List<String> getRoleListRoleId(V1UsersEmailRequest request) {
+        List<UsersRoleListResponse> v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        v1DataResponse.forEach(e -> emailIds.add(e.getEmail()));
 
 //        List<String> emailIds = new ArrayList<>();
-      //  emailIds.add("anandaditya444@gmail.com");
-        return jsonHelper.convertValueToList(v1DataResponse.entities, String.class);
+        //  emailIds.add("anandaditya444@gmail.com");
+        return emailIds;
     }
 
 //    private List<String> fetchUserEmailForRoleList(List<String> roleList) {

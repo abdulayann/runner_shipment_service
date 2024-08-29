@@ -2,23 +2,7 @@ package com.dpw.runner.shipment.services.service.v1;
 
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
@@ -26,6 +10,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface IV1Service {
@@ -186,5 +171,5 @@ public interface IV1Service {
     V1DataResponse getEmailTemplates(Object request);
     V1DataResponse getMasterDetails(Object request);
     V1DataResponse getUserDetails(Object request);
-    V1DataResponse getUserEmailsByRoleId(V1UsersEmailRequest request);
+    List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
 }

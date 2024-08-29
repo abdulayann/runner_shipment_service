@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.v1.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class V1UsersEmailRequest {
-    String RoleId;
-    String Take;
+    @JsonProperty("RoleId")
+    private Integer RoleId;
+    @JsonProperty("Take")
+    private Integer Take;
 }
