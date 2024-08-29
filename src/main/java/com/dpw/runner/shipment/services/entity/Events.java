@@ -93,4 +93,10 @@ public class Events extends MultiTenancy {
 
     @Column(name = "scheduled_date")
     private LocalDateTime scheduledDate;
+
+    @Column(name = "container_number")
+    private String containerNumber;
+
+    @Column(name = "location_role")
+    private String locationRole;
 }

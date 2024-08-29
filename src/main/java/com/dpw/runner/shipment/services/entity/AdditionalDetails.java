@@ -436,6 +436,30 @@ public class AdditionalDetails extends MultiTenancy {
     @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
     private String emergencyContactNumberCode;
 
+    @Column(name = "pickup_date")
+    private LocalDateTime pickupDate;
+
+    @Column(name = "cargo_delivered_date")
+    private LocalDateTime cargoDeliveredDate;
+
+    @Column(name = "custom_release_date")
+    private LocalDateTime customReleaseDate;
+
+    @Column(name = "doc_turned_over_to_customer")
+    private Boolean docTurnedOverToCustomer;
+
+    @Column(name = "proof_of_delivery_date")
+    private LocalDateTime proofOfDeliveryDate;
+
+    @Column(name = "warehouse_cargo_arrival_date")
+    private LocalDateTime warehouseCargoArrivalDate;
+
+    @Column(name = "pickup_by_consignee_completed")
+    private Boolean pickupByConsigneeCompleted;
+
+    @Column(name = "empty_container_returned")
+    private Boolean emptyContainerReturned;
+
     public String getbLRemarks() {
         return bLRemarks;
     }
