@@ -2136,26 +2136,20 @@ public class EntityTransferService implements IEntityTransferService {
         V1UsersEmailRequest request = new V1UsersEmailRequest();
         request.setRoleId(roleId);
         request.setTake(10);
-//        V1DataResponse v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
-//        List<UsersRoleListResponse> usersEmailIds = jsonHelper.convertValueToList(v1DataResponse.entities, UsersRoleListResponse.class);
+        List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
+
+        return emailIds;
+    }
+
+//    public List<String> getRoleListRoleId(V1UsersEmailRequest request) {
+//        List<UsersRoleListResponse> v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
+//        List<String> emailIds = new ArrayList<>();
+//        v1DataResponse.forEach(e -> emailIds.add(e.getEmail()));
 //
-//        List<String> emailIds = new ArrayList<>();
-//        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
-
-        List<String> emailIds = new ArrayList<>();
-      //  emailIds.add("anandaditya444@gmail.com");
-        return emailIds;
-    }
-
-    public List<String> getRoleListRoleId(V1UsersEmailRequest request) {
-        List<UsersRoleListResponse> v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
-        List<String> emailIds = new ArrayList<>();
-        v1DataResponse.forEach(e -> emailIds.add(e.getEmail()));
-
-//        List<String> emailIds = new ArrayList<>();
-        //  emailIds.add("anandaditya444@gmail.com");
-        return emailIds;
-    }
+//        return emailIds;
+//    }
 
 //    private List<String> fetchUserEmailForRoleList(List<String> roleList) {
 //        StringJoiner userEmails = new StringJoiner(";");
