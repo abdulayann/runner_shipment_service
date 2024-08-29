@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
-public enum TaskType {
-    SHIPMENT_IMPORTER(1, "ShipmentImporter"),
-    CONSOLIDATION_IMPORTER(9, "ConsolidationImporter");
-
+public enum TaskStatus {
+    PENDING_ACTION(0, "PendingAction"),
+    APPROVED(1, "Approved"),
+    REJECTED(2, "Rejected");
 
     private final int value;
     private final String description;
 
-    TaskType(int value, String description) {
+    TaskStatus(int value, String description) {
         this.value = value;
         this.description = description;
     }

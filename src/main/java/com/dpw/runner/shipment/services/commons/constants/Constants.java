@@ -442,6 +442,8 @@ public class Constants {
     public static final String Active = "Active";
     public static final String FILE_STATUS = "FileStatus";
     public static final String FLOW = "Flow";
+    public static final String TASK_TYPE = "TaskType";
+    public static final String TASK_STATUS = "TaskStatus";
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
