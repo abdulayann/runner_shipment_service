@@ -692,7 +692,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -772,7 +772,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
