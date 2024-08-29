@@ -509,6 +509,8 @@ public class ReportConstants {
     public static final String HBL = "Hbl";
     public static final String HAWB = "Hawb";
     public static final String MAWB = "Mawb";
+    public static final String DEFAULT = "Default";
+    public static final String REPORT_TYPE = "ReportType";
 
     public static final String BL_NOTIFY_PARTY_CAPS = "BL_NotifyPartyInCaps";
     public static final String CONSIGNER_CAPS = "ConsignerInCaps";

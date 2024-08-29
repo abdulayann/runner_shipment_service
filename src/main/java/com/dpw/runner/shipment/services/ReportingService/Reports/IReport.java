@@ -249,6 +249,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pi
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
@@ -587,8 +588,8 @@ public abstract class IReport {
             dictionary.put(TI_ISAIR, shipment.getTransportMode().equals(AIR));
         }
 
-        if(shipment.getCarrierDetails() != null)
-            dictionary.put(TI_FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
+        dictionary.putIfAbsent(ReportConstants.REPORT_TYPE, ReportConstants.DEFAULT);
+        populateRoutingData(shipment.getRoutingsList(), shipment.getCarrierDetails(), dictionary);
 
         if(shipment.getOrderManagementNumber()!=null)
             dictionary.put(ORDER_MANAGEMENT_NUMBER, shipment.getOrderManagementNumber());
@@ -628,12 +629,18 @@ public abstract class IReport {
         {
             dictionary.put(VesselsNameFlightName, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
         }
-        if(vesselsResponse != null) {
-            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-            if(!Objects.equals(shipment.getTransportMode(), AIR))
-                dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
+
+        if(dictionary.get(Constants.USING_LEG_FOR_REPORTS)=="False"){
+            if(vesselsResponse != null){
+                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            }
+            var array = new String[] {"" + dictionary.get(VESSEL_NAME), shipment.getCarrierDetails().getVoyage()};
+            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
         }
-        dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
+
+        if(vesselsResponse != null && !Objects.equals(shipment.getTransportMode(), AIR))
+                dictionary.put(VesselsNameFlightName, vesselsResponse.getName());
+
         if(!Objects.isNull(pol)) {
             dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
             if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
@@ -760,7 +767,7 @@ public abstract class IReport {
             masterData = masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).get(shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_TYPE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getDirection());
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipment.getShipmentId());
-        dictionary.put(ReportConstants.FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
+
         dictionary.put(ReportConstants.ADDITIONAL_TERMS, shipment.getAdditionalTerms());
 
         dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse));
@@ -851,11 +858,6 @@ public abstract class IReport {
             dictionary.put(PaymentTermsDescription,  StringUtility.toUpperCase(masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms()).getItemDescription()));
         }
         dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, StringUtility.toUpperCase(shipment.getMarksNum()));
-
-
-
-        var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
-        dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
 
         masterData = null;
         if(placeOfIssue != null && masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(placeOfIssue.getCountry()))  {
@@ -1146,6 +1148,35 @@ public abstract class IReport {
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+
+    public Map<String, Object> populateRoutingData(List<RoutingsModel> routingsList, CarrierDetailModel carrierDetails,
+                                                   Map<String, Object> dictionary){
+        RoutingsModel routingObject = null;
+        if(routingsList!=null){
+            for (RoutingsModel routing: routingsList){
+                if(Boolean.TRUE.equals(routing.getIsSelectedForDocument())){
+                    routingObject = routing;
+                    break;
+                }
+            }
+        }
+        if(routingObject!=null && Objects.equals(dictionary.get(ReportConstants.REPORT_TYPE), ReportConstants.HBL)) {
+            dictionary.put(TI_FLIGHT_NUMBER, routingObject.getFlightNumber());
+            dictionary.put(ReportConstants.VOYAGE, routingObject.getVoyage());
+            dictionary.put(ReportConstants.FLIGHT_NUMBER, routingObject.getFlightNumber());
+            dictionary.put(VESSEL_NAME, routingObject.getVesselName());
+            var array = new String[] {"" + routingObject.getVesselName(), routingObject.getVoyage()};
+            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
+            dictionary.put(Constants.USING_LEG_FOR_REPORTS, "True");
+        } else if (carrierDetails != null) {
+            dictionary.put(TI_FLIGHT_NUMBER, carrierDetails.getFlightNumber());
+            dictionary.put(ReportConstants.VOYAGE, carrierDetails.getVoyage());
+            dictionary.put(ReportConstants.FLIGHT_NUMBER, carrierDetails.getFlightNumber());
+            dictionary.put(Constants.USING_LEG_FOR_REPORTS, "False");
+        }
+        return dictionary;
     }
 
     private String getConcatenatedContact(String code, String number) {

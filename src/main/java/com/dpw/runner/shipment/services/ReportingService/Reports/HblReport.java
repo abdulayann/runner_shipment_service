@@ -475,6 +475,7 @@ public class HblReport extends IReport {
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
+        dictionary.put(ReportConstants.REPORT_TYPE, ReportConstants.HBL);
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
@@ -721,9 +722,14 @@ public class HblReport extends IReport {
         // SHIPMENT FIELDS
         dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRefNo());
         VesselsResponse vesselsResponse = getVesselsData(hblModel.shipment.getCarrierDetails().getVessel());
-        if(vesselsResponse != null)
-            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-        dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
+
+        if(dictionary.get(Constants.USING_LEG_FOR_REPORTS)=="False"){
+            if(vesselsResponse != null){
+                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            }
+            dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
+            dictionary.put(FLIGHT_NUMBER, hblModel.shipment.getCarrierDetails().getFlightNumber());
+        }
         dictionary.put(TRANSPORT_MODE, hblModel.shipment.getTransportMode());
         dictionary.put(DESCRIPTION, hblModel.blObject != null ? hblModel.blObject.getHblData().getCargoDescription()
                 : hblModel.shipment.getGoodsDescription());
@@ -992,7 +998,6 @@ public class HblReport extends IReport {
             dictionary.put(MESSERS, getValueFromMap(hblModel.shipment.getConsignee().getAddressData(), FULL_NAME));
         dictionary.put(IGM_NO, hblModel.shipment.getAdditionalDetails().getIGMFileNo());
         dictionary.put(FLIGHT_NAME, hblModel.shipment.getCarrierDetails().getShippingLine());
-        dictionary.put(FLIGHT_NUMBER, hblModel.shipment.getCarrierDetails().getFlightNumber());
         dictionary.put(MBL_NUMBER, hblModel.shipment.getMasterBill());
         dictionary.put(HBL_NUMBER, hblModel.shipment.getHouseBill());
 
