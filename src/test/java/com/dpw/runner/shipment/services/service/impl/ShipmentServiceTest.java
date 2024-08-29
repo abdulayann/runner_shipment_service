@@ -3089,7 +3089,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3141,7 +3141,7 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3194,7 +3194,7 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3251,7 +3251,7 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
         when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3310,7 +3310,7 @@ ShipmentServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
 //        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3362,7 +3362,7 @@ ShipmentServiceTest extends CommonMocks {
             when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
             when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
             when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+//            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
             when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
             when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
             when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
@@ -6322,7 +6322,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRequestInterBranchConsole_Success(){
+    void testRequestInterBranchConsole_Success() throws RunnerException {
         ShipmentService spyService = spy(shipmentService);
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
@@ -6331,7 +6331,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRequestInterBranchConsole_Success_Error() {
+    void testRequestInterBranchConsole_Success_Error() throws RunnerException {
         ShipmentService spyService = spy(shipmentService);
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
                 .shipmentId(1L).consolidationId(3L).isAttachmentDone(true).build()));
@@ -6340,7 +6340,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRequestInterBranchConsole_ExistingMapping(){
+    void testRequestInterBranchConsole_ExistingMapping() throws RunnerException {
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(ConsoleShipmentMapping.builder()
                 .shipmentId(1L).consolidationId(2L).build()));
         var response = shipmentService.requestInterBranchConsole(1L, 2L);

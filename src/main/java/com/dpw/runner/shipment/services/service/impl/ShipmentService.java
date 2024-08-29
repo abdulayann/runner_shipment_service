@@ -1514,11 +1514,8 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             var console = shipmentDetails.getConsolidationList().get(0);
-            List<Awb> awb = awbDao.findByConsolidationId(console.getId());
-            if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
-                    Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
-                throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
-            }
+            if (Objects.isNull(console) && Objects.isNull(console.getId()))
+                awbDao.validateAirMessaging(console.getId());
             if(!isCreate) {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipmentDetails.getId(), "=", null);
                 listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
@@ -1570,6 +1567,8 @@ public class ShipmentService implements IShipmentService {
 
         return syncConsole;
     }
+
+
 
     public boolean checkIfLCLConsolidationEligible(ShipmentDetails shipmentDetails) {
         if(!Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
@@ -5325,7 +5324,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) {
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) throws RunnerException {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipId);
         for (var consoleShip: consoleShipmentMappings) {
             if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
@@ -5335,6 +5334,7 @@ public class ShipmentService implements IShipmentService {
                 return ResponseHelper.buildSuccessResponse();
             }
         }
+        awbDao.validateAirMessaging(consoleId);
         ConsoleShipmentMapping entity = ConsoleShipmentMapping.builder()
                 .shipmentId(shipId)
                 .consolidationId(consoleId)
