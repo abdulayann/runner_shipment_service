@@ -72,7 +72,7 @@ public class AWBLabelReport extends IReport{
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         if(isMawb) {
             awbLabelModel.setConsolidation(getConsolidation(id));
-            awbLabelModel.setAwb(getMawb(id));
+            awbLabelModel.setAwb(getMawb(id, true));
         }
         else {
             awbLabelModel.shipment = getShipment(id);

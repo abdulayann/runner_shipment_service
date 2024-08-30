@@ -1712,12 +1712,12 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculatePacksUtilisationForAttachedShipmentEmptyPacks() throws RunnerException{
+    void testCalculatePacksUtilisationForAttachedShipmentEmptyRequest() throws RunnerException{
         var packingList = Collections.EMPTY_LIST;
         Long consolidationId = 1L;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setPackingList(packingList);
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
         shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
         Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
         consolidationDetails.setAllocations(allocations);
@@ -1793,7 +1793,7 @@ class PackingServiceTest extends CommonMocks {
         try{
             var response = packingService.calculatePacksUtilisationForConsolidation(request);
             assertNotNull(response);
-            verify(commonUtils, times(1)).setInterBranchContextForHub();
+            verify(commonUtils, times(0)).setInterBranchContextForHub();
         }
         catch (Exception e) {
             fail(e);

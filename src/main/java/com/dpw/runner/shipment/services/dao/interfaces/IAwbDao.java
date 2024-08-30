@@ -47,4 +47,5 @@ public interface IAwbDao {
     void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt);
     List<Awb> findByIds(List<Long> id);
     List<Awb> findAwbByAwbNumbers(List<String> awbNumbers);
+    void validateAirMessaging(Long id) throws RunnerException;
 }

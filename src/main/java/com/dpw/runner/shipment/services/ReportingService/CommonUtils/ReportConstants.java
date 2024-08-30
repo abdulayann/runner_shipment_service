@@ -549,6 +549,7 @@ public class ReportConstants {
     public static final String OTHER_CHARGES_IATA_OAT = "OtherChargesIATAOAT";
     public static final String OTHER_CHARGES_OAT = "OtherChargesOAT";
     public static final String NEW_OTHER_CHARGES_IATA = "NewOtherChargesIATA";
+    public static final String IATA_DESCRIPTION = "IATA_DESCRIPTION";
     public static final String OTHER_CHARGES_IATA = "OtherChargesIATA";
     public static final String NEW_OTHER_CHARGES = "NewOtherCharges";
     public static final String OTHER_CHARGES = "OtherCharges";
@@ -1208,4 +1209,7 @@ public class ReportConstants {
     public static final String DATE_OF_PRINT = "DateOfPrint";
     public static final String TIME_OF_PRINT = "TimeOfPrint";
     public static final String AWB_NOTIFYPARTY = "AWB_NotifyParty";
+
+    public static final String SLAC = "SLAC";
+    public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 }

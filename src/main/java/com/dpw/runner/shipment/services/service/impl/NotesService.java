@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -36,6 +37,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -74,17 +76,18 @@ public class NotesService implements INotesService {
                     log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                     throw new RunnerException("EntityId is not present");
                 }
+                CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(request.getEntityGuid()).build();
                 if(request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
-                    ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(request.getEntityGuid()));
-                    ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) response.getBody();
+                    ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
+                    ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
                     if(shipmentDetailsResponse == null) {
                         log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                         throw new RunnerException("EntityId is not present");
                     }
                     request.setEntityId(shipmentDetailsResponse.getId());
                 } else if(request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
-                    ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(request.getEntityGuid()));
-                    ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) response.getBody();
+                    ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
+                    ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
                     if(consolidationDetailsResponse == null) {
                         log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                         throw new RunnerException("EntityId is not present");

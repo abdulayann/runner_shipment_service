@@ -20,4 +20,5 @@ public class ListCommonRequest implements IRunnerRequest{
     private List<String> includeTbls;
     private String containsText;
     private List<String> includeColumns;
+    private Boolean notificationFlag;
 }

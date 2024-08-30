@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -64,4 +65,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     List<ShipmentDetails> findShipmentsByIds(Set<Long> id);
 
     List<ShipmentDetails> findBySourceGuid(UUID guid);
+
+    @Query(value = "SELECT distinct s.id from ShipmentDetails s inner join ConsoleShipmentMapping csm " +
+            "on s.id = csm.shipmentId " +
+            "where csm.isAttachmentDone = false and csm.requestedType = ?1")
+    Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }
