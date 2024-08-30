@@ -1835,6 +1835,8 @@ public class ConsolidationService implements IConsolidationService {
                         weight = weight.add(new BigDecimal(convertUnit(Constants.MASS, pack.getWeight(), pack.getWeightUnit(), container.getAchievedWeightUnit()).toString()));
                     if(pack.getVolume() != null && !IsStringNullOrEmpty(pack.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit()))
                         volume = volume.add(new BigDecimal(convertUnit(Constants.VOLUME, pack.getVolume(), pack.getVolumeUnit(), container.getAchievedVolumeUnit()).toString()));
+                    if(Boolean.TRUE.equals(pack.getHazardous()))
+                        container.setHazardous(true);
                 }
                 if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
                     if(container.getShipmentsList().size() > 0 && container.getShipmentsList().get(0).getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
