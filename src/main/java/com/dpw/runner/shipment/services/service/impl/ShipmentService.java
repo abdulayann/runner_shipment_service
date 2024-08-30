@@ -4751,7 +4751,7 @@ public class ShipmentService implements IShipmentService {
             for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
                 if(consoleShipmentMapping.getRequestedType() == null) {
                     attachedShipmentCurrentBranchCount++;
-                } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED) || consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED)) {
+                } else if(consoleShipmentMapping.getRequestedType().equals(APPROVE)) {
                     attachedShipmentInterBranchCount++;
                 } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED) || consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)) {
                     pendingAttachmentCount++;
