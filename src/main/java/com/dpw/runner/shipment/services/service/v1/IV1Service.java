@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import java.util.List;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -195,4 +196,8 @@ public interface IV1Service {
     V1DataResponse getEmailTemplates(Object request);
     V1DataResponse getMasterDetails(Object request);
     V1DataResponse getUserDetails(Object request);
+    List<String> getRoleIdsByRoleName(Object request);
+
+    V1DataResponse createTask(Object request);
+
 }

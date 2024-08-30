@@ -19,12 +19,14 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.util.List;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
@@ -45,6 +47,8 @@ public class V1ServiceImpl implements IV1Service {
     public static final String TOKEN_TIME_TAKEN_IN_SEND_SHIPMENT_TASK_FUNCTION_MSG = "Token time taken in sendShipmentTask() function ";
     public static final String TOKEN_TIME_TAKEN_IN_FETCH_SHIPMENT_BILLING_DATA_FUNCTION_MSG = "Token time taken in fetchShipmentBillingData() function ";
     public static final String TOKEN_TIME_TAKEN_IN_FETCH_ROLES_LIST_FUNCTION_MSG = "Token time taken in fetchRolesList() function ";
+
+    public static final String TOKEN_TIME_TAKEN_IN_FETCH_ROLES_ID_FUNCTION_MSG = "Token time taken in fetchRolesIdsByRoleName() function ";
     public static final String REQUEST_TOTAL_TIME_TAKEN_TO_GET_MAX_SHIPMENT_ID_MSG = "Request: {} || Total time taken to get max shipment id: {}";
     public static final String JOIN_REGEX = "{} {}";
 
@@ -73,6 +77,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.carrierDataCreate}")
     private String CARRIER_MASTER_DATA_CREATE_URL;
+
+    @Value("${v1service.url.base}${v1service.url.createTask}")
+    private String CREATE_TASK;
 
     @Value("${v1service.url.base}${v1service.url.carrierDataUpdate}")
     private String CARRIER_MASTER_DATA_UPDATE_URL;
@@ -288,6 +295,9 @@ public class V1ServiceImpl implements IV1Service {
     private String HBL_TASK_CREATION;
     @Value("${v1service.url.base}${v1service.url.roleList}")
     private String ROLES_LIST;
+
+    @Value("${v1service.url.base}${v1service.url.rolesIdByRoleName}")
+    private String ROLES_ID_BY_ROLENAME;
     @Value("${v1service.url.base}${v1service.url.billingData}")
     private String BILLING_LIST;
     @Value("${v1service.url.base}${v1service.url.billChargesData}")
@@ -2108,6 +2118,51 @@ public class V1ServiceImpl implements IV1Service {
             return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> getRoleIdsByRoleName(Object request) {
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            ResponseEntity<List<String>> response = this.restTemplate.exchange(
+                this.ROLES_ID_BY_ROLENAME,
+                HttpMethod.POST,
+                entity,
+                new ParameterizedTypeReference<List<String>>() {}
+            );
+            log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_ROLES_ID_FUNCTION_MSG, (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse createTask(Object request) {
+        ResponseEntity v1DataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            v1DataResponse = this.restTemplate.postForEntity(this.CREATE_TASK, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in createTask() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) v1DataResponse.getBody();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else {
+                throw new V1ServiceException(var6.getMessage());
+            }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
