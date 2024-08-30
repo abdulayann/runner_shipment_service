@@ -16,4 +16,5 @@ public class ErrorConstants {
     public static final String INVALID_UNIQUE_CONSTRAINT = "Unique constraint failed for property: %s in field: %s.";
     public static final String LOCK_UNLOCK_ERROR = "%s is Locked by User %s. Please request to Unlock for further update.";
     public static final String HAWB_NOT_GENERATED_ERROR = "Original HAWB is not generated for the shipment %s. Please generate them before printing the Original MAWB.";
+    public static final String VALIDATE_INTER_BRANCH_CONSOLE = "This consolidation has inter branch shipments attached to it, please detach those shipments before disabling inter branch consolidation.";
 }
