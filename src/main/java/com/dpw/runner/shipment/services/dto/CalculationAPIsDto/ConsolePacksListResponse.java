@@ -41,5 +41,6 @@ public class ConsolePacksListResponse implements IRunnerResponse {
         private String shipmentType;
         private Map<String, String> masterData;
         private Map<String, String> commodityMasterData;
+        private Boolean hazardous;
     }
 }
