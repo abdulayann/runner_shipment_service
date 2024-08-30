@@ -211,6 +211,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -366,6 +367,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IRoutingsDao routingsDao;
+
+    @Autowired
+    private IRoutingsService routingsService;
 
     @Autowired
     private IServiceDetailsDao serviceDetailsDao;

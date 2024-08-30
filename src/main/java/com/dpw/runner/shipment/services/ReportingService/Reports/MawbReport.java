@@ -51,10 +51,7 @@ public class MawbReport extends IReport {
     }
 
     public void validatePrinting(Long id) {
-
-        if (tenantSettings == null) {
-            tenantSettings = getCurrentTenantSettings();
-        }
+        tenantSettings = getCurrentTenantSettings();
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
 

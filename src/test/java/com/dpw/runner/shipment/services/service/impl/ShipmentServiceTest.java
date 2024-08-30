@@ -189,6 +189,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -358,6 +359,8 @@ ShipmentServiceTest extends CommonMocks {
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
     private MasterDataHelper masterDataHelper;
+    @Mock
+    private IRoutingsService routingsService;
     @Mock
     private DateTimeChangeLogService dateTimeChangeLogService;
 
@@ -3008,7 +3011,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-        when(routingsDao.updateEntityFromShipment(any(), any())).thenReturn(Arrays.asList(routings));
+        when(routingsDao.updateEntityFromShipment(any(), any())).thenReturn(List.of(routings));
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
