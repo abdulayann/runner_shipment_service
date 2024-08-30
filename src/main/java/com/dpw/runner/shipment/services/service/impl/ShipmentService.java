@@ -808,15 +808,20 @@ public class ShipmentService implements IShipmentService {
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
-
-
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+
+        ShipmentDetailsResponse shipmentDetailsResponse = this.createShipment(request, false);
+
+        return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
+    }
+
+    private ShipmentDetailsResponse createShipment(ShipmentRequest request, boolean includeGuid) {
         if (request == null) {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         this.setColoadingStation(request);
 
-        ShipmentDetails shipmentDetails = jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
             shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
 
@@ -850,7 +855,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached);
+            afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, includeGuid);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -875,7 +880,12 @@ public class ShipmentService implements IShipmentService {
 
 //        CompletableFuture.allOf(createCallToAdditionalDetails, createCallToContainers, createCallToPackings, createCallToBookingCarriages, createCallToElDetails, createCallToEvents, createCallToFileRepos, createCallToJobs, createCallToNotes, createCallToReferenceNumbers, createCallToRoutings, createCallToServiceDetails, createCallToPickupDelivery, createCallToParties, createCallToCarrierDetails).join();
 //        executorService.shutdownNow();
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+    }
+
+    @Override
+    public ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentRequest shipmentRequest) {
+        return this.createShipment(shipmentRequest, true);
     }
 
     ShipmentDetails getShipment(ShipmentDetails shipmentDetails) throws RunnerException {
@@ -1419,9 +1429,11 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
         this.setColoadingStation(shipmentRequest);
+        ShipmentDetailsResponse response = completeUpdateShipment(shipmentRequest);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
 
-        // TODO- implement Validation logic
-
+    private ShipmentDetailsResponse completeUpdateShipment(ShipmentRequest shipmentRequest) throws RunnerException {
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         long id=oldEntity.get().getId();
         Integer previousStatus = oldEntity.get().getStatus();
@@ -1448,25 +1460,24 @@ public class ShipmentService implements IShipmentService {
 
             try {
                 // audit logs
-               auditLogService.addAuditLog(
-                       AuditLogMetaData.builder()
-                               .newData(entity)
-                               .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
-                               .parent(ShipmentDetails.class.getSimpleName())
-                               .parentId(entity.getId())
-                               .operation(DBOperationType.UPDATE.name()).build()
-               );
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(entity)
+                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                                .parent(ShipmentDetails.class.getSimpleName())
+                                .parentId(entity.getId())
+                                .operation(DBOperationType.UPDATE.name()).build()
+                );
             }
             catch (Exception e) {
                 log.error("Error creating audit service log", e);
             }
 
-            afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached);
+            afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
             this.createLogHistoryForShipment(entity);
             ShipmentDetails finalEntity = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalEntity.getCarrierDetails(), oldConvertedShipment.getCarrierDetails())));
-            ShipmentDetailsResponse response = shipmentDetailsMapper.map(entity);
-            return ResponseHelper.buildSuccessResponse(response);
+            return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -1474,6 +1485,11 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
+    }
+
+    @Override
+    public ShipmentDetailsResponse completeUpdateShipmentFromEntityTransfer(ShipmentRequest shipmentRequest) throws RunnerException {
+        return this.completeUpdateShipment(shipmentRequest);
     }
 
     private void setColoadingStation(ShipmentRequest request) {
@@ -1900,7 +1916,7 @@ public class ShipmentService implements IShipmentService {
         return true;
     }
 
-    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException {
+    public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean includeGuid) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -2039,7 +2055,7 @@ public class ShipmentService implements IShipmentService {
 
         if (packingRequestList != null) {
             packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
-            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, isCreate), id, deleteContainerIds);
+            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, includeGuid ? false : isCreate), id, deleteContainerIds);
             shipmentDetails.setPackingList(updatedPackings);
         }
 

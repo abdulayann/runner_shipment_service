@@ -1393,11 +1393,10 @@ public class EntityTransferService implements IEntityTransferService {
                 cont.setGuid(newGuid);
             });
         }
-
-        ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
-
         // Packing will be created with shipment
         entityTransferConsolidationDetails.setPackingList(null);
+
+        ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
 
         ConsolidationDetailsResponse consolidationDetailsResponse = null;
         // create or update console
@@ -1405,10 +1404,8 @@ public class EntityTransferService implements IEntityTransferService {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
-            ResponseEntity<IRunnerResponse> response = consolidationService.create(CommonRequestModel.buildRequest(consolidationDetailsRequest));
-            if(response == null || response.getBody() == null)
-                throw new RunnerException("Response body of consolidation after creation is null");
-            consolidationDetailsResponse = ((RunnerResponse<ConsolidationDetailsResponse>) response.getBody()).getData();
+
+            consolidationDetailsResponse = consolidationService.createConsolidationFromEntityTransfer(consolidationDetailsRequest);
         } else {
             consolidationDetailsRequest = jsonHelper.convertValue(oldConsolidationDetailsList.get(0), ConsolidationDetailsRequest.class);
 
@@ -1421,10 +1418,7 @@ public class EntityTransferService implements IEntityTransferService {
             consolidationDetailsRequest.setShipmentsList(null);
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
 
-            ResponseEntity<IRunnerResponse> response = consolidationService.completeUpdate(CommonRequestModel.buildRequest(consolidationDetailsRequest));
-            if(response == null || response.getBody() == null)
-                throw new RunnerException("Response body of consolidation after update is null");
-            consolidationDetailsResponse = ((RunnerResponse<ConsolidationDetailsResponse>) response.getBody()).getData();
+            consolidationDetailsResponse = consolidationService.completeUpdateConsolidationFromEntityTransfer(consolidationDetailsRequest);
             oldConsolidationDetailsList.get(0).setContainersList(jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class));
         }
 
@@ -1459,7 +1453,7 @@ public class EntityTransferService implements IEntityTransferService {
     private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails) throws RunnerException {
         ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
         var tenantId = UserContext.getUser().getTenantId();
-        if(!Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
+        if(Objects.equals(shipmentRequest.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();
             InterBranchTenantIdContext.setContext(InterBranchTenantIdDto.builder().tenantId(entityTransferShipmentDetails.getSendToBranch()).build());
         }
@@ -1469,10 +1463,8 @@ public class EntityTransferService implements IEntityTransferService {
         if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
             shipmentRequest.setGuid(null);
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
-            ResponseEntity<IRunnerResponse> response = shipmentService.create(CommonRequestModel.buildRequest(shipmentRequest));
-            if(response == null || response.getBody() == null)
-                throw new RunnerException("Response body of shipment after creation is null");
-            shipmentDetailsResponse = ((RunnerResponse<ShipmentDetailsResponse>) response.getBody()).getData();
+
+            shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest);
         } else {
             shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentRequest.class);
 
@@ -1486,10 +1478,7 @@ public class EntityTransferService implements IEntityTransferService {
             shipmentRequest.setConsolidationList(List.of());
             shipmentRequest.setMasterBill(null);
 
-            ResponseEntity<IRunnerResponse> response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(shipmentRequest));
-            if(response == null || response.getBody() == null)
-                throw new RunnerException("Response body of shipment after update is null");
-            shipmentDetailsResponse = ((RunnerResponse<ShipmentDetailsResponse>) response.getBody()).getData();
+            shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
             oldShipmentDetailsList.get(0).setPackingList(jsonHelper.convertValueToList(shipmentDetailsResponse.getPackingList(), Packing.class));
         }
 
@@ -2398,10 +2387,14 @@ public class EntityTransferService implements IEntityTransferService {
                 UUID guid = shipment.getGuid();
                 Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
                 var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
+                // Revisit reverse logic for inter branch
                 if(sendConsolidationRequest.getSendToBranch().get(index).equals(entityTransferShipment.getReceivingBranch())) {
                     entityTransferShipment.setDirection(reverseDirection(shipment.getDirection()));
                 }
-                entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
+                    entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                else
+                    entityTransferShipment.setSendToBranch(sendConsolidationRequest.getSendToBranch().get(index));
                 entityTransferShipment.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                 transferShipmentDetails.add(entityTransferShipment);
 
