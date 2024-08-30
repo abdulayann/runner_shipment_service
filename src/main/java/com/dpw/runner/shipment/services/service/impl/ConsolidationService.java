@@ -331,7 +331,8 @@ public class ConsolidationService implements IConsolidationService {
             Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
             Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName("tenantId").build()),
             Map.entry(Constants.INTER_BRANCH_CONSOLE, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.INTER_BRANCH_CONSOLE).build()),
-            Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build())
+            Map.entry(Constants.OPEN_FOR_ATTACHMENT, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).fieldName(Constants.OPEN_FOR_ATTACHMENT).build()),
+            Map.entry("requestedOn", RunnerEntityMapping.builder().tableName("consoleShipmentMappings").dataType(LocalDateTime.class).fieldName("createdAt").build())
             );
 
     @Override
@@ -4249,6 +4250,7 @@ public class ConsolidationService implements IConsolidationService {
 
             listRequest = constructListCommonRequest("id", shipmentIds, "IN");
             listRequest.setContainsText(request.getContainsText());
+            listRequest.setSortRequest(request.getSortRequest());
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
             Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -4267,19 +4269,25 @@ public class ConsolidationService implements IConsolidationService {
             masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
             masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS);
 
-            var pushingShipmentMap = shipmentsPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData)).collect(
-                Collectors.toMap(PendingConsolidationActionResponse::getShipmentId, Function.identity()));
+            // console id vs list of ship ids
+            Map<Long, List<Long>> shipmentVsConsolIdMap = new HashMap<>();
 
-            // generate mapping for consol id vs list of pushing shipment(s)
+            // generate mapping for shipment id vs list of pulling consol(s)
             for(var mapping : mappingPage.getContent()) {
                 if(!notificationResultMap.containsKey(mapping.getConsolidationId())) {
                     notificationResultMap.put(mapping.getConsolidationId(), new ArrayList<>());
                 }
-                if(pushingShipmentMap.get(mapping.getShipmentId()) != null)
-                    notificationResultMap.get(mapping.getConsolidationId()).add(pushingShipmentMap.get(mapping.getShipmentId()));
+                if(!shipmentVsConsolIdMap.containsKey(mapping.getShipmentId())) {
+                    shipmentVsConsolIdMap.put(mapping.getShipmentId(), new ArrayList<>());
+                }
+                shipmentVsConsolIdMap.get(mapping.getShipmentId()).add(mapping.getConsolidationId());
             }
 
-            commonUtils.removeInterBranchContext();
+            shipmentsPage.getContent().stream().forEach(i -> {
+                var res = mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData);
+                shipmentVsConsolIdMap.get(i.getId()).forEach(shipId -> notificationResultMap.get(shipId).add(res));
+            });
+
         }
         catch(Exception e) {
             log.error("Error while generating notification map for input Consolidation", LoggerHelper.getRequestIdFromMDC(), e.getMessage());

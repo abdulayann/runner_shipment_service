@@ -496,4 +496,8 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "cargo_delivery_date")
      private LocalDateTime cargoDeliveryDate;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @Where(clause = "is_attachment_done = 'false'")
+    private List<ConsoleShipmentMapping> consoleShipmentMappings;
+
 }

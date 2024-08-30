@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.notification;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,4 +17,5 @@ public class PendingNotificationRequest implements IRunnerRequest {
     private List<Long> shipmentIdList;
     private List<Long> consolidationIdList;
     private String containsText;
+    private SortRequest sortRequest;
 }
