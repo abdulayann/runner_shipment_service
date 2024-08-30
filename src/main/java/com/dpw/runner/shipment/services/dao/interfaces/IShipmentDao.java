@@ -29,6 +29,7 @@ public interface IShipmentDao {
     void saveEntityTransfer(Long id, Boolean entityTransfer);
     List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
+    List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
     void entityDetach(List<ShipmentDetails> shipmentDetails);
     List<ShipmentDetails> findBySourceGuid(UUID guid);

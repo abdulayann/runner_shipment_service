@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRe
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -34,6 +35,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
 
     ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
+    ShipmentDetailsResponse completeUpdateShipmentFromEntityTransfer(ShipmentRequest shipmentRequest) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
@@ -45,6 +47,7 @@ public interface IShipmentService extends ICommonService {
     Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse);
 
     ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel);
+    ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentRequest shipmentRequest);
 
     ResponseEntity<IRunnerResponse> transportInstructionList(CommonRequestModel commonRequestModel);
 

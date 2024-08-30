@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 
@@ -109,24 +108,19 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private List<EntityTransferRoutings> routingsList;
     private List<EntityTransferContainers> containersList;
 
-    private String createdBy;
     private List<String> houseBills;
     private List<String> shipmentIds;
     private String bookingId;
     private List<EntityTransferParties> consolidationAddresses;
     private String bookingStatus;
     private String bookingNumber;
-    private LocalDateTime createdAt;
     private String carrierBookingRef;
 
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
-    private UUID sourceGuid;
     private String efreightStatus;
-    private AwbStatus awbStatus;
-    private AwbStatus linkedHawbStatus;
     private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;

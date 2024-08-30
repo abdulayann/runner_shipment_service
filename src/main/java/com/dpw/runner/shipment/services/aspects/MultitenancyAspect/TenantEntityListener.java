@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -25,6 +26,10 @@ public class TenantEntityListener {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
+            var interBranchTenantId = InterBranchTenantIdContext.getContext();
+            if((!Objects.isNull(interBranchTenantId) && !Objects.isNull(interBranchTenantId.getTenantId()))){
+                tenantId = interBranchTenantId.getTenantId();
+            }
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && !Objects.isNull(tenantId))
                 multiTenancy.setTenantId(tenantId);
@@ -46,6 +51,10 @@ public class TenantEntityListener {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
+            var interBranchTenantId = InterBranchTenantIdContext.getContext();
+            if((!Objects.isNull(interBranchTenantId) && !Objects.isNull(interBranchTenantId.getTenantId()))){
+                tenantId = interBranchTenantId.getTenantId();
+            }
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
@@ -74,6 +83,10 @@ public class TenantEntityListener {
         if(object instanceof MultiTenancy) {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
+            var interBranchTenantId = InterBranchTenantIdContext.getContext();
+            if((!Objects.isNull(interBranchTenantId) && !Objects.isNull(interBranchTenantId.getTenantId()))){
+                tenantId = interBranchTenantId.getTenantId();
+            }
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
