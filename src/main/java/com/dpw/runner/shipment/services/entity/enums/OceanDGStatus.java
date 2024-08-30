@@ -1,0 +1,13 @@
+package com.dpw.runner.shipment.services.entity.enums;
+
+public enum OceanDGStatus {
+  OCEAN_DG_REQUESTED,
+  OCEAN_DG_ACCEPTED,
+  OCEAN_DG_REJECTED,
+  OCEAN_DG_COMMERCIAL_REQUESTED,
+  OCEAN_DG_COMMERCIAL_ACCEPTED,
+  OCEAN_DG_COMMERCIAL_REJECTED,
+  APPROVE,
+  REJECTED,
+  WITHDRAW
+}
