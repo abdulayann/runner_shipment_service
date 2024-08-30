@@ -1269,64 +1269,6 @@ public class EntityTransferService implements IEntityTransferService {
 //
 //
 
-    /*
-          check for existing console based on sourceGuid
-          Create OldContainerGuidVsOldShipmentGuidMap
-
-          create Shipments {
-                Create OldShipmentGuidVsNewShipmentGuidMap
-                Create OldShipmentGuidVsNewShipmentIdMap
-                Create OldContainerGuidVsListofNewPackingGuid;
-                List of NewShipmentIds;
-                foreach shipment:
-                {
-
-                    check for existing shipment based on sourceGuid
-                    create {
-
-                        createShipment //TODO: can we use service create for shipment
-
-                    }
-                    update {
-                        setId, Guid of existing // TODO: mapper for payload transformation
-
-                        updateShipment
-                    }
-                    Create Shipment imported Event (Tenant Name of source branch from payload)
-
-                }
-                Shipment document create using OldShipmentGuidVsNewShipmentGuidMap; // TODO: document service api
-
-                return NewShipmentIds;
-            }
-
-
-
-            console Create {
-            }
-            console Update {
-            }
-
-            Attach Shipment and console; // TODO: test attachment of packs with console
-
-            Attach Containers to shipments
-            If containers Exists {
-                container.setShipmentIds(OldShipmentGuidVsNewShipmentIdMap(OldContainerGuidVsOldShipmentGuidMap));
-            }
-            Attach Packs to container
-
-            Create Consolidation imported Event (Tenant Name of source branch from payload)
-
-            Console document create ; // TODO: document service api
-
-            sendEmail();
-
-            return;
-
-         */
-
-
-
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException {
