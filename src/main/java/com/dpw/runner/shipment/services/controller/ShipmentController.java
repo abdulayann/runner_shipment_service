@@ -88,9 +88,6 @@ public class ShipmentController {
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
 
-    @Autowired
-    EntityTransferService entityTransferService;
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
     @PostMapping(value = "/list-shipment")
