@@ -1044,6 +1044,8 @@ public class ShipmentService implements IShipmentService {
                                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
                             if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
                                 totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
+                            if(Boolean.TRUE.equals(packing.getHazardous()))
+                                containers.setHazardous(true);
                         }
                         containers.setGrossWeight(totalWeight);
                         containers.setGrossVolume(totalVolume);
@@ -1052,6 +1054,19 @@ public class ShipmentService implements IShipmentService {
             }
         }
         return containersList;
+    }
+
+    private void makeContainersDGFromPack(List<ContainerRequest> containersList, List<PackingRequest> packingList) {
+        Set<Long> dgConts = new HashSet<>();
+        packingList.stream().forEach(pack -> {
+            if(Boolean.TRUE.equals(pack.getHazardous()))
+                dgConts.add(pack.getContainerId());
+        });
+        dgConts.remove(null);
+        containersList.stream().forEach(container -> {
+            if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
+                container.setHazardous(true);
+        });
     }
 
     public ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException {
@@ -1531,6 +1546,9 @@ public class ShipmentService implements IShipmentService {
             if(Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
                 containerRequest = jsonHelper.convertValueToList(oldEntity.getContainersList(), ContainerRequest.class);
             containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
+        } else {
+            if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+                makeContainersDGFromPack(containerRequest, packingRequest);
         }
         Long consolidationId = null;
         if(shipmentDetails.getConsolidationList() != null && shipmentDetails.getConsolidationList().size() > 0)
@@ -2174,6 +2192,8 @@ public class ShipmentService implements IShipmentService {
             if(StringUtility.isNotEmpty(shipmentDetails.getMasterBill())) {
                 consolidationDetails.setBol(shipmentDetails.getMasterBill());
             }
+            if(Objects.equals(TRANSPORT_MODE_SEA, shipmentDetails.getTransportMode()))
+                consolidationDetails.setHazardous(shipmentDetails.getContainsHazardous());
             consolidationService.generateConsolidationNumber(consolidationDetails);
             if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
             && consolidationDetails.getShipmentType().equals(Constants.IMP) || consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
