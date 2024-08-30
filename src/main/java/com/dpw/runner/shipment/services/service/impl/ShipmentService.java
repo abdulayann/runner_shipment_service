@@ -5442,7 +5442,7 @@ public class ShipmentService implements IShipmentService {
             .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
             .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
             .lat(consol.getLatDate())
-            .branch(tenantData.getCode() + "-" + tenantData.getTenantName())
+            .branch(tenantData.getCode() + " - " + tenantData.getTenantName())
             .hazardous(consol.getHazardous())
             .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())

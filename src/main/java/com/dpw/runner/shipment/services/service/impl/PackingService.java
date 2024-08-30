@@ -1068,7 +1068,7 @@ public class PackingService implements IPackingService {
         if(!optionalConsol.isPresent()) {
             return null;
         }
-        if(shipmentRequest != null && (shipmentRequest.getPackingList() == null || shipmentRequest.getPackingList().isEmpty()))
+        if(shipmentRequest != null && (shipmentRequest.getId() == null))
             return null;
 
         consol = optionalConsol.get();
@@ -1083,7 +1083,8 @@ public class PackingService implements IPackingService {
             // Filter out the old shipment-linked packs from the consol packs stream
             packingList.addAll(consol.getPackingList().stream().filter(i -> !Objects.equals(i.getShipmentId(),shipmentRequest.getId())).toList());
             // Add the current updated packs of the shipment
-            packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
+            var shipmentPackingList = jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class);
+            packingList.addAll(Optional.ofNullable(shipmentPackingList).orElse(Collections.emptyList()));
         }
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
             Set<Long> packingIdSet = new HashSet<>();

@@ -3497,6 +3497,10 @@ public class ConsolidationService implements IConsolidationService {
 
 
         String transportMode = shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode();
+        String sci = null;
+        if(Objects.equals(additionalDetails.getSci(), AwbConstants.T1)) {
+            sci = AwbConstants.T1;
+        }
 
         consol = ConsolidationDetailsResponse.builder()
                 .consolidationType(shipment.getJobType())
@@ -3523,6 +3527,7 @@ public class ConsolidationService implements IConsolidationService {
                 .releaseType(additionalDetails != null ? additionalDetails.getReleaseType() : null)
                 .original(additionalDetails != null ? additionalDetails.getOriginal() : null)
                 .copy(additionalDetails != null ? additionalDetails.getCopy() : null)
+                .sci(sci)
                 .allocations(AllocationsResponse.builder()
 //                        .weight(shipment.getWeight()) // commented just like the v1 code
                         .weightUnit(shipment.getWeightUnit())
@@ -4299,8 +4304,9 @@ public class ConsolidationService implements IConsolidationService {
             .etd(carrierDetails.getEtd())
             .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
             .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
-            .branch(tenantData.getCode() + "-" + tenantData.getTenantName())
+            .branch(tenantData.getCode() + " - " + tenantData.getTenantName())
             .hazardous(shipment.getContainsHazardous())
+            .delivery(shipment.getCargoDeliveryDate())
             .packs(StringUtility.convertToString(shipment.getNoOfPacks()) + StringUtility.convertToString(shipment.getPacksUnit()))
             .weight(StringUtility.convertToString(shipment.getWeight()) + StringUtility.convertToString(shipment.getWeightUnit()))
             .volume(StringUtility.convertToString(shipment.getVolume()) + StringUtility.convertToString(shipment.getVolumeUnit()))
