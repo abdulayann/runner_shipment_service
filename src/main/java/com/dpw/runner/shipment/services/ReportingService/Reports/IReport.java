@@ -2070,10 +2070,12 @@ public abstract class IReport {
         return null;
     }
 
-    public Awb getMawb(Long Id) {
-        List<Awb> awb = awbDao.findByConsolidationId(Id);
+    public Awb getMawb(Long id, boolean withPacks) {
+        List<Awb> awb = awbDao.findByConsolidationId(id);
         if(awb != null && !awb.isEmpty()) {
-            awbService.getMawnLinkPacks(awb.get(0));
+            if(withPacks) {
+                awbService.getMawnLinkPacks(awb.get(0));
+            }
             return awb.get(0);
         }
         return null;
@@ -2237,6 +2239,14 @@ public abstract class IReport {
         }
         return null;
     }
+
+    public static String ConvertToWeightNumberFormat(Object weight, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(weight != null && !CommonUtils.IsStringNullOrEmpty(weight.toString())) {
+            return GetDPWWeightVolumeFormat(new BigDecimal(weight.toString()), numberDecimalDigits, v1TenantSettingsResponse);
+        }
+        return null;
+    }
+
     public static String ConvertToWeightNumberFormat(BigDecimal weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(weight != null) {
             int numberDecimalDigits = 0;
