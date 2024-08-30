@@ -2009,6 +2009,21 @@ public class EntityTransferService implements IEntityTransferService {
                 .build();
     }
 
+    public void testSendConsolidationEmailNotification(Long consoleId, List<Integer> destinationBranches) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, destinationBranches));
+    }
+
+    public void testSendGroupedEmailForShipmentImport(Long consoleId, List<UUID> shipmentGuids) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        consolidationDetails.ifPresent(details -> sendGroupedEmailForShipmentImport(details, shipmentGuids));
+    }
+
+//    public void testSendEmailForShipmentImport(Long consoleId, List<UUID> shipmentGuids) {
+//        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+//        consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, shipmentGuids));
+//    }
+
     public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
         List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
         CommonV1ListRequest request = new CommonV1ListRequest();
@@ -2030,12 +2045,18 @@ public class EntityTransferService implements IEntityTransferService {
         }
         if(emailTemplateModel == null)
             emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
         for(Integer roleId: destinationBranches) {
             List<String> emailList = getRoleListByRoleId(roleId);
+            //emailList.add("anandaditya444@gmail.com");
             if(!emailList.isEmpty()) {
                 createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
-                notificationService.sendEmail(emailTemplateModel.getBody(),
-                        emailTemplateModel.getSubject(), emailList, null);
+                try {
+                    notificationService.sendEmail(emailTemplateModel.getBody(),
+                            emailTemplateModel.getSubject(), emailList, ccEmails);
+                } catch (Exception ex) {
+                    log.error(ex.getMessage());
+                }
             }
         }
     }
@@ -2061,12 +2082,13 @@ public class EntityTransferService implements IEntityTransferService {
         }
         if(emailTemplateModel == null)
             emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
         for(Integer roleId: destinationBranches) {
             List<String> emailList = getRoleListByRoleId(roleId);
             if (!emailList.isEmpty()) {
                 createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
                 notificationService.sendEmail(emailTemplateModel.getBody(),
-                        emailTemplateModel.getSubject(), emailList, null);
+                        emailTemplateModel.getSubject(), emailList, ccEmails);
             }
         }
     }
@@ -2143,31 +2165,10 @@ public class EntityTransferService implements IEntityTransferService {
         return emailIds;
     }
 
-//    public List<String> getRoleListRoleId(V1UsersEmailRequest request) {
-//        List<UsersRoleListResponse> v1DataResponse = iv1Service.getUserEmailsByRoleId(request);
-//        List<String> emailIds = new ArrayList<>();
-//        v1DataResponse.forEach(e -> emailIds.add(e.getEmail()));
-//
-//        return emailIds;
-//    }
-
-//    private List<String> fetchUserEmailForRoleList(List<String> roleList) {
-//        StringJoiner userEmails = new StringJoiner(";");
-//
-//        UserRepository repo = new UserRepository();
-//        for (UserRole role : roleList) {
-//            User response = connection.list(User.class, "UserId = ?", role.getUserId()).get(0);
-//            if (response.getEmail() == null || response.getIsActive() == 0) {
-//                continue;
-//            }
-//            userEmails.add(response.getEmail());
-//        }
-//        return userEmails.toString();
-//    }
-
 
 
     public void sendGroupedEmailForShipmentImport(ConsolidationDetails consolidationDetails, List<UUID> shipmentGuids) {
+        commonUtils.setInterBranchContextForHub();
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         Set<Integer> tenantIds = new HashSet<>();
         Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
@@ -2223,6 +2224,7 @@ public class EntityTransferService implements IEntityTransferService {
 
             if (!importerEmailIds.isEmpty()) {
                 createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails);
+                //importerEmailIds.add("anandaditya444@gmail.com");
                 notificationService.sendEmail(emailTemplateModel.getBody(),
                         emailTemplateModel.getSubject(), importerEmailIds, ccEmailIdsList);
             }
@@ -2242,12 +2244,10 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     public String generateSubject(List<ShipmentDetails> shipmentDetailsList, String consolidationBranch) {
-        // Extract shipment numbers from the list
         String shipmentNumbers = shipmentDetailsList.stream()
                 .map(ShipmentDetails::getShipmentId)
                 .collect(Collectors.joining(", "));
 
-        // Create the subject with the dynamic shipment numbers and consolidation branch
         String subjectTemplate = "Shipment/s: {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
 
         return subjectTemplate
@@ -2257,50 +2257,45 @@ public class EntityTransferService implements IEntityTransferService {
 
 
     public String generateEmailBody(Map<String, Object> tagDetails, List<ShipmentDetails> shipmentDetailsList, String htmlTemplate) {
-        // 1. Extract the table template
         String tableTemplate = extractTableTemplate(htmlTemplate);
 
-        // 2. Replace placeholders in the table
         String populatedTable = populateTableWithData(tableTemplate, shipmentDetailsList);
 
-        // 3. Replace placeholders in the rest of the email body
         String emailBody = replaceTagsValues(tagDetails, htmlTemplate);
-
-        // 4. Insert the populated table into the email body
-        return emailBody.replace("{#SD_ShipmentDetails}", "")
-                .replace("{/SD_ShipmentDetails}", populatedTable);
+        emailBody = emailBody.replace(tableTemplate, populatedTable);
+        return emailBody;
     }
-
 
     private String extractTableTemplate(String htmlTemplate) {
-        // Extract the part of the template that contains the table
-        int startIndex = htmlTemplate.indexOf("{#SD_ShipmentDetails}");
-        int endIndex = htmlTemplate.indexOf("{/SD_ShipmentDetails}") + "{/SD_ShipmentDetails}".length();
-        if (startIndex != -1 && endIndex > startIndex) {
-            return htmlTemplate.substring(startIndex, endIndex);
+        int tableStartIndex = htmlTemplate.indexOf("<table>");
+        int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
+
+        if (tableStartIndex != -1 && tableEndIndex > tableStartIndex) {
+            return htmlTemplate.substring(tableStartIndex, tableEndIndex);
         }
+
         return "";
     }
+
 
     private String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList) {
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
-        // Remove the row used as a template
         assert table != null;
         Element rowTemplate = table.select("tbody tr").get(1);
+
         rowTemplate.remove();
 
-        // Add rows for each shipment detail
         for (ShipmentDetails shipment : shipmentDetailsList) {
             Element newRow = rowTemplate.clone();
-            newRow.select("td").get(0).text(shipment.getShipmentId());
-            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch()));
-            newRow.select("td").get(2).text(shipment.getHouseBill());
-            newRow.select("td").get(3).text(shipment.getMasterBill());
-            newRow.select("td").get(4).text(String.valueOf(shipment.getShipmentCreatedOn()));
+            newRow.select("td").get(0).text(shipment.getShipmentId()).attr("style", "padding: 10px;");
+            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch())).attr("style", "padding: 10px;");
+            newRow.select("td").get(2).text(shipment.getHouseBill()).attr("style", "padding: 10px;");
+            newRow.select("td").get(3).text(shipment.getMasterBill()).attr("style", "padding: 10px;");
+            newRow.select("td").get(4).text(shipment.getShipmentCreatedOn().toString()).attr("style", "padding: 10px;");
 
-            table.select("tbody").append(newRow.outerHtml());
+            table.select("tbody").first().appendChild(newRow);
         }
 
         return table.outerHtml();
@@ -2320,258 +2315,5 @@ public class EntityTransferService implements IEntityTransferService {
 
         tagDetails.put("GS_ConsolidationBranch", consolidationBranch);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    public String generateEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, String htmlElement, ConsolidationDetails consolidationDetails) {
-//        // Step 1: Replace placeholders outside of the table
-//        String updatedHtmlElement = replaceTagsValues(shipmentDetailsForTenant, htmlElement);
-//
-//        // Step 2: Extract and replace the table template
-//        if (shipmentDetailsForTenant != null && !shipmentDetailsForTenant.isEmpty()) {
-//            String tableTemplate = extractContentBetweenTags(updatedHtmlElement, "{#SD_ShipmentDetails}", "{/SD_ShipmentDetails}");
-//            updatedHtmlElement = updatedHtmlElement.replace("{#SD_ShipmentDetails}", "")
-//                    .replace("{/SD_ShipmentDetails}", "");
-//
-//            // Build the table rows from shipmentDetailsForTenant
-//            StringBuilder tableRows = new StringBuilder();
-//            for (ShipmentDetails details : shipmentDetailsForTenant) {
-//                String row = String.format("<tr>"
-//                                + "<td>%s</td>"
-//                                + "<td>%s</td>"
-//                                + "<td>%s</td>"
-//                                + "<td>%s</td>"
-//                                + "<td>%s</td>"
-//                                + "</tr>",
-//                        details.getShipmentId(),
-//                        details.getReceivingBranch(),
-//                        "",
-//                        consolidationDetails.getMawb(),
-//                        details.getShipmentCreatedOn() != null ? details.getShipmentCreatedOn().toString() : ""
-//                );
-//                tableRows.append(row);
-//            }
-//
-//            // Replace the placeholder with the generated rows
-//            updatedHtmlElement = updatedHtmlElement.replace(tableTemplate, tableRows.toString());
-//        }
-//
-//        return updatedHtmlElement;
-//    }
-
-
-    // Helper method to replace placeholders with values from the tagDetails map
-//    private String replaceTagsValues(List<ShipmentDetails> shipmentDetailsForTenant, String htmlElement) {
-//        for (Map.Entry<String, Object> entry : tagDetails.entrySet()) {
-//            String tagPattern = String.format("{%s}", entry.getKey());
-//            String value = entry.getValue() == null ? "" : entry.getValue().toString();
-//            htmlElement = htmlElement.replace(tagPattern, value);
-//        }
-//        return htmlElement;
-//    }
-//
-//    // Helper method to extract content between startToken and endToken
-//    private String extractContentBetweenTags(String htmlElement, String startToken, String endToken) {
-//        int startIndex = htmlElement.indexOf(startToken);
-//        int endIndex = htmlElement.indexOf(endToken);
-//        if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-//            startIndex += startToken.length();
-//            return htmlElement.substring(startIndex, endIndex);
-//        }
-//        return "";
-//    }
-
-
-
-
-
-//    public String replaceTags(List<ShipmentDetails> shipmentDetailsForTenant, String htmlElement, String consolidationNumber) {
-//        String shippingInstruction;
-//        try {
-//            Document document;
-//            String replacedHtmlElement = "";
-//
-//            // Check for consolidation
-//            if (isConsolidation) {
-//                Map.Entry<String, Object> shipmentDetails = tagDetails.entrySet().stream()
-//                        .filter(entry -> "SI_ShipmentDetails".equals(entry.getKey()))
-//                        .findFirst()
-//                        .orElse(null);
-//
-//                String toBeRepeatedHtml = extractContentBetweenTags(htmlElement, "{#SD_ShipmentDetails}", "{/SD_ShipmentDetails}");
-//                String startList = "{#SI_ShipmentDetails}";
-//                String endList = "{/SI_ShipmentDetails}";
-//                htmlElement = htmlElement.replace(startList, "").replace(endList, "");
-//
-//                // Remove "</p>\n\n" from the start
-//                toBeRepeatedHtml = removePrefix(toBeRepeatedHtml, "</p>\n\n");
-//                // Remove "\n\n<p>" from the end
-//                toBeRepeatedHtml = removeSuffix(toBeRepeatedHtml, "\n\n<p>");
-//
-//                Object shipmentObject = (shipmentDetails == null) ? "" : shipmentDetails.getValue();
-//
-//                if (shipmentObject instanceof List) {
-//                    List<?> shipmentList = (List<?>) shipmentObject;
-//                    int index = 1;
-//                    String newHtmlElement = "";
-//                    for (Object shipment : shipmentList) {
-//                        htmlElement = (index > 1) ? toBeRepeatedHtml : htmlElement;
-//
-//                        if (shipment instanceof Map) {
-//                            Map<String, Object> shipmentDictionary = (Map<String, Object>) shipment;
-//                            document = Jsoup.parse(htmlElement);
-//                            newHtmlElement = replaceTableTags(shipmentDictionary, document, htmlElement);
-//                            newHtmlElement = replaceTagsValues(shipmentDictionary, newHtmlElement);
-//                        }
-//
-//                        replacedHtmlElement += newHtmlElement;
-//                        index++;
-//                    }
-//                }
-//            } else {
-//                document = Jsoup.parse(htmlElement);
-//                replacedHtmlElement = replaceTableTags(tagDetails, document, htmlElement);
-//                replacedHtmlElement = replaceTagsValues(tagDetails, replacedHtmlElement);
-//            }
-//            shippingInstruction = replacedHtmlElement;
-//        } catch (Exception ex) {
-//            log.error("Error occurred in replacing tags with values: {}", ex.getMessage());
-//            shippingInstruction = "";
-//        }
-//        return shippingInstruction;
-//    }
-
-//    public static String extractContentBetweenTags(String htmlElement, String startToken, String endToken) {
-//        int startIndex = htmlElement.indexOf(startToken);
-//        int endIndex = htmlElement.indexOf(endToken);
-//
-//        if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-//            startIndex += startToken.length();
-//            return htmlElement.substring(startIndex, endIndex);
-//        }
-//
-//        return "";
-//    }
-
-
-//    private static String removePrefix(String htmlElement, String prefix) {
-//        if (htmlElement.startsWith(prefix)) {
-//            return htmlElement.substring(prefix.length());
-//        }
-//        return htmlElement;
-//    }
-//
-//    private static String removeSuffix(String htmlElement, String suffix) {
-//        if (htmlElement.endsWith(suffix)) {
-//            return htmlElement.substring(0, htmlElement.length() - suffix.length());
-//        }
-//        return htmlElement;
-//    }
-
-
-//    public static String replaceTagsValues(Map<String, Object> tagDetails, String replacedHtmlElement) {
-//        for (Map.Entry<String, Object> tag : tagDetails.entrySet()) {
-//            String tagPattern = "{" + tag.getKey() + "}";
-//            String value = tag.getValue() == null ? "" : tag.getValue().toString();
-//            replacedHtmlElement = replacedHtmlElement.replace(tagPattern, value);
-//        }
-//        return replacedHtmlElement;
-//    }
-
-
-
-//    public String replaceTableTags(Map<String, Object> tagDetails, Document document, String htmlElement) {
-//        List<String> tagsList = new ArrayList<>();
-//        // Regular expression pattern to match "{...}"
-//        String pattern = "\\{([^}]+)\\}";
-//        Pattern regex = Pattern.compile(pattern);
-//        Elements tableList = document.select("table");
-//
-//        for (Element table : tableList) {
-//            // To get the tag details
-//            Object tagObject = null;
-//            Elements trElements = table.select("tbody tr");
-//            Elements tdList;
-//
-//            if (trElements.size() > 1) {
-//                tdList = trElements.get(1).select("td");
-//            } else {
-//                tdList = trElements.first().select("td");
-//            }
-//
-//            for (Element td : tdList) {
-//                String tdValue = td.text().trim();
-//                Matcher matcher = regex.matcher(tdValue);
-//
-//                while (matcher.find()) {
-//                    String extractedValue = matcher.group(1);
-//                    if (extractedValue.contains("#")) {
-//                        String tag = extractedValue.replace("#", "");
-//                        tagsList.add(tag);
-//                        tagObject = tagDetails.get(tag);
-//                        break;
-//                    }
-//                }
-//                if (tagObject != null) {
-//                    break;
-//                }
-//            }
-//
-//            // To replace the tags
-//            if (tagObject instanceof List<?>) {
-//                List<?> enumerableObjectList = (List<?>) tagObject;
-//                for (Object enumerableObject : enumerableObjectList) {
-//                    StringBuilder newRowHtml = new StringBuilder("<tr>");
-//
-//                    for (Element td : tdList) {
-//                        String tdValue = td.text().trim();
-//                        Matcher match = regex.matcher(tdValue);
-//
-//                        if (match.find() && !match.group().contains("#") && !match.group().contains("/")) {
-//                            String tdKey = match.group(1);
-//                            String value = "";
-//
-//                            if (enumerableObject instanceof Map<?, ?>) {
-//                                Map<String, Object> dictionary = (Map<String, Object>) enumerableObject;
-//                                value = dictionary.getOrDefault(tdKey, "").toString();
-//                            }
-//
-//                            String cellHtml = String.format("<td>%s</td>", value);
-//                            newRowHtml.append(cellHtml);
-//                        }
-//                    }
-//                    newRowHtml.append("</tr>");
-//                    table.append(newRowHtml.toString());
-//                }
-//            }
-//
-//            if (trElements.size() > 1) {
-//                trElements.get(1).html("");  // Remove the second tr element
-//            }
-//
-//            htmlElement = document.body().html();
-//
-//            // To replace the list tags
-//            for (String item : tagsList) {
-//                String startList = String.format("{#%s}", item);
-//                String endList = String.format("{/%s}", item);
-//                htmlElement = htmlElement.replace(startList, "");
-//                htmlElement = htmlElement.replace(endList, "");
-//            }
-//        }
-//
-//        return htmlElement;
-//    }
 
 }
