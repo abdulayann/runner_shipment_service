@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -203,9 +204,9 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -5200,16 +5201,16 @@ ShipmentServiceTest extends CommonMocks {
         List<Events> eventsList = new ArrayList<>();
 
         Events event1 = new Events();
-        event1.setEventCode(Constants.INVGNTD);
+        event1.setEventCode(EventConstants.INVGNTD);
 
         Events event2 = new Events();
-        event2.setEventCode(Constants.TAXSG);
+        event2.setEventCode(EventConstants.TAXSG);
 
         Events event3 = new Events();
-        event3.setEventCode(Constants.CSEDI);
+        event3.setEventCode(EventConstants.CSEDI);
 
         Events event4 = new Events();
-        event4.setEventCode(Constants.AMSEDI);
+        event4.setEventCode(EventConstants.AMSEDI);
 
         eventsList.add(event1);
         eventsList.add(event2);
@@ -5823,13 +5824,13 @@ ShipmentServiceTest extends CommonMocks {
         if (shipmentDetail.getEventsList() != null) {
             for (Events events : shipmentDetail.getEventsList()) {
                 if (StringUtility.isNotEmpty(events.getEventCode())) {
-                    if (events.getEventCode().equalsIgnoreCase(Constants.INVGNTD)) {
+                    if (events.getEventCode().equalsIgnoreCase(EventConstants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.TAXSG)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.TAXSG)) {
                         response.setTaxDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.CSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.CSEDI)) {
                         response.setCustomsFilingDate(events.getActual());
-                    } else if (events.getEventCode().equalsIgnoreCase(Constants.AMSEDI)) {
+                    } else if (events.getEventCode().equalsIgnoreCase(EventConstants.AMSEDI)) {
                         response.setAmsFilingDate(events.getActual());
                     }
                 }
