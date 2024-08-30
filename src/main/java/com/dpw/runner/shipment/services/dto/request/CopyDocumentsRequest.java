@@ -15,7 +15,7 @@ import java.util.UUID;
 public class CopyDocumentsRequest extends CommonRequest implements IRunnerRequest {
 
     private List<DocumentRequest> documents;
-
+    private Boolean deleteExistingDocuments;
     @Data
     @ToString
     @NoArgsConstructor
