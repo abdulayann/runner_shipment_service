@@ -165,4 +165,5 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
 //    private Map<String, EntityTransferUser> userMasterData;
 //    private Map<String, EntityTransferCurrency> currenciesMasterData;
 
+    private List<String> additionalDocs;
 }
