@@ -38,6 +38,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
+    public Integer countAllStateMappings(Long shipmentId) {
+        return consoleShipmentsMappingRepository.countByShipmentIdAndIsAttachmentDoneNotTrue(shipmentId);
+    }
+
+    @Override
     public List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId) {
         return consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId);
     }
@@ -74,10 +79,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
         Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = new HashMap<>();
         if (mappings != null && mappings.size() > 0) {
             for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if(Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
-                    shipmentIds.remove(consoleShipmentMapping.getShipmentId());
-                if(shipmentRequestedType != null) {
-                    consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
+                if(Objects.equals(consolidationId, consoleShipmentMapping.getConsolidationId())) {
+                    if(Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
+                        shipmentIds.remove(consoleShipmentMapping.getShipmentId());
+                    if(shipmentRequestedType != null)
+                        consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
                 }
             }
         }
@@ -149,6 +155,12 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Transactional
     public void deletePendingStateByShipmentId(Long shipmentId) {
         consoleShipmentsMappingRepository.deletePendingStateByShipmentId(shipmentId);
+    }
+
+    @Override
+    @Transactional
+    public void deletePendingStateByShipmentIds(List<Long> shipmentIds) {
+        consoleShipmentsMappingRepository.deletePendingStateByShipmentIds(shipmentIds);
     }
 
     @Override

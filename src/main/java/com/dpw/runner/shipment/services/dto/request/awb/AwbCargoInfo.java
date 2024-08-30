@@ -34,4 +34,5 @@ public class AwbCargoInfo implements Serializable {
     private BigDecimal insuranceAmount;
     private String customOriginCode;
     private String csdInfo;
+    private Integer slac;
 }

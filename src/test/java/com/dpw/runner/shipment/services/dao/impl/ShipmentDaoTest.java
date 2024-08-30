@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -27,7 +28,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -1098,5 +1101,16 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
         var response = shipmentDao.findBySourceGuid(UUID.randomUUID());
         assertFalse(response.isEmpty());
+    }
+
+    @Test
+    void testGetIdWithPendingActions() {
+        List<Long> eligibleShipmentId = List.of(1L, 2L, 3L);
+
+        Page<Long> shipmentIdPage = new PageImpl<>(eligibleShipmentId);
+        when(shipmentRepository.getIdWithPendingActions(any(), any())).thenReturn(shipmentIdPage);
+        var response = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED, PageRequest.of(1, 25));
+
+        assertEquals(shipmentIdPage, response);
     }
 }

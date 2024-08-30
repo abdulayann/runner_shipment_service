@@ -755,7 +755,7 @@ public class AwbService implements IAwbService {
             try {
                 res.setErrors(validateAwb(awbShipmentInfo));
             } catch (RunnerException e) {
-                throw new RuntimeException(e);
+                throw new ValidationException(e.getMessage(), e);
             }
             if(error != null)
                 res.setErrors(res.getErrors()!=null ? String.join("\r\n", res.getErrors(), error): error);
@@ -2647,6 +2647,8 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbPackingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + count.incrementAndGet() )));
             if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
                 awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + count.incrementAndGet())));
+            if(!Objects.isNull(awbResponse.getAwbOtherChargesInfo()))
+                awbResponse.getAwbOtherChargesInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbOtherChargesInfo.class, fieldNameKeyMap, AwbOtherChargesInfo.class.getSimpleName() + count.incrementAndGet())));
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
             masterListRequestV2.setMasterListRequests(listRequests);
@@ -2659,7 +2661,6 @@ public class AwbService implements IAwbService {
                 awbResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Awb.class.getSimpleName()), CacheConstants.MASTER_LIST));
                 if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
                     awbResponse.getAwbShipmentInfo().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(AwbShipmentInfo.class.getSimpleName()), CacheConstants.MASTER_LIST) );
-
             }
             else {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);

@@ -531,7 +531,7 @@ class EventServiceTest extends CommonMocks {
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
         trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
-        trackingEventsResponse.setEvents(List.of(new EventsRequestV2()));
+        trackingEventsResponse.setEventsList(List.of(new Events()));
         EventsResponse eventsResponse = new EventsResponse();
 
         TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
@@ -563,7 +563,7 @@ class EventServiceTest extends CommonMocks {
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
         trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
-        trackingEventsResponse.setEvents(List.of(new EventsRequestV2()));
+        trackingEventsResponse.setEventsList(List.of(new Events()));
         EventsResponse eventsResponse = new EventsResponse();
 
         Events mockEvent = new Events();

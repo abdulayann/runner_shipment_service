@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -660,4 +661,9 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findBySourceGuid(UUID guid) {
         return shipmentRepository.findBySourceGuid(guid);
     }
+    @Override
+    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+        return shipmentRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
+    }
+
 }

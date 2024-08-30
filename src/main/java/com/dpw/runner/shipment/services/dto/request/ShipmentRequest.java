@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
@@ -171,4 +172,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime cargoReadyDate;
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
+    private FileStatus fileStatus;
 }
