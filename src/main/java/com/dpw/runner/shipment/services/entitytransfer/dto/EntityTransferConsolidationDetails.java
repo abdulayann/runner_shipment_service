@@ -1,12 +1,8 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -20,9 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @ToString
 public class EntityTransferConsolidationDetails implements IEntityTranferBaseEntity {
-    private Long id;
     private UUID guid;
-    private Integer tenantId;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;
@@ -99,9 +93,9 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private String placeOfIssue;
 
 
-    private CarrierDetailResponse carrierDetails;
-    private AchievedQuantitiesResponse achievedQuantities;
-    private AllocationsResponse allocations;
+    private EntityTransferCarrierDetails carrierDetails;
+    private EntityTransferAchievedQuantities achievedQuantities;
+    private EntityTransferAllocations allocations;
     private EntityTransferArrivalDepartureDetails arrivalDetails;
     private EntityTransferArrivalDepartureDetails departureDetails;
     private EntityTransferParties sendingAgent;
@@ -113,28 +107,20 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private List<EntityTransferReferenceNumbers> referenceNumbersList;
     private List<EntityTransferRoutings> routingsList;
     private List<EntityTransferContainers> containersList;
-    private List<TruckDriverDetailsResponse> truckDriverDetails; // TODO : To be removed
-    private List<JobResponse> jobsList; // TODO : To be removed
-    private List<EventsResponse> eventsList; // TODO : To be removed
-    private List<FileRepoResponse> fileRepoList; // TODO : To be removed
-    private String createdBy;
+
     private List<String> houseBills;
     private List<String> shipmentIds;
     private String bookingId;
     private List<EntityTransferParties> consolidationAddresses;
     private String bookingStatus;
     private String bookingNumber;
-    private LocalDateTime createdAt;
     private String carrierBookingRef;
 
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
-    private UUID sourceGuid;
     private String efreightStatus;
-    private AwbStatus awbStatus;
-    private AwbStatus linkedHawbStatus;
     private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
@@ -153,7 +139,12 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private LocalDateTime latDate;
 
     private List<EntityTransferShipmentDetails> shipmentsList;
+
+    private Map<UUID, UUID> packingVsContainerGuid;
     private Map<UUID, List<UUID>> containerVsShipmentGuid;
+
+    private Integer sendToBranch;
+    private String sourceBranchTenantName;
 
     private Map<String, Object> masterData; // plug in response from Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse);
 //    private Map<String, String> masterData;
@@ -161,4 +152,5 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
 //    private Map<String, String> currenciesMasterData;
 //    private Map<String, String> tenantIdsData;
 //    private Map<String, String> textData;
+
 }

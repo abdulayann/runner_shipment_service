@@ -87,6 +87,18 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.FILE_STATUS, enumList);
 
+        enumList = new ArrayList<>();
+        for(TaskType taskType : TaskType.values()) {
+            enumList.add(EnumConstantResponse.builder().id(taskType.getValue()).description(taskType.getDescription()).name(taskType.name()).build());
+        }
+        response.put(Constants.TASK_TYPE, enumList);
+
+        enumList = new ArrayList<>();
+        for(TaskStatus taskStatus : TaskStatus.values()) {
+            enumList.add(EnumConstantResponse.builder().id(taskStatus.getValue()).description(taskStatus.getDescription()).name(taskStatus.name()).build());
+        }
+        response.put(Constants.TASK_STATUS, enumList);
+
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }

@@ -452,6 +452,11 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
 
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
+        ConsolidationDetailsResponse response = this.createConsolidation(request, false);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsRequest request, boolean includeGuid) {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
@@ -465,14 +470,19 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid);
             this.createLogHistoryForConsole(consolidationDetails);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), null)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+        return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+    }
+
+    @Override
+    public ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationDetailsRequest request) {
+        return this.createConsolidation(request, true);
     }
 
     @Transactional
@@ -493,7 +503,7 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails, false);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
             this.createLogHistoryForConsole(consolidationDetails);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -1073,16 +1083,19 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
-
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
-        // TODO- implement Validation logic
 
+        ConsolidationDetailsResponse response = this.completeUpdateConsolidation(consolidationDetailsRequest);
+
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private ConsolidationDetailsResponse completeUpdateConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
         Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(consolidationDetailsRequest);
         if (!oldEntity.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        long id = oldEntity.get().getId();
 
         consolidationDetailsRequest.setShipmentsList(null);
 
@@ -1111,18 +1124,22 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
+            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
             this.createLogHistoryForConsole(entity);
             ConsolidationDetails finalEntity = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalEntity.getCarrierDetails(), oldConvertedConsolidation.getCarrierDetails())));
-            ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
-            return ResponseHelper.buildSuccessResponse(response);
+            return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
+        return this.completeUpdateConsolidation(consolidationDetailsRequest);
     }
 
     /**
@@ -1147,7 +1164,10 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
-                        !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs())
+                        !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
+                        !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
+                        !Objects.equals(console.getTriangulationPartner(), oldEntity.getTriangulationPartner()) ||
+                        !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner())
                 )))) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
@@ -1155,6 +1175,12 @@ public class ConsolidationService implements IConsolidationService {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
                 i.setDirection(console.getShipmentType());
+                if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
+                    i.setTriangulationPartner(console.getTriangulationPartner());
+                    i.setDocumentationPartner(console.getDocumentationPartner());
+                    if (!Boolean.TRUE.equals(i.getIsReceivingBranchAdded()))
+                        i.setReceivingBranch(console.getReceivingBranch());
+                }
                 if (console.getCarrierDetails() != null) {
                     i.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
                     i.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
@@ -3316,7 +3342,7 @@ public class ConsolidationService implements IConsolidationService {
                 || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid) throws RunnerException{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
@@ -3342,11 +3368,11 @@ public class ConsolidationService implements IConsolidationService {
 
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
             && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, isFromBooking ? false : isCreate), id, (Long) null, true);
+            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, (isFromBooking || includeGuid) ? false : isCreate), id, (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, isFromBooking ? false : isCreate), id);
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (isFromBooking || includeGuid) ? false : isCreate), id);
             consolidationDetails.setPackingList(updatedPackings);
         }
         if (eventsRequestList != null) {

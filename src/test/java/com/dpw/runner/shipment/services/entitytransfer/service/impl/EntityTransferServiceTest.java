@@ -53,8 +53,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
@@ -987,6 +986,37 @@ class EntityTransferServiceTest {
         PostArValidationRequest request = new PostArValidationRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         assertThrows(RunnerException.class, () -> entityTransferService.postArValidation(commonRequestModel));
+    }
+
+    @Test
+    void testCheckEntityExists() {
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Shipment).build();
+        when(shipmentDao.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
+        var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCheckEntityExists2() {
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        when(consolidationDetailsDao.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
+        var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCheckEntityExists3() {
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        when(consolidationDetailsDao.findBySourceGuid(any())).thenThrow(new RuntimeException(""));
+        var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCheckEntityExists4() {
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).build();
+        var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

@@ -312,6 +312,8 @@ public class Constants {
     public static final String PRE_ALERT_EVENT_CODE = "PREALSNT";
     public static final String SHIPMENT_SENT = "ShipmentSent";
     public static final String CONSOLIDATION_SENT = "ConsolidationSent";
+    public static final String SHIPMENT_IMPORTED = "ShipmentImported";
+    public static final String CONSOLIDATION_IMPORTED = "ConsolidationImported";
 
     public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
 
@@ -441,6 +443,8 @@ public class Constants {
     public static final String Active = "Active";
     public static final String FILE_STATUS = "FileStatus";
     public static final String FLOW = "Flow";
+    public static final String TASK_TYPE = "TaskType";
+    public static final String TASK_STATUS = "TaskStatus";
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";

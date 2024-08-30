@@ -34,5 +34,6 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
     ConsolidationDetails findConsolidationsById(Long id);
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
+    List<ConsolidationDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }

@@ -3,12 +3,13 @@ package com.dpw.runner.shipment.services.entitytransfer.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.*;
 
+
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Builder
 @ToString
-@NoArgsConstructor
-@AllArgsConstructor
-public class ImportConsolidationResponse implements IRunnerResponse {
-    String consolidationNumber;
-    String message;
+public class CheckEntityExistResponse implements IRunnerResponse {
+    private Boolean isEntityExists;
+    private String message;
 }

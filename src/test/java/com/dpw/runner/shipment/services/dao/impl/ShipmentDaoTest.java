@@ -1097,6 +1097,13 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void findBySourceGuid() {
+        when(shipmentRepository.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
+        var response = shipmentDao.findBySourceGuid(UUID.randomUUID());
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
     void testGetIdWithPendingActions() {
         List<Long> eligibleShipmentId = List.of(1L, 2L, 3L);
 

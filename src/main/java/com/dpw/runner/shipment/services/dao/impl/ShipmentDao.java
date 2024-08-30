@@ -639,6 +639,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId) {
+        return shipmentRepository.findShipmentBySourceGuidAndTenantId(sourceGuid, tenantId);
+    }
+
+    @Override
     @Transactional
     public List<ShipmentDetails> findShipmentsByIds(Set<Long> ids) {
         return shipmentRepository.findShipmentsByIds(ids);
@@ -652,6 +657,10 @@ public class ShipmentDao implements IShipmentDao {
         }
     }
 
+    @Override
+    public List<ShipmentDetails> findBySourceGuid(UUID guid) {
+        return shipmentRepository.findBySourceGuid(guid);
+    }
     @Override
     public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
         return shipmentRepository.getIdWithPendingActions(shipmentRequestedType, pageable);

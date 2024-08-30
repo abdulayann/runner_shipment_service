@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -16,8 +17,9 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private String mode;
     private String routingStatus;
     private String vesselName;
-    private Long polId;
-    private Long podId;
+    private String pol;
+    private String pod;
+    @JsonProperty("domestic")
     private boolean isDomestic;
     private LocalDateTime eta;
     private LocalDateTime etd;
@@ -28,9 +30,18 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private String aircraftRegistration;
     private String flightNumber;
     private String aircraftType;
+    private String entityType;
+    private Long entityId;
     private Long routeLegId;
-    private Long vesselId;
     private Long transitDays;
-    private Map<String, EntityTransferMasterLists> masterData;
-    private Map<String, EntityTransferUnLocations> unlocationData;
+    private String carrier;
+    private String truckReferenceNumber;
+    private String carrierCountry;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> carrierMasterData;
+
+    // Previous
+//    private Map<String, EntityTransferMasterLists> masterData;
+//    private Map<String, EntityTransferUnLocations> unlocationData;
 }

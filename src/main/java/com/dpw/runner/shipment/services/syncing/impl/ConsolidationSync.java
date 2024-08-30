@@ -79,12 +79,12 @@ public class ConsolidationSync implements IConsolidationSync {
             return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
         CustomConsolidationRequest response = createConsoleSyncReq(request);
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-        if (isDirectSync) {
-            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(request.getCreatedBy(), request.getTenantId());
-            syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
-        }
-        else
-            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId, request.getTenantId(), request.getCreatedBy());
+       if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
+           HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(request.getCreatedBy(), request.getTenantId(), null);
+           syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
+       }
+       else
+           syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId, request.getTenantId(), request.getCreatedBy(), null);
        return ResponseHelper.buildSuccessResponse(response);
     }
 
@@ -92,8 +92,7 @@ public class ConsolidationSync implements IConsolidationSync {
     public void syncLockStatus(ConsolidationDetails consolidationDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(consolidationDetails.getGuid()).lockStatus(consolidationDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.CONSOLIDATION_LOCK).build());
-        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()),
-                consolidationDetails.getTenantId(), consolidationDetails.getCreatedBy());
+        syncService.pushToKafka(finalCs, String.valueOf(consolidationDetails.getId()), String.valueOf(consolidationDetails.getGuid()), "Consolidation Lock Sync", StringUtility.convertToString(consolidationDetails.getGuid()));
     }
 
     @Override

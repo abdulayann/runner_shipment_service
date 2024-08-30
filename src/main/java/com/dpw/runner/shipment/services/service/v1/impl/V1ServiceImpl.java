@@ -328,6 +328,12 @@ public class V1ServiceImpl implements IV1Service {
     private String getMasterDetails;
     @Value("${v1service.url.base}${v1service.url.getUserDetails}")
     private String getUserDetails;
+    @Value("${v1service.url.base}${v1service.url.createTask}")
+    private String createTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.updateTask}")
+    private String updateTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.retrieveTask}")
+    private String retrieveTaskUrl;
     @Value("${v1service.url.base}${v1service.url.userEmails}")
     private String getUserEmailsByRoleId;
     @Autowired
@@ -2110,6 +2116,54 @@ public class V1ServiceImpl implements IV1Service {
             masterDataResponse = this.restTemplate.postForEntity(this.getUserDetails, entity, V1DataResponse.class, V1DataResponse.class);
             log.info("Token time taken in getUserDetails() function {} ms", (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse createTask(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.createTaskUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in createTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse updateTask(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.updateTaskUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in updateTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1RetrieveResponse retrieveTask(Object request) {
+        ResponseEntity<V1RetrieveResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.retrieveTaskUrl, entity, V1RetrieveResponse.class);
+            log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

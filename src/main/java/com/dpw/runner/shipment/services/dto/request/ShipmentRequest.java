@@ -171,5 +171,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
 
     private LocalDateTime cargoReadyDate;
     private LocalDateTime cargoDeliveryDate;
+    private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
 }

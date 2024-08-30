@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsoli
 import lombok.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -14,4 +15,5 @@ import java.util.List;
 public class SendConsolidationResponse implements IRunnerResponse {
     private List<Integer> successTenantIds;
     EntityTransferConsolidationDetails entityTransferConsolidationDetails;
+    private String jsonString;
 }

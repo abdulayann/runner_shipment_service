@@ -54,7 +54,7 @@ class V1AuthHelperTest {
 
     @Test
     void testGetHeadersForDataSyncFromKafka() {
-        HttpHeaders headers = v1AuthHelper.getHeadersForDataSyncFromKafka("kafka-user", 456);
+        HttpHeaders headers = v1AuthHelper.getHeadersForDataSyncFromKafka("kafka-user", 456, null);
         assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
         assertEquals(null, headers.getFirst(ApiConstants.X_API_KEY));
         assertEquals("kafka-user", headers.getFirst("X-USER-NAME"));

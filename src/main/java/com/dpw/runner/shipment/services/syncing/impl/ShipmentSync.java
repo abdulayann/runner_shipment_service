@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -37,6 +39,8 @@ import static java.util.stream.Collectors.toMap;
 @Slf4j
 public class ShipmentSync implements IShipmentSync {
 
+    @Value("${v1service.dataSync.username}")
+    private String username;
     @Autowired
     ModelMapper modelMapper;
     @Autowired
@@ -61,12 +65,16 @@ public class ShipmentSync implements IShipmentSync {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
-        if (isDirectSync) {
-            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId());
+        if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
         }
-        else
-            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), sd.getCreatedBy());
+        else {
+            if(!Objects.isNull(sd.getSourceGuid()) && !Objects.equals(sd.getGuid(), sd.getSourceGuid())) // Entity Transfer Shipment
+                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), username, UserContext.getUser().getUsername());
+            else
+                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), sd.getCreatedBy(), null);
+        }
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
@@ -174,7 +182,7 @@ public class ShipmentSync implements IShipmentSync {
     @Override
     public ResponseEntity<IRunnerResponse> syncFromBooking(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) throws RunnerException {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
-        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId());
+        HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
             var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
