@@ -153,4 +153,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
 //    private Map<String, String> tenantIdsData;
 //    private Map<String, String> textData;
 
+    private List<String> additionalDocs;
+    private Map<String, List<String>> shipAdditionalDocs;
+
 }
