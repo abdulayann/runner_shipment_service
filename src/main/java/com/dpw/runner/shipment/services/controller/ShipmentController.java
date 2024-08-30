@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -674,17 +675,6 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    //@ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
-    @PostMapping("/getUsers")
-    public List<String> requestInterBranchConsole(@RequestBody V1UsersEmailRequest request) {
-        log.info("Request received for interBrnach console request");
-//        try {
-            return entityTransferService.getRoleListRoleId(request);
-//        } catch (Exception ex) {
-//            return ResponseHelper.buildFailedResponse(ex.getMessage());
-//        }
     }
 
 }
