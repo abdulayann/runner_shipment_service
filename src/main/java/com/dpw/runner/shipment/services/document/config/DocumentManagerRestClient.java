@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.document.config;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
@@ -7,6 +9,7 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +26,9 @@ public class DocumentManagerRestClient {
 
     @Value("${document-manager.baseUrl}")
     private String baseUrl;
+
+    @Value("${document-manager.copy-file}")
+    private String copyFileUrl;
 
 
     @Autowired
@@ -114,5 +120,17 @@ public class DocumentManagerRestClient {
         );
 
         return responseEntity.getBody();
+    }
+
+    public ResponseEntity<Object> copyDocuments(CommonRequestModel commonRequestModel) {
+        var request = (CopyDocumentsRequest) commonRequestModel.getData();
+
+        HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+
+        String url = baseUrl + copyFileUrl;
+
+        HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
+
+        return restTemplate.postForEntity(url, httpEntity, Object.class);
     }
 }
