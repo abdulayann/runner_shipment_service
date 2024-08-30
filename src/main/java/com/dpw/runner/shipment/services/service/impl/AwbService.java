@@ -755,7 +755,7 @@ public class AwbService implements IAwbService {
             try {
                 res.setErrors(validateAwb(awbShipmentInfo));
             } catch (RunnerException e) {
-                throw new RuntimeException(e);
+                throw new ValidationException(e.getMessage(), e);
             }
             if(error != null)
                 res.setErrors(res.getErrors()!=null ? String.join("\r\n", res.getErrors(), error): error);
