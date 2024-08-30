@@ -3407,6 +3407,9 @@ public abstract class IReport {
                 }
             }
             if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                if(!UserContext.isOceanDgUser()) { //TODO- condition && shipmentModel.getDGStatus != Approved)
+                    throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
+                }
                 boolean dgContainer = false;
                 if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
                     for (ContainerModel containerModel: shipmentModel.getContainersList()) {
