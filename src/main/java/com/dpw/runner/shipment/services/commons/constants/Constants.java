@@ -475,6 +475,8 @@ public class Constants {
     public static final String SHIPMENT_VOLUME_UNIT = "Shipment_Volume_Unit";
     public static final String ACTIONED_USER_NAME = "Actioned_User_name";
     public static final String REJECT_REMARKS = "Reject_remarks";
+    public static final String AUTO_REJECTION_REMARK = "Target Shipment is attached to another consolidation already.";
+    public static final String REQUESTED_USER_NAME = "Requested_User_Name";
     public static final String ERROR_WHILE_SENDING_EMAIL = "Error while sending email";
     public static final String SHIPMENT_PULL_REQUESTED_EMAIL_TYPE = "Attach Shipment Request";
     public static final String SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE = "Consolidation Request - Accept";
