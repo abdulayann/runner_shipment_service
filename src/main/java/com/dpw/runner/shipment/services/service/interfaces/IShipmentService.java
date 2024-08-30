@@ -97,11 +97,13 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> getLatestCargoDeliveryDate(Long consoleId);
 
     ResponseEntity<IRunnerResponse> updateShipments(UpdateConsoleShipmentRequest request) throws RunnerException;
-    ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId);
+    ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> getContainerListFromTrackingService(Long shipmentId, Long consolidationId) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> validateInvoicePosting(InvoicePostingValidationRequest request);
 
     ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateShipmentSummary(CommonRequestModel commonRequestModel) throws RunnerException;
+
 }

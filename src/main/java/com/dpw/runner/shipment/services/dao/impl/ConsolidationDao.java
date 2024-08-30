@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -165,14 +166,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
             consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
         }
-        consolidationDetails = consolidationRepository.save(consolidationDetails);
-        if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
-            setMawbStock(consolidationDetails);
-        }
         if (!Objects.isNull(oldConsole)
                 && (!Objects.equals(consolidationDetails.getInterBranchConsole(), oldConsole.getInterBranchConsole()) || !Objects.equals(consolidationDetails.getOpenForAttachment(), oldConsole.getOpenForAttachment()))
                 && (Boolean.FALSE.equals(consolidationDetails.getInterBranchConsole()) || Boolean.FALSE.equals(consolidationDetails.getOpenForAttachment()))) {
             consoleShipmentMappingDao.deletePendingStateByConsoleId(consolidationDetails.getId());
+        }
+        consolidationDetails = consolidationRepository.save(consolidationDetails);
+        if (!fromV1Sync && StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
+            setMawbStock(consolidationDetails);
         }
     }
 
@@ -563,6 +564,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids) {
+        return consolidationRepository.findConsolidationsByIds(ids);
+    }
+
+    @Override
     public ConsolidationDetails findConsolidationsById(Long id) {
         return consolidationRepository.getConsolidationFromId(id);
     }
@@ -570,6 +576,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber) {
         return consolidationRepository.findMblNumberInDifferentTenant(mblNumber, TenantContext.getCurrentTenant());
+    }
+
+    @Override
+    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+        return consolidationRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
     }
 
 }

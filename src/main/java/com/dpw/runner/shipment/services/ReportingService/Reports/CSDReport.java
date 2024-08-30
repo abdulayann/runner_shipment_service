@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.stereotype.Component;
@@ -22,6 +21,8 @@ public class CSDReport extends IReport{
     public void setIsConsolidation(boolean isConsolidation){
         this.isConsolidation = isConsolidation;
     }
+    private static final String TIME_FORMAT = "HH:mm:ss";
+    private static final String DATE_FORMAT = "dd/MM/yyyy";
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -55,9 +56,9 @@ public class CSDReport extends IReport{
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);
             populateRaKcData(dictionary, csdModel.getShipmentModel());
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat(), true)));
-        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormatWithTime(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat(), true)));
+
+        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
+        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
 
         return dictionary;
     }

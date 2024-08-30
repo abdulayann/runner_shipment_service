@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -16,7 +15,10 @@ import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
+import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
@@ -1046,6 +1048,7 @@ public class PackingService implements IPackingService {
      * This will help consumer to identify the percentage of utilisation and act accordingly
      * This is just a calculation api , nothing's saved back into DB
      */
+    // For inter branch context (hub/coload both possible) we are relying on source functions
     public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest request) throws RunnerException {
         var consolidationId = request.getConsolidationId();
         var shipmentRequest = request.getShipmentRequest();
@@ -1083,9 +1086,13 @@ public class PackingService implements IPackingService {
             packingList.addAll(jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class));
         }
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
-            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks()))
+            Set<Long> packingIdSet = new HashSet<>();
+            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks())) {
                 packingList.addAll(consol.getPackingList());
-            packingList.addAll(getShipmentPacks(attachingShipments));
+                packingIdSet = consol.getPackingList().stream().map(Packing::getId).collect(Collectors.toSet());
+            }
+            Set<Long> finalPackingIdSet = packingIdSet;
+            packingList.addAll(getShipmentPacks(attachingShipments).stream().filter(i -> !finalPackingIdSet.contains(i.getId())).toList());
         }
         else {
             // Default case of packs updated from consol
@@ -1127,15 +1134,11 @@ public class PackingService implements IPackingService {
      * @return packingList of shipments that are TO-BE attached
      */
     private List<Packing> getShipmentPacks(List<Long> shipmentIds) {
-        commonUtils.setInterBranchContextForHub();
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-        var packingList = shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(Collection::stream).toList();
-        InterBranchContext.removeContext();
-
-        return packingList;
+        return shipmentsPage.getContent().stream().map(ShipmentDetails::getPackingList).flatMap(Collection::stream).toList();
     }
 
     @Override

@@ -1793,7 +1793,7 @@ class PackingServiceTest extends CommonMocks {
         try{
             var response = packingService.calculatePacksUtilisationForConsolidation(request);
             assertNotNull(response);
-            verify(commonUtils, times(1)).setInterBranchContextForHub();
+            verify(commonUtils, times(0)).setInterBranchContextForHub();
         }
         catch (Exception e) {
             fail(e);
