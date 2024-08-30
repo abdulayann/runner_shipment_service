@@ -939,14 +939,14 @@ public class ConsolidationService implements IConsolidationService {
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
-                    List<Containers> containersList = shipmentDetails.getContainersList();
+                    List<Containers> containersList = shipmentDetail.getContainersList();
                     for(Containers container : containersList) {
                         shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
                     }
                     containersList = containerDao.saveAll(containersList);
                     containerService.afterSaveList(containersList, false);
                 }
-                if (shipmentDetail.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && removedShipmentDetail.getPackingList() != null) {
+                if (shipmentDetail.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetail.getPackingList() != null) {
                     packingList = shipmentDetail.getPackingList();
                     for (Packing packing : packingList) {
                         packing.setConsolidationId(null);

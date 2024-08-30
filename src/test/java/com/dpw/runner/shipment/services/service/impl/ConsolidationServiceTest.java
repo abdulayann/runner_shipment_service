@@ -1480,7 +1480,6 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
-        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
@@ -1517,7 +1516,6 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
-        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
@@ -1562,7 +1560,6 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setShipmentsList(new ArrayList<>(List.of(shipmentDetails1)));
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
-        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
@@ -1600,7 +1597,6 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
-        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
