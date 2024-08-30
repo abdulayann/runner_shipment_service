@@ -15,6 +15,7 @@ public class Constants {
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
+    public static final String CARGO_TYPE = "cargoType";
     public static final String CONTAINER_CATEGORY = "containerCategory";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
@@ -517,6 +518,10 @@ public class Constants {
     public static final String CONSOLIDATION_NUMBER_PLACEHOLDER = "{#CONSOLIDATION_NUMBER}";
     public static final String NUMBER_OF_SHIPMENTS_PLACEHOLDER = "{#NUMBER_OF_SHIPMENTS}";
     public static final String SHIPMENT_NUMBERS_PLACEHOLDER = "{#SHIPMENT_NUMBERS}";
+    public static final String OCEAN_DG_APPROVER_EMAIL_TYPE = "OCEAN_DG_APPROVER";
+    public static final String OCEAN_DG_SENDER_EMAIL_TYPE = "OCEAN_DG_SENDER";
+    public static final String OCEAN_DG_COMMERCIAL_APPROVER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVER";
+    public static final String OCEAN_DG_COMMERCIAL_SENDER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_SENDER";
 
     private Constants() {
     }
