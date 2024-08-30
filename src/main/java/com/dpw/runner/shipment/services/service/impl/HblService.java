@@ -278,7 +278,6 @@ public class HblService implements IHblService {
             if(shipmentDetails.getContainersList() == null ||
                     shipmentDetails.getContainersList().stream().filter(c -> Boolean.TRUE.equals(c.getHazardous())).toList().isEmpty())
                 throw new ValidationException("The shipment is marked as DG but does not contain any DG containers. Please add DG containers before generating Hbl.");
-            // TODO- how to stop AR invoice generation
         }
     }
 
