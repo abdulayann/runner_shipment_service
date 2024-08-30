@@ -176,4 +176,8 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTask(Object request);
     V1DataResponse listTask(Object request);
     List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
+    List<UsersRoleListResponse> getUserEmailsByRoleId(com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest request);
+    List<String> getRoleIdsByRoleName(Object request);
+
+    V1DataResponse createTask(Object request);
 }
