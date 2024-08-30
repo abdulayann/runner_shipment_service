@@ -22,7 +22,11 @@ import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValid
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entitytransfer.service.impl.EntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -83,6 +87,9 @@ public class ShipmentController {
     IConsolidationService consolidationService;
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
+
+    @Autowired
+    EntityTransferService entityTransferService;
 
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
@@ -668,6 +675,29 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    //@ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @PostMapping("/sendGroupedShipmentEmail")
+    public void sendGroupedShipmentEmail(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for interBrnach console request");
+        try {
+            List<UUID> shipmentGuids = List.of(UUID.fromString("9a781982-9800-4ee2-809d-f4e874099ec5"), UUID.fromString("17f986a0-2136-4f8a-8a3d-03bdedc90e27"));
+            entityTransferService.testSendGroupedEmailForShipmentImport(consoleId, shipmentGuids);
+        } catch (Exception ex) {
+            log.error("Error: " + ex.getMessage(), ex);
+        }
+    }
+
+    @PostMapping("/sendConsolidationEmail")
+    public void sendConsolidationEmail(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for interBrnach console request");
+        try {
+            List<Integer> destinationBranches = List.of(937);
+            entityTransferService.testSendConsolidationEmailNotification(consoleId, destinationBranches);
+        } catch (Exception ex) {
+            log.error("Error: " + ex.getMessage(), ex);
+        }
     }
 
 }

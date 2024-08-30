@@ -593,9 +593,4 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public List<ConsolidationDetails> findBySourceGuid(UUID guid) {
         return consolidationRepository.findBySourceGuid(guid);
     }
-    @Override
-    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
-        return consolidationRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
-    }
-
 }
