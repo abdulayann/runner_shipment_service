@@ -84,6 +84,7 @@ public class ShipmentController {
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
 
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
     @PostMapping(value = "/list-shipment")
     public ResponseEntity<IRunnerResponse> fetchByQuery(@Valid @RequestBody @NonNull ListCommonRequest listCommonRequest) {
@@ -668,4 +669,5 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
 }
