@@ -4770,14 +4770,20 @@ ShipmentServiceTest extends CommonMocks {
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         shipmentDetails.setPackingList(Arrays.asList(packing));
 
+        Routings routings = new Routings();
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+        routings.setIsSelectedForDocument(true);
+        routings.setId(1L);
+        shipmentDetails.setRoutingsList(Arrays.asList(routings));
+
         ShipmentDetails mockShipment = shipmentDetails;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).shipConsolidationContainerEnabled(true).build());
 
-        Routings routings = new Routings();
-        routings.setMode(Constants.TRANSPORT_MODE_SEA);
 
         RoutingsRequest routingsRequest = new RoutingsRequest();
         routingsRequest.setMode(Constants.TRANSPORT_MODE_SEA);
+        routingsRequest.setIsSelectedForDocument(true);
+        routingsRequest.setId(1L);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setBookingCarriagesList(Arrays.asList(BookingCarriageRequest.builder().build()));
@@ -4828,6 +4834,7 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        assertEquals(true, mockShipmentResponse.getRoutingsList().get(0).getIsSelectedForDocument());
     }
 
     @Test

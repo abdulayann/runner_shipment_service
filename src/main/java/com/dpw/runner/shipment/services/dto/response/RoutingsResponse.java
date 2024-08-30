@@ -40,6 +40,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private LocalDateTime atd;
     private Long consolidationId;
     private Boolean isLinked;
+    private Boolean isSelectedForDocument;
     private String voyage;
     private String aircraftRegistration;
     private String flightNumber;

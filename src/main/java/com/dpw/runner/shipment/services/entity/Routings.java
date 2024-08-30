@@ -81,6 +81,9 @@ public class Routings extends MultiTenancy {
     @Column(name = "is_linked")
     private Boolean isLinked;
 
+    @Column(name = "is_selected_for_document")
+    private Boolean isSelectedForDocument;
+
     @Column(name = "voyage")
     private String voyage;
 
