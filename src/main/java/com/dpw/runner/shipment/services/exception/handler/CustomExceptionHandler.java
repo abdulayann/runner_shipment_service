@@ -85,8 +85,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .toList();
-        log.error("Return Response with data {}", errors.toString());
-        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errors.get(0));
+        String errorMessages = errors.size() > 1
+                ? String.join(" | ", errors)
+                : errors.get(0);
+        log.error("Return Response with data {}", errors);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errorMessages);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
 
