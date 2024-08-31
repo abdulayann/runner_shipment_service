@@ -57,7 +57,6 @@ import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -99,8 +98,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String trackingServiceNewFlowEndpoint;
     @Autowired
     private IV1Service v1Service;
-    @Autowired
-    private ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
