@@ -441,6 +441,7 @@ public class ReportConstants {
     public static final String SHIPMENTS = "Shipments";
     public static final String SEAL_NUMBER = "SealNumber";
     public static final String CONTAINER_COUNT = "ContainerCount";
+    public static final String DG_CONTAINER_COUNT = "DGContainerCount";
     public static final String CONTAINER_COUNT_GROUPED = "ContainerCountGrouped";
     public static final String CONTAINER_PACKS_GROUPED = "ContainerPacksGrouped";
     public static final String ContainerWeightWithXSeparated = "ContainerWeightWithXSeparated";
