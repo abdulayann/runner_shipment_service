@@ -13,7 +13,7 @@ public class TaskRequest {
   private String entityID;
   private String roleId;
   private String status;
-  private Integer userId;
+  private Long userId;
   private Integer tenantId;
   private String taskType;
 }

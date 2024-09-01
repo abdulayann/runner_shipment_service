@@ -26,8 +26,10 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -38,6 +40,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -79,10 +82,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_CONTAINER_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.MasterDataConstants.ITEM_TYPE;
@@ -1006,6 +1012,11 @@ public class CommonUtils {
         return "<html><body>" + "<a href='" + link + "'>" + shipmentId + "</a>" + "</body></html>";
     }
 
+    public String getTaskIdHyperLink(String shipmentId, Long id) {
+        String link = baseUrl + "/Default/Tasks#" + id;
+        return "<html><body>" + "<a href='" + link + "'>" + shipmentId + "</a>" + "</body></html>";
+    }
+
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
         return "<html><body>" + "<a href='" + link + "'>" + consolidationId + "</a>" + "</body></html>";
@@ -1153,19 +1164,49 @@ public class CommonUtils {
     }
 
 
+    public void sendEmailDGApproval(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap){
+        Set<String> toEmailIds = new HashSet<>();
+        EmailTemplatesRequest emailTemplatesRequest = emailTemplatesRequestMap.get(OCEAN_DG_APPROVER_EMAIL_TYPE);
+
+    }
+
     public void populateDictionaryForDGEmailFromShipment(Map<String,Object> dictionary, ShipmentDetails shipmentDetails){
-        dictionary.put(Constants.ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort());
+        dictionary.put(ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort());
         dictionary.put(DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
         dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
         dictionary.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(CARGO_TYPE, shipmentDetails.getShipmentType());
         dictionary.put(CARRIER, shipmentDetails.getCarrierDetails());
-        //TODO : Confirm Hbl Report Autowired or duplicate --> getVesselsData
-        // dictionary.put(VESSEL_NAME, getVesselsData(shipmentDetails.get)
+        dictionary.put(VESSEL_NAME, getVesselsData(shipmentDetails.getCarrierDetails().getVessel()));
         dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
-        //TODO : GenerateFormattedDate ??
         dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
         dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
+
+        //Summary of cargo Details
+        int totalContainerCount = 0;
+        int dgContainerCount = 0;
+        for (var container : shipmentDetails.getContainersList()) {
+            totalContainerCount += container.getContainerCount(); // TODO : Verify logic
+            dgContainerCount += container.getHazardous() ? 1: 0;
+        }
+        dictionary.put(CONTAINER_COUNT, totalContainerCount);
+        dictionary.put(DG_CONTAINER_COUNT, dgContainerCount);
+
+        //TODO :
+        /**
+         *  Total Number & Type of Packages
+         *
+         *         Number & Types of DG Packages
+         */
+    }
+
+    public void populateDictionaryApprovalRequestForDGEmail(Map<String,Object> dictionary) {
+            dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+            dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+            dictionary.put(USER_NAME, UserContext.getUser().getUsername());
+            dictionary.put(REQUEST_DATE_TIME, convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+            //TODO: Requestor Remarks --? Inside task ??
     }
 
     public void getDGEmailTemplate(Map<OceanDGStatus, EmailTemplatesRequest> response) {
@@ -1203,25 +1244,65 @@ public class CommonUtils {
         }
     }
 
-    public List<String> getRoleIDByRoleName(String roleName){
+    private List<String> getDGApprovalsUserEmails(){
+         Integer roleId = Integer.valueOf(getRoleIDByRoleName("DGRole").get(0));
+         return getUserEmailsByRoleId(roleId);
+    }
+
+    private List<String> getCommericalApprovalsUserEmails(){
+        Integer roleId = Integer.valueOf(getRoleIDByRoleName("CommericalRole").get(0));
+        return getUserEmailsByRoleId(roleId);
+    }
+    private List<String> getRoleIDByRoleName(String roleName){
         return iv1Service.getRoleIdsByRoleName(roleName);
     }
 
-    public TaskResponse createTask(ShipmentDetails shipmentDetails, String roleId){
+    private List<String> getUserEmailsByRoleId(Integer roleId) {
+
+        V1UsersEmailRequest request = new V1UsersEmailRequest();
+        request.setRoleId(roleId);
+        request.setTake(10);
+        List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
+
+        return emailIds;
+    }
+
+    private TaskResponse createTask(ShipmentDetails shipmentDetails, String roleId){
         TaskRequest taskRequest = TaskRequest
             .builder()
-            .entityType("[Shipments]")
+            .entityType(Shipments)
             .entityID(shipmentDetails.getId().toString())
             .tenantId(shipmentDetails.getTenantId())
-            .status("PendingAction")
+            .status(PENDING_ACTION)
             .roleId(roleId)
-            .taskType("DG")
+            .taskType(OCEANDG_TASKTYPE)
+            .userId(UserContext.getUser().getUserId())
+            .tenantId(UserContext.getUser().getTenantId())
             .build();
+
         V1DataResponse v1DataResponse =  iv1Service.createTask(taskRequest);
         if(v1DataResponse != null) {
-            TaskResponse taskResponse = jsonHelper.convertValue(v1DataResponse.entities, TaskResponse.class);
-            return taskResponse;
+            return jsonHelper.convertValue(v1DataResponse.entities, TaskResponse.class);
         }
+        return null;
+    }
+
+    private VesselsResponse getVesselsData(String guid) {
+        if (IsStringNullOrEmpty(guid)) {
+            return null;
+        }
+        List<Object> vesselCriteria = Arrays.asList(
+            List.of(Constants.VESSEL_GUID_V1),
+            "=",
+            guid
+        );
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        V1DataResponse vesselResponse = iv1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+        if(vesselsResponse != null && !vesselsResponse.isEmpty())
+            return vesselsResponse.get(0);
         return null;
     }
 
