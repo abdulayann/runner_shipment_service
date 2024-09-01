@@ -128,6 +128,8 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -5912,6 +5914,17 @@ public class ShipmentService implements IShipmentService {
         var notificationMap = getNotificationMap(request);
         response.setNotificationMap(notificationMap);
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> sendEmailForDGApprove(Long shipId) {
+       Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+       return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) {
+        return null;
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {

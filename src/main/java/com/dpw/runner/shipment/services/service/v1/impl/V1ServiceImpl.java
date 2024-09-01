@@ -2244,7 +2244,6 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse createTask(Object request) {
         ResponseEntity v1DataResponse = null;
-
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
