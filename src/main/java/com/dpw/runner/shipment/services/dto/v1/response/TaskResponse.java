@@ -19,6 +19,7 @@ public class TaskResponse {
   String entityID;
   String taskType;
   String roleId;
+  Integer tenantId;
   String userEmail;
   String userName;
   String status;

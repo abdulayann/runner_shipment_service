@@ -180,6 +180,9 @@ public class Constants {
     public static final String OWNERSHIP = "OwnerShip";
 
     public static final String SERVICE = "Service";
+    public static final String PENDING_ACTION = "PendingAction";
+    public static final String OCEANDG_TASKTYPE = "DGOceanApproval";
+
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
@@ -478,6 +481,9 @@ public class Constants {
     public static final String REQUEST_DATE_TIME = "Request_Date_Time";
     public static final String BRANCH_TIME_ZONE = "Branch_TimeZone";
     public static final String USER_NAME = "User_name";
+    public static final String USER_BRANCH = "User_Branch";
+    public static final String USER_COUNTRY = "User_Country";
+
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
     public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";

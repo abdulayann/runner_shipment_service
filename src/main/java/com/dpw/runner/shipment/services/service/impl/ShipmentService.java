@@ -29,6 +29,23 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -5406,6 +5423,17 @@ public class ShipmentService implements IShipmentService {
         var notificationMap = getNotificationMap(request);
         response.setNotificationMap(notificationMap);
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> sendEmailForDGApprove(Long shipId) {
+       Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+       return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) {
+        return null;
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
