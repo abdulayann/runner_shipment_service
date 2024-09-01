@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Reques
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
@@ -688,6 +689,38 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL)
+    public ResponseEntity<IRunnerResponse> sendEmailForDGApprove(@RequestParam(required = true) Long shipId) {
+        log.info("Request received for Ocean DG Approval");
+        try {
+            return shipmentService.sendEmailForDGApprove(shipId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+//    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL, response = RunnerResponse.class)})
+//    @PostMapping(ApiConstants.COMMERCIAL_DG_APPROVAL)
+//    public ResponseEntity<IRunnerResponse> sendEmailForCommercialDGApprove(@RequestBody PendingNotificationRequest request) {
+//        log.info("Request received for commercial DG Approval");
+//        try {
+//            return shipmentService.getPendingNotifications(CommonRequestModel.builder().data(request).build());
+//        } catch (Exception ex) {
+//            return ResponseHelper.buildFailedResponse(ex.getMessage());
+//        }
+//    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_APPROVE)
+    public ResponseEntity<IRunnerResponse> dgApprovalResponse(@RequestBody OceanDGRequest request) {
+        log.info("Request received for Ocean DG Approve");
+        try {
+            return shipmentService.dgApprovalResponse(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
     }
 
 }
