@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListReques
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -337,6 +338,27 @@ public class V1ServiceUtil {
                                     Collectors.toList(),
                                     list -> list.get(0).getTenant()
                             )));
+        }
+        catch (Exception ex) {
+            log.error(ex.getMessage());
+            return new HashMap<>();
+        }
+    }
+
+    public Map<Integer, V1TenantSettingsResponse> getTenantSettingsMap(List<Integer> tenantIds) {
+        if (tenantIds.isEmpty())
+            return new HashMap<>();
+
+        try {
+            var v1Response = v1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
+            return v1Response.getEntities()
+                .stream()
+                .collect(Collectors.groupingBy(
+                    TenantDetailsByListResponse.TenantDetails::getTenantId,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list -> jsonHelper.convertValue(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
+                    )));
         }
         catch (Exception ex) {
             log.error(ex.getMessage());
