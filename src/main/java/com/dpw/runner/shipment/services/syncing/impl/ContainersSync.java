@@ -81,13 +81,18 @@ public class ContainersSync implements IContainersSync {
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
+        return sync(containerIds, shipmentsContainersMappingPageable, UUID.randomUUID().toString());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable, String transactionId) {
         List<Containers> containers = getContainersFromIds(containerIds);
         if(containers == null || containers.size() == 0) {
             log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
         }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
-        syncService.pushToKafka(json, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Containers", UUID.randomUUID().toString());
+        syncService.pushToKafka(json, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Containers", transactionId);
         return ResponseHelper.buildSuccessResponse(containerRequestV2);
     }
 

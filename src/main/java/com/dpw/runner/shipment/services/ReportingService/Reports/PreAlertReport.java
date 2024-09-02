@@ -48,7 +48,7 @@ public class PreAlertReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         PreAlertModel preAlertModel = new PreAlertModel();
         preAlertModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(preAlertModel.shipmentDetails);
+        validateAirAndOceanDGCheck(preAlertModel.shipmentDetails);
         preAlertModel.tenantDetails = getTenant();
         preAlertModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         preAlertModel.consolidationDetails = getFirstConsolidationFromShipmentId(id);
