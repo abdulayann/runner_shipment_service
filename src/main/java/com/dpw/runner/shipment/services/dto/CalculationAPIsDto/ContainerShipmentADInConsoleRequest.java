@@ -33,5 +33,6 @@ public class ContainerShipmentADInConsoleRequest implements IRunnerRequest {
         private PartiesRequest shipmentClientName;
         private String shipmentNumber;
         private String shipmentType;
+        private Boolean hazardous;
     }
 }

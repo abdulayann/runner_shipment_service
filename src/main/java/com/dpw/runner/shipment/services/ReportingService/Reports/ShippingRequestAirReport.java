@@ -32,7 +32,7 @@ public class ShippingRequestAirReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestAirModel shippingRequestAirModel = new ShippingRequestAirModel();
         shippingRequestAirModel.shipment = getShipment(id);
-        validateAirDGCheck(shippingRequestAirModel.shipment);
+        validateAirAndOceanDGCheck(shippingRequestAirModel.shipment);
         shippingRequestAirModel.setShipmentPacking(shippingRequestAirModel.shipment.getPackingList());
         return shippingRequestAirModel;
     }
