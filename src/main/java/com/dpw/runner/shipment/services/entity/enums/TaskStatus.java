@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum TaskStatus {
-    PENDING_ACTION(0, "PendingAction"),
-    APPROVED(1, "Approved"),
+    PENDING_ACTION(0, "Pending Action"),
+    APPROVED(1, "Approved   "),
     REJECTED(2, "Rejected");
 
     private final int value;

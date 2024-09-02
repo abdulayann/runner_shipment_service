@@ -24,16 +24,16 @@ public class TaskCreateRequest implements IRunnerRequest {
     @JsonProperty("RoleId")
     private String roleId;
 
-    @JsonProperty("EntityID")
+    @JsonProperty("EntityId")
     private String entityId;
 
     @JsonProperty("EntityType")
     private String entityType;
 
-    @JsonProperty("Remarks")
+    @JsonProperty("TenantId")
     private String tenantId;
 
-    @JsonProperty("Remarks")
+    @JsonProperty("TaskInfoJson")
     private String taskJson;
 
     @JsonProperty("TaskType")
@@ -50,21 +50,4 @@ public class TaskCreateRequest implements IRunnerRequest {
 
     @JsonProperty("SendMail")
     private Boolean sendEmail;
-
-//    {
-//        "EntityType": "[Shipments]",
-//            "TaskType": "Payment Approval",
-//            "TaskInfoJson": "{\"name\":\"John\",\"age\":30,\"city\":\"New York\"}",
-//            "EntityId": "116111",
-//            "TenantId": "23",
-//            "UserId": "715",
-//            "UserName": "JohnDoe",
-//            "TaskStatus": "Approved",
-//            "RoleId": null,
-//            "SequenceNumber": null,
-//            "QuoteRejectionRemarks": null,
-//            "RejectionRemarks": null,
-//            "Remarks": null,
-//            "SendMail": false
-//    }
 }
