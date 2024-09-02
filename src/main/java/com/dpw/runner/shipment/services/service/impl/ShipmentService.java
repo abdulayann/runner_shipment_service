@@ -1056,17 +1056,24 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-    private void makeContainersDGFromPack(List<ContainerRequest> containersList, List<PackingRequest> packingList) {
+    private boolean makeContainersDGFromPack(List<ContainerRequest> containersList, List<PackingRequest> packingList) {
+        AtomicBoolean dgApprovalReqd = new AtomicBoolean(false);
         Set<Long> dgConts = new HashSet<>();
         packingList.stream().forEach(pack -> {
-            if(Boolean.TRUE.equals(pack.getHazardous()))
+            if(Boolean.TRUE.equals(pack.getHazardous())) {
                 dgConts.add(pack.getContainerId());
+                if(!IsStringNullOrEmpty(pack.getDGClass()))
+                    dgApprovalReqd.set(true);
+            }
         });
         dgConts.remove(null);
         containersList.stream().forEach(container -> {
             if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
                 container.setHazardous(true);
+            if(!IsStringNullOrEmpty(container.getDgClass()))
+                dgApprovalReqd.set(true);
         });
+        return dgApprovalReqd.get();
     }
 
     public ResponseEntity<IRunnerResponse> calculateAutoUpdateWtVolInShipment(CommonRequestModel commonRequestModel) throws RunnerException {
@@ -1542,14 +1549,17 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        boolean oceanDgApprovalReqd = false;
         if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
             if(Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
                 containerRequest = jsonHelper.convertValueToList(oldEntity.getContainersList(), ContainerRequest.class);
             containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
-        } else {
-            if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
-                makeContainersDGFromPack(containerRequest, packingRequest);
         }
+        if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+            oceanDgApprovalReqd = makeContainersDGFromPack(containerRequest, packingRequest);
+        if(oceanDgApprovalReqd && Objects.isNull(shipmentDetails.getOceanDGStatus()))
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+
         Long consolidationId = null;
         if(shipmentDetails.getConsolidationList() != null && shipmentDetails.getConsolidationList().size() > 0)
             consolidationId = shipmentDetails.getConsolidationList().get(0).getId();
