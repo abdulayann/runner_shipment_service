@@ -1874,7 +1874,7 @@ public class EntityTransferService implements IEntityTransferService {
 
                 if(sendConsolidationError){
                     String interBranch = "";
-                    if (consolidationDetails.get().getInterBranchConsole())
+                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
                         interBranch = "Receiving Branch, ";
                     if(hblGenerationError){
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
