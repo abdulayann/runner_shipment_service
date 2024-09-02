@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,7 +22,7 @@ public class CopyDocumentsRequest extends CommonRequest implements IRunnerReques
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    static class DocumentRequest {
+    static class DocumentRequest implements Serializable {
         private Integer tenantId;
         private String entityKey;
         private String entityType;

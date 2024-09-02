@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -12,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
@@ -32,7 +30,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
@@ -57,7 +54,6 @@ import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -76,16 +72,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.json.*;
+
 import javax.transaction.Transactional;
 import java.time.LocalDate;
-import java.io.StringReader;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1426,10 +1418,8 @@ public class EntityTransferService implements IEntityTransferService {
                 this.attachPackToContainers(packingList.stream().toList(), newVsOldPackingGuid, oldPackVsOldContGuidMap, oldGuidVsNewContainerId);
             }
 
-
+            this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
         }
-
-        this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
 
         //TODO: create document
 
@@ -1530,38 +1520,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private ShipmentRequest replaceTenantIdInShipment(ShipmentRequest shipmentRequest, Integer tenantId) {
-        var json = jsonHelper.convertToJson(shipmentRequest);
-        try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
-            JsonObject jsonObject = jsonReader.readObject();
-            generateMap(jsonObject, tenantId);
-            return jsonHelper.convertValue(jsonObject, ShipmentRequest.class);
-        }
-    }
-
-
-    private void generateMap(JsonObject jsonObject, Integer tenantId) {
-        boolean containKey = false;
-        for (String key : jsonObject.keySet()) {
-            if (Objects.equals(key, Constants.TENANT_ID)) {
-                containKey = true;
-                jsonObject.put(Constants.TENANT_ID, Json.createValue(tenantId));
-            }
-            if (jsonObject.get(key).getValueType() == JsonValue.ValueType.OBJECT) {
-                generateMap(jsonObject.getJsonObject(key), tenantId);
-            } else if (jsonObject.get(key).getValueType() == JsonValue.ValueType.ARRAY) {
-                JsonArray objectArray = jsonObject.getJsonArray(key);
-                objectArray.forEach(x -> {
-                    if(x.getValueType() == JsonValue.ValueType.OBJECT){
-                        generateMap(x.asJsonObject(), tenantId);
-                    }
-                });
-            }
-        }
-        if(!containKey) {
-            jsonObject.put(Constants.TENANT_ID, Json.createValue(tenantId));
-        }
-    }
 
     private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
             CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
@@ -1866,7 +1824,7 @@ public class EntityTransferService implements IEntityTransferService {
                             isShipmentError = true;
                         }
                     }
-                    if(isShipmentError)
+                    if(Boolean.TRUE.equals(isShipmentError))
                     {
                         shipmentIds.add(shipment.getShipmentId());
                     }
@@ -2405,11 +2363,9 @@ public class EntityTransferService implements IEntityTransferService {
 
         // packing guid vs container guid
         Map<UUID, UUID> packsVsContainerGuid = new HashMap<>();
-        consolidationDetails.getContainersList().forEach(container -> {
-            container.getPacksList().stream().forEach(pack -> {
-                packsVsContainerGuid.put(pack.getGuid(), container.getGuid());
-            });
-        });
+        consolidationDetails.getContainersList().forEach(container ->
+            container.getPacksList().forEach(pack -> packsVsContainerGuid.put(pack.getGuid(), container.getGuid()))
+        );
         payload.setPackingVsContainerGuid(packsVsContainerGuid);
         // populate master data and other fields
         payload.setMasterData(getConsolMasterData(consolidationDetails));
