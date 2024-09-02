@@ -24,10 +24,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskType;
@@ -78,6 +75,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -134,6 +135,8 @@ public class EntityTransferService implements IEntityTransferService {
     ITasksService tasksService;
     @Autowired
     private INotificationService notificationService;
+    @Autowired
+    ExecutorService executorService;
 
     @Transactional
     @Override
@@ -192,6 +195,10 @@ public class EntityTransferService implements IEntityTransferService {
         validationsBeforeSendTask(uniqueDestinationTenants);
         var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() -> {
+            sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList());
+        });
+
         List<EntityTransferShipmentDetails> payloadList = new ArrayList<>();
         for(int i = 0; i < uniqueDestinationTenants.size(); i++) {
             var entityTransferPayload = prepareShipmentPayload(shipment);
@@ -202,7 +209,7 @@ public class EntityTransferService implements IEntityTransferService {
             entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
 
             payloadList.add(entityTransferPayload);
-//            createTask(entityTransferPayload, shipment.getId(), Constants.Shipments);
+            createTask(entityTransferPayload, shipment.getId(), Constants.Shipments);
         }
         // TODO uncomment below v2 code
 //                EntityTransferShipmentDetails entityTransferShipmentDetails = modelMapper.map(shipmentDetails.get(), EntityTransferShipmentDetails.class);
@@ -227,6 +234,8 @@ public class EntityTransferService implements IEntityTransferService {
         createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipId.toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, null);
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
+
+        emailFuture.join();
 
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
             .json(jsonHelper.convertToJson(payloadList))
@@ -730,15 +739,23 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
+        ConsolidationDetails consol = consolidationDetails.get();
 
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+                sendConsolidationEmailNotification(consol, sendToBranch)
+            );
+
+        interBranchValidation(consol, sendToBranch);
+
+
+        Set<Integer> uniqueDestinationTenants = new HashSet<>(sendToBranch);
         List<EntityTransferConsolidationDetails> entityTransferConsolList = new ArrayList<>();
-        // TODO : insert create payload hook and put in correct receiving tenant id (SendToBranch) + handle docs
-        for(int i = 0; i < sendConsolidationRequest.getSendToBranch().size(); i++) {
+
+        for(int i = 0; i < uniqueDestinationTenants.size(); i++) {
             var entityTransferPayload = prepareConsolidationPayload(consolidationDetails.get(), i, sendConsolidationRequest);
             entityTransferConsolList.add(entityTransferPayload);
             createTask(entityTransferPayload, consolidationDetails.get().getId(), Constants.Consolidations);
         }
-        // TODO : create task
         // TODO : emails already present implemented by Aditya
         // TODO : importer role for TASK (pending !)
 
@@ -870,6 +887,24 @@ public class EntityTransferService implements IEntityTransferService {
 //                        this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
 //                    }
 //                }
+    }
+
+    private void interBranchValidation(ConsolidationDetails consol, List<Integer> sendToBranch) {
+        if(Boolean.TRUE.equals(consol.getInterBranchConsole())) {
+            Set<Integer> uniqueTenants = new HashSet<>(sendToBranch);
+            List<Integer> errorTenants = new ArrayList<>();
+            for(var tenant : uniqueTenants) {
+                // getTenantSettings
+                V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+                if(!Boolean.TRUE.equals(v1TenantSettingsResponse.getIsMAWBColoadingEnabled())) {
+                    errorTenants.add(tenant);
+                }
+            }
+
+            if(!errorTenants.isEmpty()) {
+                throw new ValidationException(String.format("Destination branches %s not having co-loading feature enabled", errorTenants));
+            }
+        }
     }
 //    private void createConsoleTasks (List<Integer> tenantIdsList, List<Integer> successTenantIds, EntityTransferConsolidationDetails entityTransferConsolidationDetails, ConsolidationDetails consolidationDetails, Boolean sendToOrganization, List<String> houseBill, List<String> shipmentIds) {
 //        for (int tenantId: tenantIdsList) {
