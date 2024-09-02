@@ -2514,7 +2514,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
+    public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
         UsersDto user = UserContext.getUser();
 
         // Subject
@@ -2537,7 +2537,7 @@ public class EntityTransferService implements IEntityTransferService {
         template.setBody(body);
     }
 
-    private void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
+    public void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
         UsersDto user = UserContext.getUser();
 
         String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
@@ -2574,7 +2574,7 @@ public class EntityTransferService implements IEntityTransferService {
         template.setBody(body);
     }
 
-    private List<String> getRoleListByRoleId(Integer roleId) {
+    public List<String> getRoleListByRoleId(Integer roleId) {
 
         V1UsersEmailRequest request = new V1UsersEmailRequest();
         request.setRoleId(roleId);
@@ -2654,7 +2654,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
-    private void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails) {
+    public void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails) {
         Map<String, Object> tagDetails = new HashMap<>();
 
         template.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));
@@ -2687,7 +2687,7 @@ public class EntityTransferService implements IEntityTransferService {
         return emailBody;
     }
 
-    private String extractTableTemplate(String htmlTemplate) {
+    public String extractTableTemplate(String htmlTemplate) {
         int tableStartIndex = htmlTemplate.indexOf("<table>");
         int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
 
@@ -2699,7 +2699,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList) {
+    public String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList) {
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
@@ -2722,7 +2722,7 @@ public class EntityTransferService implements IEntityTransferService {
         return table.outerHtml();
     }
 
-    private String replaceTagsValues(Map<String, Object> tagDetails, String htmlElement) {
+    public String replaceTagsValues(Map<String, Object> tagDetails, String htmlElement) {
         for (Map.Entry<String, Object> entry : tagDetails.entrySet()) {
             String tagPattern = "{" + entry.getKey() + "}";
             String value = entry.getValue() == null ? "" : entry.getValue().toString();
@@ -2732,8 +2732,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private void populateTagDetails(Map<String, Object> tagDetails, String consolidationBranch) {
-
+    public void populateTagDetails(Map<String, Object> tagDetails, String consolidationBranch) {
         tagDetails.put("GS_ConsolidationBranch", consolidationBranch);
     }
 
