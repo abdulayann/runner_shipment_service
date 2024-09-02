@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.aspects.intraBranch;
 
-import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchTenantIdDto;
 
 import java.util.Objects;
