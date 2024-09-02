@@ -1,15 +1,10 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
-import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.Map;
-import java.util.UUID;
 
 @Data
 @Builder

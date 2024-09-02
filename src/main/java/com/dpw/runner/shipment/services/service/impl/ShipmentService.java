@@ -1970,7 +1970,7 @@ public class ShipmentService implements IShipmentService {
 
         if (packingRequestList != null) {
             packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
-            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, includeGuid ? false : isCreate), id, deleteContainerIds);
+            updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, !includeGuid && isCreate), id, deleteContainerIds);
             shipmentDetails.setPackingList(updatedPackings);
         }
 
