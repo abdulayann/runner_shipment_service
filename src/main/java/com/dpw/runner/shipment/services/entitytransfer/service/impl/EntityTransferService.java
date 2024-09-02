@@ -2440,11 +2440,6 @@ public class EntityTransferService implements IEntityTransferService {
         consolidationDetails.ifPresent(details -> sendGroupedEmailForShipmentImport(details, shipmentGuids));
     }
 
-//    public void testSendEmailForShipmentImport(Long consoleId, List<UUID> shipmentGuids) {
-//        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
-//        consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, shipmentGuids));
-//    }
-
     public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
         List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
         CommonV1ListRequest request = new CommonV1ListRequest();
@@ -2469,7 +2464,6 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> ccEmails = new ArrayList<>();
         for(Integer roleId: destinationBranches) {
             List<String> emailList = getRoleListByRoleId(roleId);
-            //emailList.add("anandaditya444@gmail.com");
             if(!emailList.isEmpty()) {
                 createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
                 try {
@@ -2520,18 +2514,18 @@ public class EntityTransferService implements IEntityTransferService {
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
-        subject = subject.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
-        body = body.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
-        body = body.replace("{#SENDER_USER_NAME}", user.getDisplayName());
-        body = body.replace("{#BL_NUMBER}", shipmentDetails.getHouseBill());
-        body = body.replace("{#MBL_NUMBER}", shipmentDetails.getMasterBill());
-        body = body.replace("{#SENT_DATE}", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace("{#SHIPMENT_NUMBER}", String.valueOf(shipmentDetails.getShipmentId()));
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(BL_NUMBER_PLACEHOLDER, shipmentDetails.getHouseBill());
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, shipmentDetails.getMasterBill());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
         template.setSubject(subject);
         template.setBody(body);
@@ -2554,21 +2548,21 @@ public class EntityTransferService implements IEntityTransferService {
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
-        subject = subject.replace("{#CONSOLIDATION_NUMBER}", consolidationDetails.getConsolidationNumber());
-        subject = subject.replace("{#NUMBER_OF_SHIPMENTS}", (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
-        body = body.replace("{#SOURCE_BRANCH}", user.getTenantDisplayName());
-        body = body.replace("{#SENDER_USER_NAME}", user.getDisplayName());
-        body = body.replace("{#NUMBER_OF_SHIPMENTS}", (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
-        body = body.replace("{#BL_NUMBER}", blNumbers);
-        body = body.replace("{#MBL_NUMBER}", "SEA".equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
-        body = body.replace("{#SENT_DATE}", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace("{#CONSOLIDATION_NUMBER}", consolidationDetails.getConsolidationNumber());
-        body = body.replace("{#SHIPMENT_NUMBERS}", shipmentNumbers);
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+        body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, "SEA".equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, shipmentNumbers);
 
         template.setSubject(subject);
         template.setBody(body);
@@ -2578,7 +2572,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         V1UsersEmailRequest request = new V1UsersEmailRequest();
         request.setRoleId(roleId);
-        request.setTake(10);
+        request.setTake(50);
         List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
         List<String> emailIds = new ArrayList<>();
         usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
@@ -2645,7 +2639,6 @@ public class EntityTransferService implements IEntityTransferService {
 
             if (!importerEmailIds.isEmpty()) {
                 createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails);
-                //importerEmailIds.add("anandaditya444@gmail.com");
                 notificationService.sendEmail(emailTemplateModel.getBody(),
                         emailTemplateModel.getSubject(), importerEmailIds, ccEmailIdsList);
             }
@@ -2655,6 +2648,12 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     public void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails) {
+
+        // Body
+        String body = (template.getBody() == null) ?
+                DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY : template.getBody();
+        template.setBody(body);
+
         Map<String, Object> tagDetails = new HashMap<>();
 
         template.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));

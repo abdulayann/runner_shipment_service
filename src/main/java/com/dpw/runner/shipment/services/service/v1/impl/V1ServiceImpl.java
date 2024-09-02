@@ -2184,7 +2184,7 @@ public class V1ServiceImpl implements IV1Service {
                     new ParameterizedTypeReference<List<UsersRoleListResponse>>() {}
             );
 
-            log.info("Token time taken in getUserDetails() function {} ms", (System.currentTimeMillis() - time));
+            log.info("Token time taken in getUserEmailsByRoleId() function {} ms", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());

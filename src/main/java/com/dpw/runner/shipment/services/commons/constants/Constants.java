@@ -495,11 +495,17 @@ public class Constants {
     public static final String DEFAULT_SHIPMENT_RECEIVED_SUBJECT = "Received shipment {#SHIPMENT_NUMBER} from {#SOURCE_BRANCH}";
     public static final String DEFAULT_SHIPMENT_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a shipment with following details has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Shipment Details:</strong><strong>&nbsp;&nbsp;</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Shipment number:</strong>&nbsp;{#SHIPMENT_NUMBER}</p>  <p><strong>BL Number</strong>: {#BL_NUMBER}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
     public static final String GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE = "GROUPED_SHIPMENT_IMPORT";
-    public static final String GROUPED_SHIPMENT_RECEIVED_SUBJECT = "Shipment/s:  {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
-    public static final String GROUPED_SHIPMENT_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a shipment with following details has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Shipment Details:</strong><strong>&nbsp;&nbsp;</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Shipment number:</strong>&nbsp;{#SHIPMENT_NUMBER}</p>  <p><strong>BL Number</strong>: {#BL_NUMBER}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
-
-
-
+    public static final String DEFAULT_GROUPED_SHIPMENT_RECEIVED_SUBJECT = "Shipment/s:  {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
+    public static final String DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY = "<p>Dear User,<br /> This is to inform you that the following shipments are created by the consolidating branch – {GS_ConsolidationBranch}<br /> Details as follows:</p> <p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p> <table> <tbody> <tr> <td><strong>Shipment Number</strong></td> <td><strong>Sending Branch</strong></td> <td><strong>HBL/HAWB Number</strong></td> <td><strong>MBL/MAWB Number</strong></td> <td><strong>Created Date</strong></td> </tr> <tr> <td>{#SD_ShipmentDetails}{SD_ShipmentNumber}</td> <td>{SD_SendingBranch}</td> <td>{SD_HBL_HAWB_Number}</td> <td>{SD_MAWB_Number}</td> <td>{SD_CreatedDate}{/SD_ShipmentDetails}</td> </tr> </tbody> </table> <p>&nbsp;</p> <p>This email contains confidential content, kindly treat with caution.</p> <p>Regards,&nbsp;<br /> CargoesRunner Team</p>";
+    public static final String SOURCE_BRANCH_PLACEHOLDER = "{#SOURCE_BRANCH}";
+    public static final String SHIPMENT_NUMBER_PLACEHOLDER = "{#SHIPMENT_NUMBER}";
+    public static final String SENDER_USER_NAME_PLACEHOLDER = "{#SENDER_USER_NAME}";
+    public static final String BL_NUMBER_PLACEHOLDER = "{#BL_NUMBER}";
+    public static final String MBL_NUMBER_PLACEHOLDER = "{#MBL_NUMBER}";
+    public static final String SENT_DATE_PLACEHOLDER = "{#SENT_DATE}";
+    public static final String CONSOLIDATION_NUMBER_PLACEHOLDER = "{#CONSOLIDATION_NUMBER}";
+    public static final String NUMBER_OF_SHIPMENTS_PLACEHOLDER = "{#NUMBER_OF_SHIPMENTS}";
+    public static final String SHIPMENT_NUMBERS_PLACEHOLDER = "{#SHIPMENT_NUMBERS}";
 
     private Constants() {
     }
