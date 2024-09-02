@@ -498,4 +498,9 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_receiving_branch_added")
     private Boolean isReceivingBranchAdded;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @Where(clause = "is_attachment_done = 'false'")
+    private List<ConsoleShipmentMapping> consoleShipmentMappings;
+
 }

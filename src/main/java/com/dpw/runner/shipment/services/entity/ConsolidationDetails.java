@@ -443,4 +443,8 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "lat_date")
     private LocalDateTime latDate;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @Where(clause = "is_attachment_done = 'false'")
+    private List<ConsoleShipmentMapping> consoleShipmentMappings;
 }
