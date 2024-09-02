@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.Book
 import com.dpw.runner.shipment.services.dto.request.InvoiceSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ChargeTypeFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.ExternalBillPayloadRequest;
@@ -47,6 +48,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -54,6 +56,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -95,6 +98,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Autowired
+    private V2AuthHelper v2AuthHelper;
+    @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private IV1Service v1Service;
@@ -107,6 +112,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
     private static final String REQUEST_PAYLOAD = "Request payload: {}";
     private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
+    private static final String RESPONSE_CONTAINS_ERROR = "Response contains errors: ";
+    private static final String BILLING_SUMMARY = "billingSummary";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -185,59 +192,53 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
     }
 
-    /**
-     * Fetches the billing summary for a bulk set of modules.
-     * <p>
-     * This method takes an BillingBulkSummaryRequest object, sends a POST request to the billing service to retrieve the summary, and maps the response to a BillingSummary object
-     * if the response is not null.
-     *
-     * @param request the BillingBulkSummaryRequest containing module GUIDs and module type for which the billing summary is requested.
-     * @return a BillingSummary object containing the billing summary information.
-     */
     @Override
     public List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request) {
-        // Construct the URL for the billing bulk summary endpoint
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummary();
-        log.info("Sending billing bulk summary request to URL: {}", url);
-
-        // Create an HttpEntity object with the request payload and authentication headers
         HttpEntity<BillingBulkSummaryRequest> httpEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-        log.debug(REQUEST_PAYLOAD, request);
+        return fetchBillingSummary(url, httpEntity);
+    }
+
+    @Override
+    public List<BillingSummary> fetchBillingBulkSummaryBranchWise(BillingBulkSummaryBranchWiseRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkSummaryBranchWise();
+        HttpEntity<BillingBulkSummaryBranchWiseRequest> httpEntity = new HttpEntity<>(request, v2AuthHelper.getInvoiceServiceXApiKeyHeader());
+        return fetchBillingSummary(url, httpEntity);
+    }
+
+    private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
+        log.info("Sending request to URL: {}", url);
+        log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
 
         try {
-            // Send the POST request and get the response body
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
 
-            // Check the response status and body
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
 
             if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
-                // Handle the errors by throwing an exception
-                String errorMsg = "Response contains errors: " + billingEntityResponse.getErrors().toString();
+                String errorMsg = RESPONSE_CONTAINS_ERROR + billingEntityResponse.getErrors().toString();
                 log.error(errorMsg);
                 throw new BillingException(errorMsg);
             }
 
-            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
-                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get("billingSummary"))) {
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get(BILLING_SUMMARY))) {
                 log.info("Received billingEntityResponse from billing service");
                 Map<String, Object> data = billingEntityResponse.getData();
                 log.debug("Response data: {}", data);
 
-                // Convert the billingSummary object to a List<Map<String, Object>>
-                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get("billingSummary");
-
-                // Map the list of maps to a list of BillingSummary objects
+                List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get(BILLING_SUMMARY);
                 return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {
                 }.getType());
             } else {
                 log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
-                return List.of();
+                return Collections.emptyList();
             }
         } catch (Exception e) {
-            log.error("Error occurred while fetching billing bulk summary", e);
-            throw new BillingException("Error occurred while fetching billing bulk summary", e);
+            log.error("Error occurred while fetching billing summary", e);
+            throw new BillingException("Error occurred while fetching billing summary", e);
         }
     }
 
@@ -255,7 +256,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             if (Objects.nonNull(response) && response instanceof BillingBaseResponse billingBaseResponse) {
                 if (ObjectUtils.isNotEmpty(billingBaseResponse.getErrors())) {
-                    String errorMsg = "Response contains errors: " + billingBaseResponse.getErrors().toString();
+                    String errorMsg = RESPONSE_CONTAINS_ERROR + billingBaseResponse.getErrors().toString();
                     throw new BillingException(errorMsg);
                 }
             } else {
@@ -332,7 +333,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 DateTimeFormatter.ofPattern(Constants.DATE_TIME_FORMAT));
     }
 
-    private Boolean checkActiveCharges(BillingSummary billingSummary) {
+    public Boolean checkActiveCharges(BillingSummary billingSummary) {
         return (!Objects.equals(null, billingSummary.getTotalCount()) && !Objects.equals(0, billingSummary.getTotalCount())) ||
                 (!Objects.equals(null, billingSummary.getTotalRevenue()) && Double.compare(billingSummary.getTotalRevenue(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getTotalCost()) && Double.compare(billingSummary.getTotalCost(), 0.0) > 0) ||

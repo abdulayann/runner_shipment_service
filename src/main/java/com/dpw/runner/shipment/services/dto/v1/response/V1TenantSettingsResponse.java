@@ -46,4 +46,5 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
     private Boolean isModuleValidationEnabled;
+    private Boolean consolSplitBillCharge;
 }

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundExcepti
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -32,7 +33,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({
             BillingException.class,
-            ReportException.class})
+            ReportException.class,
+            RoutingException.class})
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
@@ -83,8 +85,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .toList();
-        log.error("Return Response with data {}", errors.toString());
-        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errors.get(0));
+        String errorMessages = errors.size() > 1
+                ? String.join(" | ", errors)
+                : errors.get(0);
+        log.error("Return Response with data {}", errors);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errorMessages);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
 

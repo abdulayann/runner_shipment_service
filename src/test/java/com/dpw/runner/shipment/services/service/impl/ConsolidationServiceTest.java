@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -29,6 +30,19 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -42,6 +56,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -66,6 +81,28 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -174,6 +211,9 @@ import static org.mockito.Mockito.*;
 
     @Mock
     private IConsolidationSync consolidationSync;
+
+    @Mock
+    private BillingServiceAdapter billingServiceAdapter;
 
     @Mock
     private IAuditLogService auditLogService;
@@ -1394,12 +1434,21 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(1L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1416,11 +1465,22 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(1L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
@@ -1439,6 +1499,16 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setContainsHazardous(true);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
@@ -1446,6 +1516,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1464,10 +1535,23 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(1L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
 
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(2L);
         shipmentDetails1.setContainsHazardous(false);
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(2);
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
@@ -1475,8 +1559,8 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setHazardous(true);
         consolidationDetails.setShipmentsList(new ArrayList<>(List.of(shipmentDetails1)));
 
-
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1496,6 +1580,16 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setContainsHazardous(true);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
@@ -1503,6 +1597,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1510,6 +1605,71 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_activeCharges() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setContainsHazardous(true);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setHazardous(true);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(true);
+
+        assertThrows(BillingException.class, () -> consolidationService.detachShipments(1L, shipmentIds));
+    }
+
+    private BillingSummary createTestBillingSummary() {
+        BillingSummary billingSummary = new BillingSummary();
+
+        billingSummary.setTotalCount(1);
+        billingSummary.setTotalRevenue(1000.0);
+        billingSummary.setTotalCost(500.0);
+        billingSummary.setTotalEstimatedCost(BigDecimal.valueOf(600.0));
+        billingSummary.setTotalEstimatedRevenue(BigDecimal.valueOf(1200.0));
+        billingSummary.setTotalEstimatedProfit(BigDecimal.valueOf(600.0));
+        billingSummary.setTotalEstimatedProfitPercent(BigDecimal.valueOf(50.0));
+        billingSummary.setTotalProfit(BigDecimal.valueOf(400.0));
+        billingSummary.setTotalProfitPercent(BigDecimal.valueOf(40.0));
+        billingSummary.setTotalPostedCost(BigDecimal.valueOf(500.0));
+        billingSummary.setTotalPostedRevenue(BigDecimal.valueOf(1000.0));
+        billingSummary.setTotalPostedProfit(BigDecimal.valueOf(500.0));
+        billingSummary.setTotalPostedProfitPercent(BigDecimal.valueOf(50.0));
+        billingSummary.setAccruedRevenue(800.0);
+        billingSummary.setAccruedCost(300.0);
+        billingSummary.setInvoicedRevenue(700.0);
+        billingSummary.setInvoicedCost(350.0);
+        billingSummary.setDisbursementAccruedRevenue(400.0);
+        billingSummary.setDisbursementAccruedCost(200.0);
+        billingSummary.setDisbursementInvoicedRevenue(300.0);
+        billingSummary.setDisbursementInvoicedCost(150.0);
+        billingSummary.setDisbursementRevenue(250.0);
+        billingSummary.setDisbursementCost(100.0);
+        billingSummary.setCumulativeGP(1500.0);
+        billingSummary.setCumulativeGPPercentage(30.0);
+
+        return billingSummary;
     }
 
     @Test
@@ -1521,16 +1681,30 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setId(1L);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .consolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
+
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
+        BillingSummary sampleBillingSummary = createTestBillingSummary();
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
+        when(billingServiceAdapter.checkActiveCharges(any())).thenReturn(false);
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(packingsADSync.sync(anyList(), any())).thenThrow(new RuntimeException("Test"));
         when(consolidationSync.sync(any(), any(), anyBoolean())).thenThrow(new RunnerException("Test"));
+
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

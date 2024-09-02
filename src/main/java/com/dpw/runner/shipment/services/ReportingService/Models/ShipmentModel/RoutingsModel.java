@@ -44,6 +44,8 @@ public class RoutingsModel implements IDocumentModel {
     private Long consolidationId;
     @JsonProperty("IsLinked")
     private Boolean isLinked;
+    @JsonProperty("isSelectedForDocument")
+    private Boolean isSelectedForDocument;
     @JsonProperty("Voyage")
     private String voyage;
     @JsonProperty("AircraftRegistration")

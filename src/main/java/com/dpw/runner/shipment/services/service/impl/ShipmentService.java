@@ -59,6 +59,16 @@ import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -74,6 +84,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -202,6 +213,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IRoutingsDao routingsDao;
+
+    @Autowired
+    private IRoutingsService routingsService;
 
     @Autowired
     private IServiceDetailsDao serviceDetailsDao;
@@ -919,6 +933,35 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
         shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
         shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
+
+        if(customerBookingRequest.getOrderManagementId()!=null){
+            ShipmentDetails shipmentDetails = null;
+            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
+
+            if(shipmentDetails!=null){
+                if(shipmentDetails.getGoodsDescription()!=null)
+                    shipmentRequest.setGoodsDescription(shipmentDetails.getGoodsDescription());
+
+                if(shipmentDetails.getReferenceNumbersList()!=null){
+                    List<ReferenceNumbersRequest> referenceNumbersList = jsonHelper.convertValue(shipmentDetails.getReferenceNumbersList(), new TypeReference<List<ReferenceNumbersRequest>>() {});
+                    shipmentRequest.setReferenceNumbersList(referenceNumbersList);
+                }
+
+                if(shipmentDetails.getAdditionalDetails()!=null){
+                    if(shipmentDetails.getAdditionalDetails().getImportBroker()!=null){
+                        PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
+                    }
+
+                    if(shipmentDetails.getAdditionalDetails().getExportBroker()!=null){
+                        PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
+                    }
+                }
+            }
+
+        }
+
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
@@ -1342,7 +1385,7 @@ public class ShipmentService implements IShipmentService {
 
     private void setColoadingStation(ShipmentRequest request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
@@ -1519,7 +1562,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.getCarrierDetails().setAircraftType(consolidationDetails1.getCarrierDetails().getAircraftType());
                 shipmentDetails.getCarrierDetails().setCfs(consolidationDetails1.getCarrierDetails().getCfs());
 
-                if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                if(Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                     shipmentDetails.getCarrierDetails().setFlightNumber(consolidationDetails1.getCarrierDetails().getFlightNumber());
                     shipmentDetails.getCarrierDetails().setOriginPort(consolidationDetails1.getCarrierDetails().getOriginPort());
                     shipmentDetails.getCarrierDetails().setDestinationPort(consolidationDetails1.getCarrierDetails().getDestinationPort());
@@ -3941,7 +3984,7 @@ public class ShipmentService implements IShipmentService {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
 
-        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || !Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 || Boolean.FALSE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             if (!Objects.isNull(consolidationDetails.getCarrierDetails().getOriginPort()))
                 CommonUtils.andCriteria(Constants.ORIGIN_PORT, consolidationDetails.getCarrierDetails().getOriginPort(), "=", defaultRequest);
@@ -3982,7 +4025,7 @@ public class ShipmentService implements IShipmentService {
         }
         if(Boolean.TRUE.equals(request.getEtdMatch())){
 
-            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP)
+            if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                     && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
                 if (!Objects.isNull(consolidationDetails.getCarrierDetails().getEtd())) {
                     LocalDateTime etd = consolidationDetails.getCarrierDetails().getEtd();

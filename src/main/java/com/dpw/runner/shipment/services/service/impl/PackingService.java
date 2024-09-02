@@ -1118,8 +1118,6 @@ public class PackingService implements IPackingService {
         boolean flag = true;
         if(!consol.getTransportMode().equalsIgnoreCase(TRANSPORT_MODE_AIR))
             flag = false;
-        if(!consol.getShipmentType().equalsIgnoreCase(DIRECTION_EXP))
-            flag = false;
         if(!Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()))
             flag = false;
         if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
