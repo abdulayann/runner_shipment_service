@@ -420,8 +420,8 @@ public class ShipmentService implements IShipmentService {
             Map.entry("shipmentPackStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(ShipmentPackStatus.class).build()),
             Map.entry(Constants.TENANT_ID, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Integer.class).fieldName(Constants.TENANT_ID).build()),
             Map.entry("cargoReadyDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoReadyDate").build()),
-            Map.entry("cargoDeliveryDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoDeliveryDate").build())
-
+            Map.entry("cargoDeliveryDate", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(LocalDateTime.class).fieldName("cargoDeliveryDate").build()),
+            Map.entry("requestedOn", RunnerEntityMapping.builder().tableName("consoleShipmentMappings").dataType(LocalDateTime.class).fieldName(CREATED_AT).build())
     );
 
     @Override
@@ -5389,6 +5389,7 @@ public class ShipmentService implements IShipmentService {
 
             listRequest = constructListCommonRequest("id", consolidationIds, "IN");
             listRequest.setContainsText(request.getContainsText());
+            listRequest.setSortRequest(request.getSortRequest());
             Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class, ConsolidationService.tableNames);
             Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -5407,18 +5408,24 @@ public class ShipmentService implements IShipmentService {
             masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
             masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS);
 
-            var pullingConsolMap = consolPage.getContent().stream().map(i -> mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData)).collect(
-                Collectors.toMap(PendingShipmentActionsResponse::getConsolId, Function.identity()));
+            // console id vs list of ship ids
+            Map<Long, List<Long>> consolVsShipIdMap = new HashMap<>();
 
             // generate mapping for shipment id vs list of pulling consol(s)
             for(var mapping : mappingPage.getContent()) {
                 if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
                     notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
                 }
-                if(pullingConsolMap.get(mapping.getConsolidationId()) != null)
-                    notificationResultMap.get(mapping.getShipmentId()).add(pullingConsolMap.get(mapping.getConsolidationId()));
+                if(!consolVsShipIdMap.containsKey(mapping.getConsolidationId())) {
+                    consolVsShipIdMap.put(mapping.getConsolidationId(), new ArrayList<>());
+                }
+                consolVsShipIdMap.get(mapping.getConsolidationId()).add(mapping.getShipmentId());
             }
 
+            consolPage.getContent().stream().forEach(i -> {
+                var res = mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData);
+                consolVsShipIdMap.get(i.getId()).forEach(shipId -> notificationResultMap.get(shipId).add(res));
+            });
 
         }
         catch(Exception e) {
