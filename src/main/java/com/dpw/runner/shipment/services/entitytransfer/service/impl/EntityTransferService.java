@@ -196,14 +196,19 @@ public class EntityTransferService implements IEntityTransferService {
 //                log.error("Entity Transfer failed Send V1 shipment: " + ex);
 //                throw new RuntimeException(ex.getMessage());
 //            }
-        validationsBeforeSendTask(new HashSet<>(sendShipmentRequest.getSendToBranch()));
+        Set<Integer> uniqueDestinationTenants = new HashSet<>(sendShipmentRequest.getSendToBranch());
+        validationsBeforeSendTask(uniqueDestinationTenants);
+        var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
         List<EntityTransferShipmentDetails> payloadList = new ArrayList<>();
-        for(int i = 0; i < sendShipmentRequest.getSendToBranch().size(); i++) {
+        for(int i = 0; i < uniqueDestinationTenants.size(); i++) {
             var entityTransferPayload = prepareShipmentPayload(shipment);
             if(sendShipmentRequest.getSendToBranch().get(i).equals(shipment.getReceivingBranch())) {
                 entityTransferPayload.setDirection(reverseDirection(shipment.getDirection()));
             }
+            entityTransferPayload.setSendToBranch(sendToBranch.get(i));
+            entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+
             payloadList.add(entityTransferPayload);
 //            createTask(entityTransferPayload, shipment.getId(), Constants.Shipments);
         }
