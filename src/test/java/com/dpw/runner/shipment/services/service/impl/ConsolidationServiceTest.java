@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;

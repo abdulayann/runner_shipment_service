@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.Generated;

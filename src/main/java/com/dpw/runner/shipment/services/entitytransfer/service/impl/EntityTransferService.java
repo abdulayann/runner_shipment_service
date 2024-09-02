@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
