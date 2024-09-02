@@ -66,7 +66,7 @@ public class ShipmentSync implements IShipmentSync {
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
         }
         else
-            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId);
+            syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), sd.getCreatedBy());
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
 
@@ -198,7 +198,7 @@ public class ShipmentSync implements IShipmentSync {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(request.getId());
         response.setConsolidationGuids(new HashMap<>());
         consoleShipmentMappings.forEach(mapping -> {
-            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(mapping.getConsolidationId()).get();
+            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(mapping.getConsolidationId());
             response.getConsolidationGuids().put(consolidationDetails.getGuid(), consolidationDetails.getTenantId());
         });
     }
