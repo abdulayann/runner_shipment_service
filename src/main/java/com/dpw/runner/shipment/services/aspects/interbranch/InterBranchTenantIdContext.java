@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.aspects.intraBranch;
+package com.dpw.runner.shipment.services.aspects.interbranch;
 
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchTenantIdDto;
 
