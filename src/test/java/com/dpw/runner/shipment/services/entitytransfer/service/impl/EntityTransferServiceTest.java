@@ -133,7 +133,6 @@ class EntityTransferServiceTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        // Mock UserContext.getUser() to return the mock user
         mockStatic(UserContext.class);
         when(UserContext.getUser()).thenReturn(user);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
