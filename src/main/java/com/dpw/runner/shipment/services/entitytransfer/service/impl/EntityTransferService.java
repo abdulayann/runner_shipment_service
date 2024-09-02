@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchTenantIdContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -15,17 +16,22 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchTenantIdDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
@@ -40,11 +46,13 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -52,6 +60,9 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -63,11 +74,15 @@ import org.springframework.stereotype.Service;
 
 import javax.json.*;
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.io.StringReader;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -112,10 +127,14 @@ public class EntityTransferService implements IEntityTransferService {
     @Autowired
     MasterDataFactory masterDataFactory;
     @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private IV1Service iv1Service;
+    @Autowired
+    private INotificationService notificationService;
+    @Autowired
     V1ServiceUtil v1ServiceUtil;
 
-    @Autowired
-    private CommonUtils commonUtils;
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -2410,5 +2429,310 @@ public class EntityTransferService implements IEntityTransferService {
         );
     }
 
+
+    public void testSendConsolidationEmailNotification(Long consoleId, List<Integer> destinationBranches) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, destinationBranches));
+    }
+
+    public void testSendGroupedEmailForShipmentImport(Long consoleId, List<UUID> shipmentGuids) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        consolidationDetails.ifPresent(details -> sendGroupedEmailForShipmentImport(details, shipmentGuids));
+    }
+
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
+        List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), CONSOLIDATION_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if(!emailList.isEmpty()) {
+                createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
+                try {
+                    notificationService.sendEmail(emailTemplateModel.getBody(),
+                            emailTemplateModel.getSubject(), emailList, ccEmails);
+                } catch (Exception ex) {
+                    log.error(ex.getMessage());
+                }
+            }
+        }
+    }
+
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches) {
+        List<String> requests = new ArrayList<>(List.of(SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if (!emailList.isEmpty()) {
+                createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), emailList, ccEmails);
+            }
+        }
+    }
+
+    public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(BL_NUMBER_PLACEHOLDER, shipmentDetails.getHouseBill());
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, shipmentDetails.getMasterBill());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
+    public void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getHouseBill)
+                        .collect(Collectors.joining(","));
+
+        String shipmentNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getShipmentId)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+        body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, "SEA".equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, shipmentNumbers);
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
+    public List<String> getRoleListByRoleId(Integer roleId) {
+
+        V1UsersEmailRequest request = new V1UsersEmailRequest();
+        request.setRoleId(roleId);
+        request.setTake(50);
+        List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
+
+        return emailIds;
+    }
+
+
+
+    public void sendGroupedEmailForShipmentImport(ConsolidationDetails consolidationDetails, List<UUID> shipmentGuids) {
+        commonUtils.setInterBranchContextForHub();
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
+        for(UUID guid: shipmentGuids) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
+            if(shipmentDetails.isPresent()) {
+                shipmentDetailsList.add(shipmentDetails.get());
+                tenantIds.add(shipmentDetails.get().getTenantId());
+            }
+        }
+
+        for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
+            tenantShipmentMapping.computeIfAbsent(shipmentDetails.getTenantId(), shipmentDetail -> new ArrayList<>()).add(shipmentDetails);
+        }
+
+        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+        commonUtils.getToAndCCEmailIds(tenantIds, toAndCcMailIds);
+        Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+
+
+        List<String> requests = new ArrayList<>(List.of(GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+
+
+        for(Integer tenantId: tenantIds) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, toAndCCMasterDataMap, tenantId, false);
+            List<String> importerEmailIds = getRoleListByRoleId(tenantId);
+            List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
+
+            List<String> toEmailIdsList = new ArrayList<>(toEmailIds);
+            importerEmailIds.addAll(toEmailIdsList);
+            List<String> ccEmailIdsList = new ArrayList<>(ccEmailIds);
+
+            if (!importerEmailIds.isEmpty()) {
+                createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), importerEmailIds, ccEmailIdsList);
+            }
+
+        }
+
+    }
+
+    public void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails) {
+
+        // Body
+        String body = (template.getBody() == null) ?
+                DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY : template.getBody();
+        template.setBody(body);
+
+        Map<String, Object> tagDetails = new HashMap<>();
+
+        template.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));
+
+        populateTagDetails(tagDetails, consolidationDetails.getConsolidationNumber());
+
+        template.setBody(generateEmailBody(tagDetails, shipmentDetailsForTenant, template.getBody()));
+    }
+
+    public String generateSubject(List<ShipmentDetails> shipmentDetailsList, String consolidationBranch) {
+        String shipmentNumbers = shipmentDetailsList.stream()
+                .map(ShipmentDetails::getShipmentId)
+                .collect(Collectors.joining(", "));
+
+        String subjectTemplate = "Shipment/s: {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
+
+        return subjectTemplate
+                .replace("{#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails}", shipmentNumbers)
+                .replace("{GS_ConsolidationBranch}", consolidationBranch);
+    }
+
+
+    public String generateEmailBody(Map<String, Object> tagDetails, List<ShipmentDetails> shipmentDetailsList, String htmlTemplate) {
+        String tableTemplate = extractTableTemplate(htmlTemplate);
+
+        String populatedTable = populateTableWithData(tableTemplate, shipmentDetailsList);
+
+        String emailBody = replaceTagsValues(tagDetails, htmlTemplate);
+        emailBody = emailBody.replace(tableTemplate, populatedTable);
+        return emailBody;
+    }
+
+    public String extractTableTemplate(String htmlTemplate) {
+        int tableStartIndex = htmlTemplate.indexOf("<table>");
+        int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
+
+        if (tableStartIndex != -1 && tableEndIndex > tableStartIndex) {
+            return htmlTemplate.substring(tableStartIndex, tableEndIndex);
+        }
+
+        return "";
+    }
+
+
+    public String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList) {
+        Document document = Jsoup.parse(tableTemplate);
+        Element table = document.select("table").first();
+
+        assert table != null;
+        Element rowTemplate = table.select("tbody tr").get(1);
+
+        rowTemplate.remove();
+
+        for (ShipmentDetails shipment : shipmentDetailsList) {
+            Element newRow = rowTemplate.clone();
+            newRow.select("td").get(0).text(shipment.getShipmentId()).attr("style", "padding: 10px;");
+            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch())).attr("style", "padding: 10px;");
+            newRow.select("td").get(2).text(shipment.getHouseBill()).attr("style", "padding: 10px;");
+            newRow.select("td").get(3).text(shipment.getMasterBill()).attr("style", "padding: 10px;");
+            newRow.select("td").get(4).text(shipment.getShipmentCreatedOn().toString()).attr("style", "padding: 10px;");
+
+            table.select("tbody").first().appendChild(newRow);
+        }
+
+        return table.outerHtml();
+    }
+
+    public String replaceTagsValues(Map<String, Object> tagDetails, String htmlElement) {
+        for (Map.Entry<String, Object> entry : tagDetails.entrySet()) {
+            String tagPattern = "{" + entry.getKey() + "}";
+            String value = entry.getValue() == null ? "" : entry.getValue().toString();
+            htmlElement = htmlElement.replace(tagPattern, value);
+        }
+        return htmlElement;
+    }
+
+
+    public void populateTagDetails(Map<String, Object> tagDetails, String consolidationBranch) {
+        tagDetails.put("GS_ConsolidationBranch", consolidationBranch);
+    }
 
 }

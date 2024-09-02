@@ -834,7 +834,7 @@ public class CommonUtils {
         }
     }
 
-    private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap,
+    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap,
                                             Integer tenantId, boolean isShipment) {
         int toId = MasterDataType.ConsolidationAttachDefaultToMailId.getId();
         int ccId = MasterDataType.ConsolidationAttachDefaultCCMailId.getId();
