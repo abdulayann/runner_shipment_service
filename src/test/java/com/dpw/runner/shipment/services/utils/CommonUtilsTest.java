@@ -652,6 +652,7 @@ class CommonUtilsTest {
 
     @Test
     void testUpdateConsolOpenForAttachment_withWeightUtilizationAbove100() {
+        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
         when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
         when(achievedQuantities.getWeightUtilization()).thenReturn("150");
         when(achievedQuantities.getVolumeUtilization()).thenReturn("50");
@@ -661,6 +662,7 @@ class CommonUtilsTest {
 
     @Test
     void testUpdateConsolOpenForAttachment_withVolumeUtilizationAbove100() {
+        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
         when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
         when(achievedQuantities.getWeightUtilization()).thenReturn("50");
         when(achievedQuantities.getVolumeUtilization()).thenReturn("150");
