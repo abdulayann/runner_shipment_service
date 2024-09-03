@@ -13,5 +13,6 @@ public final class PermissionConstants {
     public static final String crossTenantUpdatePermission = "Cross_Tenant:Update";
     public static final String airDG = "AirDG";
     public static final String oceanDGApprover = ""; // TODO- Add permission constant value
+    public static final String oceanDGCommercialApprover = ""; // TODO- Add permission constant value
     public static final String CONSOLIDATIONS_AIR_INTER_BRANCH = "Consolidations:Air:Interbranch Consolidation";
 }
