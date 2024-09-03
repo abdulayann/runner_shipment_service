@@ -411,7 +411,8 @@ public class EventService implements IEventService {
                     shipmentId.ifPresent(eventsResponse::setShipmentId);
                     res.add(eventsResponse);
                 }
-                saveTrackingEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
             }
 
             if ((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
@@ -436,6 +437,70 @@ public class EventService implements IEventService {
         }
 
         return ResponseHelper.buildSuccessResponse(res);
+    }
+
+    private void saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType) {
+        if (trackingEvents == null || trackingEvents.isEmpty()) {
+            return;
+        }
+
+        // Construct list criteria and fetch existing events based on entity
+        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
+        Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
+        List<Events> existingEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+
+        // Create a map of existing events by their event code
+        Map<String, Events> existingEventsMap = existingEvents.stream()
+                .collect(Collectors.toMap(Events::getEventCode, Function.identity()));
+
+        // Filter, map, and collect relevant tracking events based on custom logic
+        List<Events> updatedEvents = trackingEvents.stream()
+                .filter(this::shouldProcessEvent)
+                .map(e -> mapToUpdatedEvent(e, existingEventsMap, entityId, entityType)).toList();
+
+        // Save all the updated events
+        eventDao.saveAll(updatedEvents);
+    }
+
+    private boolean shouldProcessEvent(Events event) {
+        String eventCode = event.getEventCode();
+        String entityType = event.getEntityType();
+
+
+        if(EventConstants.GateInWithContainerEmpty.equalsIgnoreCase(entityType)) {
+
+        }
+
+
+        if ("ABC".equalsIgnoreCase(eventCode)) {
+            return true;
+        }
+
+        if ("DEF".equalsIgnoreCase(eventCode)) {
+            return true;
+        }
+
+        // Add more conditions here as needed
+        return false;
+    }
+
+    private Events mapToUpdatedEvent(Events trackingEvent, Map<String, Events> existingEventsMap,
+            Long entityId, String entityType) {
+        Events event = modelMapper.map(trackingEvent, Events.class);
+        Events existingEvent = existingEventsMap.get(trackingEvent.getEventCode());
+
+        if (existingEvent != null) {
+            // Update ID and GUID if the event already exists
+            event.setId(existingEvent.getId());
+            event.setGuid(existingEvent.getGuid());
+        }
+
+        // Set entity-related details and source
+        event.setEntityId(entityId);
+        event.setEntityType(entityType);
+        event.setSource(Constants.CARGOES_TRACKING);
+
+        return event;
     }
 
     @Override
@@ -468,7 +533,7 @@ public class EventService implements IEventService {
      * @param entityType
      * save tracking response events into separate table and update if any existing event that's already saved
      */
-    private void saveTrackingEvents(List<Events> trackingEvents, Long entityId, String entityType) {
+    private void saveTrackingEventsToEventsDump(List<Events> trackingEvents, Long entityId, String entityType) {
         if (trackingEvents == null || trackingEvents.isEmpty())
             return;
 
