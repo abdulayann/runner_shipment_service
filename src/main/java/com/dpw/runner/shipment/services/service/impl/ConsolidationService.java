@@ -3700,7 +3700,8 @@ public class ConsolidationService implements IConsolidationService {
                             break;
                         case "ORIGIN PORT/ DESTINATION PORT":
                             if(StringUtility.isNotEmpty(request.getPol()) && StringUtility.isNotEmpty(request.getPod())){
-                                consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
+                                if (!Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) || !Objects.equals(Constants.TRANSPORT_MODE_AIR, request.getTransportMode()))
+                                    consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
                                 consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
                                 isConditionSatisfied = true;
                                 response.setFilteredDetailName("Origin Port/ Destination Port");
