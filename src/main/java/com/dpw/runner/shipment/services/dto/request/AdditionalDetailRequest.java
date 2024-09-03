@@ -129,4 +129,12 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String aomFreeText;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
+    private LocalDateTime pickupDate;
+    private LocalDateTime cargoDeliveredDate;
+    private LocalDateTime customReleaseDate;
+    private Boolean docTurnedOverToCustomer;
+    private LocalDateTime proofOfDeliveryDate;
+    private LocalDateTime warehouseCargoArrivalDate;
+    private Boolean pickupByConsigneeCompleted;
+    private Boolean emptyContainerReturned;
 }

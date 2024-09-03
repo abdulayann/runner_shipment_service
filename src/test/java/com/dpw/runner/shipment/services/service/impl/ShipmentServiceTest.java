@@ -234,6 +234,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.kafka.common.protocol.types.Field;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -2989,8 +2991,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetailsRequest consolidationDetails = ConsolidationDetailsRequest.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
         ConsolidationDetails consoleDetails = objectMapper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
-        AdditionalDetails additionalDetails = new AdditionalDetails();
-        additionalDetails.setShipmentId(1L);
+        AdditionalDetails additionalDetails = getmockAdditionalDetails();
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -3007,7 +3008,23 @@ ShipmentServiceTest extends CommonMocks {
         when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetails);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+        assertEquals(true, shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
 
+    }
+
+    private AdditionalDetails getmockAdditionalDetails() {
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShipmentId(1L);
+        additionalDetails.setPickupDate(mockDateTime);
+        additionalDetails.setCargoDeliveredDate(mockDateTime.plusDays(2));
+        additionalDetails.setCustomReleaseDate(mockDateTime.plusDays(3));
+        additionalDetails.setProofOfDeliveryDate(mockDateTime.plusDays(4));
+        additionalDetails.setWarehouseCargoArrivalDate(mockDateTime.plusDays(5));
+        additionalDetails.setDocTurnedOverToCustomer(true);
+        additionalDetails.setPickupByConsigneeCompleted(true);
+        additionalDetails.setEmptyContainerReturned(true);
+        return additionalDetails;
     }
 
     @Test
@@ -3135,22 +3152,28 @@ ShipmentServiceTest extends CommonMocks {
         Events events = new Events();
         events.setId(1L);
 
+        Events events2 = new Events();
+        events2.setId(2L);
+        events2.setContainerNumber("1234-abcd");
+        events2.setLocationRole("abcd");
+
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
                 .containersList(Arrays.asList(Containers.builder().build()))
-                .eventsList(Arrays.asList(events))
+                .eventsList(Arrays.asList(events, events2))
                 .build();
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-        when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(events));
+        when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(Arrays.asList(events, events2));
         doNothing().when(eventService).updateAtaAtdInShipment(any(), any(), any());
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+        assertEquals("1234-abcd", shipmentDetails.getEventsList().get(1).getContainerNumber());
 
     }
 
@@ -5028,6 +5051,12 @@ ShipmentServiceTest extends CommonMocks {
         routings.setId(1L);
         shipmentDetails.setRoutingsList(Arrays.asList(routings));
 
+        Events events = new Events();
+        events.setId(1L);
+        events.setContainerNumber("abcd-efgh-1234-ijkl");
+        events.setLocationRole("bcdfh");
+        shipmentDetails.setEventsList(List.of(events));
+
         ShipmentDetails mockShipment = shipmentDetails;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).shipConsolidationContainerEnabled(true).build());
 
@@ -5037,12 +5066,18 @@ ShipmentServiceTest extends CommonMocks {
         routingsRequest.setIsSelectedForDocument(true);
         routingsRequest.setId(1L);
 
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setContainerNumber("abcd-efgh-1234-ijkl");
+        eventsRequest.setLocationRole("bcdfh");
+        eventsRequest.setId(1L);
+
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setBookingCarriagesList(Arrays.asList(BookingCarriageRequest.builder().build()));
         mockShipmentRequest.setTruckDriverDetails(Arrays.asList(TruckDriverDetailsRequest.builder().build()));
         mockShipmentRequest.setReplaceConsoleRoute(true);
         mockShipmentRequest.setConsolidationList(Arrays.asList(ConsolidationDetailsRequest.builder().build()));
         mockShipmentRequest.setRoutingsList(Arrays.asList(routingsRequest));
+        mockShipmentRequest.setEventsList(List.of(eventsRequest));
         mockShipmentRequest.setCreateMainLegRoute(true);
 
         ContainerIdDltReq containerIdDltReq = new ContainerIdDltReq();
@@ -5088,6 +5123,8 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
         assertEquals(true, mockShipmentResponse.getRoutingsList().get(0).getIsSelectedForDocument());
+        assertEquals("bcdfh", mockShipmentResponse.getEventsList().get(0).getLocationRole());
+
     }
 
     @Test

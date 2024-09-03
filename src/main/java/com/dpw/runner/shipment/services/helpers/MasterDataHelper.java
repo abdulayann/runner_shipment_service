@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
@@ -91,6 +92,8 @@ public class MasterDataHelper {
                     shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId())));
                 if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
                     shipmentDetailsResponse.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId())));
+                if(!Objects.isNull(shipmentDetailsResponse.getEventsList()))
+                    shipmentDetailsResponse.getEventsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Events.class, fieldNameKeyMap, Events.class.getSimpleName() + r.getId())));
             }
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();

@@ -29,6 +29,36 @@ public class EventConstants {
     public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
     public static final String FWB_EVENT_CODE = "FWB";
 
+    /*
+    Runner Event short codes
+     */
+    public static final String SHCR  = "SHCR";
+    public static final String CACO  = "CACO";
+    public static final String CADE  = "CADE";
+    public static final String BOCO  = "BOCO";
+    public static final String ECPK  = "ECPK";
+    public static final String FCGI  = "FCGI";
+    public static final String CAAW  = "CAAW";
+    public static final String VSDP  = "VSDP";
+    public static final String FHBL  = "FHBL";
+    public static final String HAWB  = "HAWB";
+    public static final String CANG  = "CANG";
+    public static final String ARDP  = "ARDP";
+    public static final String DOGE  = "DOGE";
+    public static final String CURE  = "CURE";
+    public static final String DOTP  = "DOTP";
+    public static final String FUGO  = "FUGO";
+    public static final String PRDE  = "PRDE";
+    public static final String CAFS  = "CAFS";
+    public static final String SEPU  = "SEPU";
+    public static final String EMCR  = "EMCR";
+    public static final String CARGOES_RUNNER = "Cargoes Runner";
+
+    // ~~~~~~ end runner event short codes
+
+    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
+    public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
+
     public static final String INVGNTD = "INVGNTD";
     public static final String TAXSG = "TAXSG";
     public static final String CSEDI = "CSEDI";
@@ -45,9 +75,6 @@ public class EventConstants {
     public static final String VESSEL_ARRIVAL = "Vessel Arrival";
     public static final String VESSEL_ARRIVAL_AT_TS_PORT = "Vessel Arrival at T/S Port";
     public static final String VESSEL_ARRIVAL_AT_POD = "Vessel Arrival at POD";
-
-    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
-    public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 
     public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }
