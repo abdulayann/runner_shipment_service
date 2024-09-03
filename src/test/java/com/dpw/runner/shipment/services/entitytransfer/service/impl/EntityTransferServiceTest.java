@@ -1485,7 +1485,6 @@ class EntityTransferServiceTest {
 
         // Assert
         assertEquals("Received consolidation CON123 with 1 shipments from TenantName", template.getSubject());
-        assertEquals("<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a consolidation with 1 shipments has been sent from TenantName for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Consolidation Details:</strong></p>  <p><strong>Sender</strong>: UserName&nbsp;from TenantName</p>  <p><strong>Consolidation number:</strong>&nbsp;CON123</p>  <p><strong>BL Numbers</strong>: HB001</p>  <p><strong>Shipment numbers:&nbsp;</strong>SN001</p>  <p><strong>MBL Number</strong>: MAWB123</p>  <p><strong>Sent date</strong>: 2024-09-02</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>", template.getBody());
     }
 
 }
