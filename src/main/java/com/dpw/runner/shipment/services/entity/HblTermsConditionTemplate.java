@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
@@ -18,7 +17,6 @@ import javax.validation.constraints.Size;
 @Table(name = "hbl_terms_condition_template")
 @NoArgsConstructor
 @AllArgsConstructor
-@SQLDelete(sql = "UPDATE hbl_terms_condition_template SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class HblTermsConditionTemplate extends MultiTenancy {
 

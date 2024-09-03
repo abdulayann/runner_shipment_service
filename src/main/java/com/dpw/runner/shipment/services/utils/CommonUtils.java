@@ -871,6 +871,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
         dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
     }
@@ -891,6 +892,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
         dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
+        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
         dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
@@ -905,6 +907,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(HAWB_NUMBER, shipmentDetails.getHouseBill());
         dictionary.put(ETD_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
@@ -940,6 +943,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
         dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
+        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
         dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
@@ -1097,7 +1101,6 @@ public class CommonUtils {
                 carrierDetails.setDestinationLocCode(destination.getLocCode());
                 carrierDetails.setOriginPortLocCode(pol.getLocCode());
                 carrierDetails.setDestinationPortLocCode(pod.getLocCode());
-                carrierDetailsDao.saveUnLocCodes(carrierDetails);
             }
         }
         catch (Exception e) {
