@@ -242,8 +242,8 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findByGuid(id);
     }
     @Override
-    public List<ShipmentDetails> findByHouseBill(String Hbl, Integer tenantId){
-        return shipmentRepository.findByHouseBill(Hbl, tenantId);
+    public List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId){
+        return shipmentRepository.findByHouseBill(hbl, tenantId);
     }
     @Override
     public List<ShipmentDetails> findByBookingReference(String ref){
