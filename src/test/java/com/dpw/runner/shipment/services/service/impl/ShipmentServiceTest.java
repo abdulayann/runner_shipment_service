@@ -6159,6 +6159,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
 
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         doNothing().when(spyService).sendEmailForPushRequestReject(any(), any(), any(), any(), any());
 
@@ -6175,6 +6176,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setConsoleId(1L);
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
 
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
 
         ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(updateConsoleShipmentRequest);
@@ -6221,6 +6223,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
         doNothing().when(spyService).sendEmailForPullRequestReject(any(), any(), any(), any(), any());
 
         ResponseEntity<IRunnerResponse> response = spyService.updateShipments(updateConsoleShipmentRequest);
@@ -6235,6 +6238,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
 
         ResponseEntity<IRunnerResponse> response = shipmentService.updateShipments(updateConsoleShipmentRequest);
 

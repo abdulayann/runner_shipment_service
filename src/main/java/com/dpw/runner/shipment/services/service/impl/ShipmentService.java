@@ -5271,11 +5271,11 @@ public class ShipmentService implements IShipmentService {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, updateConsoleShipmentRequest.getListOfShipments(), "IN", null);
                 listCommonRequest = andCriteria(CONSOLIDATION_ID, updateConsoleShipmentRequest.getConsoleId(), "=", listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair2 = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-                Page<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight());
+                List<ConsoleShipmentMapping> consoleShipmentMappings = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight()).getContent(), ConsoleShipmentMapping.class);
                 updateConsoleShipmentRequest.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(updateConsoleShipmentRequest.getConsoleId(), shipmentId));
                 // one console and multiple shipments (shipment push rejected)
                 if(ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
-                    sendEmailForPushRequestReject(consolidationDetails.get(), updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes, updateConsoleShipmentRequest.getRejectRemarks(), consoleShipmentMappings.getContent());
+                    sendEmailForPushRequestReject(consolidationDetails.get(), updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes, updateConsoleShipmentRequest.getRejectRemarks(), consoleShipmentMappings);
                 }
             }
         } else {
@@ -5311,11 +5311,11 @@ public class ShipmentService implements IShipmentService {
             ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, request.getShipmentId(), "=", null);
             listCommonRequest = andCriteria(CONSOLIDATION_ID, request.getConsoleIdsList(), "IN", listCommonRequest);
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair2 = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-            Page<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight());
+            List<ConsoleShipmentMapping> consoleShipmentMappings = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight()).getContent(), ConsoleShipmentMapping.class);
             request.getConsoleIdsList().stream().forEach(consoleId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(consoleId, request.getShipmentId()));
             // one shipment and multiple console, shipment pull rejected
             if(ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType())) {
-                sendEmailForPullRequestReject(request.getShipmentId(), request.getConsoleIdsList(), shipmentRequestedTypes, request.getRejectRemarks(), consoleShipmentMappings.getContent());
+                sendEmailForPullRequestReject(request.getShipmentId(), request.getConsoleIdsList(), shipmentRequestedTypes, request.getRejectRemarks(), consoleShipmentMappings);
             }
         }
     }
