@@ -152,7 +152,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkTaskExist() {
+    void checkTaskExist() throws RunnerException {
         // Mock
         when(entityTransferService.checkTaskExist(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -162,7 +162,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkTaskExist2() {
+    void checkTaskExist2() throws RunnerException {
         // Mock
         when(entityTransferService.checkTaskExist(any())).thenThrow(new RuntimeException());
         // Test
@@ -172,7 +172,7 @@ class EntityTransferControllerTest {
     }
 
     @Test
-    void checkTaskExist3() {
+    void checkTaskExist3() throws RunnerException {
         // Mock
         when(entityTransferService.checkTaskExist(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
