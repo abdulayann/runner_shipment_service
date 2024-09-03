@@ -4860,10 +4860,10 @@ public class ShipmentService implements IShipmentService {
         for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
             if(!Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
                 otherConsoleIds.add(consoleShipmentMapping.getConsolidationId());
-                usernamesList.add(consoleShipmentMapping.getCreatedBy());
             } else if(shipmentIds.contains(consoleShipmentMapping.getShipmentId()) && Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationDetails.getId())){
                 requestedUsernameMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping.getCreatedBy());
             }
+            usernamesList.add(consoleShipmentMapping.getCreatedBy());
         }
         Page<ConsolidationDetails> consolidationDetailsPage = null;
         if(!otherConsoleIds.isEmpty()) {
@@ -4957,10 +4957,10 @@ public class ShipmentService implements IShipmentService {
         for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
             if(!Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
                 otherConsoleIds.add(consoleShipmentMapping.getConsolidationId());
-                usernamesList.add(consoleShipmentMapping.getCreatedBy());
             } else if(Objects.equals(consoleShipmentMapping.getShipmentId(), shipmentId) && Objects.equals(consoleShipmentMapping.getConsolidationId(), consoleId)){
                 requestedUsername = consoleShipmentMapping.getCreatedBy();
             }
+            usernamesList.add(consoleShipmentMapping.getCreatedBy());
         }
         ListCommonRequest listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, "IN");
         Pair<Specification<ConsolidationDetails>, Pageable> pair3 = fetchData(listCommonRequest, ConsolidationDetails.class);
