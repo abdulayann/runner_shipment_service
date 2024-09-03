@@ -6160,7 +6160,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setListOfShipments(List.of(1L));
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        doNothing().when(spyService).sendEmailForPushRequestReject(any(), any(), any(), any());
+        doNothing().when(spyService).sendEmailForPushRequestReject(any(), any(), any(), any(), any());
 
         ResponseEntity<IRunnerResponse> response = spyService.updateShipments(updateConsoleShipmentRequest);
 
@@ -6221,7 +6221,7 @@ ShipmentServiceTest extends CommonMocks {
         updateConsoleShipmentRequest.setShipmentRequestedType(ShipmentRequestedType.REJECT);
         updateConsoleShipmentRequest.setConsoleIdsList(List.of(1L));
         updateConsoleShipmentRequest.setShipmentId(1L);
-        doNothing().when(spyService).sendEmailForPullRequestReject(any(), any(), any(), any());
+        doNothing().when(spyService).sendEmailForPullRequestReject(any(), any(), any(), any(), any());
 
         ResponseEntity<IRunnerResponse> response = spyService.updateShipments(updateConsoleShipmentRequest);
 
@@ -6532,9 +6532,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentService spyService = spy(shipmentService);
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        spyService.sendEmailForPushRequestReject(consolidationDetails, List.of(2L), new HashSet<>(), "rejectRemarks");
+        spyService.sendEmailForPushRequestReject(consolidationDetails, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
@@ -6544,9 +6543,8 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        spyService.sendEmailForPullRequestReject(1L, List.of(2L), new HashSet<>(), "rejectRemarks");
+        spyService.sendEmailForPullRequestReject(1L, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
