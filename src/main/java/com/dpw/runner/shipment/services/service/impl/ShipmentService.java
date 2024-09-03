@@ -2045,55 +2045,55 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetails.getAdditionalDetails() != null) {
             if (oldEntity != null && oldEntity.getAdditionalDetails() != null) {
                 for (var event : newUpdatedEvents) {
-                    updateEvent(event, shipmentDetails, oldEntity, eventFlags);
+                    updateTrackingEvent(event, shipmentDetails, oldEntity, eventFlags);
                 }
             }
 
-            addMissingEvents(newUpdatedEvents, shipmentDetails, eventFlags);
+            addMissingTrackingEvents(newUpdatedEvents, shipmentDetails, eventFlags);
         }
 
         return newUpdatedEvents;
     }
 
-    private void updateEvent(Events event, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, EventFlags eventFlags) {
+    private void updateTrackingEvent(Events event, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, EventFlags eventFlags) {
         switch (event.getEventCode()) {
             case EventConstants.CURE:
-                if (isEventApplicable(shipmentDetails)) {
+                if (isTrackingEventApplicable(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
                             oldEntity.getAdditionalDetails().getCustomReleaseDate());
                 }
                 eventFlags.isCustomReleaseEventExists = true;
                 break;
             case EventConstants.DOTP:
-                if (isEventApplicable(shipmentDetails)) {
+                if (isTrackingEventApplicable(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
                             oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer());
                 }
                 eventFlags.isDocTurnedOverToCustomerExists = true;
                 break;
             case EventConstants.PRDE:
-                if (isEventApplicable(shipmentDetails)) {
+                if (isTrackingEventApplicable(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
                             oldEntity.getAdditionalDetails().getProofOfDeliveryDate());
                 }
                 eventFlags.isProofOfDeliveryDateEventExists = true;
                 break;
             case EventConstants.CAFS:
-                if (isEventApplicableForCAFS(shipmentDetails)) {
+                if (isTrackingEventApplicableForCAFS(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
                             oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate());
                 }
                 eventFlags.isWarehouseCargoArrivalDateEventExists = true;
                 break;
             case EventConstants.SEPU:
-                if (isEventApplicable(shipmentDetails)) {
+                if (isTrackingEventApplicable(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
                             oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted());
                 }
                 eventFlags.isPickupbyConsigneeExists = true;
                 break;
             case EventConstants.EMCR:
-                if (isEMCREventApplicable(shipmentDetails)) {
+                if (isTrackingEMCREventApplicable(shipmentDetails)) {
                     handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                             oldEntity.getAdditionalDetails().getEmptyContainerReturned());
                 }
@@ -2104,20 +2104,20 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private boolean isEventApplicable(ShipmentDetails shipmentDetails) {
+    private boolean isTrackingEventApplicable(ShipmentDetails shipmentDetails) {
         return ((Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()))
                 && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
-    private boolean isEventApplicableForCAFS(ShipmentDetails shipmentDetails) {
+    private boolean isTrackingEventApplicableForCAFS(ShipmentDetails shipmentDetails) {
         return (Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
-    private boolean isEMCREventApplicable(ShipmentDetails shipmentDetails) {
+    private boolean isTrackingEMCREventApplicable(ShipmentDetails shipmentDetails) {
         return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
@@ -2129,28 +2129,28 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void addMissingEvents(List<Events> events, ShipmentDetails shipmentDetails, EventFlags eventFlags) {
-        if (!eventFlags.isCustomReleaseEventExists && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isEventApplicable(shipmentDetails)) {
+    private void addMissingTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails, EventFlags eventFlags) {
+        if (!eventFlags.isCustomReleaseEventExists && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isTrackingEventApplicable(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
             }
 
-        if (!eventFlags.isDocTurnedOverToCustomerExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isEventApplicable(shipmentDetails)) {
+        if (!eventFlags.isDocTurnedOverToCustomerExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isTrackingEventApplicable(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
             }
 
-        if (!eventFlags.isProofOfDeliveryDateEventExists && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isEventApplicable(shipmentDetails)) {
+        if (!eventFlags.isProofOfDeliveryDateEventExists && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isTrackingEventApplicable(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
             }
 
-        if (!eventFlags.isWarehouseCargoArrivalDateEventExists && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isEventApplicableForCAFS(shipmentDetails)) {
+        if (!eventFlags.isWarehouseCargoArrivalDateEventExists && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isTrackingEventApplicableForCAFS(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
             }
 
-        if (!eventFlags.isPickupbyConsigneeExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isEventApplicable(shipmentDetails)) {
+        if (!eventFlags.isPickupbyConsigneeExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isTrackingEventApplicable(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
             }
 
-        if (!eventFlags.isEmptyContainerReturned && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isEMCREventApplicable(shipmentDetails)) {
+        if (!eventFlags.isEmptyContainerReturned && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isTrackingEMCREventApplicable(shipmentDetails)) {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
             }
 
