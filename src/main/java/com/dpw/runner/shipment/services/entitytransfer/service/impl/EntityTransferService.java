@@ -115,20 +115,17 @@ public class EntityTransferService implements IEntityTransferService {
     private IContainerDao containerDao;
     private IPackingDao packingDao;
     private MasterDataFactory masterDataFactory;
-    @Autowired
-    IConsoleShipmentMappingDao consoleShipmentMappingDao;
-    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private CommonUtils commonUtils;
     private IV1Service iv1Service;
     private V1ServiceUtil v1ServiceUtil;
     private ITasksService tasksService;
     private INotificationService notificationService;
     private ExecutorService executorService;
-    @Autowired
-    DocumentManagerRestClient documentManagerRestClient;
+    private DocumentManagerRestClient documentManagerRestClient;
 
     @Autowired
-    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService) {
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -152,6 +149,8 @@ public class EntityTransferService implements IEntityTransferService {
         this.tasksService = tasksService;
         this.notificationService = notificationService;
         this.executorService = executorService;
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
+        this.documentManagerRestClient = documentManagerRestClient;
     }
 
     @Transactional
@@ -349,10 +348,10 @@ public class EntityTransferService implements IEntityTransferService {
     public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
 
-//        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())){
-//            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.REJECTED, importShipmentRequest.getRejectRemarks());
-//            return ResponseHelper.buildSuccessResponse();
-//        }
+        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
+            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.REJECTED, importShipmentRequest.getRejectRemarks());
+            return ResponseHelper.buildSuccessResponse();
+        }
 
         if (importShipmentRequest.getEntityData() == null) {
             throw new ValidationException("No Shipment payload please check");
@@ -368,10 +367,10 @@ public class EntityTransferService implements IEntityTransferService {
 //            // call Doc service
 //        }
 
-        // Task status approved
-//        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
-//            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
-//        }
+//         Task status approved
+        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
+            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
+        }
 
         var response = ImportShipmentResponse.builder()
                 .shipmentId(shipmentId)
