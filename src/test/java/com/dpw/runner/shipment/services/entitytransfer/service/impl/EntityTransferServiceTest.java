@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.runner.Runner;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -857,7 +858,7 @@ class EntityTransferServiceTest {
         when(consolidationDetailsDao.findById(request.getEntityId())).thenReturn(Optional.of(consolidationDetails));
         when(v1Service.checkTaskExist(any())).thenThrow(new RuntimeException());
 
-        assertThrows(RuntimeException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
+        assertThrows(RunnerException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
     }
 
     @Test
