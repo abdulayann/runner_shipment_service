@@ -106,8 +106,4 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
 
-    // Previous fields
-//    private Map<String, EntityTransferMasterLists> masterData;
-//    private Map<String, EntityTransferContainerType> containerTypeMasterData;
-//    private Map<String, EntityTransferCommodityType> commodityTypeMasterData;
 }

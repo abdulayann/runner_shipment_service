@@ -81,7 +81,4 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private Map<String, String> masterData;
     private Map<String, String> commodityTypeData;
 
-    // Previous fields
-//    private Map<String, EntityTransferMasterLists> masterData;
-//    private Map<String, EntityTransferCommodityType> commodityTypeMasterData;
 }

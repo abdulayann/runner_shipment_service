@@ -12,7 +12,7 @@ public interface IEntityTransferService {
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> sendShipmentValidation(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> checkEntityExists(CommonRequestModel commonRequestModel);
 }

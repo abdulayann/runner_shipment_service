@@ -146,12 +146,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private Integer sendToBranch;
     private String sourceBranchTenantName;
 
-    private Map<String, Object> masterData; // plug in response from Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse);
-//    private Map<String, String> masterData;
-//    private Map<String, String> unlocationData;
-//    private Map<String, String> currenciesMasterData;
-//    private Map<String, String> tenantIdsData;
-//    private Map<String, String> textData;
+    private transient Map<String, Object> masterData;
 
     private List<String> additionalDocs;
     private Map<String, List<String>> shipAdditionalDocs;
