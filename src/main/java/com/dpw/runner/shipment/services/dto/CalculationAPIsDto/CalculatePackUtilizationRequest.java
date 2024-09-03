@@ -29,4 +29,5 @@ public class CalculatePackUtilizationRequest implements IRunnerRequest {
     private Boolean ignoreConsolidationPacks;
 
     private Boolean saveConsol;
+    private Boolean isHub;
 }
