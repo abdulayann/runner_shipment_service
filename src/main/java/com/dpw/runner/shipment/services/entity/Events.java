@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -65,6 +67,7 @@ public class Events extends MultiTenancy {
     private String longitude;
 
     @Column(name = "source")
+    @MasterData(type = MasterDataType.EVENT_SOURCE_TYPE)
     private String source;
 
     @Column(name = "event_estimate_update_reasons")
@@ -93,4 +96,11 @@ public class Events extends MultiTenancy {
 
     @Column(name = "scheduled_date")
     private LocalDateTime scheduledDate;
+
+    @Column(name = "container_number")
+    private String containerNumber;
+
+    @Column(name = "location_role")
+    @MasterData(type = MasterDataType.LOCATION_ROLE)
+    private String locationRole;
 }

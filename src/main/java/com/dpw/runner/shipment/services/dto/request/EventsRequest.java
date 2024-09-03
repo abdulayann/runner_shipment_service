@@ -38,4 +38,6 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isPartial;
     private LocalDateTime receivedDate;
     private LocalDateTime scheduledDate;
+    private String containerNumber;
+    private String locationRole;
 }
