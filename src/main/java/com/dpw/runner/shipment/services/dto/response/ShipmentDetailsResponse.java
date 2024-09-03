@@ -158,6 +158,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long containerCount;
     private BigDecimal teuCount;
     private Integer packCount;
+    private String department;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {
