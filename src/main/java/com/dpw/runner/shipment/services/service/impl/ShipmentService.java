@@ -1020,26 +1020,6 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-    private void changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails) { // called when new dg pack is added or dg fields are changed
-        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgCommercialUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-    }
 
     private boolean checkIfNewFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
         if(!Objects.equals(newPack.getHazardous(), oldPack.getHazardous()))
@@ -1110,14 +1090,14 @@ public class ShipmentService implements IShipmentService {
                 if(!Objects.isNull(oldEntity) &&
                         (shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_ACCEPTED) || shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED))) {
                     if(pack.getId() == null)
-                        changeShipmentDGStatusToReqd(shipmentDetails);
+                        commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
                 if(pack.getId() != null) {
                     if(oldPacksMap.containsKey(pack.getId()))
                         oldPacking = oldPacksMap.get(pack.getId());
                     if(oldPacking != null) {
                         if(checkIfNewFieldsChangedInPacking(pack, oldPacking))
-                            changeShipmentDGStatusToReqd(shipmentDetails);
+                            commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                     }
                 }
                 if(checkIfDGClass1(pack.getDGClass())) {
@@ -1148,17 +1128,17 @@ public class ShipmentService implements IShipmentService {
                 if(!Objects.isNull(oldEntity) &&
                         (shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_ACCEPTED) || shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED))) {
                     if(container.getId() == null)
-                        changeShipmentDGStatusToReqd(shipmentDetails);
+                        commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
                 if(container.getId() != null) {
                     if(oldContainersMap.containsKey(container.getId()))
                         oldContainer = oldContainersMap.get(container.getId());
                     if(oldContainer != null) {
                         if(checkIfNewFieldsChangedInContainer(container, oldContainer))
-                            changeShipmentDGStatusToReqd(shipmentDetails);
+                            commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                     }
                     if(newPackAttachedInConts.contains(container.getId()))
-                        changeShipmentDGStatusToReqd(shipmentDetails);
+                        commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
                 if(checkIfDGClass1(container.getDgClass())) {
                     dgClass1Exists.set(true);

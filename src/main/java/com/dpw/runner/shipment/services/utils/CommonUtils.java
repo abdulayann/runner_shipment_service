@@ -1042,6 +1042,28 @@ public class CommonUtils {
         usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
+    // called when new dg pack is added or dg fields are changed or new dg container is added, or new pack added in dg container or dg fields are changed
+    public void changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails) {
+        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
+            if(!UserContext.isOceanDgUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus())) {
+            if(!UserContext.isOceanDgUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
+            if(!UserContext.isOceanDgCommercialUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+            if(!UserContext.isOceanDgUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus())) {
+            if(!UserContext.isOceanDgUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+    }
+
     public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
         try {
             if( !Objects.isNull(carrierDetails) && ( Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
