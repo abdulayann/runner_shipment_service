@@ -4283,7 +4283,7 @@ public class ShipmentService implements IShipmentService {
                 .shipmentRequest(shipmentRequest).build();
             packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
         }
-        boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment);
+        boolean makeConsoleDG = checkForDGShipmentAndAirDgFlag(shipment) || checkForOceanDGShipment(shipment);
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(checkForNonDGShipmentAndAirDgFlag(shipment));
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(shipment.getAdditionalDetails() != null && Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1));
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
@@ -4416,6 +4416,10 @@ public class ShipmentService implements IShipmentService {
         if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
             return false;
         return Boolean.TRUE.equals(shipment.getContainsHazardous());
+    }
+
+    private boolean checkForOceanDGShipment(ShipmentDetails shipmentDetails) {
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
     }
 
     private boolean checkForNonDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
