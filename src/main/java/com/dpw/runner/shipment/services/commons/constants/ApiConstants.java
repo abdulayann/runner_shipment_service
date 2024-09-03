@@ -114,9 +114,7 @@ public class ApiConstants {
     // Notifications
     public static final String GET_PENDING_NOTIFICATIONS = "/get/pendingNotifications";
 
-    public static final String OCEAN_DG_APPROVAL = "/DGApproval";
-    public static final String OCEAN_DG_APPROVE = "/DGApprove";
-
-    public static final String COMMERCIAL_DG_APPROVAL = "/CommercialDGApproval";
+    public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
+    public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
 
 }

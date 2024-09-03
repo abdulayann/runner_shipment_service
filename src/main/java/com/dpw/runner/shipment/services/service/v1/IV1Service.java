@@ -172,7 +172,6 @@ public interface IV1Service {
     V1DataResponse getMasterDetails(Object request);
     V1DataResponse getUserDetails(Object request);
     List<UsersRoleListResponse> getUserEmailsByRoleId(com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest request);
-    List<String> getRoleIdsByRoleName(Object request);
-
+    Integer getRoleIdsByRoleName(V1RoleIdRequest roleIdRequest);
     V1DataResponse createTask(Object request);
 }
