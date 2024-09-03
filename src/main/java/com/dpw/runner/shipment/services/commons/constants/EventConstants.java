@@ -5,7 +5,10 @@ import java.util.Set;
 
 public class EventConstants {
 
+
+
     private EventConstants(){}
+    public static final String SHIPMENT = "SHIPMENT";
     public static final String EVENT_API_HANDLE = "api/v2/events";
     public static final String EVENT_CREATE_SUCCESS = "Events created successfully !";
     public static final String EVENT_UPDATE_SUCCESS = "Events updated successfully !";
@@ -52,10 +55,7 @@ public class EventConstants {
     public static final String CAFS  = "CAFS";
     public static final String SEPU  = "SEPU";
     public static final String EMCR  = "EMCR";
-    public static final String CARGOES_RUNNER = "Cargoes Runner";
-
     // ~~~~~~ end runner event short codes
-
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 
@@ -75,6 +75,11 @@ public class EventConstants {
     public static final String VESSEL_ARRIVAL = "Vessel Arrival";
     public static final String VESSEL_ARRIVAL_AT_TS_PORT = "Vessel Arrival at T/S Port";
     public static final String VESSEL_ARRIVAL_AT_POD = "Vessel Arrival at POD";
+    public static final String GateInWithContainerEmpty = "gateInWithContainerEmpty";
+    public static final String GateInWithContainerFull = "gateInWithContainerFull";
+    public static final String VesselDepartureWithContainer = "vesselDepartureWithContainer";
+    public static final String VesselArrivalWithContainer = "vesselArrivalWithContainer";
+    public static final String GateOutWithContainerFull = "gateOutWithContainerFull";
 
     public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }
