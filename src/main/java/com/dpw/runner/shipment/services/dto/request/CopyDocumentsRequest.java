@@ -6,7 +6,6 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.UUID;
 
 @Data
 @ToString
@@ -22,10 +21,10 @@ public class CopyDocumentsRequest extends CommonRequest implements IRunnerReques
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    static class DocumentRequest implements Serializable {
+    public static class DocumentRequest implements Serializable {
         private Integer tenantId;
         private String entityKey;
         private String entityType;
-        private List<UUID> docGuid;
+        private List<String> docGuid;
     }
 }

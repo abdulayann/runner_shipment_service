@@ -931,7 +931,7 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(shipmentRepository.findByHouseBill(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
@@ -973,7 +973,7 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(shipmentRepository.findByHouseBill(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
@@ -1020,7 +1020,7 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails2);
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(shipmentRepository.findByHouseBill(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
 
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);

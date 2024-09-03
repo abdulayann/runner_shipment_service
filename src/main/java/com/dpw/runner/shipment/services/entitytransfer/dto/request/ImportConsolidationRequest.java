@@ -10,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ImportConsolidationRequest implements IRunnerRequest {
-    private EntityTransferConsolidationDetails entityTransferConsolidationDetails;
+    private EntityTransferConsolidationDetails entityData;
     private Long taskId;
     private String operation;
     private String rejectRemarks;
