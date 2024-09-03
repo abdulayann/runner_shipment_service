@@ -159,7 +159,9 @@ public enum MasterDataType {
     MODULE_MASTER(183, "MODULE MASTER"),
     DEPARTMENT_MASTER_LIST(184, "DEPARTMENT MASTER LIST"),
     NATURE_OF_GOODS(185, "NATURE OF GOODS"),
-    IATA_CHARGE_CODES(186, "IATA Charge Codes");
+    IATA_CHARGE_CODES(186, "IATA Charge Codes"),
+    LOCATION_ROLE(187, "Location Role"),
+    EVENT_SOURCE_TYPE(188, "EVENT SOURCE TYPE");
 
     private int id;
     private String description;

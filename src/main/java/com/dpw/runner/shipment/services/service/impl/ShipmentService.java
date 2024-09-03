@@ -40,6 +40,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -2047,9 +2048,13 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setElDetailsList(updatedELDetails);
         }
         if (eventsRequestList != null) {
-            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate), id, Constants.SHIPMENT);
-            shipmentDetails.setEventsList(updatedEvents);
-            eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
+            eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList);
+            if (eventsList != null) {
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
+                shipmentDetails.setEventsList(updatedEvents);
+                eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+            }
         }
         // create Shipment event on the bases of auto create event flag
         if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
@@ -2132,6 +2137,85 @@ public class ShipmentService implements IShipmentService {
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+    }
+
+    public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents) {
+        List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
+
+        boolean isCustomReleaseEventExists = false;
+        boolean isDocTurnedOverToCustomerExists = false;
+        boolean isProofOfDeliveryDateEventExists = false;
+        boolean isWarehouseCargoArrivalDateEventExists = false;
+        boolean isPickupbyConsigneeExists = false;
+
+        if (shipmentDetails.getAdditionalDetails() != null) {
+            if (oldEntity != null && oldEntity.getAdditionalDetails() != null) {
+                for (var event : newUpdatedEvents) {
+                    switch (event.getEventCode()) {
+                        case EventConstants.CURE:
+                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
+                                    oldEntity.getAdditionalDetails().getCustomReleaseDate());
+                            isCustomReleaseEventExists = true;
+                            break;
+                        case EventConstants.DOTP:
+                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
+                                    oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer());
+                            isDocTurnedOverToCustomerExists = true;
+                            break;
+                        case EventConstants.PRDE:
+                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
+                                    oldEntity.getAdditionalDetails().getProofOfDeliveryDate());
+                            isProofOfDeliveryDateEventExists = true;
+                            break;
+                        case EventConstants.CAFS:
+                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
+                                    oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                            isWarehouseCargoArrivalDateEventExists = true;
+                            break;
+                        case EventConstants.SEPU:
+                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
+                                    oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted());
+                            isPickupbyConsigneeExists = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            addMissingEvents(newUpdatedEvents, shipmentDetails, isCustomReleaseEventExists, isDocTurnedOverToCustomerExists,
+                    isProofOfDeliveryDateEventExists, isWarehouseCargoArrivalDateEventExists, isPickupbyConsigneeExists);
+        }
+
+        return newUpdatedEvents;
+    }
+
+    private void handleEventUpdate(Events event, Object newValue, Object oldValue) {
+        if (newValue != null && !newValue.equals(oldValue)) {
+            event.setActual(LocalDateTime.now());
+        }
+    }
+
+    private void addMissingEvents(List<Events> events, ShipmentDetails shipmentDetails,
+                                  boolean isCustomReleaseEventExists, boolean isDocTurnedOverToCustomerExists,
+                                  boolean isProofOfDeliveryDateEventExists, boolean isWarehouseCargoArrivalDateEventExists,
+                                  boolean isPickupbyConsigneeExists) {
+
+        if (!isCustomReleaseEventExists && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
+        }
+        if (!isDocTurnedOverToCustomerExists && shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer() != null) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
+        }
+        if (!isProofOfDeliveryDateEventExists && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
+        }
+        if (!isWarehouseCargoArrivalDateEventExists && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+        }
+        if (!isPickupbyConsigneeExists && shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted() != null) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
+        }
     }
 
     private boolean checkForAwbUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

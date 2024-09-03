@@ -52,6 +52,7 @@ public class EventConstants {
     public static final String CAFS  = "CAFS";
     public static final String SEPU  = "SEPU";
     public static final String EMCR  = "EMCR";
+    public static final String CARGOES_RUNNER = "Cargoes Runner";
 
     // ~~~~~~ end runner event short codes
 

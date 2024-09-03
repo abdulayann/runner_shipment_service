@@ -395,38 +395,59 @@ public class EventService implements IEventService {
             throw new RunnerException(ex.getMessage());
         }
         List<EventsResponse> res = new ArrayList<>();
+        boolean isEmptyContainerReturnedEvent = false;
+
         if (trackingEventsResponse != null) {
             if (trackingEventsResponse.getEvents() != null) {
                 for (var i : trackingEventsResponse.getEvents()) {
                     EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
                     shipmentId.ifPresent(eventsResponse::setShipmentId);
                     res.add(eventsResponse);
+                    if(Objects.equals(i.getSource(), EventConstants.EMCR)){
+                        isEmptyContainerReturnedEvent = true;
+                    }
                 }
                 saveTrackingEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
             }
 
-            if ((trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null) && optionalShipmentDetails.isPresent()) {
+            if (optionalShipmentDetails.isPresent()) {
                 ShipmentDetails shipment = optionalShipmentDetails.get();
-                CarrierDetails carrierDetails =
-                    shipment.getCarrierDetails() != null
-                        ? shipment.getCarrierDetails()
-                        : new CarrierDetails();
+                boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
 
-                if (trackingEventsResponse.getShipmentAta() != null)
-                    carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
-                if (trackingEventsResponse.getShipmentAtd() != null)
-                    carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
-
-                shipmentDao.save(shipment, false);
-                try {
-                    shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
-                } catch (Exception e) {
-                    log.error("Error performing sync on shipment entity, {}", e);
+                if (isShipmentUpdateRequired) {
+                    shipmentDao.save(shipment, false);
+                    try {
+                        shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                    } catch (Exception e) {
+                        log.error("Error performing sync on shipment entity, {}", e);
+                    }
                 }
             }
         }
 
         return ResponseHelper.buildSuccessResponse(res);
+    }
+
+    private boolean updateShipmentDetails(ShipmentDetails shipment, TrackingEventsResponse trackingEventsResponse, boolean isEmptyContainerReturnedEvent) {
+        boolean isShipmentUpdateRequired = false;
+
+        if (trackingEventsResponse != null && (trackingEventsResponse.getShipmentAta() != null || trackingEventsResponse.getShipmentAtd() != null)) {
+                CarrierDetails carrierDetails = shipment.getCarrierDetails() != null ? shipment.getCarrierDetails() : new CarrierDetails();
+
+                if (trackingEventsResponse.getShipmentAta() != null) {
+                    carrierDetails.setAta(trackingEventsResponse.getShipmentAta());
+                }
+                if (trackingEventsResponse.getShipmentAtd() != null) {
+                    carrierDetails.setAtd(trackingEventsResponse.getShipmentAtd());
+                }
+                isShipmentUpdateRequired = true;
+        }
+        if (isEmptyContainerReturnedEvent && shipment.getAdditionalDetails() != null &&
+                !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned())) {
+                shipment.getAdditionalDetails().setEmptyContainerReturned(true);
+                isShipmentUpdateRequired = true;
+        }
+        return isShipmentUpdateRequired;
     }
 
     @Override
