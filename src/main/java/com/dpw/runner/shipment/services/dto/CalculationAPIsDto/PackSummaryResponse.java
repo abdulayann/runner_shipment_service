@@ -23,4 +23,5 @@ public class PackSummaryResponse implements IRunnerResponse {
     private BigDecimal allocatedVolume;
     private AllocationsResponse allocationsResponse;
     private AchievedQuantitiesResponse consolidationAchievedQuantities;
+    private Integer dgPacks;
 }
