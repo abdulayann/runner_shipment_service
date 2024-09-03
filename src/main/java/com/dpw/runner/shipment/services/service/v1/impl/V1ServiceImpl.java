@@ -2218,15 +2218,15 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public List<String> getRoleIdsByRoleName(Object request) {
+    public Integer getRoleIdsByRoleName(V1RoleIdRequest request) {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            ResponseEntity<List<String>> response = this.restTemplate.exchange(
+            ResponseEntity<Integer> response = this.restTemplate.exchange(
                 this.ROLES_ID_BY_ROLENAME,
                 HttpMethod.POST,
                 entity,
-                new ParameterizedTypeReference<List<String>>() {}
+                new ParameterizedTypeReference<Integer>() {}
             );
             log.info("Token time taken in getRoleIdsByRoleName() function " + (System.currentTimeMillis() - time));
             return response.getBody();
