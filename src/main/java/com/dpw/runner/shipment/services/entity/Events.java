@@ -67,7 +67,7 @@ public class Events extends MultiTenancy {
     private String longitude;
 
     @Column(name = "source")
-    @MasterData(type = MasterDataType.EVENT_SOURCE_TYPE)
+    @MasterData(type = MasterDataType.EVENT_SOURCE)
     private String source;
 
     @Column(name = "event_estimate_update_reasons")

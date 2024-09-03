@@ -156,8 +156,8 @@ public enum MasterDataType {
     DEPARTMENT_MASTER_LIST(184, "Department Master List"),
     NATURE_OF_GOODS(185, "NATURE OF GOODS"),
     IATA_CHARGE_CODES(186, "IATA Charge Codes"),
-    LOCATION_ROLE(187, "Location Role"),
-    EVENT_SOURCE_TYPE(188, "EVENT SOURCE TYPE");
+    LOCATION_ROLE(189, "Location Role"),
+    EVENT_SOURCE(190, "Event Source");
 
     private int id;
     private String description;
