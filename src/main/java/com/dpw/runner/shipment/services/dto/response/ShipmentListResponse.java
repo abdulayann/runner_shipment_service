@@ -134,4 +134,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime shipmentCreatedOn;
     private Integer pendingActionCount;
     private FileStatus fileStatus;
+    private String department;
 }
