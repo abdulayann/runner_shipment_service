@@ -49,9 +49,4 @@ public class EntityTransferCarrierDetails implements IEntityTranferBaseEntity {
     private Map<String, String> carrierMasterData;
     private Map<String, String> vesselsMasterData;
 
-    // Previous fields
-//    private Map<String, EntityTransferMasterLists> masterData;
-//    private Map<String, EntityTransferUnLocations> unlocationData;
-//    private Map<String, EntityTransferCarrier> carrierMasterData;
-//    private Map<String, EntityTransferVessels> vesselsMasterData;
 }
