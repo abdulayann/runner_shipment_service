@@ -19,10 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -1111,6 +1108,7 @@ public class PackingService implements IPackingService {
             packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
             packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
             packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
+            packSummaryResponse.setAllocationsResponse(jsonHelper.convertValue(consol.getAllocations(), AllocationsResponse.class));
         }
 
         return packSummaryResponse;

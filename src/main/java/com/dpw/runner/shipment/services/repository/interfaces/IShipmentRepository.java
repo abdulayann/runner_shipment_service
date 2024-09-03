@@ -61,8 +61,13 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE source_guid IN ?1", nativeQuery = true)
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
 
+    @Query(value = "SELECT * FROM shipment_details WHERE source_guid = ?1 and tenant_id = ?2 and is_deleted = false", nativeQuery = true)
+    List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId);
+
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> findShipmentsByIds(Set<Long> id);
+
+    List<ShipmentDetails> findBySourceGuid(UUID guid);
 
     @Query(value = "SELECT distinct s.id from ShipmentDetails s inner join ConsoleShipmentMapping csm " +
             "on s.id = csm.shipmentId " +

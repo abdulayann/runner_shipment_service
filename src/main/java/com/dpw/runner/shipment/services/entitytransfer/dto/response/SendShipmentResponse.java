@@ -14,4 +14,5 @@ import java.util.List;
 public class SendShipmentResponse implements IRunnerResponse {
     private List<Integer> successTenantIds;
     private EntityTransferShipmentDetails entityTransferShipmentDetails;
+    private String json;
 }

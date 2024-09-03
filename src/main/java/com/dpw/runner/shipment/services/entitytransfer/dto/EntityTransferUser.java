@@ -10,22 +10,22 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferUser implements IEntityTranferBaseEntity {
-    public Long UserId;
-    public String Username;
-    public String Source;
-    public String PasswordHash;
-    public String PasswordSalt;
-    public String DisplayName;
-    public String Email;
-    public String  UserImage;
-    public String ImpersonateToken;
-    public LocalDateTime LastDirectoryUpdate;
-    public String CompanyCurrency;
-    public String Password;
-    public String OwnCaptcha;
-    public String PasswordConfirm;
-    public int Platform;
-    public String EmployeeToken;
-    public String ClearanceUrl;
+    private Long UserId;
+    private String Username;
+    private String Source;
+    private String PasswordHash;
+    private String PasswordSalt;
+    private String DisplayName;
+    private String Email;
+    private String  UserImage;
+    private String ImpersonateToken;
+    private LocalDateTime LastDirectoryUpdate;
+    private String CompanyCurrency;
+    private String Password;
+    private String OwnCaptcha;
+    private String PasswordConfirm;
+    private int Platform;
+    private String EmployeeToken;
+    private String ClearanceUrl;
 }
 

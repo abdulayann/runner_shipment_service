@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -832,7 +832,7 @@ public class CommonUtils {
         }
     }
 
-    private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
+    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
         if(v1TenantSettingsMap.containsKey(tenantId)) {
             if(isShipment) {
                 if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId()))

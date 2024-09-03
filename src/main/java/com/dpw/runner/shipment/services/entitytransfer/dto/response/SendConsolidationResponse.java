@@ -14,4 +14,5 @@ import java.util.List;
 public class SendConsolidationResponse implements IRunnerResponse {
     private List<Integer> successTenantIds;
     EntityTransferConsolidationDetails entityTransferConsolidationDetails;
+    private String jsonString;
 }

@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
@@ -1233,7 +1233,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
-        consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setInterBranchConsole(true);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
