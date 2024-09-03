@@ -405,8 +405,8 @@ public class EventService implements IEventService {
         }
         List<EventsResponse> res = new ArrayList<>();
         if (trackingEventsResponse != null) {
-            if (trackingEventsResponse.getEvents() != null) {
-                for (var i : trackingEventsResponse.getEvents()) {
+            if (trackingEventsResponse.getEventsList() != null) {
+                for (var i : trackingEventsResponse.getEventsList()) {
                     EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
                     shipmentId.ifPresent(eventsResponse::setShipmentId);
                     res.add(eventsResponse);

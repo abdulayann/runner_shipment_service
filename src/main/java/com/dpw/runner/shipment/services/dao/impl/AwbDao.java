@@ -227,14 +227,6 @@ public class AwbDao implements IAwbDao {
             }
         }
 
-        // max size for IATA description is 3 in otherChargesInfo
-        if(awb.getAwbOtherChargesInfo() != null) {
-            for(var otherCharges : awb.getAwbOtherChargesInfo()) {
-                if(otherCharges.getIataDescription() != null && otherCharges.getIataDescription().length() > 3) {
-                    errors.add(AwbConstants.IATA_DESCRIPTION_FIELD_VALIDATION);
-                }
-            }
-        }
 
         if(!errors.isEmpty())
             throw new RunnerException(errors.toString());
@@ -558,5 +550,14 @@ public class AwbDao implements IAwbDao {
     @Override
     public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
         return awbRepository.findAwbByAwbNumbers(awbNumbers);
+    }
+
+    @Override
+    public void validateAirMessaging(Long id) throws RunnerException {
+        List<Awb> awb = findByConsolidationId(id);
+        if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+                Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
+            throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
+        }
     }
 }

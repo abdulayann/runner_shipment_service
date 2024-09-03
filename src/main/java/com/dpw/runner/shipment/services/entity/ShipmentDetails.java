@@ -496,4 +496,9 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "cargo_delivery_date")
      private LocalDateTime cargoDeliveryDate;
 
+    @Column(name = "department")
+    @Size(max=32, message = "max size is 32 for department")
+    @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
+    private String department;
+
 }
