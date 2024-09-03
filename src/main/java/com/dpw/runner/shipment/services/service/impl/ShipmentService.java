@@ -3151,9 +3151,14 @@ public class ShipmentService implements IShipmentService {
                 entity.setElDetailsList(updatedELDetails);
             }
             if (eventsRequestList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(eventsRequestList, Events.class), id, Constants.SHIPMENT);
-                entity.setEventsList(updatedEvents);
-                eventService.updateAtaAtdInShipment(updatedEvents, entity, shipmentSettingsDetails);
+                List<Events> eventsList = jsonHelper.convertValueToList(eventsRequestList, Events.class);
+                ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
+                eventsList = createOrUpdateTrackingEvents(entity, oldConvertedShipment, eventsList, false);
+                if (eventsList != null) {
+                    List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
+                    entity.setEventsList(updatedEvents);
+                    eventService.updateAtaAtdInShipment(updatedEvents, entity, shipmentSettingsDetails);
+                }
             }
             // Create events on basis of shipment status Confirmed/Created
             autoGenerateEvents(entity, previousStatus);
