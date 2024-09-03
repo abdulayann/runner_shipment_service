@@ -952,16 +952,6 @@ public class EntityTransferService implements IEntityTransferService {
         tasksService.updateTask(CommonRequestModel.buildRequest(taskUpdateRequest));
     }
 
-//    private void importConsolidationDocs(UUID consoleGuid, List<String> consoleDocGuids, Map<String, List<String>> shipmentsDocsGuids, Map<String, String> oldVsNewShipmentGuids) {
-//        CopyDocumentsRequest request = CopyDocumentsRequest.builder().documents().build();
-//        List<CopyDocumentsRequest.DocumentRequest> documents = new ArrayList<>();
-//        CopyDocumentsRequest.DocumentRequest documentRequest = CopyDocumentsRequest.DocumentRequest.builder()
-//                .entityKey().entityType().tenantId()
-//                .docGuid().build();
-//
-//        documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(request));
-//    }
-
     private void attachShipmentToContainers(Long consoleId, Map<UUID, UUID> newVsOldContainerGuid, Map<UUID, List<UUID>> oldContVsOldShipGuidMap, Map<UUID, Long> oldVsNewShipIds, Map<UUID, Long> oldGuidVsNewContainerId) {
         List<Containers> containersList = containerDao.findByConsolidationId(consoleId);
         containersList.forEach(cont -> {
@@ -1915,11 +1905,6 @@ public class EntityTransferService implements IEntityTransferService {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, destinationBranches));
     }
-
-//    public void testSendGroupedEmailForShipmentImport(Long consoleId, List<UUID> shipmentGuids) {
-//        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
-//        consolidationDetails.ifPresent(details -> sendGroupedEmailForShipmentImport(details, shipmentGuids));
-//    }
 
     public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
         List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));

@@ -35,7 +35,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     }
 
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)
-    List<ShipmentDetails> findByHouseBill(String Hbl, Integer tenantId);
+    List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findAllByHouseBill(String Hbl);
     List<ShipmentDetails> findByBookingReference(String ref);
 
