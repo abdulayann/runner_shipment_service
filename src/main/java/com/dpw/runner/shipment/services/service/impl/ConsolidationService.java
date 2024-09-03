@@ -3212,6 +3212,8 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+        if (Boolean.TRUE.equals(isCreate))
+            consolidationDetails.setOpenForAttachment(true);
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
 
