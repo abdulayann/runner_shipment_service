@@ -3209,7 +3209,7 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
-
+        consolidationDetails.setOpenForAttachment(true);
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
 
     }
