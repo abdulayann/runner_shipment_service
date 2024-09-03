@@ -13,15 +13,6 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class TaskResponse {
-  Integer id;
-  Integer usedId;
-  String entityID;
-  String taskType;
-  String roleId;
-  Integer tenantId;
-  String userEmail;
-  String userName;
-  String status;
-  String ShipmentId;
+public class TaskCreateResponse {
+  private String taskId;
 }

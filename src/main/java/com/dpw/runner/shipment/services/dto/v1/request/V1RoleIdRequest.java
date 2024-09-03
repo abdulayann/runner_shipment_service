@@ -4,15 +4,13 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class TaskRequest {
-  private String entityType;
-  private String entityID;
-  private Integer roleId;
-  private String userId;
-  private String tenantId;
-  private String taskType;
+public class V1RoleIdRequest {
+  Integer tenantId;
+  String roleName;
+
 }
