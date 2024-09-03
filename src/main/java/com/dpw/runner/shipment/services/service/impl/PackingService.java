@@ -684,6 +684,8 @@ public class PackingService implements IPackingService {
             // setting these fields for UI to consume; Only for Consolidation
             response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
             response.setAchievedVolume(BigDecimal.valueOf(volumeWeight));
+            response.setWeightUnit(toWeightUnit);
+            response.setVolumeUnit(toVolumeUnit);
 
             dto.setWeight(new BigDecimal(totalWeight));
             dto.setWeightUnit(toWeightUnit);
@@ -1102,8 +1104,10 @@ public class PackingService implements IPackingService {
             log.info("calculating pack summary for aggregate of {} packs", packingList.size());
             packSummaryResponse = calculatePackSummary(packingList, TRANSPORT_MODE_AIR, null, new ShipmentMeasurementDetailsDto());
             log.info("Received weight: {} and volume:{} from packing summary response", packSummaryResponse.getAchievedWeight(), packSummaryResponse.getAchievedVolume());
-            achievedQuantities.setConsolidatedWeight(packSummaryResponse.getAchievedWeight());
-            achievedQuantities.setConsolidatedVolume(packSummaryResponse.getAchievedVolume());
+            var convertedWeight = BigDecimal.valueOf(convertUnit(MASS, packSummaryResponse.getAchievedWeight(), packSummaryResponse.getWeightUnit(), toWeightUnit).doubleValue());
+            var convertedVolume = BigDecimal.valueOf(convertUnit(VOLUME, packSummaryResponse.getAchievedVolume(), packSummaryResponse.getVolumeUnit(), toVolumeUnit).doubleValue());
+            achievedQuantities.setConsolidatedWeight(convertedWeight);
+            achievedQuantities.setConsolidatedVolume(convertedVolume);
             consol = commonUtils.calculateConsolUtilization(consol);
             packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
             packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
