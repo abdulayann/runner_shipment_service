@@ -7,14 +7,15 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import org.springframework.http.ResponseEntity;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> fetchConsolidations(CommonRequestModel commonRequestModel);
@@ -69,6 +70,7 @@ public interface IConsolidationService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException;
     ResponseEntity<IRunnerResponse> getGuidFromId(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkContainerEditingRequiredForOceanDg(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fullConsolidationsList(CommonRequestModel commonRequestModel);
     void checkSciForDetachConsole(Long consoleId) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
