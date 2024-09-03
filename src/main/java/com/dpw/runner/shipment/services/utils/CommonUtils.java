@@ -863,7 +863,7 @@ public class CommonUtils {
     public void populateDictionaryForPullAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
         populateDictionaryForEmailFromShipment(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPullRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks) {
@@ -873,7 +873,7 @@ public class CommonUtils {
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPushRequested(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
@@ -885,7 +885,7 @@ public class CommonUtils {
     public void populateDictionaryForPushAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                    Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
         populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPushRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestUser) {
@@ -895,7 +895,7 @@ public class CommonUtils {
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
         dictionary.put(REQUESTED_USER_NAME, requestUser);
     }
 
