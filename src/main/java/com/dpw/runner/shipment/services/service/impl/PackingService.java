@@ -256,7 +256,7 @@ public class PackingService implements IPackingService {
                 }
 
                 Optional<ConsolidationDetails> optional = consolidationDao.findById(request.getConsolidationId());
-                if(Boolean.TRUE.equals(updateConsolOpenForAttachment) && optional.isPresent()) {
+                if(Boolean.TRUE.equals(updateConsolOpenForAttachment) && optional.isPresent() && Objects.equals(optional.get().getTransportMode(), TRANSPORT_MODE_AIR)) {
                     var consol = optional.get();
                     consol.setOpenForAttachment(false);
                     consolidationDao.save(consol, false);
