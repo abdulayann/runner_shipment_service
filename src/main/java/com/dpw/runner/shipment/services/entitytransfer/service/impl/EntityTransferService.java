@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -78,9 +77,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -158,7 +155,7 @@ public class EntityTransferService implements IEntityTransferService {
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
-        if (!shipmentDetails.isPresent()) {
+        if (shipmentDetails.isEmpty()) {
             log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -174,20 +171,20 @@ public class EntityTransferService implements IEntityTransferService {
             sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())
         );
 
-        List<EntityTransferShipmentDetails> payloadList = new ArrayList<>();
         List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
-        for(int i = 0; i < destinationTenantList.size(); i++) {
-            var entityTransferPayload = prepareShipmentPayload(shipment);
-            var tenant = destinationTenantList.get(i);
-            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch()))) {
-                entityTransferPayload.setDirection(reverseDirection(shipment.getDirection()));
-            }
-            entityTransferPayload.setSendToBranch(tenant);
-            entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
-            entityTransferPayload.setAdditionalDocs(additionalDocs);
+        var entityTransferPayload = prepareShipmentPayload(shipment);
+        entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+        entityTransferPayload.setAdditionalDocs(additionalDocs);
 
-            payloadList.add(entityTransferPayload);
-            createTask(entityTransferPayload, shipment.getId(), Constants.Shipments, tenant);
+        for(int i = 0; i < destinationTenantList.size(); i++) {
+            var tenant = destinationTenantList.get(i);
+            var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
+            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch()))) {
+                taskPayload.setDirection(reverseDirection(shipment.getDirection()));
+            }
+            taskPayload.setSendToBranch(tenant);
+
+            createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
             successTenantIds.add(tenant);
         }
 
@@ -198,9 +195,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         emailFuture.join();
 
-        SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
-            .json(jsonHelper.convertToJson(payloadList))
-            .build();
+        SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
         return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
     }
 
@@ -227,7 +222,7 @@ public class EntityTransferService implements IEntityTransferService {
         log.info("Guids list: "+ guidList);
 
         List<Integer> tenantIds = new ArrayList<>();
-        if(guidList != null || guidList.size() != 0) {
+        if(guidList != null || !guidList.isEmpty()) {
             guidList.forEach(guid -> {
                 CommonV1ListRequest request = new CommonV1ListRequest();
                 List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
@@ -270,7 +265,6 @@ public class EntityTransferService implements IEntityTransferService {
 
         interBranchValidation(consol, sendConsolidationRequest);
 
-
         List<EntityTransferConsolidationDetails> entityTransferConsolList = new ArrayList<>();
         for (int i = 0; i < sendToBranch.size(); i++) {
             var tenant = sendToBranch.get(i);
@@ -310,7 +304,8 @@ public class EntityTransferService implements IEntityTransferService {
             List<Integer> shipmentTenantId = consol.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList();
             List<Integer> errorTenants = new ArrayList<>();
 
-            for(var tenant : tenantSettingsMap.keySet()) {
+            for(var tenantSet : tenantSettingsMap.entrySet()) {
+                var tenant = tenantSet.getKey();
                 var tenantSetting = tenantSettingsMap.get(tenant);
                 if(tenantSetting.getColoadingBranchIds() != null && !tenantSetting.getColoadingBranchIds().containsAll(shipmentTenantId)) {
                     errorTenants.add(tenant);
@@ -665,7 +660,7 @@ public class EntityTransferService implements IEntityTransferService {
         EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityTransferConsolidationDetails();
 
         ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
-        String consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
+        String consolidationNumber = Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getConsolidationNumber).orElse(null);
         var response = ImportConsolidationResponse.builder()
                 .consolidationNumber(consolidationNumber)
                 .message("Consolidation Imported Successfully with Consolidation Number: " + consolidationNumber)
@@ -1118,11 +1113,11 @@ public class EntityTransferService implements IEntityTransferService {
                 throw new ValidationException("Please validate these fields before sending consolidation: " + joinMissingField);
             }
             else {
-                Boolean sendConsolidationError = false;
-                Boolean hblGenerationError = false;
+                boolean sendConsolidationError = false;
+                boolean hblGenerationError = false;
                 List<String> shipmentIds = new ArrayList<>();
                 for (var shipment: consolidationDetails.get().getShipmentsList()) {
-                    Boolean isShipmentError = false;
+                    boolean isShipmentError = false;
                     if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()))
                     {
                         sendConsolidationError = true;
@@ -1291,7 +1286,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException {
         CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
         CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
                 .sendToBranch(request.getSendToBranch())
@@ -1324,7 +1319,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         catch (Exception ex) {
             log.error("Check Task exist failed to check from V1: " + ex);
-            throw new RuntimeException("Check Task exist failed to check from V1: " + ex);
+            throw new RunnerException("Check Task exist failed to check from V1: " + ex);
         }
         return ResponseHelper.buildSuccessResponse(response);
     }
@@ -1351,7 +1346,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(v1TenantResponse != null) {
             return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).toList();
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private String createSendEvent(List<String> tenantNameList, Long receivingBranch, Long triangulationPartner, Long documentationPartner,
@@ -1683,7 +1678,14 @@ public class EntityTransferService implements IEntityTransferService {
                 Long id = shipment.getId();
                 UUID guid = shipment.getGuid();
                 Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
-                List<String> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid);
+                if(shipmentDetailsOptional.isEmpty()) {
+                    log.error("Shipment with id : {}, is not present while creating task payload", id);
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                List<String> shipAdditionalDocs = Collections.emptyList();
+                if(sendConsolidationRequest.getShipAdditionalDocs() != null && sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString()) != null) {
+                    shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString());
+                }
                 var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
                 if(reverseDirection) {
                     entityTransferShipment.setDirection(reverseDirection(shipment.getDirection()));
@@ -2054,13 +2056,16 @@ public class EntityTransferService implements IEntityTransferService {
 
         rowTemplate.remove();
 
+        String styleAttribute = "style";
+        String paddingValue = "padding: 10px;";
+
         for (ShipmentDetails shipment : shipmentDetailsList) {
             Element newRow = rowTemplate.clone();
-            newRow.select("td").get(0).text(shipment.getShipmentId()).attr("style", "padding: 10px;");
-            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch())).attr("style", "padding: 10px;");
-            newRow.select("td").get(2).text(shipment.getHouseBill()).attr("style", "padding: 10px;");
-            newRow.select("td").get(3).text(shipment.getMasterBill()).attr("style", "padding: 10px;");
-            newRow.select("td").get(4).text(shipment.getShipmentCreatedOn().toString()).attr("style", "padding: 10px;");
+            newRow.select("td").get(0).text(shipment.getShipmentId()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch())).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(2).text(shipment.getHouseBill()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(3).text(shipment.getMasterBill()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(4).text(shipment.getShipmentCreatedOn().toString()).attr(styleAttribute, paddingValue);
 
             table.select("tbody").first().appendChild(newRow);
         }
