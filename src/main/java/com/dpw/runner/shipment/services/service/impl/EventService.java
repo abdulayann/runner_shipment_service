@@ -53,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -409,16 +410,17 @@ public class EventService implements IEventService {
 
         if (trackingEventsResponse != null) {
             if (trackingEventsResponse.getEventsList() != null) {
-                for (var i : trackingEventsResponse.getEventsList()) {
-                    EventsResponse eventsResponse = modelMapper.map(i, EventsResponse.class);
+                ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
+                for (var trackingEvent : trackingEventsResponse.getEventsList()) {
+                    EventsResponse eventsResponse = modelMapper.map(trackingEvent, EventsResponse.class);
                     shipmentId.ifPresent(eventsResponse::setShipmentId);
                     res.add(eventsResponse);
-                    if(Objects.equals(i.getSource(), EventConstants.EMCR)){
+                    if (Objects.equals(trackingEvent.getEventCode(), EventConstants.EMCR)) {
                         isEmptyContainerReturnedEvent = true;
                     }
                 }
                 saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
-                saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails);
             }
 
             if (optionalShipmentDetails.isPresent()) {
@@ -439,8 +441,8 @@ public class EventService implements IEventService {
         return ResponseHelper.buildSuccessResponse(res);
     }
 
-    private void saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType) {
-        if (trackingEvents == null || trackingEvents.isEmpty()) {
+    private void saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType, ShipmentDetails shipmentDetails) {
+        if (ObjectUtils.isEmpty(trackingEvents) || shipmentDetails == null) {
             return;
         }
 
@@ -455,33 +457,81 @@ public class EventService implements IEventService {
 
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
-                .filter(this::shouldProcessEvent)
-                .map(e -> mapToUpdatedEvent(e, existingEventsMap, entityId, entityType)).toList();
+                .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails))
+                .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType))
+                .toList();
 
         // Save all the updated events
         eventDao.saveAll(updatedEvents);
     }
 
-    private boolean shouldProcessEvent(Events event) {
-        String eventCode = event.getEventCode();
+    private boolean shouldProcessEvent(Events event, ShipmentDetails shipmentDetails) {
+        if (event == null || shipmentDetails == null) {
+            return false;
+        }
+
         String entityType = event.getEntityType();
+        String locationRole = event.getLocationRole();
+        String shipmentType = shipmentDetails.getShipmentType();
+        String transportMode = shipmentDetails.getTransportMode();
 
-
-        if(EventConstants.GateInWithContainerEmpty.equalsIgnoreCase(entityType)) {
-
-        }
-
-
-        if ("ABC".equalsIgnoreCase(eventCode)) {
+        if (isGateInWithContainerEmpty(entityType, locationRole, shipmentType)) {
             return true;
         }
 
-        if ("DEF".equalsIgnoreCase(eventCode)) {
+        if (isGateInWithContainerFull(entityType, locationRole, shipmentType)) {
             return true;
         }
 
-        // Add more conditions here as needed
-        return false;
+        if (isVesselDepartureOrArrival(entityType, locationRole, shipmentType, transportMode)) {
+            return true;
+        }
+
+        return isGateOutWithContainerFull(entityType, locationRole, shipmentType);
+    }
+
+    private boolean isGateInWithContainerEmpty(String entityType, String locationRole, String shipmentType) {
+        return EventConstants.GateInWithContainerEmpty.equalsIgnoreCase(safeString(entityType))
+                && (safeString(locationRole).startsWith("origin") || safeString(locationRole).startsWith("destination"))
+                && isFclShipment(shipmentType);
+    }
+
+    private boolean isGateInWithContainerFull(String entityType, String locationRole, String shipmentType) {
+        return EventConstants.GateInWithContainerFull.equalsIgnoreCase(safeString(entityType))
+                && "originPort".equalsIgnoreCase(safeString(locationRole))
+                && isFclShipment(shipmentType);
+    }
+
+    private boolean isVesselDepartureOrArrival(String entityType, String locationRole, String shipmentType, String transportMode) {
+        boolean isDeparture = EventConstants.VesselDepartureWithContainer.equalsIgnoreCase(safeString(entityType))
+                && "originPort".equalsIgnoreCase(safeString(locationRole));
+        boolean isArrival = EventConstants.VesselArrivalWithContainer.equalsIgnoreCase(safeString(entityType))
+                && "destinationPort".equalsIgnoreCase(safeString(locationRole));
+
+        return (isDeparture || isArrival) &&
+                (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode));
+    }
+
+    private boolean isGateOutWithContainerFull(String entityType, String locationRole, String shipmentType) {
+        return EventConstants.GateOutWithContainerFull.equalsIgnoreCase(safeString(entityType))
+                && "destinationPort".equalsIgnoreCase(safeString(locationRole))
+                && isFclShipment(shipmentType);
+    }
+
+    private boolean isFclShipment(String shipmentType) {
+        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType));
+    }
+
+    private boolean isLclShipment(String shipmentType) {
+        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType));
+    }
+
+    private boolean isAirShipment(String transportMode) {
+        return Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(safeString(transportMode));
+    }
+
+    private String safeString(String value) {
+        return value != null ? value : "";
     }
 
     private Events mapToUpdatedEvent(Events trackingEvent, Map<String, Events> existingEventsMap,

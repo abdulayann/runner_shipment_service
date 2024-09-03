@@ -75,7 +75,11 @@ public class EventConstants {
     public static final String VESSEL_ARRIVAL = "Vessel Arrival";
     public static final String VESSEL_ARRIVAL_AT_TS_PORT = "Vessel Arrival at T/S Port";
     public static final String VESSEL_ARRIVAL_AT_POD = "Vessel Arrival at POD";
-    public static final String GateInWithContainerEmpty = "GateInWithContainerEmpty";
+    public static final String GateInWithContainerEmpty = "gateInWithContainerEmpty";
+    public static final String GateInWithContainerFull = "gateInWithContainerFull";
+    public static final String VesselDepartureWithContainer = "vesselDepartureWithContainer";
+    public static final String VesselArrivalWithContainer = "vesselArrivalWithContainer";
+    public static final String GateOutWithContainerFull = "gateOutWithContainerFull";
 
     public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }
