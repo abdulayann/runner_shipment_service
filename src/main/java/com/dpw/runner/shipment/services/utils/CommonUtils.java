@@ -1347,14 +1347,14 @@ public class CommonUtils {
         dictionary.put(CONTAINER_COUNT, totalContainerCount);
         dictionary.put(DG_CONTAINER_COUNT, dgContainerCount);
 
-        //TODO: packing --> packs ?? || Correct below values
+
         String dgPackageTypeAndCount = shipmentDetails.getPackingList().stream()
             .filter(Packing::getHazardous)
-            .map(packing -> packing.getInnerPacksCount() + " " + packing.getPacksType())
+            .map(packing -> packing.getPacks() + " " + packing.getPacksType())
             .collect(Collectors.joining(", "));
 
         String packagesTypeAndCount = shipmentDetails.getPackingList().stream()
-            .map(packing -> packing.getInnerPacksCount() + " " + packing.getPacksType())
+            .map(packing -> packing.getPacks() + " " + packing.getPacksType())
             .collect(Collectors.joining(", "));
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
@@ -1366,7 +1366,7 @@ public class CommonUtils {
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUEST_DATE_TIME, convertDateToUserTimeZone(LocalDateTime.now(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false)); //TODO : UTC time zone
+        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now());
         dictionary.put(REQUESTER_REMARKS, remarks);
     }
 

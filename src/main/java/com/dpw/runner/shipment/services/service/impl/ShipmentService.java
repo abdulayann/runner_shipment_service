@@ -5668,8 +5668,7 @@ public class ShipmentService implements IShipmentService {
 
         shipmentDao.save(shipmentDetails, false);
 
-        // TODO : good return + handling DB failure => try_catch or throw
-        return ResponseEntity.ok().build();
+        return ResponseHelper.buildSuccessResponse();
     }
 
     @Override
