@@ -2194,6 +2194,17 @@ public abstract class IReport {
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
     }
 
+    public String ConvertToSingleCharWeightFormat(String weightUnit) {
+            if (weightUnit == null || weightUnit.isEmpty()) {
+                throw new IllegalArgumentException("Weight unit cannot be null or empty");
+            }
+        return switch (weightUnit.toLowerCase()) {
+            case "kg" -> "K";
+            case "pounds" -> "L";
+            default -> throw new IllegalArgumentException("Unknown weight unit: " + weightUnit);
+        };
+    }
+
     public static String ConvertToWeightNumberFormat(Object weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(weight != null && !CommonUtils.IsStringNullOrEmpty(weight.toString())) {
             return ConvertToWeightNumberFormat(new BigDecimal(weight.toString()), v1TenantSettingsResponse);

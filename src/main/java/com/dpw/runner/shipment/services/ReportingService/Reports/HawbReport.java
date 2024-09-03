@@ -361,6 +361,9 @@ public class HawbReport extends IReport{
                     if(value.get(ReportConstants.RATE_CLASS) != null){
                         value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                     }
+                    if(value.get(GROSS_WT_UNIT) != null){
+                        value.put(GROSS_WT_UNIT, ConvertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                    }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }

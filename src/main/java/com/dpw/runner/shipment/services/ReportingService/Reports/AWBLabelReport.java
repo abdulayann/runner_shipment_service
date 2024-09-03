@@ -68,7 +68,7 @@ public class AWBLabelReport extends IReport{
     }
 
     @Override
-    IDocumentModel getDocumentModel(Long id) {
+    public IDocumentModel getDocumentModel(Long id) {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         if(isMawb) {
             awbLabelModel.setConsolidation(getConsolidation(id));

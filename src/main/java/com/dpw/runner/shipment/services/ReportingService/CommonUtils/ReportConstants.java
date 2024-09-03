@@ -629,6 +629,7 @@ public class ReportConstants {
     public static final String RATE_CHARGE = "RateCharge";
     public static final String CHARGEABLE_WT = "ChargeableWt";
     public static final String GROSS_WT = "GrossWt";
+    public static final String GROSS_WT_UNIT = "GrossWtUnit";
     public static final String RATE_CLASS = "RateClass";
     public static final String NATURE_QLTY_OF_GOODS = "NatureQltyOfGoods";
     public static final String PACKING_LIST = "PackingList";
