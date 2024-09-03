@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -452,7 +453,9 @@ public class EventService implements IEventService {
                 isShipmentUpdateRequired = true;
         }
         if (isEmptyContainerReturnedEvent && shipment.getAdditionalDetails() != null &&
-                !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned())) {
+                !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned()) &&
+                Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
                 shipment.getAdditionalDetails().setEmptyContainerReturned(true);
                 isShipmentUpdateRequired = true;
         }

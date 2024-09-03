@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -78,7 +77,6 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
-import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -151,24 +149,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -2047,56 +2028,100 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
 
-    public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents) {
-        List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
-
+    class EventFlags {
         boolean isCustomReleaseEventExists = false;
         boolean isDocTurnedOverToCustomerExists = false;
         boolean isProofOfDeliveryDateEventExists = false;
         boolean isWarehouseCargoArrivalDateEventExists = false;
         boolean isPickupbyConsigneeExists = false;
+        boolean isEmptyContainerReturned = false;
+    }
+
+    public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents) {
+        List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
+
+        EventFlags eventFlags = new EventFlags();
 
         if (shipmentDetails.getAdditionalDetails() != null) {
             if (oldEntity != null && oldEntity.getAdditionalDetails() != null) {
                 for (var event : newUpdatedEvents) {
-                    switch (event.getEventCode()) {
-                        case EventConstants.CURE:
-                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                                    oldEntity.getAdditionalDetails().getCustomReleaseDate());
-                            isCustomReleaseEventExists = true;
-                            break;
-                        case EventConstants.DOTP:
-                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
-                                    oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer());
-                            isDocTurnedOverToCustomerExists = true;
-                            break;
-                        case EventConstants.PRDE:
-                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
-                                    oldEntity.getAdditionalDetails().getProofOfDeliveryDate());
-                            isProofOfDeliveryDateEventExists = true;
-                            break;
-                        case EventConstants.CAFS:
-                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
-                                    oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate());
-                            isWarehouseCargoArrivalDateEventExists = true;
-                            break;
-                        case EventConstants.SEPU:
-                            handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
-                                    oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted());
-                            isPickupbyConsigneeExists = true;
-                            break;
-                        default:
-                            break;
-                    }
+                    updateEvent(event, shipmentDetails, oldEntity, eventFlags);
                 }
             }
 
-            addMissingEvents(newUpdatedEvents, shipmentDetails, isCustomReleaseEventExists, isDocTurnedOverToCustomerExists,
-                    isProofOfDeliveryDateEventExists, isWarehouseCargoArrivalDateEventExists, isPickupbyConsigneeExists);
+            addMissingEvents(newUpdatedEvents, shipmentDetails, eventFlags);
         }
 
         return newUpdatedEvents;
     }
+
+    private void updateEvent(Events event, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, EventFlags eventFlags) {
+        switch (event.getEventCode()) {
+            case EventConstants.CURE:
+                if (isEventApplicable(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
+                            oldEntity.getAdditionalDetails().getCustomReleaseDate());
+                }
+                eventFlags.isCustomReleaseEventExists = true;
+                break;
+            case EventConstants.DOTP:
+                if (isEventApplicable(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
+                            oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer());
+                }
+                eventFlags.isDocTurnedOverToCustomerExists = true;
+                break;
+            case EventConstants.PRDE:
+                if (isEventApplicable(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
+                            oldEntity.getAdditionalDetails().getProofOfDeliveryDate());
+                }
+                eventFlags.isProofOfDeliveryDateEventExists = true;
+                break;
+            case EventConstants.CAFS:
+                if (isEventApplicableForCAFS(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
+                            oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                }
+                eventFlags.isWarehouseCargoArrivalDateEventExists = true;
+                break;
+            case EventConstants.SEPU:
+                if (isEventApplicable(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
+                            oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted());
+                }
+                eventFlags.isPickupbyConsigneeExists = true;
+                break;
+            case EventConstants.EMCR:
+                if (isEMCREventApplicable(shipmentDetails)) {
+                    handleEventUpdate(event, shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
+                            oldEntity.getAdditionalDetails().getEmptyContainerReturned());
+                }
+                eventFlags.isEmptyContainerReturned = true;
+                break;
+            default:
+                break;
+        }
+    }
+
+    private boolean isEventApplicable(ShipmentDetails shipmentDetails) {
+        return ((Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()))
+                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
+                || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
+    }
+
+    private boolean isEventApplicableForCAFS(ShipmentDetails shipmentDetails) {
+        return (Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
+                || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
+    }
+
+    private boolean isEMCREventApplicable(ShipmentDetails shipmentDetails) {
+        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode());
+    }
+
 
     private void handleEventUpdate(Events event, Object newValue, Object oldValue) {
         if (newValue != null && !newValue.equals(oldValue)) {
@@ -2104,27 +2129,33 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void addMissingEvents(List<Events> events, ShipmentDetails shipmentDetails,
-                                  boolean isCustomReleaseEventExists, boolean isDocTurnedOverToCustomerExists,
-                                  boolean isProofOfDeliveryDateEventExists, boolean isWarehouseCargoArrivalDateEventExists,
-                                  boolean isPickupbyConsigneeExists) {
+    private void addMissingEvents(List<Events> events, ShipmentDetails shipmentDetails, EventFlags eventFlags) {
+        if (!eventFlags.isCustomReleaseEventExists && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isEventApplicable(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
+            }
 
-        if (!isCustomReleaseEventExists && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
-        }
-        if (!isDocTurnedOverToCustomerExists && shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer() != null) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
-        }
-        if (!isProofOfDeliveryDateEventExists && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
-        }
-        if (!isWarehouseCargoArrivalDateEventExists && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
-        }
-        if (!isPickupbyConsigneeExists && shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted() != null) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
-        }
+        if (!eventFlags.isDocTurnedOverToCustomerExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isEventApplicable(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
+            }
+
+        if (!eventFlags.isProofOfDeliveryDateEventExists && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isEventApplicable(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
+            }
+
+        if (!eventFlags.isWarehouseCargoArrivalDateEventExists && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isEventApplicableForCAFS(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+            }
+
+        if (!eventFlags.isPickupbyConsigneeExists && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isEventApplicable(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
+            }
+
+        if (!eventFlags.isEmptyContainerReturned && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isEMCREventApplicable(shipmentDetails)) {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
+            }
+
     }
+
 
     private void updateActualFromTracking(List<Events> shipmentEvents, ShipmentDetails shipmentDetails) {
 
