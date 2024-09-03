@@ -1262,6 +1262,7 @@ public class ContainerService implements IContainerService {
             double totalVolume = 0;
             double totalContainerCount = 0;
             double totalPacks = 0;
+            int dgContainers = 0;
             String toWeightUnit = Constants.WEIGHT_UNIT_KG;
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1272,6 +1273,8 @@ public class ContainerService implements IContainerService {
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(containersList != null) {
                 for (Containers containers : containersList) {
+                    if(Boolean.TRUE.equals(containers.getHazardous()))
+                        dgContainers += containers.getContainerCount() != null ? containers.getContainerCount().intValue() : 0;
                     double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
                     double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
                     double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
@@ -1309,6 +1312,7 @@ public class ContainerService implements IContainerService {
             catch (Exception e) {
                 log.error("Error calculating summary");
             }
+            response.setDgContainers(dgContainers);
             return response;
         }
         catch (Exception e) {
