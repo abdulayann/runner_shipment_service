@@ -5526,7 +5526,7 @@ public class ShipmentService implements IShipmentService {
             for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
                 if(consoleShipmentMapping.getRequestedType() == null) {
                     attachedShipmentCurrentBranchCount++;
-                } else if(consoleShipmentMapping.getRequestedType().equals(APPROVE)) {
+                } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.APPROVE)) {
                     attachedShipmentInterBranchCount++;
                 } else if(consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED) || consoleShipmentMapping.getRequestedType().equals(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)) {
                     pendingAttachmentCount++;
@@ -6131,11 +6131,6 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    @Override
-    public ResponseEntity<IRunnerResponse> sendEmailForDGApprove(Long shipId) {
-       Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
-       return null;
-    }
 
     @Override
     public ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest)

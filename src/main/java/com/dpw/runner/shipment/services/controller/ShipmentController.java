@@ -691,14 +691,10 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL, response = RunnerResponse.class)})
-    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL)
-    public ResponseEntity<IRunnerResponse> sendEmailForDGApprove(@RequestParam(required = true) Long shipId) {
-        log.info("Request received for Ocean DG Approval");
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
     public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody
-        OceanDGApprovalRequest request) {
+    OceanDGApprovalRequest request) {
         log.info("Request received for oceanDGSendForApproval");
         try {
             return shipmentService.sendOceanDGApprovalEmail(request);
