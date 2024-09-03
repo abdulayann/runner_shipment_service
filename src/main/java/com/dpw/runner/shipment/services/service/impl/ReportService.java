@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
@@ -332,6 +333,10 @@ public class ReportService implements IReportService {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
+            createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
+        } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+            dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -807,9 +812,9 @@ public class ReportService implements IReportService {
                 reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) ||
             reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER)) {
             Map<String, String> eventCodeMapping = new HashMap<>();
-            eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), ReportConstants.CAN_GEN);
+            eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), EventConstants.CANG);
             eventCodeMapping.put(ReportConstants.PICKUP_ORDER.toUpperCase(), ReportConstants.PICKUP_ORDER_GEN);
-            eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), ReportConstants.DELIVERY_ORDER_GEN);
+            eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), EventConstants.DOGE);
             if(eventCodeMapping.containsKey(reportRequest.getReportInfo().toUpperCase())){
                 createAutoEvent(reportRequest.getReportId(), eventCodeMapping.get(reportRequest.getReportInfo().toUpperCase()) , tenantSettingsRow);
             }
