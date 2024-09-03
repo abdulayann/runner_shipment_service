@@ -13,12 +13,12 @@ import java.io.Serializable;
 public class UsersRoleListResponse implements Serializable {
 
     @JsonProperty("RoleId")
-    private Long RoleId;
+    private Long roleId;
 
     @JsonProperty("Username")
-    private String Username;
+    private String userName;
 
     @JsonProperty("Email")
-    private String Email;
+    private String email;
 
 }
