@@ -41,7 +41,4 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;
 
-    // Previous
-//    private Map<String, EntityTransferMasterLists> masterData;
-//    private Map<String, EntityTransferUnLocations> unlocationData;
 }

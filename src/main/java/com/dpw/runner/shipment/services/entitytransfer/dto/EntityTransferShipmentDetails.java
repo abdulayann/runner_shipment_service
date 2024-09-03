@@ -95,10 +95,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private List<EntityTransferBookingCarriage> bookingCarriagesList;
     private List<EntityTransferContainers> containersList;
 
-    // ~~~~~~ confirm on the entities to keep ~~~~~~~~~
     private List<EntityTransferServiceDetails> servicesList;
-//    private List<ELDetailsResponse> elDetailsList;
-    // ~~~~~~~          END            ~~~~~~~~~~~~~~
 
     private String jobStatus;
     private BigDecimal goodsValue;
@@ -152,18 +149,8 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
 
     private String sourceBranchTenantName;
 
-    private Map<String, Object> masterData;
+    private transient Map<String, Object> masterData;
     private Integer sendToBranch;
-
-
-//    private Map<String, String> masterData;
-//    private Map<String, String> unlocationData;
-//    private Map<String, String> currenciesMasterData;
-//    private Map<String, String> tenantIdsData;
-    // Previous fields
-//    private Map<String, EntityTransferUnLocations> unlocationData;
-//    private Map<String, EntityTransferUser> userMasterData;
-//    private Map<String, EntityTransferCurrency> currenciesMasterData;
 
     private List<String> additionalDocs;
 }
