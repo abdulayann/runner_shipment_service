@@ -1644,6 +1644,9 @@ public class ConsolidationService implements IConsolidationService {
         CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
             commonUtils.setInterBranchContextForHub();
+            if(Boolean.FALSE.equals(request.getIsHub())) {
+                commonUtils.setInterBranchContextForColoadStation();
+            }
             PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
             CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
