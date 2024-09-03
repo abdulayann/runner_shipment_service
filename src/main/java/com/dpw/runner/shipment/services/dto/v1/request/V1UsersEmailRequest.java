@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class V1UsersEmailRequest {
     @JsonProperty("RoleId")
-    private Integer RoleId;
+    private Integer roleId;
     @JsonProperty("Take")
-    private Integer Take;
+    private Integer take;
 }
