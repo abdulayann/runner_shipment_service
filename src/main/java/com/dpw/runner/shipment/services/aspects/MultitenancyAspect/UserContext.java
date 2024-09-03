@@ -3,8 +3,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import org.springframework.stereotype.Component;
 
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.airDG;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGApprover;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.*;
 
 @Component
 public class UserContext {
@@ -23,6 +22,11 @@ public class UserContext {
     public static boolean isOceanDgUser() {
         return getUser().getPermissions().containsKey(oceanDGApprover)
                 && getUser().getPermissions().get(oceanDGApprover);
+    }
+
+    public static boolean isOceanDgCommercialUser() {
+        return getUser().getPermissions().containsKey(oceanDGCommercialApprover)
+                && getUser().getPermissions().get(oceanDGCommercialApprover);
     }
 
     public static void setUser(UsersDto userId) {
