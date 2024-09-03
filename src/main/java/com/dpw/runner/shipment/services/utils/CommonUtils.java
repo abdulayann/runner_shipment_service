@@ -1341,7 +1341,6 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(CARGO_TYPE, shipmentDetails.getShipmentType());
         dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-        //TODO : time in UTC
         dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
         dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
 
