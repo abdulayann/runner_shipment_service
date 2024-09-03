@@ -3262,7 +3262,7 @@ public class ConsolidationService implements IConsolidationService {
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         CarrierDetails oldCarrierDetails = null;
         if(!isCreate)
-            oldCarrierDetails = oldEntity.getCarrierDetails();
+            oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
         var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), finalOldCarrierDetails)));
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))

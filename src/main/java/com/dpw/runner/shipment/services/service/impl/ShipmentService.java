@@ -1429,7 +1429,7 @@ public class ShipmentService implements IShipmentService {
     private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException{
         CarrierDetails oldCarrierDetails = null;
         if(!isCreate)
-            oldCarrierDetails = oldEntity.getCarrierDetails();
+            oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
         var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)));
         List<Long> tempConsolIds = new ArrayList<>();
