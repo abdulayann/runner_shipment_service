@@ -28,6 +28,8 @@ import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
@@ -75,6 +77,8 @@ import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -105,12 +109,16 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import java.util.function.Supplier;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,6 +160,8 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -178,6 +188,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private CSVParsingUtil<ShipmentDetails> parser;
+
+    @Autowired
+    private INotificationService notificationService;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -5491,10 +5504,146 @@ public class ShipmentService implements IShipmentService {
        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
        return null;
     }
+    
+    @Override
+    public ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest)
+        throws RunnerException {
+        if (Objects.isNull(dgApprovalRequest)) {
+            log.error("Invalid request for sendEmailForDGApprove");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+        }
+
+        Long shipId = dgApprovalRequest.getShipmentId();
+        String remarks = dgApprovalRequest.getRemarks();
+
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipId)
+            .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + shipId));
+
+        if (!UserContext.isOceanDgUser()) {
+            sendEmailForApproval(shipmentDetails, remarks);
+        }
+
+        //TODO : AUDIT Details + ApproverName
+        OceanDGStatus dgStatus = checkForClass1(shipmentDetails)
+            ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED
+            : OceanDGStatus.OCEAN_DG_REQUESTED;
+        shipmentDetails.setOceanDGStatus(dgStatus);
+
+        shipmentDao.save(shipmentDetails, false);
+
+        // TODO : good return + handling DB failure => try_catch or throw
+        return ResponseEntity.ok().build();
+    }
 
     @Override
-    public ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) {
-        return null;
+    public ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request)
+        throws RunnerException {
+        if (Objects.isNull(request)) {
+            log.error("Invalid request for sendEmailForDGApprove");
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+        }
+
+        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
+            .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
+
+        sendRequestedUserDGEmail(request, shipmentDetails);
+        //TODO : Pick approver details from auditTable
+        shipmentDao.save(shipmentDetails, false);
+
+        return ResponseEntity.ok().build();
+    }
+    private boolean checkForClass1(ShipmentDetails shipmentDetails){
+        List<Containers> containersList = shipmentDetails.getContainersList();
+        List<Packing> packingList = shipmentDetails.getPackingList();
+
+        for(Containers containers : containersList){
+            if(containers != null && containers.getHazardous() && containers.getDgClass()!=null){
+                if(containers.getDgClass().startsWith("1")){
+                    return true;
+                }
+            }
+        }
+
+        for(Packing packing : packingList){
+            if(packing != null && packing.getHazardous() && packing.getDGClass()!=null){
+                if(packing.getDGClass().startsWith("1")){
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void sendRequestedUserDGEmail(OceanDGRequest request, ShipmentDetails shipmentDetails)
+        throws RunnerException {
+        OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
+        OceanDGStatus templateStatus = null;
+
+        if(oceanDGStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED){
+            if(request.getStatus() == ApprovalStatus.APPROVE){
+                templateStatus = OCEAN_DG_COMMERCIAL_ACCEPTED;
+            }else{
+                templateStatus = OCEAN_DG_COMMERCIAL_REJECTED;
+            }
+        }else if(oceanDGStatus == OceanDGStatus.OCEAN_DG_REQUESTED){
+            if(request.getStatus() == ApprovalStatus.APPROVE){
+                templateStatus = OCEAN_DG_ACCEPTED;
+            }else{
+                templateStatus = OCEAN_DG_REJECTED;
+            }
+        }
+
+        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture).join();
+
+        try {
+            commonUtils.sendRequestedUserDGEmail(emailTemplatesRequestMap, request, templateStatus, shipmentDetails);
+        } catch (Exception e) {
+            log.error(ERROR_WHILE_SENDING_EMAIL);
+        }
+        shipmentDetails.setOceanDGStatus(templateStatus);
+
+    }
+    private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks){
+        OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
+        OceanDGStatus templateStatus = determineEmailTemplate(oceanDGStatus);
+
+        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
+        List<String> toUserEmails = new ArrayList<>();
+        VesselsResponse vesselsResponse = null;
+        TaskCreateResponse taskCreateResponse = null;
+
+        // making v1 calls for master data
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
+        var vesselResponseFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getVesselsData(shipmentDetails.getCarrierDetails(), vesselsResponse)), executorService);
+        CompletableFuture<Integer> roleIdFuture = CompletableFuture.supplyAsync(
+            (Supplier<Integer>) masterDataUtils.withMdc(() -> commonUtils.getRoleId(oceanDGStatus)),
+            executorService
+        );
+        var userEmailsFuture = roleIdFuture.thenCompose(roleId -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserEmailsByRoleId(toUserEmails, roleId)), executorService));
+        var taskResponseFuture = roleIdFuture.thenCompose(roleId -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.createTask(shipmentDetails, roleId,
+            taskCreateResponse)), executorService));
+
+        CompletableFuture.allOf(emailTemplateFuture, userEmailsFuture, vesselResponseFuture, taskResponseFuture).join();
+
+        try {
+            sendEmailForApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,
+                taskCreateResponse);
+        } catch (Exception e) {
+            log.error(ERROR_WHILE_SENDING_EMAIL);
+        }
+    }
+
+    private OceanDGStatus determineEmailTemplate(OceanDGStatus currentStatus) {
+        if (currentStatus == null || currentStatus == OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED) {
+            return OceanDGStatus.OCEAN_DG_REQUESTED;
+        } else if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) {
+            return OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
+        } else {
+            return null;
+        }
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
@@ -5647,4 +5796,80 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
+    public void sendEmailForApproval(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap, List<String> toEmailIds,
+        VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
+        TaskCreateResponse taskCreateResponse) throws RunnerException {
+        EmailTemplatesRequest emailTemplate = Optional.ofNullable(emailTemplatesRequestMap.get(templateStatus))
+            .orElseThrow(() -> new RunnerException("No template is present"));
+
+        if (CollectionUtils.isEmpty(toEmailIds)) {
+            throw new RunnerException("No user is present to approve the request");
+        }
+
+        Map<String, Object> dictionary = new HashMap<>();
+        populateDictionary(templateStatus, dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+
+        emailTemplate.setBody(generateEmailBody(dictionary, shipmentDetails, emailTemplate.getBody()));
+        notificationService.sendEmail(commonUtils.replaceTagsFromData(dictionary, emailTemplate.getBody()),
+            emailTemplate.getSubject(), new ArrayList<>(toEmailIds), null);
+    }
+
+    private void populateDictionary(OceanDGStatus templateStatus, Map<String, Object> dictionary,
+        ShipmentDetails shipmentDetails,
+        VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
+
+        if (templateStatus == OceanDGStatus.OCEAN_DG_REQUESTED) {
+            commonUtils.populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        } else if (templateStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED) {
+            commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        }
+    }
+    public String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
+        Document document = Jsoup.parse(tableTemplate);
+        Element table = document.select("table").first();
+
+        assert table != null;
+        Element rowTemplate = table.select("tbody tr").get(1);
+
+        rowTemplate.remove();
+
+        for (Packing packing : shipmentDetails.getPackingList()) {
+            if(!packing.getHazardous()) continue;
+
+            Element newRow = rowTemplate.clone();
+            newRow.select("td").get(0).text(packing.getInnerPacksCount() + " " + packing.getPacksType()).attr("style", "padding: 10px;");
+        //    newRow.select("td").get(1).text(String.valueOf(packing.getCon)).attr("style", "padding: 10px;"); TODO : ContainerNumber --> Packing ??
+            newRow.select("td").get(2).text(packing.getDGClass()).attr("style", "padding: 10px;");
+            newRow.select("td").get(3).text(packing.getUnNumber()).attr("style", "padding: 10px;");
+            newRow.select("td").get(4).text(packing.getProperShippingName()).attr("style", "padding: 10px;");
+            newRow.select("td").get(5).text(packing.getPackingGroup()).attr("style", "padding: 10px;");
+            newRow.select("td").get(6).text(packing.getMinimumFlashPoint() + "" + packing.getMinimumFlashPointUnit()).attr("style", "padding: 10px;");
+            newRow.select("td").get(7).text(packing.getMarinePollutant()?"Yes":"No").attr("style", "padding: 10px;");
+
+            table.select("tbody").first().appendChild(newRow);
+        }
+
+        return table.outerHtml();
+    }
+
+    public String extractTableTemplate(String htmlTemplate) {
+        int tableStartIndex = htmlTemplate.indexOf("<table>");
+        int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
+
+        if (tableStartIndex != -1 && tableEndIndex > tableStartIndex) {
+            return htmlTemplate.substring(tableStartIndex, tableEndIndex);
+        }
+
+        return "";
+    }
+
+    private String generateEmailBody(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, String htmlTemplate) {
+        String tableTemplate = extractTableTemplate(htmlTemplate);
+
+        String populatedTable = populateTableWithData(tableTemplate, shipmentDetails);
+
+        String emailBody = commonUtils.replaceTagsFromData(dictionary, htmlTemplate);
+        emailBody = emailBody.replace(tableTemplate, populatedTable);
+        return emailBody;
+    }
 }
