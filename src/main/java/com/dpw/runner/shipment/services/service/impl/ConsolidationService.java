@@ -768,6 +768,10 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
             List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+            if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
+            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && consolidationDetails.getShipmentsList().size() + shipmentIds.size() > 1) {
+                throw new RunnerException("For Ocean DG shipments LCL Cargo Type, we can have only 1 shipment");
+            }
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
                 for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
@@ -4046,6 +4050,44 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().guid(consolidationDetails.get().getGuid()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> checkContainerEditingRequiredForOceanDg(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getId() == null) {
+                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
+            if (!consolidationDetails.isPresent()) {
+                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            Map<Long, Boolean> containerIdDgAllowedMap = new HashMap<>();
+            for(Containers containers: consolidationDetails.get().getContainersList()) {
+                boolean allowEdit = true;
+                for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
+                    if(OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus())) {
+                        allowEdit = false;
+                        break;
+                    }
+                }
+                containerIdDgAllowedMap.put(containers.getId(), allowEdit);
+            }
+            return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

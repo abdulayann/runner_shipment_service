@@ -97,6 +97,7 @@ public class ApiConstants {
     public static final String POPULATE_CHARGE_TYPE_DETAILS = "/get/chargeType";
     public static final String VALIDATE_IATA_AGENT = "/validate-iata-agent";
     public static final String GET_GUID_BY_ID= "/get/guid";
+    public static final String GET_CONTAINER_EDIT_ALLOW= "/get/dg-container/edit-allow";
     public static final String FNM_STATUS_MESSAGE = "/get/fnmStatus";
     public static final String FETCH_IATA_RATES = "/fetch-iata-rate";
 
