@@ -153,7 +153,7 @@ public enum MasterDataType {
     EXEMPTION_CODES(160, "ExemptionCodes"),
     SCI(166, "SCI"),
     MODULE_MASTER(183, "MODULE MASTER"),
-    DEPARTMENT_MASTER_LIST(184, "DEPARTMENT MASTER LIST"),
+    DEPARTMENT_MASTER_LIST(184, "Department Master List"),
     NATURE_OF_GOODS(185, "NATURE OF GOODS"),
     IATA_CHARGE_CODES(186, "IATA Charge Codes");
 

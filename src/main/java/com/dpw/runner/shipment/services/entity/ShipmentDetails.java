@@ -503,4 +503,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Where(clause = "is_attachment_done = 'false'")
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
+    @Column(name = "department")
+    @Size(max=32, message = "max size is 32 for department")
+    @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
+    private String department;
+
 }

@@ -135,4 +135,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Integer pendingActionCount;
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
+    private String department;
 }
