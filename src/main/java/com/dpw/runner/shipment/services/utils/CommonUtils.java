@@ -585,7 +585,8 @@ public class CommonUtils {
         if(!Objects.isNull(consolidationDetails.getAchievedQuantities())) {
             Double weightUtilization = consolidationDetails.getAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getWeightUtilization()) : 0;
             Double volumeUtilization = consolidationDetails.getAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getVolumeUtilization()) : 0;
-            if(weightUtilization > 100 || volumeUtilization > 100)
+            if(Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_AIR)
+                    && (weightUtilization > 100 || volumeUtilization > 100))
                 consolidationDetails.setOpenForAttachment(false);
         }
     }
