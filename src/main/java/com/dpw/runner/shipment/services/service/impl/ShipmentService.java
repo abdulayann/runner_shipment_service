@@ -3,10 +3,13 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
@@ -306,18 +309,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
-
-import java.math.RoundingMode;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("ALL")
 @Service
@@ -2214,68 +2205,114 @@ public class ShipmentService implements IShipmentService {
 
     private void updateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events) {
         Map<String, Events> eventMap = createEventMap(events);
-        if (isTrackingEventApplicable(shipmentDetails)) {
-            if(isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                    oldEntity.getAdditionalDetails().getCustomReleaseDate())){
+        if (isLclOrFclOrAir(shipmentDetails)) {
+
+            if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber())) {
+                String key = generateKey(EventConstants.BOCO, Constants.CARGORUNNER);
+                Events event = eventMap.get(key);
+                if (event != null) {
+                    handleEventUpdate(event);
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO));
+                }
+            }
+
+            if (isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
+                    oldEntity.getAdditionalDetails().getCargoDeliveredDate())) {
+                String key = generateKey(EventConstants.CADE, Constants.CARGORUNNER);
+                Events event = eventMap.get(key);
+                if (event != null) {
+                    handleEventUpdate(event);
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE));
+                }
+            }
+
+            if (isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
+                    oldEntity.getAdditionalDetails().getPickupDate())) {
+                String key = generateKey(EventConstants.CACO, Constants.CARGORUNNER);
+                Events event = eventMap.get(key);
+                if (event != null) {
+                    handleEventUpdate(event);
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO));
+                }
+            }
+
+            if (isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
+                    oldEntity.getAdditionalDetails().getCustomReleaseDate())) {
                 String key = generateKey(EventConstants.CURE, Constants.CARGORUNNER);
                 Events event = eventMap.get(key);
-                if(event!=null) {
+                if (event != null) {
                     handleEventUpdate(event);
-                }else{
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
                 }
             }
-            if(isEventChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
-                    oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer())){
+            if (isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
+                    oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer())) {
                 String key = generateKey(EventConstants.DOTP, Constants.CARGORUNNER);
                 Events event = eventMap.get(key);
-                if(event!=null) {
+                if (event != null) {
                     handleEventUpdate(event);
-                }else{
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
                 }
             }
-            if(isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
-                    oldEntity.getAdditionalDetails().getProofOfDeliveryDate())){
+            if (isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
+                    oldEntity.getAdditionalDetails().getProofOfDeliveryDate())) {
                 String key = generateKey(EventConstants.PRDE, Constants.CARGORUNNER);
                 Events event = eventMap.get(key);
-                if(event!=null) {
+                if (event != null) {
                     handleEventUpdate(event);
-                }else{
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
                 }
             }
-            if(isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
-                    oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())){
+            if (isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
+                    oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())) {
                 String key = generateKey(EventConstants.SEPU, Constants.CARGORUNNER);
                 Events event = eventMap.get(key);
-                if(event!=null) {
+                if (event != null) {
                     handleEventUpdate(event);
-                }else{
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
                 }
             }
         }
-        if (isTrackingEventApplicableForCAFS(shipmentDetails) && isEventChanged(
-                shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
-                oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
-            String key = generateKey(EventConstants.CAFS, Constants.CARGORUNNER);
-            Events event = eventMap.get(key);
-            if(event!=null) {
-                handleEventUpdate(event);
-            }else{
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+
+        if (isLclOrAir(shipmentDetails)) {
+            if (isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
+                    oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
+                String key = generateKey(EventConstants.CAFS, Constants.CARGORUNNER);
+                Events event = eventMap.get(key);
+                if (event != null) {
+                    handleEventUpdate(event);
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+                }
             }
+
+            if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate())) {
+                String key = generateKey(EventConstants.CAAW, Constants.CARGORUNNER);
+                Events event = eventMap.get(key);
+                if (event != null) {
+                    handleEventUpdate(event);
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW));
+                }
+            }
+
         }
 
-        if (isTrackingEMCREventApplicable(shipmentDetails)  && isEventBooleanChanged(
+        if (isLcl(shipmentDetails) && isEventBooleanChanged(
                 shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                 oldEntity.getAdditionalDetails().getEmptyContainerReturned())) {
             String key = generateKey(EventConstants.EMCR, Constants.CARGORUNNER);
             Events event = eventMap.get(key);
-            if(event!=null) {
+            if (event != null) {
                 handleEventUpdate(event);
-            }else{
+            } else {
                 events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
             }
         }
@@ -2284,57 +2321,73 @@ public class ShipmentService implements IShipmentService {
     private boolean isEventChanged(Object newValue, Object oldValue) {
         return newValue != null && !newValue.equals(oldValue);
     }
+
     private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue) {
         return newValue != null && !newValue.equals(oldValue) && newValue;
     }
+
     private void handleEventUpdate(Events event) {
         event.setActual(LocalDateTime.now());
     }
 
 
-    private boolean isTrackingEventApplicable(ShipmentDetails shipmentDetails) {
-        return ((Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
-                || Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()))
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
+    private boolean isLclOrFclOrAir(ShipmentDetails shipmentDetails) {
+        return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
-    private boolean isTrackingEventApplicableForCAFS(ShipmentDetails shipmentDetails) {
-        return (Constants.CARGO_TYPE_LSE.equalsIgnoreCase(shipmentDetails.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()))
+    private boolean isLclOrAir(ShipmentDetails shipmentDetails) {
+        return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
-    private boolean isTrackingEMCREventApplicable(ShipmentDetails shipmentDetails) {
-        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode());
+    private boolean isLcl(ShipmentDetails shipmentDetails) {
+        return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
     }
 
 
     private void createTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isTrackingEventApplicable(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
-            }
 
-        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isTrackingEventApplicable(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
-            }
+        if (shipmentDetails.getBookingNumber() != null && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO));
+        }
 
-        if (shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isTrackingEventApplicable(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
-            }
+        if (shipmentDetails.getAdditionalDetails().getPickupDate() != null && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO));
+        }
 
-        if (shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isTrackingEventApplicableForCAFS(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
-            }
+        if (shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() != null && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE));
+        }
 
-        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isTrackingEventApplicable(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
-            }
+        if (shipmentDetails.getShipmentGateInDate() != null && isLclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW));
+        }
 
-        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isTrackingEMCREventApplicable(shipmentDetails)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
-            }
+        if (shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
+        }
+
+        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
+        }
+
+        if (shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
+        }
+
+        if (shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+        }
+
+        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isLclOrFclOrAir(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
+        }
+
+        if (Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isLcl(shipmentDetails)) {
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
+        }
 
     }
 
