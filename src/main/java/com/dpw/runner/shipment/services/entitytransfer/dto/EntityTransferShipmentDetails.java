@@ -101,7 +101,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private BigDecimal goodsValue;
     private String goodsValueCurrency;
     private BigDecimal insuranceValue;
-    private String InsuranceValueCurrency;
+    private String insuranceValueCurrency;
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<EntityTransferParties> shipmentAddresses;

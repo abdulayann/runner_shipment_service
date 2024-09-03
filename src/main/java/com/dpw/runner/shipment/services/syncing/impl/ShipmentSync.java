@@ -60,6 +60,9 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
     @Autowired
     private IConsolidationSync consolidationSync;
+
+    private static final String SHIPMENTS = "Shipments";
+
     @Override
     public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
@@ -67,13 +70,13 @@ public class ShipmentSync implements IShipmentSync {
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
             HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
-            syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", httpHeaders);
+            syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, httpHeaders);
         }
         else {
             if(!Objects.isNull(sd.getSourceGuid()) && !Objects.equals(sd.getGuid(), sd.getSourceGuid())) // Entity Transfer Shipment
-                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), username, UserContext.getUser().getUsername());
+                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, transactionId, sd.getTenantId(), username, UserContext.getUser().getUsername());
             else
-                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), "Shipments", transactionId, sd.getTenantId(), sd.getCreatedBy(), null);
+                syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, transactionId, sd.getTenantId(), sd.getCreatedBy(), null);
         }
         return ResponseHelper.buildSuccessResponse(modelMapper.map(cs, CustomShipmentSyncRequest.class));
     }
