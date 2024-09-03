@@ -113,7 +113,6 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request)
-        throws RunnerException;
+    ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) throws RunnerException;
 
 }
