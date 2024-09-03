@@ -2159,6 +2159,7 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             shipmentDetails.forEach(e -> {
                 e.setContainsHazardous(true);
+                commonUtils.changeShipmentDGStatusToReqd(e);
             });
             shipmentDao.saveAll(shipmentDetails);
             for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
@@ -4272,7 +4273,8 @@ public class ConsolidationService implements IConsolidationService {
             for(Containers containers: consolidationDetails.get().getContainersList()) {
                 boolean allowEdit = true;
                 for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
-                    if(OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus())) {
+                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) &&
+                            (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus()))) {
                         allowEdit = false;
                         break;
                     }
