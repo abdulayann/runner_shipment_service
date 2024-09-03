@@ -77,6 +77,6 @@ public class TasksService implements ITasksService {
         var request = (TaskCreateRequest) commonRequestModel.getData();
 //        TODO:
         request.setTaskStatus(TaskStatus.PENDING_ACTION.getDescription());
-        return ResponseHelper.buildSuccessResponse(iv1Service.createTask(V1SaveRequest.builder().entity(request).build()));
+        return ResponseHelper.buildSuccessResponse(iv1Service.createTask(request));
     }
 }
