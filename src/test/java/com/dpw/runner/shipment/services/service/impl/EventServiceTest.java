@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -40,6 +41,7 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -567,17 +569,25 @@ class EventServiceTest extends CommonMocks {
         shipment.setId(1L);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
-
-        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
-        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
-        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
-        trackingEventsResponse.setEventsList(List.of(new Events()));
-        EventsResponse eventsResponse = new EventsResponse();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingNumber("1234-5678");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEmptyContainerReturned(false);
+        shipment.setAdditionalDetails(additionalDetails);
 
         Events mockEvent = new Events();
         mockEvent.setId(1L);
         mockEvent.setGuid(UUID.randomUUID());
-        mockEvent.setEventCode("EVCODE1");
+        mockEvent.setEventCode(EventConstants.EMCR);
+        mockEvent.setEntityType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
+        mockEvent.setLocationRole("origin");
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
 
         EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
@@ -588,6 +598,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
@@ -715,6 +726,52 @@ class EventServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testEventsRequestV2);
         var e  = assertThrows(RuntimeException.class, () -> eventService.V1EventsCreateAndUpdate(commonRequestModel, false));
         assertNotNull(e);
+    }
+
+    @Test
+    void GateInWithContainerFullTrackEvent() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setId(1L);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
+        shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingNumber("5678-1234");
+
+        Events mockEvent = new Events();
+        mockEvent.setId(1L);
+        mockEvent.setGuid(UUID.randomUUID());
+        mockEvent.setEventCode(EventConstants.FCGI);
+        mockEvent.setEntityType(EventConstants.GATE_IN_WITH_CONTAINER_FULL);
+        mockEvent.setLocationRole("originPort");
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+
+        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
     }
 
 
