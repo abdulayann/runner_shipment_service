@@ -242,8 +242,8 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findByGuid(id);
     }
     @Override
-    public List<ShipmentDetails> findByHouseBill(String Hbl){
-        return shipmentRepository.findByHouseBill(Hbl);
+    public List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId){
+        return shipmentRepository.findByHouseBill(hbl, tenantId);
     }
     @Override
     public List<ShipmentDetails> findByBookingReference(String ref){
@@ -401,7 +401,7 @@ public class ShipmentDao implements IShipmentDao {
 
         // BL# and Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
-            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
+            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), getCurrentWorkingTenantId());
             if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
                     errors.add("Canceled HBL is already available in the application. Please remove/ modify the HBL number to proceed further");

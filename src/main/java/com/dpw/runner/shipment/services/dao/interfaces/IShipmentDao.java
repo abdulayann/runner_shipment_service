@@ -21,7 +21,7 @@ public interface IShipmentDao {
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
     Optional<ShipmentDetails> findByGuid(UUID id);
-    List<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String Hbl);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
