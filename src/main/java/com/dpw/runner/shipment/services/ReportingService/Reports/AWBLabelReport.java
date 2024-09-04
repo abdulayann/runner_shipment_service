@@ -9,17 +9,24 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Ro
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +37,7 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
+@Slf4j
 public class AWBLabelReport extends IReport{
     @Autowired
     private JsonHelper jsonHelper;
@@ -39,6 +47,12 @@ public class AWBLabelReport extends IReport{
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private ConsolidationService consolidationService;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
     private IPackingService packingService;
@@ -62,7 +76,7 @@ public class AWBLabelReport extends IReport{
     private boolean isMawb;
     private String remarks;
     @Override
-    public Map<String, Object> getData(Long id) {
+    public Map<String, Object> getData(Long id) throws RunnerException {
         AWbLabelModel awbLabelModel = (AWbLabelModel) getDocumentModel(id);
         return populateDictionary(awbLabelModel);
     }
@@ -85,7 +99,7 @@ public class AWBLabelReport extends IReport{
     }
 
     @Override
-    Map<String, Object> populateDictionary(IDocumentModel documentModel) {
+    Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException {
         AWbLabelModel awbLabelModel = (AWbLabelModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         List<String> unlocations = new ArrayList<>();
@@ -133,6 +147,8 @@ public class AWBLabelReport extends IReport{
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
             if (awbLabelModel.shipment.getCarrierDetails() != null && awbLabelModel.shipment.getCarrierDetails().getDestinationPort() != null)
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
+           //todo dictionary.put()
+            dictionary.put(SHIPMENT_GROSS_WEIGHT_AND_UNIT, awbLabelModel.shipment.getWeight() + " " +   ConvertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
         }
         if(awbLabelModel.getConsolidation() != null){
             String shippingLine = awbLabelModel.getConsolidation().getCarrierDetails() != null ? awbLabelModel.getConsolidation().getCarrierDetails().getShippingLine() : "";
@@ -144,6 +160,12 @@ public class AWBLabelReport extends IReport{
 
             if(awbLabelModel.getConsolidation().getCarrierDetails() != null && awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort() != null)
                 unlocations.add(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort());
+
+            String totalGrossWeightAndUnit = getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation().getId());
+            String[] parts = totalGrossWeightAndUnit.split(" ");
+            String totalGrossWeight = parts[0];
+            String unit = parts[1];
+            dictionary.put(CONSOLIDATION_GROSS_WEIGHT_AND_UNIT, totalGrossWeight  + " " +   ConvertToSingleCharWeightFormat(unit));
         }
 
         if (!unlocations.isEmpty()) {
@@ -330,6 +352,17 @@ public class AWBLabelReport extends IReport{
             dictionary.remove(HAWB_CAPS);
         }
         return dictionary;
+    }
+
+    private String getConsolGrossWeightAndUnit(Long consoleId) throws RunnerException {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        request.setId(consoleId);
+        log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+
+        PackSummaryResponse response = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
+
+        return response.getTotalPacksWeight();
     }
 
     private static void populateMawb(Map<String, Object> dictionary, String mawb) {

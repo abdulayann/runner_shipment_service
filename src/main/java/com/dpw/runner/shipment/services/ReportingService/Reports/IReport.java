@@ -438,7 +438,7 @@ public abstract class IReport {
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
-    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
+    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException;
 
     public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
