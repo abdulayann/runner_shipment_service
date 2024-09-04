@@ -576,12 +576,7 @@ class EventServiceTest extends CommonMocks {
         additionalDetails.setEmptyContainerReturned(false);
         shipment.setAdditionalDetails(additionalDetails);
 
-        Events mockEvent = new Events();
-        mockEvent.setId(1L);
-        mockEvent.setGuid(UUID.randomUUID());
-        mockEvent.setEventCode(EventConstants.EMCR);
-        mockEvent.setEntityType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
-        mockEvent.setLocationRole("origin");
+        Events mockEvent = getMockEvent(1L, EventConstants.EMCR, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -728,22 +723,70 @@ class EventServiceTest extends CommonMocks {
         assertNotNull(e);
     }
 
+    private Events getMockEvent(Long eventId, String eventCode, String entityType, String locationRole){
+        Events mockEvent = new Events();
+        mockEvent.setId(eventId);
+        mockEvent.setGuid(UUID.randomUUID());
+        mockEvent.setEventCode(eventCode);
+        mockEvent.setEntityType(entityType);
+        mockEvent.setLocationRole(locationRole);
+
+        return mockEvent;
+    }
+
+
     @Test
-    void GateInWithContainerFullTrackEvent() throws RunnerException {
+    void TestGateInWithContainerFullTrackEvent() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setId(1L);
-        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP02";
         shipment.setShipmentId(referenceNumber);
         shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingNumber("5678-1234");
 
-        Events mockEvent = new Events();
-        mockEvent.setId(1L);
-        mockEvent.setGuid(UUID.randomUUID());
-        mockEvent.setEventCode(EventConstants.FCGI);
-        mockEvent.setEntityType(EventConstants.GATE_IN_WITH_CONTAINER_FULL);
-        mockEvent.setLocationRole("originPort");
+        Events mockEvent = getMockEvent(1L, EventConstants.FCGI, EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+
+        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void TestVesselDepartureWithContainerTrackEvent() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setId(1L);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP03";
+        shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipment.setBookingNumber("938-1234");
+
+        Events mockEvent = getMockEvent(2L, EventConstants.ARDP, EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER, "destinationPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
