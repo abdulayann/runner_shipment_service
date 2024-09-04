@@ -3660,7 +3660,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
         when(containerDao.saveAll(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
-        doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
+        doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any(), any());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
