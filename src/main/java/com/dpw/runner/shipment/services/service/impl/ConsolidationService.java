@@ -26,7 +26,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
@@ -115,8 +114,6 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
-import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -893,7 +890,7 @@ public class ConsolidationService implements IConsolidationService {
             List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
             if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
             && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && consolidationDetails.getShipmentsList().size() + shipmentIds.size() > 1) {
-                throw new RunnerException("For Ocean DG shipments LCL Cargo Type, we can have only 1 shipment");
+                throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
             }
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
                 consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
@@ -933,7 +930,7 @@ public class ConsolidationService implements IConsolidationService {
             this.checkSciForAttachConsole(consolidationId);
             // detaching the shipmentDetailsList but still able to access raw entity data, fetch any lazy load data beforehand if need to be used
             shipmentDao.entityDetach(shipmentDetailsList.getContent());
-            updateLinkedShipmentData(consolidationDetails, null, true);
+            updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
             // Update pack utilisation if user accepts any pull or push request
             if(ShipmentRequestedType.APPROVE.equals(shipmentRequestedType)) {
                 packingService.savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest.builder()
@@ -1359,7 +1356,7 @@ public class ConsolidationService implements IConsolidationService {
      * @param console
      * @param oldEntity
      */
-    private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment) throws RunnerException {
+    private List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getEfreightStatus(), Constants.EAW)){
@@ -1380,7 +1377,7 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
                         !Objects.equals(console.getTriangulationPartner(), oldEntity.getTriangulationPartner()) ||
                         !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner())
-                )))) {
+                )) || !dgStatusChangeInShipments.isEmpty())) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
             for(ShipmentDetails i: shipments) {
@@ -1413,6 +1410,10 @@ public class ConsolidationService implements IConsolidationService {
                         i.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
                         i.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
                     }
+                }
+                if(dgStatusChangeInShipments.containsKey(i.getId())) {
+                    i.setContainsHazardous(dgStatusChangeInShipments.get(i.getId()).getContainsHazardous());
+                    i.setOceanDGStatus(dgStatusChangeInShipments.get(i.getId()).getOceanDGStatus());
                 }
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
@@ -2169,6 +2170,10 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDetails.forEach(e -> {
                 e.setContainsHazardous(true);
                 commonUtils.changeShipmentDGStatusToReqd(e);
+                if(commonUtils.checkIfDGClass1(container.getDgClass())) {
+                    if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(e.getOceanDGStatus()))
+                        e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+                }
             });
             shipmentDao.saveAll(shipmentDetails);
             for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
@@ -3435,6 +3440,58 @@ public class ConsolidationService implements IConsolidationService {
         return true;
     }
 
+    private void dgOceanFlowsAndValidations(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Map<Long, ShipmentDetails> dgStatusChangeInShipments) {
+        if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()))
+        {
+            List<Containers> containersList = consolidationDetails.getContainersList();
+            if(containersList != null && !containersList.isEmpty())
+            {
+                Map<Long, Containers> oldContainersMap = new HashMap<>();
+                if(!Objects.isNull(oldEntity))
+                    oldContainersMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
+                for(var container: containersList)
+                {
+                    if(Boolean.TRUE.equals(container.getHazardous()))
+                    {
+                        consolidationDetails.setHazardous(true);
+                        if(Objects.isNull(oldEntity))
+                            break;
+                        else {
+                            Containers oldContainer = null;
+                            if(oldContainersMap.containsKey(container.getId())) {
+                                oldContainer = oldContainersMap.get(container.getId());
+                                if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
+                                        && oldContainer.getShipmentsList() != null && !oldContainer.getShipmentsList().isEmpty()) {
+                                    for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
+                                        ShipmentDetails shipmentDetails1 = shipmentDetails;
+                                        if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId()))
+                                            shipmentDetails1 = dgStatusChangeInShipments.get(shipmentDetails.getId()); // TODO- check if this is required or jpa itself will give updated data
+                                        boolean valueChanged = false;
+                                        if(!Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous())) {
+                                            valueChanged = true;
+                                            shipmentDetails1.setContainsHazardous(true);
+                                        }
+                                        valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
+                                        if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
+                                            shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+                                            valueChanged = true;
+                                        }
+                                        if(valueChanged)
+                                            dgStatusChangeInShipments.put(shipmentDetails1.getId(), shipmentDetails1);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if(!checkConsolidationTypeValidation(consolidationDetails))
+        {
+            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+        }
+    }
+
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         CarrierDetails oldCarrierDetails = null;
         if(!Boolean.TRUE.equals(isCreate))
@@ -3448,30 +3505,13 @@ public class ConsolidationService implements IConsolidationService {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
-        if(checkForOceanNonDGConsolidation(consolidationDetails))
-        {
-            List<Containers> containersList = consolidationDetails.getContainersList();
-            if(containersList != null && !containersList.isEmpty())
-            {
-                for(var container: containersList)
-                {
-                    if(Boolean.TRUE.equals(container.getHazardous()))
-                    {
-                        consolidationDetails.setHazardous(true);
-                        break;
-                    }
-                }
-            }
-        }
-        if(!checkConsolidationTypeValidation(consolidationDetails))
-        {
-            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
-        }
+        Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
+        dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
             // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
-            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments);
         }
         if(!Boolean.TRUE.equals(isCreate) && checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
             if(shipmentDetails == null)

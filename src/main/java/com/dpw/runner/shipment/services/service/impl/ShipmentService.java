@@ -130,23 +130,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -326,6 +310,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1244,8 +1229,7 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-
-    private boolean checkIfNewFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
+    private boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
         if(!Objects.equals(newPack.getHazardous(), oldPack.getHazardous()))
             return true;
         if(!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
@@ -1261,32 +1245,6 @@ public class ShipmentService implements IShipmentService {
         if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
             return true;
         if(!Objects.equals(newPack.getMarinePollutant(), oldPack.getMarinePollutant()))
-            return true;
-        return false;
-    }
-
-    private boolean checkIfNewFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
-        if(!Objects.equals(newContainer.getHazardous(), oldContainer.getHazardous()))
-            return true;
-        if(!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
-            return true;
-        if(!Objects.equals(newContainer.getUnNumber(), oldContainer.getUnNumber()))
-            return true;
-        if(!Objects.equals(newContainer.getProperShippingName(), oldContainer.getProperShippingName()))
-            return true;
-        if(!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
-            return true;
-        if(!Objects.equals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
-            return true;
-        if(!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
-            return true;
-        if(!Objects.equals(newContainer.getMarinePollutant(), oldContainer.getMarinePollutant()))
-            return true;
-        return false;
-    }
-
-    private boolean checkIfDGClass1(String dgClass) {
-        if(!IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1')
             return true;
         return false;
     }
@@ -1320,11 +1278,11 @@ public class ShipmentService implements IShipmentService {
                     if(oldPacksMap.containsKey(pack.getId()))
                         oldPacking = oldPacksMap.get(pack.getId());
                     if(oldPacking != null) {
-                        if(checkIfNewFieldsChangedInPacking(pack, oldPacking))
+                        if(checkIfDGFieldsChangedInPacking(pack, oldPacking))
                             commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                     }
                 }
-                if(checkIfDGClass1(pack.getDGClass())) {
+                if(commonUtils.checkIfDGClass1(pack.getDGClass())) {
                     dgClass1Exists.set(true);
                     if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))
                         shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
@@ -1358,13 +1316,13 @@ public class ShipmentService implements IShipmentService {
                     if(oldContainersMap.containsKey(container.getId()))
                         oldContainer = oldContainersMap.get(container.getId());
                     if(oldContainer != null) {
-                        if(checkIfNewFieldsChangedInContainer(container, oldContainer))
+                        if(commonUtils.checkIfDGFieldsChangedInContainer(container, oldContainer))
                             commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                     }
                     if(newPackAttachedInConts.contains(container.getId()))
                         commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
-                if(checkIfDGClass1(container.getDgClass())) {
+                if(commonUtils.checkIfDGClass1(container.getDgClass())) {
                     dgClass1Exists.set(true);
                     if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))
                         shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
@@ -1908,6 +1866,12 @@ public class ShipmentService implements IShipmentService {
 
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
+            if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()) && SHIPMENT_TYPE_LCL.equals(consolidationDetails1.getContainerCategory())
+                    && (Boolean.TRUE.equals(consolidationDetails1.getHazardous()) || Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))) {
+                List<ConsoleShipmentMapping> consoleShipmentMapping = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails1.getId());
+                if(consoleShipmentMapping != null && !consoleShipmentMapping.isEmpty())
+                    throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, and can have only 1 shipment");
+            }
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
             }

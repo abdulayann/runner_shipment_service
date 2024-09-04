@@ -241,17 +241,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -290,6 +279,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
@@ -3428,7 +3418,7 @@ public abstract class IReport {
                 }
             }
             if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                if(!UserContext.isOceanDgUser()) { //TODO- condition && shipmentModel.getDGStatus != Approved)
+                if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
                     throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
                 }
                 boolean dgContainer = false;
