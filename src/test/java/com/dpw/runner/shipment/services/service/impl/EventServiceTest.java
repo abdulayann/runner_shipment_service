@@ -586,6 +586,7 @@ class EventServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
