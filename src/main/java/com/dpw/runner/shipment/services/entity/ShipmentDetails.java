@@ -506,6 +506,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String department;
     
      @Column(name = "ocean_dg_status")
+     @Enumerated(EnumType.STRING)
      private OceanDGStatus oceanDGStatus;
 
 }

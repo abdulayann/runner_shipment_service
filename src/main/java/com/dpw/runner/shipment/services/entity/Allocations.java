@@ -26,9 +26,6 @@ public class Allocations extends MultiTenancy {
     @Column(name = "shipments_count")
     private Integer shipmentsCount;
 
-    @Column(name = "hazardous")
-    private Boolean hazardous;
-
     @Column(name = "cutoff_date")
     private LocalDateTime cutoffDate;
 

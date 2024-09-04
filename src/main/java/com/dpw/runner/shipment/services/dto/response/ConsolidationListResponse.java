@@ -132,4 +132,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     @ExcludeTimeZone
     private LocalDateTime latDate;
     private String department;
+    private LocalDateTime createdAt;
 }

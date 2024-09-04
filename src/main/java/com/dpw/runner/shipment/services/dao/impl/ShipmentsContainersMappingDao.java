@@ -62,7 +62,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
-    public void assignContainers(Long shipmentId, List<Long> containerIds) {
+    public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
         HashSet<Long> contIds = new HashSet<>(containerIds);
         if (mappings != null && mappings.size() > 0) {
@@ -80,7 +80,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         }
         try {
             log.info("Call sync containers from assignContainers with ids: " + containerIds);
-            containersSync.sync(containerIds, findAllByContainerIds(containerIds));
+            containersSync.sync(containerIds, findAllByContainerIds(containerIds), transactionId);
         }
         catch (Exception e) {
             log.error("Error syncing shipment containers");
