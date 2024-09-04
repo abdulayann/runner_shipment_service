@@ -14,3 +14,7 @@ ALTER TABLE IF EXISTS containers
     ADD COLUMN IF NOT EXISTS minimum_flash_point numeric(19,2),
     ADD COLUMN IF NOT EXISTS minimum_flash_point_unit VARCHAR(3),
     ADD COLUMN IF NOT EXISTS marine_pollutant BOOLEAN DEFAULT FALSE;
+
+
+ALTER TABLE IF EXISTS shipment_details
+    ADD COLUMN IF NOT EXISTS ocean_dg_status VARCHAR(63);
