@@ -212,9 +212,9 @@ public class Constants {
     public static final String CARRIER_PREFIX = "C";
 
     public static final String CARGORUNNER = "CargoRunner";
-    public static final String CARGOES_RUNNER = "Cargoes Runner";
-    public static final String CARGOES_TRACKING = "Cargoes Tracking";
-    public static final String CARGOES_USER = "Cargoes User";
+    public static final String MASTER_DATA_SOURCE_CRN = "CRN";
+    public static final String MASTER_DATA_SOURCE_CTS = "CTS";
+    public static final String MASTER_DATA_SOURCE_CUR = "CUR";
 
     public static final String Shipments = "[Shipments]";
     public static final String Consolidations = "[Consolidations]";

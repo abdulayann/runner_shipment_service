@@ -2228,7 +2228,7 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber())) {
-                String key = generateKey(EventConstants.BOCO, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.BOCO, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2239,7 +2239,7 @@ public class ShipmentService implements IShipmentService {
 
             if (isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                     oldEntity.getAdditionalDetails().getCargoDeliveredDate())) {
-                String key = generateKey(EventConstants.CADE, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.CADE, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2250,7 +2250,7 @@ public class ShipmentService implements IShipmentService {
 
             if (isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                     oldEntity.getAdditionalDetails().getPickupDate())) {
-                String key = generateKey(EventConstants.CACO, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.CACO, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2261,7 +2261,7 @@ public class ShipmentService implements IShipmentService {
 
             if (isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
                     oldEntity.getAdditionalDetails().getCustomReleaseDate())) {
-                String key = generateKey(EventConstants.CURE, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.CURE, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2271,7 +2271,7 @@ public class ShipmentService implements IShipmentService {
             }
             if (isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
                     oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer())) {
-                String key = generateKey(EventConstants.DOTP, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.DOTP, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2281,7 +2281,7 @@ public class ShipmentService implements IShipmentService {
             }
             if (isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
                     oldEntity.getAdditionalDetails().getProofOfDeliveryDate())) {
-                String key = generateKey(EventConstants.PRDE, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.PRDE, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2291,7 +2291,7 @@ public class ShipmentService implements IShipmentService {
             }
             if (isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
                     oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())) {
-                String key = generateKey(EventConstants.SEPU, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.SEPU, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2304,7 +2304,7 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrAir(shipmentDetails)) {
             if (isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
                     oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
-                String key = generateKey(EventConstants.CAFS, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.CAFS, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2314,7 +2314,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate())) {
-                String key = generateKey(EventConstants.CAAW, Constants.CARGORUNNER);
+                String key = generateKey(EventConstants.CAAW, Constants.MASTER_DATA_SOURCE_CRN);
                 Events event = eventMap.get(key);
                 if (event != null) {
                     handleEventUpdate(event);
@@ -2328,7 +2328,7 @@ public class ShipmentService implements IShipmentService {
         if (isLcl(shipmentDetails) && isEventBooleanChanged(
                 shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                 oldEntity.getAdditionalDetails().getEmptyContainerReturned())) {
-            String key = generateKey(EventConstants.EMCR, Constants.CARGORUNNER);
+            String key = generateKey(EventConstants.EMCR, Constants.MASTER_DATA_SOURCE_CRN);
             Events event = eventMap.get(key);
             if (event != null) {
                 handleEventUpdate(event);
@@ -2437,7 +2437,7 @@ public class ShipmentService implements IShipmentService {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         shipmentEvents.forEach(shipmentEvent -> {
-            if (Constants.CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
+            if (Constants.MASTER_DATA_SOURCE_CTS.equalsIgnoreCase(shipmentEvent.getSource())) {
                 EventsResponse shipmentEventsResponse = jsonHelper.convertValue(shipmentEvent, EventsResponse.class);
                 String key = shipmentEventsResponse.getContainerNumber() + "-" + shipmentEventsResponse.getEventCode();
                 Event eventFromTracking = containerEventMapFromTracking.get(key);
@@ -4851,7 +4851,7 @@ public class ShipmentService implements IShipmentService {
         // Set event fields from shipment
         events.setActual(LocalDateTime.now());
         events.setEstimated(LocalDateTime.now());
-        events.setSource(Constants.CARGORUNNER);
+        events.setSource(Constants.MASTER_DATA_SOURCE_CRN);
         events.setIsPublicTrackingEvent(true);
         events.setEntityType(Constants.SHIPMENT);
         events.setEntityId(shipmentDetails.getId());

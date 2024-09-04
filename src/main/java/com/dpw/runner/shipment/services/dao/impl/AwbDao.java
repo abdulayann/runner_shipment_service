@@ -280,7 +280,9 @@ public class AwbDao implements IAwbDao {
     }
 
     private void createAirMessagingEvents(Long entityId, String entityType, String eventCode, String description, Integer tenantId) {
-        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), entityId, entityType, eventCode, description, LocalDateTime.now(), LocalDateTime.now(), Constants.CARGORUNNER, tenantId, null, LocalDateTime.now(), LocalDateTime.now());
+        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), entityId, entityType, eventCode, description, LocalDateTime.now(), LocalDateTime.now(),
+                Constants.MASTER_DATA_SOURCE_CRN,
+                tenantId, null, LocalDateTime.now(), LocalDateTime.now());
     }
 
     public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, TenantModel tenantModel, boolean overrideData) {

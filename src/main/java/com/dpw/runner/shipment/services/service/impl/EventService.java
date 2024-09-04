@@ -548,7 +548,7 @@ public class EventService implements IEventService {
         // Set entity-related details and source
         event.setEntityId(entityId);
         event.setEntityType(entityType);
-        event.setSource(Constants.CARGOES_TRACKING);
+        event.setSource(Constants.MASTER_DATA_SOURCE_CTS);
 
         return event;
     }
@@ -627,7 +627,7 @@ public class EventService implements IEventService {
             }
             event.setEntityId(entityId);
             event.setEntityType(entityType);
-            event.setSource(Constants.FLOW);
+            event.setSource(Constants.MASTER_DATA_SOURCE_CTS);
             updatedEvents.add(event);
         });
 
