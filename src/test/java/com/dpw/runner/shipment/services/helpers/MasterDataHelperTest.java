@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
@@ -93,6 +94,7 @@ class MasterDataHelperTest {
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
         shipmentDetailsResponse.setServicesList(List.of(new ServiceDetailsResponse()));
+        shipmentDetailsResponse.setEventsList(List.of(new EventsResponse()));
         // Act
         CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = masterDataHelper
                 .addAllMasterDataInSingleCall(shipmentDetailsResponse, new HashMap<>());
