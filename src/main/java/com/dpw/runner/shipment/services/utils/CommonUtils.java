@@ -8,10 +8,13 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -125,6 +128,9 @@ public class CommonUtils {
 
     @Autowired
     public IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private IAuditLogDao iAuditLogDao;
 
     @Autowired
     private TenantSettingsService tenantSettingsService;
@@ -1205,7 +1211,15 @@ public class CommonUtils {
 
     public void populateDictionaryForOceanDGCommercialApproval(Map<String,Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse){
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
-        //DGAPPROVER && DGAPPROVETIME || TODO : pick these details from audit table ?
+        List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndEntityId(
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
+        if(auditLogList != null){
+            OceanDGRequestLog oceanDGRequestLog = new OceanDGRequestLog();
+            Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
+            //TODO : Mapping to oceanDG
+            dictionary.put(DG_APPROVER_NAME, oceanDGRequestLog.getUserName());
+            dictionary.put(DG_APPROVER_TIME, oceanDGRequestLog.getTime());
+        }
     }
 
     public void getDGEmailTemplate(Map<OceanDGStatus, EmailTemplatesRequest> response) {

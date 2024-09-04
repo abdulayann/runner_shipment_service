@@ -47,6 +47,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -83,6 +84,16 @@ public class AuditLogService implements IAuditLogService {
     private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
+
+    private Set<DBOperationType> operationTypeEnumSet = EnumSet.of(
+        DBOperationType.LOG,
+        DBOperationType.DG_REQUEST,
+        DBOperationType.DG_APPROVE,
+        DBOperationType.DG_REJECT,
+        DBOperationType.COMMERCIAL_REQUEST,
+        DBOperationType.COMMERCIAL_APPROVE,
+        DBOperationType.COMMERCIAL_REJECT
+    );
 
     static {
         COLUMN_HEADERS_TO_FIELD_NAME = new LinkedHashMap<>();
@@ -155,7 +166,6 @@ public class AuditLogService implements IAuditLogService {
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
         auditLog.setParentId(auditLogMetaData.getParentId());
-
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
@@ -164,7 +174,7 @@ public class AuditLogService implements IAuditLogService {
             prepareAuditLogOfUpdate(auditLogMetaData, auditLog, ops);
         } else if (ops.equals(DBOperationType.DELETE.name())) {
             prepareAuditLogOfDelete(auditLogMetaData, auditLog, ops);
-        } else if (ops.equals(DBOperationType.LOG.name())) {
+        } else if (operationTypeEnumSet.contains(DBOperationType.valueOf(ops))) {
             prepareAuditLogOfLog(auditLogMetaData, auditLog, ops);
         } else {
             throw new RunnerException("Not a valid operation performed");
@@ -363,7 +373,7 @@ public class AuditLogService implements IAuditLogService {
         List<Field> fields = null;
         if(newEntity == null && prevEntity == null)
             return new HashMap<>();
-        if (operation.equals(DBOperationType.CREATE.name()) || operation.equals(DBOperationType.LOG.name())) {
+        if (operation.equals(DBOperationType.CREATE.name()) || operationTypeEnumSet.contains(DBOperationType.valueOf(operation))) {
             fields = getListOfAllFields(newEntity);
         } else {
             fields = getListOfAllFields(prevEntity);
@@ -406,7 +416,7 @@ public class AuditLogService implements IAuditLogService {
                 else if(newValue != null)
                     auditLogChanges = createAuditLogChangesObject(fieldName, newValue, null);
 
-            } else if (operation.equals(DBOperationType.LOG.name())) {
+            } else if (operationTypeEnumSet.contains(DBOperationType.valueOf(operation))) {
                 Object temp = field.get(newEntity);
                 try {
                     temp = PropertyUtils.getProperty(newEntity, fieldName);
