@@ -67,6 +67,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             + " FROM consolidation_details WHERE bol = ?1 AND tenant_id != ?2", nativeQuery = true)
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber, Integer tenantId);
 
+    List<ConsolidationDetails> findBySourceGuid(UUID guid);
+
     @Query(value = "SELECT distinct c.id from ConsolidationDetails c inner join ConsoleShipmentMapping csm " +
         "on c.id = csm.consolidationId " +
         "where csm.isAttachmentDone = false and csm.requestedType = ?1")

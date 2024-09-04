@@ -1,29 +1,43 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchTenantIdDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
@@ -35,62 +49,110 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
+import com.nimbusds.jose.util.Pair;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+
 @Service
 @Slf4j
+@NoArgsConstructor
 public class EntityTransferService implements IEntityTransferService {
     public static final String SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Shipment Details is null for Id {} with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID = "Consolidation Details is null for Id {} with Request Id {}";
-    @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
-    @Autowired
     private IShipmentDao shipmentDao;
-    @Autowired
     private IShipmentService shipmentService;
-    @Autowired
     private IConsolidationService consolidationService;
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
-    @Autowired
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
-    @Autowired
     private ModelMapper modelMapper;
-    @Autowired
     private IV1Service v1Service;
-    @Autowired
     private JsonHelper jsonHelper;
-    @Autowired
     private IHblDao hblDao;
-    @Autowired
     private IAwbDao awbDao;
-    @Autowired
     private IEventDao eventDao;
-    @Autowired
     private MasterDataUtils masterDataUtils;
-    @Autowired
     private ILogsHistoryService logsHistoryService;
+    private IContainerDao containerDao;
+    private IPackingDao packingDao;
+    private MasterDataFactory masterDataFactory;
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    private CommonUtils commonUtils;
+    private IV1Service iv1Service;
+    private V1ServiceUtil v1ServiceUtil;
+    private ITasksService tasksService;
+    private INotificationService notificationService;
+    private ExecutorService executorService;
+    private DocumentManagerRestClient documentManagerRestClient;
+
     @Autowired
-    MasterDataFactory masterDataFactory;
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao) {
+        this.shipmentSettingsDao = shipmentSettingsDao;
+        this.shipmentDao = shipmentDao;
+        this.shipmentService = shipmentService;
+        this.consolidationService = consolidationService;
+        this.consolidationDetailsDao = consolidationDetailsDao;
+        this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
+        this.modelMapper = modelMapper;
+        this.v1Service = v1Service;
+        this.jsonHelper = jsonHelper;
+        this.hblDao = hblDao;
+        this.awbDao = awbDao;
+        this.eventDao = eventDao;
+        this.masterDataUtils = masterDataUtils;
+        this.logsHistoryService = logsHistoryService;
+        this.containerDao = containerDao;
+        this.packingDao = packingDao;
+        this.masterDataFactory = masterDataFactory;
+        this.commonUtils = commonUtils;
+        this.iv1Service = iv1Service;
+        this.v1ServiceUtil = v1ServiceUtil;
+        this.tasksService = tasksService;
+        this.notificationService = notificationService;
+        this.executorService = executorService;
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
+        this.documentManagerRestClient = documentManagerRestClient;
+    }
+
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
@@ -99,70 +161,41 @@ public class EntityTransferService implements IEntityTransferService {
         List<Integer> sendToBranch = sendShipmentRequest.getSendToBranch();
         List<String> additionalDocs = sendShipmentRequest.getAdditionalDocs();
         List<String> sendToOrg = sendShipmentRequest.getSendToOrg();
-        if((sendToBranch == null || sendToBranch.size() == 0) && (sendToOrg == null || sendToOrg.size() == 0)){
+        if((sendToBranch == null || sendToBranch.isEmpty()) && (sendToOrg == null || sendToOrg.isEmpty())){
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
-        if (!shipmentDetails.isPresent()) {
+        if (shipmentDetails.isEmpty()) {
             log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentDetails shipment = shipmentDetails.get();
-//            if(additionalDocs != null) {
-//                var fileRepoList = shipmentDetails.get().getFileRepoList().stream().filter(fileRepo -> {
-//                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-//                }).toList();
-//                shipmentDetails.get().setFileRepoList(fileRepoList);
-//            } else {
-//                shipmentDetails.get().setFileRepoList(null);
-//            }
+
         List<Integer> successTenantIds = new ArrayList<>();
-        // TODO Only V1 Shipment Task is triggered for current requirement
-        if(true) {
-            List<Integer> tenantIdsFromOrg = new ArrayList<>();
-            if(sendToOrg != null && !sendToOrg.isEmpty())
-                tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-            CreateV1ShipmentTaskFromV2Request request = CreateV1ShipmentTaskFromV2Request.builder()
-                    .shipmentId(shipmentDetails.get().getShipmentId())
-                    .sendToBranch(sendToBranch)
-                    .sendToOrg(sendToOrg)
-                    .additionalDocs(additionalDocs)
-                    .build();
-            log.info("Entity Transfer V1 Shipment Request Created:" + jsonHelper.convertToJson(request));
-            try {
-                SendEntityResponse v1ShipmentTaskResponse = v1Service.sendV1ShipmentTask(request);
-                if (v1ShipmentTaskResponse.getIsCreated()) {
-                    if(sendToBranch != null && !sendToBranch.isEmpty())
-                        successTenantIds.addAll(sendToBranch);
-                    if(sendToOrg != null && !sendToOrg.isEmpty()) {
-                        successTenantIds.addAll(tenantIdsFromOrg);
-                    }
-                } else {
-                    log.error("Entity Transfer failed Send V1 shipment: " + v1ShipmentTaskResponse.getError());
-                    throw new RuntimeException(v1ShipmentTaskResponse.getError());
-                }
-            } catch (Exception ex) {
-                log.error("Entity Transfer failed Send V1 shipment: " + ex);
-                throw new RuntimeException(ex.getMessage());
+
+        Set<Integer> uniqueDestinationTenants = new HashSet<>(sendShipmentRequest.getSendToBranch());
+        validationsBeforeSendTask(uniqueDestinationTenants);
+        var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
+
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+            sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())
+        );
+
+        List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
+        var entityTransferPayload = prepareShipmentPayload(shipment);
+        entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+        entityTransferPayload.setAdditionalDocs(additionalDocs);
+
+        for(int i = 0; i < destinationTenantList.size(); i++) {
+            var tenant = destinationTenantList.get(i);
+            var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
+            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch()))) {
+                taskPayload.setDirection(reverseDirection(shipment.getDirection()));
             }
-        } else {
-//                EntityTransferShipmentDetails entityTransferShipmentDetails = modelMapper.map(shipmentDetails.get(), EntityTransferShipmentDetails.class);
-//
-//                this.createShipmentPayload(entityTransferShipmentDetails);
-//                log.info("Shipment Payload Created.");
-//
-//
-//                if (sendToBranch != null && sendToBranch.size() != 0) {
-//                    this.createTasks(sendToBranch, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), false);
-//                }
-//
-//                if (sendToOrg != null && sendToOrg.size() != 0) {
-//                    List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-//                    log.info("Org TenantId: " + tenantIdsFromOrg);
-//                    if (tenantIdsFromOrg != null && tenantIdsFromOrg.size() != 0) {
-//                        this.createTasks(tenantIdsFromOrg, successTenantIds, entityTransferShipmentDetails, shipmentDetails.get(), true);
-//                    }
-//                }
+            taskPayload.setSendToBranch(tenant);
+
+            createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
+            successTenantIds.add(tenant);
         }
 
         List<String> tenantName = getTenantName(successTenantIds);
@@ -170,27 +203,15 @@ public class EntityTransferService implements IEntityTransferService {
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
+        emailFuture.join();
+
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
         return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
     }
-//    private void createTasks(List<Integer> tenantIdsList, List<Integer> successTenantIds, EntityTransferShipmentDetails entityTransferShipmentDetails,ShipmentDetails shipmentDetails, Boolean sendToOrganization){
-//        for (int tenantId: tenantIdsList) {
-//            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
-//            if(approverRoleId == null || approverRoleId == 0){
-//                throw new RuntimeException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED + tenantId);
-//            }
-//            else{
-//                SendEntityResponse response = this.sendTaskToV1(tenantId, approverRoleId, tenantIdsList, entityTransferShipmentDetails, sendToOrganization, entityTransferShipmentDetails.getShipmentId(), entityTransferShipmentDetails.getHouseBill(), entityTransferShipmentDetails.getMasterBill(), shipmentDetails.getId());
-//                if(response.getIsCreated() == true){
-//                    successTenantIds.add(tenantId);
-//                }
-//            }
-//        }
-//    }
 
-//    private Integer getShipmentConsoleImportApprovalRole(int tenantId) {
-//        return shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
-//    }
+    private Integer getShipmentConsoleImportApprovalRole(int tenantId) {
+        return shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
+    }
 
     private List<Integer> tenantIdFromOrganizations (List<String> sendToOrg) {
         List<String> guidList = new ArrayList<>();
@@ -211,7 +232,7 @@ public class EntityTransferService implements IEntityTransferService {
         log.info("Guids list: "+ guidList);
 
         List<Integer> tenantIds = new ArrayList<>();
-        if(guidList != null || guidList.size() != 0) {
+        if(guidList != null || !guidList.isEmpty()) {
             guidList.forEach(guid -> {
                 CommonV1ListRequest request = new CommonV1ListRequest();
                 List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
@@ -224,690 +245,139 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
-//    private void createShipmentPayload (EntityTransferShipmentDetails entityTransferShipmentDetails) {
-//        this.addAllMasterDatas(entityTransferShipmentDetails);
-//        this.addAllUnlocationDatas(entityTransferShipmentDetails);
-//        this.addDedicatedMasterData(entityTransferShipmentDetails);
-//    }
-//    private void addAllMasterDatas (EntityTransferShipmentDetails shipmentDetails) {
-//        if(shipmentDetails != null) {
-//            shipmentDetails.setMasterData(addMasterData(shipmentDetails, ShipmentDetails.class));
-//        }
-//        if(shipmentDetails != null && shipmentDetails.getAdditionalDetails() != null) {
-//            shipmentDetails.getAdditionalDetails().setMasterData(addMasterData(shipmentDetails.getAdditionalDetails(), AdditionalDetails.class));
-//        }
-//        if(shipmentDetails != null && shipmentDetails.getCarrierDetails() != null) {
-//            shipmentDetails.getCarrierDetails().setMasterData(addMasterData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//        var bookingCarriagesList = shipmentDetails != null ? shipmentDetails.getBookingCarriagesList() : null;
-//        if(bookingCarriagesList != null) {
-//            bookingCarriagesList.forEach(bookingCarriage -> {
-//                bookingCarriage.setMasterData(addMasterData(bookingCarriage, BookingCarriage.class));
-//            });
-//        }
-//        var containers = shipmentDetails != null ? shipmentDetails.getContainersList() : null;
-//        if(containers != null) {
-//            containers.forEach(cont -> {
-//                cont.setMasterData(addMasterData(cont, Containers.class));
-//            });
-//        }
-//        var packs = shipmentDetails != null ? shipmentDetails.getPackingList() : null;
-//        if(packs != null) {
-//            packs.forEach(pack -> {
-//                pack.setMasterData(addMasterData(pack, Packing.class));
-//            });
-//        }
-//        var referenceNumbers = shipmentDetails != null ? shipmentDetails.getReferenceNumbersList(): null;
-//        if (referenceNumbers != null) {
-//            referenceNumbers.forEach(referenceNumber -> {
-//                referenceNumber.setMasterData(addMasterData(referenceNumber, ReferenceNumbers.class));
-//            });
-//        }
-//        var serviceDetails = shipmentDetails != null ? shipmentDetails.getServicesList() : null;
-//        if (serviceDetails != null) {
-//            serviceDetails.forEach(service -> {
-//                service.setMasterData(addMasterData(service, ServiceDetails.class));
-//            });
-//        }
-//    }
-//
-//    private Map<String, EntityTransferMasterLists> addMasterData (IEntityTranferBaseEntity entityPayload, Class mainClass) {
-//        MasterListRequestV2 requests = new MasterListRequestV2();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-//        Map<String, EntityTransferMasterLists> fieldNameMasterDataMap = new HashMap<>();
-//
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field : mainClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(MasterData.class) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String itemValue = (String) field1.get(entityPayload);
-//                    String itemType = field.getDeclaredAnnotation(MasterData.class).type().getDescription();
-//                    String cascadeField = field.getDeclaredAnnotation(MasterData.class).cascade();
-//                    String cascade = null;
-//
-//                    if(!cascadeField.equals("")){
-//                        Field field2 = entityPayload.getClass().getDeclaredField(cascadeField);
-//                        field2.setAccessible(true);
-//                        cascade = (String) field2.get(entityPayload);
-//                    }
-//                    if(itemValue != null) {
-//                        requests.getMasterListRequests().add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
-//                        String key = itemValue + '#' + itemType;
-//                        fieldNameKeyMap.put(field.getName(), key);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(requests.getMasterListRequests().size() > 0) {
-//            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
-//            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
-//            masterLists.forEach(masterData -> {
-//                String key = masterData.ItemValue + '#' + MasterDataType.masterData(masterData.ItemType).getDescription();
-//                keyMasterDataMap.put(key, masterData);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyMasterDataMap.containsKey(value))
-//                    fieldNameMasterDataMap.put(key, keyMasterDataMap.get(value));
-//            });
-//            return fieldNameMasterDataMap;
-//        }
-//        return null;
-//    }
-//
-//    private void addAllUnlocationDatas (EntityTransferShipmentDetails shipmentDetails) {
-//        if(shipmentDetails.getAdditionalDetails() != null) {
-//            shipmentDetails.getAdditionalDetails().setUnlocationData(addUnlocationData(shipmentDetails.getAdditionalDetails(), AdditionalDetails.class));
-//        }
-//        if(shipmentDetails.getCarrierDetails() != null) {
-//            shipmentDetails.getCarrierDetails().setUnlocationData(addUnlocationData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//    }
-//
-//    private Map<String, EntityTransferUnLocations> addUnlocationData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferUnLocations> fieldNameUnlocationDataMap = new HashMap<>();
-//        Map<String, EntityTransferUnLocations> keyUnlocationDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> locCodesList = new ArrayList<>();
-//
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(UnlocationData.class) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String locCode = (String) field1.get(entityPayload);
-//                    if(locCode != null && !locCode.equals("")) {
-//                        locCodesList.add(locCode);
-//                        fieldNameKeyMap.put(field.getName(), locCode);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(locCodesList.size() > 0){
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.UNLOCATION_CODE));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(locCodesList)));
-//            request.setCriteriaRequests(criteria);
-//            V1DataResponse response = v1Service.fetchUnlocation(request);
-//
-//            List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
-//            unLocationsList.forEach(unloc -> {
-//                keyUnlocationDataMap.put(unloc.LocationsReferenceGUID, unloc);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyUnlocationDataMap.containsKey(value))
-//                    fieldNameUnlocationDataMap.put(key, keyUnlocationDataMap.get(value));
-//            });
-//            return fieldNameUnlocationDataMap;
-//        }
-//        return null;
-//    }
-//
-//    private void addDedicatedMasterData (EntityTransferShipmentDetails shipmentDetails) {
-//        if (shipmentDetails.getCarrierDetails() != null) {
-//            shipmentDetails.getCarrierDetails().setCarrierMasterData(carrierMasterData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
-//            shipmentDetails.getCarrierDetails().setVesselsMasterData(vesselMasterData(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//        if(shipmentDetails != null) {
-//            shipmentDetails.setCurrenciesMasterData(currencyMasterData(shipmentDetails, ShipmentDetails.class));
-//        }
-//        var containers = shipmentDetails.getContainersList();
-//        if(containers != null) {
-//            containers.forEach(cont -> {
-//                cont.setContainerTypeMasterData(containerTypeMasterData(cont, Containers.class));
-//                cont.setCommodityTypeMasterData(commodityTypeMasterData(cont, Containers.class));
-//            });
-//        }
-//        if(shipmentDetails.getBookingCarriagesList() != null) {
-//            shipmentDetails.getBookingCarriagesList().forEach(bookingCarriage -> {
-//                bookingCarriage.setVesselsMasterData(vesselMasterData(bookingCarriage, BookingCarriage.class));
-//            });
-//        }
-//
-//    }
-//    private Map<String, EntityTransferCarrier> carrierMasterData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferCarrier> fieldNameCarrierDataMap = new HashMap<>();
-//        Map<String, EntityTransferCarrier> keyCarrierDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> itemValueList = new ArrayList<>();
-//        log.info("CarrierMasterData");
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CARRIER_MASTER_DATA) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    log.info("CarrierField: "+field.getName());
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String itemValue = (String) field1.get(entityPayload);
-//                    if(itemValue != null && !itemValue.equals("")) {
-//                        itemValueList.add(itemValue);
-//                        fieldNameKeyMap.put(field.getName(), itemValue);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(itemValueList.size() > 0){
-//            log.info("CarrierList: "+itemValueList);
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(itemValueList)));
-//            request.setCriteriaRequests(criteria);
-//            CarrierListObject carrierListObject = new CarrierListObject();
-//            carrierListObject.setListObject(request);
-//            V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
-//
-//            List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
-//            carrierList.forEach(carrier -> {
-//                keyCarrierDataMap.put(carrier.getItemValue(), carrier);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyCarrierDataMap.containsKey(value))
-//                    fieldNameCarrierDataMap.put(key, keyCarrierDataMap.get(value));
-//            });
-//            return fieldNameCarrierDataMap;
-//        }
-//        return null;
-//    }
-//    private Map<String, EntityTransferVessels> vesselMasterData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferVessels> fieldNameVesselDataMap = new HashMap<>();
-//        Map<String, EntityTransferVessels> keyVesselDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> GuidList = new ArrayList<>();
-//        log.info("VesselMasterData");
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    log.info("VesselField: "+field.getName());
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String Guid = (String) field1.get(entityPayload);
-//                    if(Guid != null && !Guid.equals("")) {
-//                        GuidList.add(Guid);
-//                        fieldNameKeyMap.put(field.getName(), Guid);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(GuidList.size() > 0){
-//            log.info("VesselList: "+GuidList);
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(GuidList)));
-//            request.setCriteriaRequests(criteria);
-//            V1DataResponse response = v1Service.fetchVesselData(request);
-//
-//            List<EntityTransferVessels> vesselList = jsonHelper.convertValueToList(response.entities, EntityTransferVessels.class);
-//            vesselList.forEach(vessel -> {
-//                keyVesselDataMap.put(vessel.getGuid().toString(), vessel);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyVesselDataMap.containsKey(value))
-//                    fieldNameVesselDataMap.put(key, keyVesselDataMap.get(value));
-//            });
-//            return fieldNameVesselDataMap;
-//        }
-//        return null;
-//    }
-//    private Map<String, EntityTransferContainerType> containerTypeMasterData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferContainerType> fieldNameContainerTypeDataMap = new HashMap<>();
-//        Map<String, EntityTransferContainerType> keyContainerTypeDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> containerCodeList = new ArrayList<>();
-//        log.info("ContainerTypeMasterData");
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CONTAINER_TYPE_MASTER_DATA) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    log.info("ContainerTypeField: "+field.getName());
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String containerCode = (String) field1.get(entityPayload);
-//                    if(containerCode != null && !containerCode.equals("")) {
-//                        containerCodeList.add(containerCode);
-//                        fieldNameKeyMap.put(field.getName(), containerCode);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(containerCodeList.size() > 0){
-//            log.info("ContainerTypeList: "+containerCodeList);
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(containerCodeList)));
-//            request.setCriteriaRequests(criteria);
-//            V1DataResponse response = v1Service.fetchContainerTypeData(request);
-//
-//            List<EntityTransferContainerType> containerTypeList = jsonHelper.convertValueToList(response.entities, EntityTransferContainerType.class);
-//            containerTypeList.forEach(cont -> {
-//                keyContainerTypeDataMap.put(cont.getCode(), cont);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyContainerTypeDataMap.containsKey(value))
-//                    fieldNameContainerTypeDataMap.put(key, keyContainerTypeDataMap.get(value));
-//            });
-//            return fieldNameContainerTypeDataMap;
-//        }
-//        return null;
-//    }
-//    private Map<String, EntityTransferCurrency> currencyMasterData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferCurrency> fieldNameCurrencyDataMap = new HashMap<>();
-//        Map<String, EntityTransferCurrency> keyCurrencyDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> currencyCodeList = new ArrayList<>();
-//        log.info("CurrencyMasterData");
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.CURRENCY_MASTER_DATA) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    log.info("CurrencyField: "+field.getName());
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String currencyCode = (String) field1.get(entityPayload);
-//                    if(currencyCode != null && !currencyCode.equals("")) {
-//                        currencyCodeList.add(currencyCode);
-//                        fieldNameKeyMap.put(field.getName(), currencyCode);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(currencyCodeList.size() > 0){
-//            log.info("CurrencyList: "+currencyCodeList);
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CURRENCY_CODE));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(currencyCodeList)));
-//            request.setCriteriaRequests(criteria);
-//            V1DataResponse response = v1Service.fetchCurrenciesData(request);
-//
-//            List<EntityTransferCurrency> currencyList = jsonHelper.convertValueToList(response.entities, EntityTransferCurrency.class);
-//            currencyList.forEach(currency -> {
-//                keyCurrencyDataMap.put(currency.getCurrenyCode(), currency);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyCurrencyDataMap.containsKey(value))
-//                    fieldNameCurrencyDataMap.put(key, keyCurrencyDataMap.get(value));
-//            });
-//            return fieldNameCurrencyDataMap;
-//        }
-//        return null;
-//    }
-//    private Map<String,EntityTransferCommodityType> commodityTypeMasterData (IEntityTranferBaseEntity entityPayload, Class baseClass) {
-//        Map<String, EntityTransferCommodityType> fieldNameCommodityTypeDataMap = new HashMap<>();
-//        Map<String, EntityTransferCommodityType> keyCommodityTypeDataMap = new HashMap<>();
-//        Map<String, String> fieldNameKeyMap = new HashMap<>();
-//        List<String> commodityCodeList = new ArrayList<>();
-//        log.info("CommodityTypeMasterData");
-//        Set<String> allFields = Arrays.stream(entityPayload.getClass().getDeclaredFields()).map(Field::getName).collect(Collectors.toSet());
-//        for(Field field  : baseClass.getDeclaredFields())
-//        {
-//            if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.COMMODITY_TYPE_MASTER_DATA) && allFields.contains(field.getName()))
-//            {
-//                try {
-//                    log.info("commodityTypeField: "+field.getName());
-//                    Field field1 = entityPayload.getClass().getDeclaredField(field.getName());
-//                    field1.setAccessible(true);
-//                    String code = (String) field1.get(entityPayload);
-//                    if(code != null && !code.equals("")) {
-//                        commodityCodeList.add(code);
-//                        fieldNameKeyMap.put(field.getName(), code);
-//                    }
-//                } catch (Exception e) {
-//                    throw new RuntimeException(e);
-//                }
-//            }
-//        }
-//        if(commodityCodeList.size() > 0){
-//            log.info("commodityTypeList: "+commodityCodeList);
-//            CommonV1ListRequest request = new CommonV1ListRequest();
-//            List<Object> criteria = new ArrayList<>();
-//            List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.CODE));
-//            String operator = Operators.IN.getValue();
-//            criteria.addAll(List.of(field, operator, List.of(commodityCodeList)));
-//            request.setCriteriaRequests(criteria);
-//            V1DataResponse response = v1Service.fetchCommodityData(request);
-//
-//            List<EntityTransferCommodityType> commodityTypeList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);
-//            commodityTypeList.forEach(commodity -> {
-//                keyCommodityTypeDataMap.put(commodity.getCode(), commodity);
-//            });
-//            fieldNameKeyMap.forEach((key, value) -> {
-//                if(keyCommodityTypeDataMap.containsKey(value))
-//                    fieldNameCommodityTypeDataMap.put(key, keyCommodityTypeDataMap.get(value));
-//            });
-//            return fieldNameCommodityTypeDataMap;
-//        }
-//        return null;
-//    }
-//
-//
-//    private SendEntityResponse sendTaskToV1 (int tenantId, int approverRole, List<Integer> tenantIds, EntityTransferShipmentDetails entityTransferShipmentDetails, Boolean sendToOrganization, String shipmentId, String houseBill, String masterBill, long id) {
-//        CreateShipmentTaskRequest createShipmentTaskRequest = CreateShipmentTaskRequest.builder()
-//                .tenantId(tenantId).approverRole(approverRole).tenantIds(tenantIds)
-//                .shipmentData(entityTransferShipmentDetails).sendToOrganization(sendToOrganization)
-//                .shipmentId(shipmentId).houseBill(houseBill).masterBill(masterBill).id(id).build();
-//        SendEntityResponse response = v1Service.sendShipmentTask(createShipmentTaskRequest);
-//        return response;
-//    }
-
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel) {
         SendConsolidationRequest sendConsolidationRequest = (SendConsolidationRequest) commonRequestModel.getData();
         Long consolId = sendConsolidationRequest.getConsolId();
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
-        List<String> additionalDocs = sendConsolidationRequest.getAdditionalDocs();
-        Map<String, List<String>> shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs();
         List<String> sendToOrg = sendConsolidationRequest.getSendToOrg();
+        List<Integer> successTenantIds = new ArrayList<>();
 
-        if((sendToBranch == null || sendToBranch.size() == 0) && (sendToOrg == null || sendToOrg.size() == 0)){
+        if ((sendToBranch == null || sendToBranch.isEmpty()) && (sendToOrg == null || sendToOrg.isEmpty())) {
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
         }
+        // Validation for importer role in receiving branch only for consolidation
+        Set<Integer> tenantIds = new HashSet<>(sendConsolidationRequest.getSendToBranch());
+        validationsBeforeSendTask(tenantIds);
+
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
         if (!consolidationDetails.isPresent()) {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-//            if(additionalDocs != null) {
-//                var fileRepoList = consolidationDetails.get().getFileRepoList().stream().filter(fileRepo -> {
-//                    return additionalDocs.indexOf(fileRepo.getId()) != -1;
-//                }).toList();
-//                consolidationDetails.get().setFileRepoList(fileRepoList);
-//            } else {
-//                consolidationDetails.get().setFileRepoList(null);
-//            }
 
-        Map<Long, UUID> idVsGuidMap = new HashMap<>();
-        Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
+        ConsolidationDetails consol = consolidationDetails.get();
 
-        List<String> shipId = new ArrayList<>();
-        List<List<String>> docList = new ArrayList<>();
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+            sendConsolidationEmailNotification(consol, sendToBranch)
+        );
 
-        List<String> houseBills = new ArrayList<>();
-        List<String> shipmentIds = new ArrayList<>();
-        if(consolidationDetails.get().getShipmentsList() != null && consolidationDetails.get().getShipmentsList().size()>0) {
-            consolidationDetails.get().getShipmentsList().forEach(shipment -> {
-                shipmentIds.add(shipment.getShipmentId());
-                houseBills.add(shipment.getHouseBill());
-                // TODO For V2 payload creation
-//                    shipment.setGuid(UUID.randomUUID());
-//                    shipment.getContainersList().forEach(cont -> {
-//                        if(idVsGuidMap.containsKey(cont.getId())){
-//                            cont.setGuid(idVsGuidMap.get(cont.getId()));
-//                            if(!containerVsShipmentGuid.containsKey(cont.getGuid())) {
-//                                containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-//                            } else {
-//                                containerVsShipmentGuid.get(cont.getGuid()).add(shipment.getGuid());
-//                            }
-//                        } else {
-//                            cont.setGuid(UUID.randomUUID());
-//                            idVsGuidMap.put(cont.getId(), cont.getGuid());
-//                            containerVsShipmentGuid.put(cont.getGuid(), List.of(shipment.getGuid()));
-//                        }
-//                    });
-                if(shipAdditionalDocs != null && shipAdditionalDocs.containsKey(shipment.getGuid().toString())){
-                    if(shipAdditionalDocs.get(shipment.getGuid().toString()) != null) {
-//                            var shipFileRepoList = shipment.getFileRepoList().stream().filter(fileRepo -> {
-//                                return shipAdditionalDocs.get(shipment.getGuid().toString()).indexOf(fileRepo.getId()) != -1;
-//                            }).toList();
-//                            shipment.setFileRepoList(shipFileRepoList);
-                        shipId.add(shipment.getShipmentId());
-                        docList.add(shipAdditionalDocs.get(shipment.getGuid().toString()));
-                    }
-                }
-            });
+        interBranchValidation(consol, sendConsolidationRequest);
+
+        List<EntityTransferConsolidationDetails> entityTransferConsolList = new ArrayList<>();
+        for (int i = 0; i < sendToBranch.size(); i++) {
+            var tenant = sendToBranch.get(i);
+            var entityTransferPayload = prepareConsolidationPayload(consolidationDetails.get(), i, sendConsolidationRequest);
+            entityTransferConsolList.add(entityTransferPayload);
+            createTask(entityTransferPayload, consolidationDetails.get().getId(), Constants.Consolidations, tenant);
+
+            successTenantIds.add(tenant);
         }
 
-        List<Integer> successTenantIds = new ArrayList<>();
-
-        // TODO Only V1 Consolidation Task is triggered for current requirement
-        if(true) {
-            List<Integer> tenantIdsFromOrg = new ArrayList<>();
-            if(sendToOrg != null && !sendToOrg.isEmpty())
-                tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-            CreateV1ConsolidationTaskFromV2Request request = CreateV1ConsolidationTaskFromV2Request.builder()
-                    .consoleId(consolidationDetails.get().getConsolidationNumber())
-                    .sendToBranch(sendToBranch)
-                    .sendToOrg(sendToOrg)
-                    .additionalDocs(additionalDocs)
-                    .shipId(shipId)
-                    .docList(docList)
-                    .build();
-            log.info("Entity Transfer Send V1 Consolidation Request Created:" + jsonHelper.convertToJson(request));
-            try {
-                SendEntityResponse v1ConsoleTaskResponse = v1Service.sendV1ConsolidationTask(request);;
-                if (v1ConsoleTaskResponse.getIsCreated()) {
-                    if(sendToBranch != null && !sendToBranch.isEmpty())
-                        successTenantIds.addAll(sendToBranch);
-                    if(sendToOrg != null && !sendToOrg.isEmpty()) {
-                        successTenantIds.addAll(tenantIdsFromOrg);
-                    }
-                } else {
-                    log.error("Entity Transfer failed Send V1 Consolidation: " + v1ConsoleTaskResponse.getError());
-                    throw new RuntimeException(v1ConsoleTaskResponse.getError());
-                }
-            } catch (Exception ex) {
-                log.error("Entity Transfer failed Send V1 Consolidation: " + ex);
-                throw new RuntimeException(ex.getMessage());
-            }
-        } else {
-
-//                if (consolidationDetails.get().getContainersList() != null) {
-//                    consolidationDetails.get().getContainersList().forEach(cont -> {
-//                        if (idVsGuidMap.containsKey(cont.getId())) {
-//                            cont.setGuid(idVsGuidMap.get(cont.getId()));
-//                        }
-//                    });
-//                }
-//                EntityTransferConsolidationDetails entityTransferConsolidationDetails = modelMapper.map(consolidationDetails.get(), EntityTransferConsolidationDetails.class);
-//
-//                entityTransferConsolidationDetails.setContainerVsShipmentGuid(containerVsShipmentGuid);
-//                this.createConsolidationPayload(entityTransferConsolidationDetails);
-//                log.info("Consolidation Payload Created.");
-//
-//
-//                if (sendToBranch != null || sendToBranch.size() != 0) {
-//                    this.createConsoleTasks(sendToBranch, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), false, houseBills, shipmentIds);
-//                }
-//
-//                if (sendToOrg != null || sendToOrg.size() != 0) {
-//                    List<Integer> tenantIdsFromOrg = tenantIdFromOrganizations(sendToOrg);
-//                    if (tenantIdsFromOrg != null || tenantIdsFromOrg.size() != 0) {
-//                        this.createConsoleTasks(tenantIdsFromOrg, successTenantIds, entityTransferConsolidationDetails, consolidationDetails.get(), true, houseBills, shipmentIds);
-//                    }
-//                }
-        }
+        // ~~~~~~~~~~ KEEP IT AS IS ~~~~~~~~~~~~~
         this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
         List<String> tenantName = getTenantName(successTenantIds);
         String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
-        for (var shipment: consolidationDetails.get().getShipmentsList()) {
+        for (var shipment : consolidationDetails.get().getShipmentsList()) {
             this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
             createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
-            if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
+            if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
-        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
+        // ~~~~~~~~~~ END ~~~~~~~~~~~~~
+        emailFuture.join();
+
+        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
+            .jsonString(jsonHelper.convertToJson(entityTransferConsolList))
+            .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
+
     }
-//    private void createConsoleTasks (List<Integer> tenantIdsList, List<Integer> successTenantIds, EntityTransferConsolidationDetails entityTransferConsolidationDetails,ConsolidationDetails consolidationDetails, Boolean sendToOrganization, List<String> houseBill, List<String> shipmentIds) {
-//        for (int tenantId: tenantIdsList) {
-//            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
-//            if(approverRoleId == null || approverRoleId == 0){
-//                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED+ tenantId);
-//            }
-//            else{
-//                SendEntityResponse response = this.sendConsoleTaskToV1(tenantId, approverRoleId, tenantIdsList, entityTransferConsolidationDetails, sendToOrganization, entityTransferConsolidationDetails.getConsolidationNumber(), houseBill, entityTransferConsolidationDetails.getMawb(), consolidationDetails.getId(), shipmentIds);
-//                if(response.getIsCreated()){
-//                    successTenantIds.add(tenantId);
-//                }
-//            }
+
+
+    private void interBranchValidation(ConsolidationDetails consol, SendConsolidationRequest sendConsolidationRequest) {
+        if(Boolean.TRUE.equals(consol.getInterBranchConsole())) {
+            commonUtils.setInterBranchContextForHub();
+            Set<Integer> uniqueTenants = new HashSet<>(sendConsolidationRequest.getSendToBranch());
+            var tenantSettingsMap = v1ServiceUtil.getTenantSettingsMap(uniqueTenants.stream().toList());
+            List<Integer> shipmentTenantId = consol.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList();
+            List<Integer> errorTenants = new ArrayList<>();
+
+            for(var tenantSet : tenantSettingsMap.entrySet()) {
+                var tenant = tenantSet.getKey();
+                var tenantSetting = tenantSettingsMap.get(tenant);
+                if(tenantSetting.getColoadingBranchIds() != null && !tenantSetting.getColoadingBranchIds().containsAll(shipmentTenantId)) {
+                    errorTenants.add(tenant);
+                }
+            }
+
+            if(!errorTenants.isEmpty()) {
+                throw new ValidationException(String.format("Destination branches %s not having co-loading branch ids", errorTenants));
+            }
+        }
+    }
+
+    private void validationsBeforeSendTask(Set<Integer> sendBranches) {
+        List<Integer> nonApprovalTenants = new ArrayList<>();
+        for (Integer tenantId: sendBranches) {
+            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
+            if (approverRoleId == null || approverRoleId == 0) {
+                nonApprovalTenants.add(tenantId);
+            }
+        }
+        if(nonApprovalTenants.isEmpty())
+            return;
+        List<String> tenantNames = getTenantName(nonApprovalTenants);
+        assert tenantNames != null;
+        throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_NOT_ASSIGNED + String.join(", ", tenantNames));
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
+        ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
+
+        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
+            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.REJECTED, importShipmentRequest.getRejectRemarks());
+            return ResponseHelper.buildSuccessResponse();
+        }
+
+        if (importShipmentRequest.getEntityData() == null) {
+            throw new ValidationException("No Shipment payload please check");
+        }
+        CopyDocumentsRequest copyDocumentsRequest = new CopyDocumentsRequest();
+        EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
+        ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails, copyDocumentsRequest);
+        String shipmentId = shipmentDetailsResponse.getShipmentId();
+
+        // TODO: create document
+        copyDocumentsRequest.setDeleteExistingDocuments(true);
+//                if(copyDocumentsRequest.getDocuments() != null && !copyDocumentsRequest.getDocuments().isEmpty()){
+//            // call Doc service
 //        }
-//    }
-//    private SendEntityResponse sendConsoleTaskToV1 (int tenantId, int approverRole, List<Integer> tenantIds, EntityTransferConsolidationDetails entityTransferConsolidationDetails, Boolean sendToOrganization, String consolidationNumber, List<String> houseBill, String MAWB, long id, List<String> shipmentIds) {
-//        CreateConsolidationTaskRequest createConsolidationTaskRequest = CreateConsolidationTaskRequest.builder()
-//                .tenantId(tenantId).approverRole(approverRole).tenantIds(tenantIds)
-//                .consoleRow(entityTransferConsolidationDetails).sendToOrganization(sendToOrganization)
-//                .mawb(MAWB).consolidationNumber(consolidationNumber).houseBill(houseBill).id(id)
-//                .shipmentIds(shipmentIds)
-//                .build();
-//        SendEntityResponse response = v1Service.sendConsolidationTask(createConsolidationTaskRequest);
-//        return response;
-//    }
-//
-//        private void createConsolidationPayload (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
-//        addConsolidationMasterData(entityTransferConsolidationDetails);
-//        addConsolidationUnlocationDatas(entityTransferConsolidationDetails);
-//        addConsolidationDedicatedMasterData(entityTransferConsolidationDetails);
-//    }
-//    private void addConsolidationMasterData (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
-//        if(entityTransferConsolidationDetails != null) {
-//            entityTransferConsolidationDetails.setMasterData(addMasterData(entityTransferConsolidationDetails, ConsolidationDetails.class));
-//        }
-//        if (entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getAchievedQuantities() != null) {
-//            entityTransferConsolidationDetails.getAchievedQuantities().setMasterData(addMasterData(entityTransferConsolidationDetails.getAchievedQuantities(), AchievedQuantities.class));
-//        }
-//        if (entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getAllocations() != null) {
-//            entityTransferConsolidationDetails.getAllocations().setMasterData(addMasterData(entityTransferConsolidationDetails.getAllocations(), Allocations.class));
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
-//            entityTransferConsolidationDetails.getArrivalDepartureDetails().setMasterData(addMasterData(entityTransferConsolidationDetails.getArrivalDepartureDetails(), ArrivalDepartureDetails.class));
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getCarrierDetails() != null) {
-//            entityTransferConsolidationDetails.getCarrierDetails().setMasterData(addMasterData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getRoutingsList() != null) {
-//            entityTransferConsolidationDetails.getRoutingsList().forEach(routing -> {
-//                routing.setMasterData(addMasterData(routing, Routings.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getContainersList() != null) {
-//            entityTransferConsolidationDetails.getContainersList().forEach(cont -> {
-//                cont.setMasterData(addMasterData(cont, Containers.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getPackingList() != null) {
-//            entityTransferConsolidationDetails.getPackingList().forEach(pack -> {
-//                pack.setMasterData(addMasterData(pack, Packing.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getReferenceNumbersList() != null) {
-//            entityTransferConsolidationDetails.getReferenceNumbersList().forEach(referenceNumber -> {
-//                referenceNumber.setMasterData(addMasterData(referenceNumber, ReferenceNumbers.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getShipmentsList() != null) {
-//            entityTransferConsolidationDetails.getShipmentsList().forEach(this::addAllMasterDatas);
-//        }
-//    }
-//    private void addConsolidationUnlocationDatas (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
-//        if(entityTransferConsolidationDetails != null) {
-//            entityTransferConsolidationDetails.setUnlocationData(addUnlocationData(entityTransferConsolidationDetails, ConsolidationDetails.class));
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getArrivalDepartureDetails() != null) {
-//            entityTransferConsolidationDetails.getArrivalDepartureDetails().setUnlocationData(addUnlocationData(entityTransferConsolidationDetails.getArrivalDepartureDetails(), ArrivalDepartureDetails.class));
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getRoutingsList() != null) {
-//            entityTransferConsolidationDetails.getRoutingsList().forEach(routing -> {
-//                routing.setUnlocationData(addUnlocationData(routing, Routings.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails != null && entityTransferConsolidationDetails.getCarrierDetails() != null) {
-//            entityTransferConsolidationDetails.getCarrierDetails().setUnlocationData(addUnlocationData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//    }
-//    private void addConsolidationDedicatedMasterData (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
-//        if(entityTransferConsolidationDetails.getCarrierDetails() != null) {
-//            entityTransferConsolidationDetails.getCarrierDetails().setCarrierMasterData(carrierMasterData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
-//            entityTransferConsolidationDetails.getCarrierDetails().setVesselsMasterData(vesselMasterData(entityTransferConsolidationDetails.getCarrierDetails(), CarrierDetails.class));
-//        }
-//        if(entityTransferConsolidationDetails.getPackingList() != null) {
-//            entityTransferConsolidationDetails.getPackingList().forEach(pack -> {
-//                pack.setCommodityTypeMasterData(commodityTypeMasterData(pack, Packing.class));
-//            });
-//        }
-//        if(entityTransferConsolidationDetails.getContainersList() != null) {
-//            entityTransferConsolidationDetails.getContainersList().forEach(cont -> {
-//                cont.setCommodityTypeMasterData(commodityTypeMasterData(cont, Containers.class));
-//                cont.setContainerTypeMasterData(containerTypeMasterData(cont, Containers.class));
-//            });
-//        }
-//    }
-//    @Transactional
-//    @Override
-//    public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
-//        String responseMsg;
-//        ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
-//        EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityTransferShipmentDetails();
-//        String ShipmentId = null;
-//        try {
-//            ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails);
-//            ShipmentId = shipmentDetailsResponse.getShipmentId();
-//            this.createShipmentMasterData(entityTransferShipmentDetails);
-//            return ResponseHelper.buildSuccessResponse(ImportShipmentResponse.builder().ShipmentId(ShipmentId).build());
-//
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            throw new RunnerException(e.getMessage());
-//        }
-//    }
+
+//         Task status approved
+        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
+            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
+        }
+
+        var response = ImportShipmentResponse.builder()
+                .shipmentId(shipmentId)
+                .message("Shipment Imported Successfully with Shipment Number: " + shipmentId)
+                .build();
+        return ResponseHelper.buildSuccessResponse(response);
+    }
 //    @Transactional
 //    public ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails) throws RunnerException {
 //        ShipmentRequest request = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentRequest.class);
@@ -1207,32 +677,329 @@ public class EntityTransferService implements IEntityTransferService {
 //    }
 //
 //
-//    @Override
-//    @Transactional
-//    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) {
-//        String responseMsg;
-//        ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
-//        if(importConsolidationRequest == null || importConsolidationRequest.getEntityTransferConsolidationDetails() == null) {
-//            throw new ValidationException("No consolidation is attached please check");
+
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException {
+        ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
+
+        // Task status rejected
+        if(Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
+            updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.REJECTED, importConsolidationRequest.getRejectRemarks());
+            return ResponseHelper.buildSuccessResponse();
+        }
+        if (importConsolidationRequest == null || importConsolidationRequest.getEntityData() == null) {
+            throw new ValidationException("No consolidation payload please check");
+        }
+        EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityData();
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
+        String consolidationNumber = Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getConsolidationNumber).orElse(null);
+
+        // Task status approved
+        if(Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
+            updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.APPROVED, importConsolidationRequest.getRejectRemarks());
+        }
+
+        var response = ImportConsolidationResponse.builder()
+                .consolidationNumber(consolidationNumber)
+                .message("Consolidation Imported Successfully with Consolidation Number: " + consolidationNumber)
+                .build();
+
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) throws RunnerException {
+
+        List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
+        Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
+        Map<UUID, UUID> oldPackVsOldContGuidMap = entityTransferConsolidationDetails.getPackingVsContainerGuid();
+
+        Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
+        Map<UUID, UUID> newVsOldPackingGuid = new HashMap<>();
+        Map<UUID, UUID> newVsOldContainerGuid = new HashMap<>();
+        Map<UUID, Long> oldGuidVsNewContainerId = new HashMap<>();
+
+        List<Long> shipmentIds = new ArrayList<>();
+        List<UUID> shipmentGuids = new ArrayList<>();
+        List<ShipmentDetailsResponse> shipmentDetailsResponseList = new ArrayList<>();
+        CopyDocumentsRequest copyDocumentsRequest = new CopyDocumentsRequest();
+
+        List<Long> interBranchShipment = new ArrayList<>();
+
+        // detach all shipment from console
+        if(oldConsolidationDetailsList != null && !oldConsolidationDetailsList.isEmpty()) {
+            List<Long> detachShipIds = oldConsolidationDetailsList.get(0).getShipmentsList().stream().map(BaseEntity::getId).toList();
+            if(!detachShipIds.isEmpty())
+                consolidationService.detachShipments(oldConsolidationDetailsList.get(0).getId(), detachShipIds);
+        }
+
+
+        // Create Shipments
+        if(!Objects.isNull(entityTransferConsolidationDetails.getShipmentsList()) && !entityTransferConsolidationDetails.getShipmentsList().isEmpty()) {
+            entityTransferConsolidationDetails.getShipmentsList().forEach(ship -> {
+                try {
+                    // container will be created with consolidation
+                    ship.setContainersList(null);
+
+                    // replaced old packing guid with new
+                    if(ship.getPackingList() != null && !ship.getPackingList().isEmpty()) {
+                        ship.getPackingList().forEach(pack -> {
+                            UUID newGuid = UUID.randomUUID();
+                            newVsOldPackingGuid.put(newGuid, pack.getGuid());
+                            pack.setGuid(newGuid);
+                        });
+                    }
+
+                    if(entityTransferConsolidationDetails.getShipAdditionalDocs() != null && entityTransferConsolidationDetails.getShipAdditionalDocs().containsKey(ship.getGuid().toString())) {
+                        ship.setAdditionalDocs(entityTransferConsolidationDetails.getShipAdditionalDocs().get(ship.getGuid().toString()));
+                    }
+                    ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest);
+                    shipmentDetailsResponseList.add(shipmentDetailsResponse);
+
+                    oldVsNewShipIds.put(ship.getGuid(), shipmentDetailsResponse.getId());
+                    shipmentIds.add(shipmentDetailsResponse.getId());
+                    shipmentGuids.add(shipmentDetailsResponse.getGuid());
+                    if(!Objects.equals(shipmentDetailsResponse.getTenantId(), UserContext.getUser().getTenantId())){
+                        interBranchShipment.add(shipmentDetailsResponse.getId());
+                    }
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        if(entityTransferConsolidationDetails.getContainersList() != null && !entityTransferConsolidationDetails.getContainersList().isEmpty()) {
+            entityTransferConsolidationDetails.getContainersList().forEach(cont -> {
+                UUID newGuid = UUID.randomUUID();
+                newVsOldContainerGuid.put(newGuid, cont.getGuid());
+                cont.setGuid(newGuid);
+            });
+        }
+        // Packing will be created with shipment
+        entityTransferConsolidationDetails.setPackingList(null);
+
+        ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = null;
+        // create or update console
+        if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
+            consolidationDetailsRequest.setGuid(null);
+            consolidationDetailsRequest.setShipmentsList(null);
+            consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+
+            consolidationDetailsResponse = consolidationService.createConsolidationFromEntityTransfer(consolidationDetailsRequest);
+        } else {
+            consolidationDetailsRequest = jsonHelper.convertValue(oldConsolidationDetailsList.get(0), ConsolidationDetailsRequest.class);
+
+            Long id = consolidationDetailsRequest.getId();
+            UUID guid = consolidationDetailsRequest.getGuid();
+            this.cleanAllListEntitiesForConsolidation(consolidationDetailsRequest);
+            modelMapper.map(entityTransferConsolidationDetails, consolidationDetailsRequest);
+            consolidationDetailsRequest.setId(id);
+            consolidationDetailsRequest.setGuid(guid);
+            consolidationDetailsRequest.setShipmentsList(null);
+            consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
+
+            consolidationDetailsResponse = consolidationService.completeUpdateConsolidationFromEntityTransfer(consolidationDetailsRequest);
+            oldConsolidationDetailsList.get(0).setContainersList(jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class));
+        }
+
+        // attach console and shipment
+        if(consolidationDetailsResponse != null) {
+            if(!interBranchShipment.isEmpty()) {
+                createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
+                consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds);
+            } else {
+                consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds);
+            }
+
+            if (consolidationDetailsResponse.getContainersList() != null && !consolidationDetailsResponse.getContainersList().isEmpty()) {
+                this.attachShipmentToContainers(consolidationDetailsResponse.getId(), newVsOldContainerGuid, oldContVsOldShipGuidMap, oldVsNewShipIds, oldGuidVsNewContainerId);
+            }
+
+
+            if(!shipmentDetailsResponseList.isEmpty() && !oldPackVsOldContGuidMap.isEmpty()) {
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
+                Pair<Specification<Packing>, Pageable> packingPair = fetchData(listCommonRequest, Packing.class);
+                Page<Packing> packingList = packingDao.findAll(packingPair.getLeft(), packingPair.getRight());
+
+                this.attachPackToContainers(packingList.stream().toList(), newVsOldPackingGuid, oldPackVsOldContGuidMap, oldGuidVsNewContainerId);
+            }
+
+            this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
+
+            // Copy docs request for doc service
+            if(entityTransferConsolidationDetails.getAdditionalDocs() != null && !entityTransferConsolidationDetails.getAdditionalDocs().isEmpty()) {
+                CopyDocumentsRequest.DocumentRequest documentRequest = CopyDocumentsRequest.DocumentRequest.builder()
+                        .entityKey(consolidationDetailsResponse.getGuid().toString())
+                        .tenantId(consolidationDetailsResponse.getTenantId())
+                        .entityType("[Consolidations]")
+                        .docGuid(entityTransferConsolidationDetails.getAdditionalDocs()).build();
+                copyDocumentsRequest.getDocuments().add(documentRequest);
+            }
+            copyDocumentsRequest.setDeleteExistingDocuments(true);
+
+            // TODO: create document
+//        if(copyDocumentsRequest.getDocuments() != null && !copyDocumentsRequest.getDocuments().isEmpty()){
+//            // call Doc service
 //        }
-//        EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityTransferConsolidationDetails();
-//        String consolidationNumber = null;
-//        try {
-//            ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
-//            if(consolidationDetailsResponse == null) {
-//                throw new RunnerException("Create Consolidation failed for " + commonRequestModel.getId());
-//            }
-//            consolidationNumber = consolidationDetailsResponse.getConsolidationNumber();
-//
-//            this.createAllConsolidationMasterData(entityTransferConsolidationDetails);
-//            return ResponseHelper.buildSuccessResponse(ImportConsolidationResponse.builder().consolidationNumber(consolidationNumber).build());
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            throw new RuntimeException(e);
-//        }
-//    }
+        }
+
+        if(!shipmentGuids.isEmpty()) {
+            ConsolidationDetailsResponse finalConsolidationDetailsResponse = consolidationDetailsResponse;
+            CompletableFuture.runAsync(() -> sendGroupedEmailForShipmentImport(finalConsolidationDetailsResponse, shipmentGuids))
+                    .exceptionally(ex -> {
+                        log.error("Send consolidated email failure due to: " + ex.getMessage());
+                        return null;
+                    });
+        }
+
+        return consolidationDetailsResponse;
+    }
+
+
+    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest) throws RunnerException {
+        ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
+        var tenantId = UserContext.getUser().getTenantId();
+        if(Objects.equals(shipmentRequest.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), Constants.SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
+            commonUtils.setInterBranchContextForHub();
+            InterBranchTenantIdContext.setContext(InterBranchTenantIdDto.builder().tenantId(entityTransferShipmentDetails.getSendToBranch()).build());
+        }
+        List<ShipmentDetails> oldShipmentDetailsList = shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch());
+
+        ShipmentDetailsResponse shipmentDetailsResponse = null;
+        if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
+            shipmentRequest.setGuid(null);
+            shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
+            shipmentRequest.setMasterBill(null);
+
+            shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest);
+        } else {
+            shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentRequest.class);
+
+            Long id = shipmentRequest.getId();
+            UUID guid = shipmentRequest.getGuid();
+            this.cleanAllListEntitiesForShipment(shipmentRequest);
+            modelMapper.map(entityTransferShipmentDetails, shipmentRequest);
+            shipmentRequest.setId(id);
+            shipmentRequest.setGuid(guid);
+            shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
+            shipmentRequest.setConsolidationList(List.of());
+            shipmentRequest.setMasterBill(null);
+
+            shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
+            oldShipmentDetailsList.get(0).setPackingList(jsonHelper.convertValueToList(shipmentDetailsResponse.getPackingList(), Packing.class));
+        }
+
+        this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), Constants.SHIPMENT_IMPORTED, Constants.SHIPMENT);
+
+        //TODO: create document
+        // Copy docs request for doc service
+        if(entityTransferShipmentDetails.getAdditionalDocs() != null && !entityTransferShipmentDetails.getAdditionalDocs().isEmpty()) {
+            CopyDocumentsRequest.DocumentRequest documentRequest = CopyDocumentsRequest.DocumentRequest.builder()
+                    .entityKey(shipmentDetailsResponse.getGuid().toString())
+                    .tenantId(shipmentDetailsResponse.getTenantId())
+                    .entityType("[Shipments]")
+                    .docGuid(entityTransferShipmentDetails.getAdditionalDocs()).build();
+            copyDocumentsRequest.getDocuments().add(documentRequest);
+        }
+
+        InterBranchTenantIdContext.removeContext();
+
+        return shipmentDetailsResponse;
+    }
+
+    private void createShipmentPullRequest(List<Long> shipIds, Long consoleId ) {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = new ArrayList<>();
+        for (var shipId: shipIds) {
+            ConsoleShipmentMapping entity = ConsoleShipmentMapping.builder()
+                    .shipmentId(shipId)
+                    .consolidationId(consoleId)
+                    .isAttachmentDone(false)
+                    .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
+                    .build();
+            consoleShipmentMappingList.add(entity);
+        }
+        consoleShipmentMappingDao.saveAll(consoleShipmentMappingList);
+    }
+
+    private void cleanAllListEntitiesForShipment(ShipmentRequest shipmentRequest){
+        shipmentRequest.getPackingList().clear();
+        shipmentRequest.getContainersList().clear();
+        shipmentRequest.getRoutingsList().clear();
+        shipmentRequest.getReferenceNumbersList().clear();
+        shipmentRequest.getBookingCarriagesList().clear();
+        shipmentRequest.getServicesList().clear();
+        shipmentRequest.getShipmentAddresses().clear();
+    }
+
+    private void cleanAllListEntitiesForConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest){
+        consolidationDetailsRequest.getPackingList().clear();
+        consolidationDetailsRequest.getContainersList().clear();
+        consolidationDetailsRequest.getRoutingsList().clear();
+        consolidationDetailsRequest.getReferenceNumbersList().clear();
+        consolidationDetailsRequest.getConsolidationAddresses().clear();
+        consolidationDetailsRequest.getShipmentsList().clear();
+    }
+
+    private void updateTaskStatus(Long taskId, TaskStatus status, String rejectionRemarks) {
+
+        var taskUpdateRequest = TaskUpdateRequest.builder()
+                .id(taskId.toString())
+                .status(status.getName())
+                .rejectionRemarks(rejectionRemarks)
+                .build();
+        tasksService.updateTask(CommonRequestModel.buildRequest(taskUpdateRequest));
+    }
+
+    private void attachShipmentToContainers(Long consoleId, Map<UUID, UUID> newVsOldContainerGuid, Map<UUID, List<UUID>> oldContVsOldShipGuidMap, Map<UUID, Long> oldVsNewShipIds, Map<UUID, Long> oldGuidVsNewContainerId) {
+        List<Containers> containersList = containerDao.findByConsolidationId(consoleId);
+        containersList.forEach(cont -> {
+            List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+            List<UUID> shipmentGuids = new ArrayList<>();
+            oldGuidVsNewContainerId.put(newVsOldContainerGuid.get(cont.getGuid()), cont.getId());
+            if(oldContVsOldShipGuidMap.containsKey(newVsOldContainerGuid.get(cont.getGuid()))) {
+                shipmentGuids = oldContVsOldShipGuidMap.get(newVsOldContainerGuid.get(cont.getGuid()));
+            }
+            if (shipmentGuids != null && !shipmentGuids.isEmpty()) {
+                shipmentGuids.forEach(shipGuid -> {
+                    var shipmentDetail = new ShipmentDetails();
+                    shipmentDetail.setId(oldVsNewShipIds.get(shipGuid));
+                    shipmentDetails.add(shipmentDetail);
+                });
+            }
+            cont.setShipmentsList(shipmentDetails);
+        });
+        containerDao.saveAll(containersList);
+    }
+
+    private void attachPackToContainers(List<Packing> packingList, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, UUID> oldPackVsOldContGuidMap, Map<UUID, Long> oldGuidVsNewContainerId) {
+        if(packingList != null && !packingList.isEmpty()) {
+            packingList.forEach(pack -> {
+                if(oldPackVsOldContGuidMap.containsKey(newVsOldPackingGuid.get(pack.getGuid())) && oldGuidVsNewContainerId.containsKey(oldPackVsOldContGuidMap.get(newVsOldPackingGuid.get(pack.getGuid())))) {
+                    Long id = oldGuidVsNewContainerId.get(oldPackVsOldContGuidMap.get(newVsOldPackingGuid.get(pack.getGuid())));
+                    pack.setContainerId(id);
+                }
+            });
+            packingDao.saveAll(packingList);
+        }
+    }
+
+
+    private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
+            CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+            eventReq.entityId = entityId;
+            eventReq.entityType = entityType;
+            eventReq.eventCode = eventCode;
+            eventReq.isActualRequired = true;
+            eventReq.placeName = tenantName;
+            eventReq.createDuplicate = true;
+            eventDao.autoGenerateEvents(eventReq);
+    }
+
+
+
+
 //
 //    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) {
 //        ConsolidationDetailsRequest request = jsonHelper.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
@@ -1467,9 +1234,16 @@ public class EntityTransferService implements IEntityTransferService {
                 throw new ValidationException("Please validate these fields before sending consolidation: " + joinMissingField);
             }
             else {
-                Boolean sendConsolidationError = false;
-                Boolean hblGenerationError = false;
+                boolean sendConsolidationError = false;
+                boolean hblGenerationError = false;
+                List<String> shipmentIds = new ArrayList<>();
                 for (var shipment: consolidationDetails.get().getShipmentsList()) {
+                    boolean isShipmentError = false;
+                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()))
+                    {
+                        sendConsolidationError = true;
+                        isShipmentError = true;
+                    }
                     if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
                             shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                         String shipFlightNumber = null;
@@ -1508,26 +1282,34 @@ public class EntityTransferService implements IEntityTransferService {
                                 shipVoyage == null || shipFlightNumber == null || shipEta == null || shipEtd == null ||
                                 Strings.isNullOrEmpty(shipPolId) || Strings.isNullOrEmpty(shipPodId)) {
                             sendConsolidationError = true;
+                            isShipmentError = true;
                         }
                         if(hblGenerationError){
                             sendConsolidationError = true;
+                            isShipmentError = true;
                         }
+                    }
+                    if(Boolean.TRUE.equals(isShipmentError))
+                    {
+                        shipmentIds.add(shipment.getShipmentId());
                     }
                 }
 
-
                 if(sendConsolidationError){
+                    String interBranch = "";
+                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+                        interBranch = "Receiving Branch, ";
                     if(hblGenerationError){
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments and generate the Original HBL before sending consolidation");
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, " + interBranch + "Vessel & Voyage details in the attached shipments: " + String.join(", ", shipmentIds) + " and generate the Original HBL before sending consolidation");
                         } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments and generate the Original HAWB before sending consolidation");
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, " + interBranch + "Airline and Flight number details in the attached shipments: " + String.join(", ", shipmentIds) + " and generate the Original HAWB before sending consolidation");
                         }
                     } else {
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, Vessel & Voyage details in the attached shipments before sending consolidation");
+                            throw new ValidationException("Please enter the HBL, MBL, ETA, ETD, " + interBranch + "Vessel & Voyage details in the attached shipments: " + String.join(", ", shipmentIds) + " before sending consolidation");
                         } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, Airline and Flight number details in the attached shipments before sending consolidation");
+                            throw new ValidationException("Please enter the HAWB, MAWB, ETA, ETD, " + interBranch + "Airline and Flight number details in the attached shipments: " + String.join(", ", shipmentIds) + " before sending consolidation");
                         }
                     }
                 }
@@ -1625,7 +1407,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException {
         CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
         CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
                 .sendToBranch(request.getSendToBranch())
@@ -1658,7 +1440,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         catch (Exception ex) {
             log.error("Check Task exist failed to check from V1: " + ex);
-            throw new RuntimeException("Check Task exist failed to check from V1: " + ex);
+            throw new RunnerException("Check Task exist failed to check from V1: " + ex);
         }
         return ResponseHelper.buildSuccessResponse(response);
     }
@@ -1685,7 +1467,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(v1TenantResponse != null) {
             return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).toList();
         }
-        return null;
+        return Collections.emptyList();
     }
 
     private String createSendEvent(List<String> tenantNameList, Long receivingBranch, Long triangulationPartner, Long documentationPartner,
@@ -1967,6 +1749,462 @@ public class EntityTransferService implements IEntityTransferService {
                 .jobType(shipmentDetails.getJobType())
                 .orderNumber(shipmentDetails.getOrderNumber())
                 .build();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> checkEntityExists(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CheckEntityExistRequest request = (CheckEntityExistRequest) commonRequestModel.getData();
+            if (request == null || Objects.isNull(request.getEntityId()) || Objects.isNull(request.getEntityType())) {
+                log.error("Request is empty for Check entity exists with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+            }
+            boolean isPresent = false;
+            switch (request.getEntityType()) {
+                case Constants.Shipment -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                case Constants.Consolidation -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                default -> {}
+            }
+
+            return ResponseHelper.buildSuccessResponse(CheckEntityExistResponse.builder().isEntityExists(isPresent).message(isPresent ? String.format(EntityTransferConstants.TRANSFERRED_ENTITY_ALREADY_PRESENT, request.getEntityType()) : null).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    private EntityTransferConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, int index, SendConsolidationRequest sendConsolidationRequest) {
+        List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
+        Map<String, List<Integer>> shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
+        List<Integer> tenantIds = new ArrayList<>();
+        tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
+        var currentTenant = sendToBranch.get(index);
+        var tenantMap = getTenantMap(tenantIds);
+        EntityTransferConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
+        payload.setSendToBranch(currentTenant);
+        boolean reverseDirection = false;
+        if(Long.valueOf(currentTenant).equals(consolidationDetails.getReceivingBranch())) {
+            payload.setShipmentType(reverseDirection(consolidationDetails.getShipmentType()));
+            reverseDirection = true;
+        }
+
+        // Map container guid vs List<shipmentGuid>
+        Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
+        // List EntityTransferShipmentDetails
+        List<EntityTransferShipmentDetails> transferShipmentDetails = new ArrayList<>();
+        if(!consolidationDetails.getShipmentsList().isEmpty()) {
+            for(var shipment : consolidationDetails.getShipmentsList()) {
+                Long id = shipment.getId();
+                UUID guid = shipment.getGuid();
+                Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+                if(shipmentDetailsOptional.isEmpty()) {
+                    log.error("Shipment with id : {}, is not present while creating task payload", id);
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                List<String> shipAdditionalDocs = Collections.emptyList();
+                if(sendConsolidationRequest.getShipAdditionalDocs() != null && sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString()) != null) {
+                    shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString());
+                }
+                var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
+                if(reverseDirection) {
+                    entityTransferShipment.setDirection(reverseDirection(shipment.getDirection()));
+                }
+                if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
+                    entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                else
+                    entityTransferShipment.setSendToBranch(sendConsolidationRequest.getSendToBranch().get(index));
+                entityTransferShipment.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
+                entityTransferShipment.setAdditionalDocs(shipAdditionalDocs);
+                transferShipmentDetails.add(entityTransferShipment);
+
+
+                // populate container vs shipment guid map
+                var shipmentGuid = shipmentDetailsOptional.get().getGuid();
+                shipmentDetailsOptional.get().getContainersList().stream().map(Containers::getGuid).forEach(
+                        containerGuid -> {
+                            if(!containerVsShipmentGuid.containsKey(containerGuid)) {
+                                containerVsShipmentGuid.put(containerGuid, new ArrayList<>());
+                            }
+                            containerVsShipmentGuid.get(containerGuid).add(shipmentGuid);
+                        }
+                );
+            }
+        }
+        payload.setSourceBranchTenantName(tenantMap.get(consolidationDetails.getTenantId()).getTenantName());
+        payload.setShipmentsList(transferShipmentDetails);
+        payload.setContainerVsShipmentGuid(containerVsShipmentGuid);
+        payload.setAdditionalDocs(sendConsolidationRequest.getAdditionalDocs());
+
+        // packing guid vs container guid
+        Map<UUID, UUID> packsVsContainerGuid = new HashMap<>();
+        consolidationDetails.getContainersList().forEach(container ->
+            container.getPacksList().forEach(pack -> packsVsContainerGuid.put(pack.getGuid(), container.getGuid()))
+        );
+        payload.setPackingVsContainerGuid(packsVsContainerGuid);
+        // populate master data and other fields
+        payload.setMasterData(getConsolMasterData(consolidationDetails));
+
+        return payload;
+    }
+
+    private Map<String, Object> getConsolMasterData(ConsolidationDetails consolidationDetails) {
+        ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+        return consolidationService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+    }
+
+    private EntityTransferShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) {
+        EntityTransferShipmentDetails payload = jsonHelper.convertValue(shipmentDetails, EntityTransferShipmentDetails.class);
+        // populate master data and other fields
+        payload.setMasterData(getShipmentMasterData(shipmentDetails));
+
+        return payload;
+    }
+
+    private Map<String, Object> getShipmentMasterData(ShipmentDetails shipmentDetails) {
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        return shipmentService.fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+    }
+
+    private String reverseDirection(String direction) {
+        String res = direction;
+        if(Constants.DIRECTION_EXP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_IMP;
+        }
+        else if(Constants.DIRECTION_IMP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_EXP;
+        }
+        return res;
+    }
+
+    private Map<Integer, V1TenantResponse> getTenantMap(List<Integer> tenantId) {
+        var v1Map = v1ServiceUtil.getTenantDetails(tenantId);
+        return v1Map.keySet().stream().collect(
+            Collectors.toMap(Function.identity(), k -> jsonHelper.convertValue(v1Map.get(k), V1TenantResponse.class))
+        );
+    }
+
+    private void createTask(Object payload, Long entityId, String entityType, int tenantId) {
+        TaskCreateRequest taskCreateRequest = new TaskCreateRequest();
+        taskCreateRequest.setTaskJson(jsonHelper.convertToJson(payload));
+        taskCreateRequest.setEntityId(entityId.toString());
+        taskCreateRequest.setEntityType(entityType);
+        taskCreateRequest.setRoleId(StringUtility.convertToString(getShipmentConsoleImportApprovalRole(tenantId)));
+        taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
+        // can be moved as background task
+        if(Constants.Consolidations.equalsIgnoreCase(entityType))
+            taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
+        else
+            taskCreateRequest.setTaskType(TaskType.SHIPMENT_IMPORTER.getDescription());
+        tasksService.createTask(CommonRequestModel.buildRequest(taskCreateRequest));
+    }
+
+    public void testSendConsolidationEmailNotification(Long consoleId, List<Integer> destinationBranches) {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        consolidationDetails.ifPresent(details -> sendConsolidationEmailNotification(details, destinationBranches));
+    }
+
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches) {
+        List<String> requests = new ArrayList<>(List.of(CONSOLIDATION_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), CONSOLIDATION_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if(!emailList.isEmpty()) {
+                createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel);
+                try {
+                    notificationService.sendEmail(emailTemplateModel.getBody(),
+                            emailTemplateModel.getSubject(), emailList, ccEmails);
+                } catch (Exception ex) {
+                    log.error(ex.getMessage());
+                }
+            }
+        }
+    }
+
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches) {
+        List<String> requests = new ArrayList<>(List.of(SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+        List<String> ccEmails = new ArrayList<>();
+        for(Integer roleId: destinationBranches) {
+            List<String> emailList = getRoleListByRoleId(roleId);
+            if (!emailList.isEmpty()) {
+                createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), emailList, ccEmails);
+            }
+        }
+    }
+
+    public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(BL_NUMBER_PLACEHOLDER, shipmentDetails.getHouseBill());
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, shipmentDetails.getMasterBill());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
+    public void createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
+        UsersDto user = UserContext.getUser();
+
+        String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getHouseBill)
+                        .collect(Collectors.joining(","));
+
+        String shipmentNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
+                consolidationDetails.getShipmentsList().stream()
+                        .map(ShipmentDetails::getShipmentId)
+                        .map(String::valueOf)
+                        .collect(Collectors.joining(","));
+
+        // Subject
+        String subject = (template.getSubject() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+
+        // Body
+        String body = (template.getBody() == null) ?
+                Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
+        body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, "SEA".equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, shipmentNumbers);
+
+        template.setSubject(subject);
+        template.setBody(body);
+    }
+
+    public List<String> getRoleListByRoleId(Integer roleId) {
+
+        V1UsersEmailRequest request = new V1UsersEmailRequest();
+        request.setRoleId(roleId);
+        request.setTake(50);
+        List<UsersRoleListResponse> usersEmailIds = iv1Service.getUserEmailsByRoleId(request);
+        List<String> emailIds = new ArrayList<>();
+        usersEmailIds.forEach(e -> emailIds.add(e.getEmail()));
+
+        return emailIds;
+    }
+
+
+
+    public void sendGroupedEmailForShipmentImport(ConsolidationDetailsResponse consolidationDetailsResponse, List<UUID> shipmentGuids) {
+        ConsolidationDetails consolidationDetails = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
+        commonUtils.setInterBranchContextForHub();
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
+        for(UUID guid: shipmentGuids) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(guid);
+            if(shipmentDetails.isPresent()) {
+                shipmentDetailsList.add(shipmentDetails.get());
+                tenantIds.add(shipmentDetails.get().getTenantId());
+            }
+        }
+
+        for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
+            tenantShipmentMapping.computeIfAbsent(shipmentDetails.getTenantId(), shipmentDetail -> new ArrayList<>()).add(shipmentDetails);
+        }
+
+        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+//        commonUtils.getToAndCCEmailIds(tenantIds, toAndCcMailIds);
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
+        Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+
+
+        List<String> requests = new ArrayList<>(List.of(GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE));
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        EmailTemplatesRequest emailTemplateModel = null;
+        if(v1DataResponse != null) {
+            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                for (EmailTemplatesRequest emailTemplate : emailTemplatesRequests) {
+                    if(Objects.equals(emailTemplate.getType(), GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE)) {
+                        emailTemplateModel = emailTemplate;
+                    }
+                }
+            }
+        }
+        if(emailTemplateModel == null)
+            emailTemplateModel = new EmailTemplatesRequest();
+
+
+        for(Integer tenantId: tenantIds) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
+            List<String> importerEmailIds = getRoleListByRoleId(tenantId);
+            List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
+
+            List<String> toEmailIdsList = new ArrayList<>(toEmailIds);
+            importerEmailIds.addAll(toEmailIdsList);
+            List<String> ccEmailIdsList = new ArrayList<>(ccEmailIds);
+
+            if (!importerEmailIds.isEmpty()) {
+                createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails);
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), importerEmailIds, ccEmailIdsList);
+            }
+
+        }
+
+    }
+
+    public void createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails) {
+
+        // Body
+        String body = (template.getBody() == null) ?
+                DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY : template.getBody();
+        template.setBody(body);
+
+        Map<String, Object> tagDetails = new HashMap<>();
+
+        template.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));
+
+        populateTagDetails(tagDetails, consolidationDetails.getConsolidationNumber());
+
+        template.setBody(generateEmailBody(tagDetails, shipmentDetailsForTenant, template.getBody()));
+    }
+
+    public String generateSubject(List<ShipmentDetails> shipmentDetailsList, String consolidationBranch) {
+        String shipmentNumbers = shipmentDetailsList.stream()
+                .map(ShipmentDetails::getShipmentId)
+                .collect(Collectors.joining(", "));
+
+        String subjectTemplate = "Shipment/s: {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
+
+        return subjectTemplate
+                .replace("{#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails}", shipmentNumbers)
+                .replace("{GS_ConsolidationBranch}", consolidationBranch);
+    }
+
+
+    public String generateEmailBody(Map<String, Object> tagDetails, List<ShipmentDetails> shipmentDetailsList, String htmlTemplate) {
+        String tableTemplate = extractTableTemplate(htmlTemplate);
+
+        String populatedTable = populateTableWithData(tableTemplate, shipmentDetailsList);
+
+        String emailBody = replaceTagsValues(tagDetails, htmlTemplate);
+        emailBody = emailBody.replace(tableTemplate, populatedTable);
+        return emailBody;
+    }
+
+    public String extractTableTemplate(String htmlTemplate) {
+        int tableStartIndex = htmlTemplate.indexOf("<table>");
+        int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
+
+        if (tableStartIndex != -1 && tableEndIndex > tableStartIndex) {
+            return htmlTemplate.substring(tableStartIndex, tableEndIndex);
+        }
+
+        return "";
+    }
+
+
+    public String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList) {
+        Document document = Jsoup.parse(tableTemplate);
+        Element table = document.select("table").first();
+
+        assert table != null;
+        Element rowTemplate = table.select("tbody tr").get(1);
+
+        rowTemplate.remove();
+
+        String styleAttribute = "style";
+        String paddingValue = "padding: 10px;";
+
+        for (ShipmentDetails shipment : shipmentDetailsList) {
+            Element newRow = rowTemplate.clone();
+            newRow.select("td").get(0).text(shipment.getShipmentId()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(1).text(String.valueOf(shipment.getReceivingBranch())).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(2).text(shipment.getHouseBill()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(3).text(shipment.getMasterBill()).attr(styleAttribute, paddingValue);
+            newRow.select("td").get(4).text(shipment.getShipmentCreatedOn().toString()).attr(styleAttribute, paddingValue);
+
+            table.select("tbody").first().appendChild(newRow);
+        }
+
+        return table.outerHtml();
+    }
+
+    public String replaceTagsValues(Map<String, Object> tagDetails, String htmlElement) {
+        for (Map.Entry<String, Object> entry : tagDetails.entrySet()) {
+            String tagPattern = "{" + entry.getKey() + "}";
+            String value = entry.getValue() == null ? "" : entry.getValue().toString();
+            htmlElement = htmlElement.replace(tagPattern, value);
+        }
+        return htmlElement;
+    }
+
+
+    public void populateTagDetails(Map<String, Object> tagDetails, String consolidationBranch) {
+        tagDetails.put("GS_ConsolidationBranch", consolidationBranch);
     }
 
 }

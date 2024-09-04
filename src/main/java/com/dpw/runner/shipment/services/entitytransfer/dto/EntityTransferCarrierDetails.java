@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -12,25 +13,45 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferCarrierDetails implements IEntityTranferBaseEntity {
-    public String shippingLine;
-    public String vessel;
-    public String voyage;
-    public String flightNumber;
-    public String aircraftType;
-    public String aircraftRegistration;
-    public String truckRefNumber;
-    public String journeyNumber;
-    public String journeyRefNumber;
-    public String origin;
-    public String destination;
-    public String originPort;
-    public String destinationPort;
-    public LocalDateTime eta;
-    public LocalDateTime etd;
-    public LocalDateTime ata;
-    public LocalDateTime atd;
-    private Map<String, EntityTransferMasterLists> masterData;
-    private Map<String, EntityTransferUnLocations> unlocationData;
-    private Map<String, EntityTransferCarrier> carrierMasterData;
-    private Map<String, EntityTransferVessels> vesselsMasterData;
+    private String shippingLine;
+    private String vessel;
+    private String voyage;
+    private String flightNumber;
+    private String aircraftType;
+    private String aircraftRegistration;
+    private String truckRefNumber;
+    private String journeyNumber;
+    private String journeyRefNumber;
+    private String origin;
+    private String destination;
+    @ExcludeTimeZone
+    private LocalDateTime eta;
+    @ExcludeTimeZone
+    private LocalDateTime etd;
+    @ExcludeTimeZone
+    private LocalDateTime ata;
+    @ExcludeTimeZone
+    private LocalDateTime atd;
+    private String originPort;
+    private String destinationPort;
+    private String originPortName;
+    private String destinationPortName;
+    private String cfs;
+    private LocalDateTime vesselBerthingDate;
+    private String voyageOrFlightNumber;
+    private String carrierCountry;
+    private String minTransitHours;
+    private String maxTransitHours;
+    private Boolean carrierAddedFromNpm;
+    private Boolean isCarrierChanged;
+    private String originLocCode;
+    private String destinationLocCode;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
+
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
+    private Map<String, String> carrierMasterData;
+    private Map<String, String> vesselsMasterData;
+
 }

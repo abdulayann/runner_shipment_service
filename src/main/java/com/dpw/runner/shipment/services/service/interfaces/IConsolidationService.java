@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -11,6 +13,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
@@ -21,6 +24,7 @@ public interface IConsolidationService extends ICommonService{
     CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> completeRetrieveById(CommonRequestModel commonRequestModel) throws ExecutionException, InterruptedException;
     ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
+    ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException;
@@ -57,6 +61,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> assignPacksAndShipments(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> detachPacksAndShipments(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
+    Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse);
     ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
@@ -65,6 +70,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException;
     ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel);
+    ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationDetailsRequest request);
     ResponseEntity<IRunnerResponse> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException;

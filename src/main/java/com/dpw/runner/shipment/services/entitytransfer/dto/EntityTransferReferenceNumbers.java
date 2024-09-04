@@ -11,8 +11,8 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferReferenceNumbers implements IEntityTranferBaseEntity {
-    public String countryOfIssue;
-    public String type;
-    public String referenceNumber;
+    private String countryOfIssue;
+    private String type;
+    private String referenceNumber;
     private Map<String, EntityTransferMasterLists> masterData;
 }

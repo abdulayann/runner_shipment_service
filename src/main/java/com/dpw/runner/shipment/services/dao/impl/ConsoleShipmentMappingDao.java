@@ -66,6 +66,10 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     public ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping) {
         return consoleShipmentsMappingRepository.save(consoleShipmentMapping);
     }
+    @Override
+    public List<ConsoleShipmentMapping> saveAll(List<ConsoleShipmentMapping> consoleShipmentMappingList) {
+        return consoleShipmentsMappingRepository.saveAll(consoleShipmentMappingList);
+    }
 
     private void delete(ConsoleShipmentMapping consoleShipmentMapping) {
         consoleShipmentsMappingRepository.delete(consoleShipmentMapping);

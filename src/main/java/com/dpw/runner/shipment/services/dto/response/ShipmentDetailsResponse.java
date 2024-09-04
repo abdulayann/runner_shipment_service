@@ -208,4 +208,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;
     private FileStatus fileStatus;
+    private Boolean isReceivingBranchAdded;
 }

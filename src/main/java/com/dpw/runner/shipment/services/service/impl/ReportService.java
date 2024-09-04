@@ -54,10 +54,7 @@ import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.PrintType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -831,8 +828,12 @@ public class ReportService implements IReportService {
             if (Objects.isNull(templateId)) return null;
             DocumentRequest documentRequest = new DocumentRequest();
             documentRequest.setData(json);
-            return documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId).getBody();
+            log.info("RequestId: {} | Event: {} | Template: {} | Request: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(documentRequest));
+            var response = documentService.downloadDocumentTemplate(jsonHelper.convertToJson(documentRequest), templateId);
+            log.info("RequestId: {} | Event: {} | Template: {} | Response: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, jsonHelper.convertToJson(response));
+            return response.getBody();
         } catch (Exception e) {
+            log.error("RequestId: {} | Event: {} Error | Template: {} | Error: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.DOCUMENT_SERVICE, templateId, e.getMessage());
             log.error(e.getMessage());
             return null;
         }

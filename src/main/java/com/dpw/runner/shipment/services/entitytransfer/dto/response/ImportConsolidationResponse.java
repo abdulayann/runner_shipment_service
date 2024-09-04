@@ -10,4 +10,5 @@ import lombok.*;
 @AllArgsConstructor
 public class ImportConsolidationResponse implements IRunnerResponse {
     String consolidationNumber;
+    String message;
 }
