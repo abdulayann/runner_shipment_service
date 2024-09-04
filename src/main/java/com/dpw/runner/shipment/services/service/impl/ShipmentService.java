@@ -30,8 +30,6 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
@@ -64,7 +62,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -150,8 +147,6 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -5661,11 +5656,11 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
             .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
 
-        sendRequestedUserDGEmail(request, shipmentDetails);
-        //TODO : Pick approver details from auditTable
+        sendEmailResponseToDGRequester(request, shipmentDetails);
+
         shipmentDao.save(shipmentDetails, false);
 
-        return ResponseEntity.ok().build();
+        return ResponseHelper.buildSuccessResponse();
     }
     private boolean checkForClass1(ShipmentDetails shipmentDetails){
         List<Containers> containersList = shipmentDetails.getContainersList();
@@ -5690,40 +5685,30 @@ public class ShipmentService implements IShipmentService {
         return false;
     }
 
-    private void sendRequestedUserDGEmail(OceanDGRequest request, ShipmentDetails shipmentDetails)
-        throws RunnerException {
-        OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
-        OceanDGStatus templateStatus = null;
+    private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
+        OceanDGStatus currentStatus = shipmentDetails.getOceanDGStatus();
 
-        if(oceanDGStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == ApprovalStatus.APPROVE){
-                templateStatus = OCEAN_DG_COMMERCIAL_ACCEPTED;
-            }else{
-                templateStatus = OCEAN_DG_COMMERCIAL_REJECTED;
-            }
-        }else if(oceanDGStatus == OceanDGStatus.OCEAN_DG_REQUESTED){
-            if(request.getStatus() == ApprovalStatus.APPROVE){
-                templateStatus = OCEAN_DG_ACCEPTED;
-            }else{
-                templateStatus = OCEAN_DG_REJECTED;
-            }
-        }
+        OceanDGStatus newStatus = emailTemplateForDGResponse(currentStatus, request.getStatus());
 
-        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
-        CompletableFuture.allOf(emailTemplateFuture).join();
+        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new EnumMap<>(OceanDGStatus.class);
+        CompletableFuture<Void> emailTemplateFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplates)),
+            executorService
+        );
+        emailTemplateFuture.join();
 
         try {
-            commonUtils.sendRequestedUserDGEmail(emailTemplatesRequestMap, request, templateStatus, shipmentDetails);
+            commonUtils.sendEmailResponseToDGRequester(emailTemplates, request, newStatus, shipmentDetails);
         } catch (Exception e) {
-            log.error(ERROR_WHILE_SENDING_EMAIL);
+            log.error(ERROR_WHILE_SENDING_EMAIL, e);
         }
-        shipmentDetails.setOceanDGStatus(templateStatus);
 
+        shipmentDetails.setOceanDGStatus(newStatus);
     }
+
     private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks){
         OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
-        OceanDGStatus templateStatus = determineEmailTemplate(oceanDGStatus);
+        OceanDGStatus templateStatus = emailTemplateForDGApproval(oceanDGStatus);
 
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
         List<String> toUserEmails = new ArrayList<>();
@@ -5751,7 +5736,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private OceanDGStatus determineEmailTemplate(OceanDGStatus currentStatus) {
+    private OceanDGStatus emailTemplateForDGApproval(OceanDGStatus currentStatus) {
         if (currentStatus == null || currentStatus == OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED) {
             return OceanDGStatus.OCEAN_DG_REQUESTED;
         } else if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) {
@@ -5759,6 +5744,19 @@ public class ShipmentService implements IShipmentService {
         } else {
             return null;
         }
+    }
+
+    private OceanDGStatus emailTemplateForDGResponse(OceanDGStatus currentStatus, ApprovalStatus approvalStatus) {
+        if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED) {
+            return approvalStatus == ApprovalStatus.APPROVE ?
+                OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED :
+                OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
+        } else if (currentStatus == OceanDGStatus.OCEAN_DG_REQUESTED) {
+            return approvalStatus == ApprovalStatus.APPROVE ?
+                OceanDGStatus.OCEAN_DG_ACCEPTED :
+                OceanDGStatus.OCEAN_DG_REJECTED;
+        }
+        return currentStatus;  // return the current status if no change is needed
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
@@ -5918,7 +5916,7 @@ public class ShipmentService implements IShipmentService {
             .orElseThrow(() -> new RunnerException("No template is present"));
 
         if (CollectionUtils.isEmpty(toEmailIds)) {
-            throw new RunnerException("No user is present to approve the request");
+            throw new RunnerException("There are no DG certified users for your branch. Please contact admin");
         }
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -5947,12 +5945,13 @@ public class ShipmentService implements IShipmentService {
         Element rowTemplate = table.select("tbody tr").get(1);
 
         rowTemplate.remove();
+        //TODO : ContainerIdvsContainerNumberMap
 
         for (Packing packing : shipmentDetails.getPackingList()) {
             if(!packing.getHazardous()) continue;
 
             Element newRow = rowTemplate.clone();
-            newRow.select("td").get(0).text(packing.getInnerPacksCount() + " " + packing.getPacksType()).attr("style", "padding: 10px;");
+            newRow.select("td").get(0).text(packing.getPacks() + " " + packing.getPacksType()).attr("style", "padding: 10px;");
         //    newRow.select("td").get(1).text(String.valueOf(packing.getCon)).attr("style", "padding: 10px;"); TODO : ContainerNumber --> Packing ??
             newRow.select("td").get(2).text(packing.getDGClass()).attr("style", "padding: 10px;");
             newRow.select("td").get(3).text(packing.getUnNumber()).attr("style", "padding: 10px;");

@@ -30,12 +30,8 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -95,7 +91,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.MasterDataConstants.ITEM_TYPE;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
@@ -702,25 +697,18 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendRequestedUserDGEmail(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap,
-        OceanDGRequest request, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails) throws RunnerException {
-        if(!emailTemplatesRequestMap.containsKey(templateStatus)){
-            throw new RunnerException("No template is present");
-        }
-        EmailTemplatesRequest emailTemplatesRequest = emailTemplatesRequestMap.get(templateStatus);
+    public void sendEmailResponseToDGRequester(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates,
+        OceanDGRequest request, OceanDGStatus status, ShipmentDetails shipmentDetails) throws RunnerException {
+        EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(status))
+            .orElseThrow(() -> new RunnerException("No template is present for status: " + status));
+
         Map<String, Object> dictionary = new HashMap<>();
-        List<String> toEmailIds = new ArrayList<>();
-        toEmailIds.add(request.getRequesterUserEmailId());
+        List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
 
         populateDGReceiverDictionary(dictionary,request , shipmentDetails);
 
-        notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
-            emailTemplatesRequest.getSubject(), new ArrayList<>(toEmailIds), null);
-    }
-
-    private void populateDGReceiverDictionary(Map<String, Object> dictionary, OceanDGRequest request,
-        ShipmentDetails shipmentDetails){
-
+        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
+            template.getSubject(), new ArrayList<>(recipientEmails), null);
     }
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
         Set<String> toEmailIds = new HashSet<>();
@@ -1389,6 +1377,16 @@ public class CommonUtils {
         dictionary.put(USER_NAME, UserContext.getUser().getUsername());
         dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now());
         dictionary.put(REQUESTER_REMARKS, remarks);
+    }
+
+    private void populateDGReceiverDictionary(Map<String, Object> dictionary, OceanDGRequest request,
+        ShipmentDetails shipmentDetails){
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(APPROVED_TIME, LocalDateTime.now());
+
     }
 
 }
