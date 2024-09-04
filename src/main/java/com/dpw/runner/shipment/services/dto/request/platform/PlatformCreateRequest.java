@@ -45,9 +45,9 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private String vesselName;
     private String voyage;
     private LocalDateTime eta;
-    private LocalDateTime etd;
+    private LocalDateTime ets;
     private LocalDateTime ata;
-    private LocalDateTime atd;
+    private LocalDateTime ats;
     @JsonProperty(value = "transport_mode")
     private String transportMode;
     @JsonProperty(value = "shipment_movement")

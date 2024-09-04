@@ -24,7 +24,6 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.IntegrationResponse;
@@ -38,6 +37,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -432,13 +432,30 @@ public class BookingIntegrationsUtility {
     private RouteRequest createRoute(ShipmentDetails shipmentDetails) {
         List<RouteLegRequest> legRequestList = new ArrayList<>();
         List<Routings> routingsList = shipmentDetails.getRoutingsList();
-
+        if(routingsList == null || routingsList.isEmpty())
+            return RouteRequest.builder().legs(legRequestList).build();
+        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.fetchInBulkVessels(routingsList.stream().map(Routings::getVesselName).filter(Objects::nonNull).toList());
+        Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.fetchInBulkCarriers(routingsList.stream().map(Routings::getCarrier).filter(Objects::nonNull).toList());
         for (int counter = 0; counter < routingsList.size(); counter++) {
+            var vessel = entityTransferVesselsMap.get(routingsList.get(counter).getVesselName());
+            var carrier = entityTransferCarrierMap.get(routingsList.get(counter).getCarrier());
             legRequestList.add(RouteLegRequest.builder()
                     .destination_code(routingsList.get(counter).getPod())
                     .origin_code(routingsList.get(counter).getPol())
                     .order(String.valueOf(routingsList.get(counter).getLeg()))
                     .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : shipmentDetails.getTransportMode())
+                    .voyage_number(routingsList.get(counter).getVoyage())
+                    .flight_number(routingsList.get(counter).getFlightNumber())
+                    .eta(routingsList.get(counter).getEta())
+                    .ets(routingsList.get(counter).getEtd())
+                    .ata(routingsList.get(counter).getAta())
+                    .ats(routingsList.get(counter).getAtd())
+                    .carrier_scac_code(!Objects.isNull(carrier) ? carrier.getIdentifier1() : null)
+                    .airline_prefix(!Objects.isNull(carrier) ? carrier.getAirlineCode() : null)
+                    .airline_iata_code(!Objects.isNull(carrier) ? carrier.getIATACode() : null)
+                    .vessel_name(!Objects.isNull(vessel) ? vessel.getName() : null)
+                    .vessel_imo(!Objects.isNull(vessel) ? vessel.getImo() : null)
+                    .vessel_mmsi(!Objects.isNull(vessel) ? vessel.getMmsi() : null)
                     .build());
         }
 
@@ -506,7 +523,7 @@ public class BookingIntegrationsUtility {
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .pickup_date(null)
                 .eta(carrierDetails.getEta())
-                .etd(carrierDetails.getEtd())
+                .ets(carrierDetails.getEtd())
                 .charges(createCharges(customerBooking))
                 .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
                 .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
@@ -537,9 +554,9 @@ public class BookingIntegrationsUtility {
                 .status(mapBookingStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())))
                 .pickup_date(null)
                 .eta(carrierDetails.getEta())
-                .etd(carrierDetails.getEtd())
+                .ets(carrierDetails.getEtd())
                 .ata(carrierDetails.getAta())
-                .atd(carrierDetails.getAtd())
+                .ats(carrierDetails.getAtd())
                 .contractId(shipmentDetails.getContractId())
                 .parentContractId(shipmentDetails.getParentContractId())
                 .voyage(StringUtility.getNullIfEmpty(carrierDetails.getVoyage()))

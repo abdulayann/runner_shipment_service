@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
-import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,9 +31,9 @@ public class PlatformUpdateRequest extends CommonRequest implements IRunnerReque
     private String status;
     private String pickup_date;
     private LocalDateTime eta;
-    private LocalDateTime etd;
+    private LocalDateTime ets;
     private LocalDateTime ata;
-    private LocalDateTime atd;
+    private LocalDateTime ats;
     private MotherVesselDetailsRequest mother_vessel_details;
     private InvoiceDetailsDTO invoice_details;
     private ESIDetailsDTO eSI_details;
