@@ -4259,11 +4259,10 @@ public class ConsolidationService implements IConsolidationService {
         Events response = null;
         response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
 
-        if(response != null) {
-            if (consolidationDetails.getEventsList() == null)
-                consolidationDetails.setEventsList(new ArrayList<>());
-            consolidationDetails.getEventsList().add(response);
+        if (consolidationDetails.getEventsList() == null) {
+            consolidationDetails.setEventsList(new ArrayList<>());
         }
+        consolidationDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {

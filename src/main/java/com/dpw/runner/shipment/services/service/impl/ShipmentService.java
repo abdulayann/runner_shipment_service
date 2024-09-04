@@ -2343,7 +2343,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue) {
-        return newValue != null && !newValue.equals(oldValue) && newValue;
+        return Boolean.TRUE.equals(newValue) && !Boolean.TRUE.equals(oldValue);
     }
 
     private void handleEventUpdate(Events event) {
@@ -3331,10 +3331,12 @@ public class ShipmentService implements IShipmentService {
             newShipmentDetails.setId(oldShipmentDetails.get().getId());
             List<Containers> updatedContainers = null;
             Long consolidationId = null;
-            if(newShipmentDetails.getConsolidationList() != null && newShipmentDetails.getConsolidationList().size() > 0)
+            if (ObjectUtils.isNotEmpty(newShipmentDetails.getConsolidationList())) {
                 consolidationId = newShipmentDetails.getConsolidationList().get(0).getId();
+            }
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id, false);
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id,
+                        false);
             } else {
                 updatedContainers = oldShipmentDetails.get().getContainersList();
             }
@@ -4824,27 +4826,14 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void handleEventBOCO(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails) {
-        if (oldShipmentDetails != null) {
-            String oldBookingNumber = oldShipmentDetails.getBookingNumber();
-            String newBookingNumber = shipmentDetails.getBookingNumber();
-
-            // Check if either booking number is null or if they differ (ignoring case)
-            if (!Objects.equals(oldBookingNumber, newBookingNumber)) {
-                createAutomatedEvents(shipmentDetails, EventConstants.BOCO);
-            }
-        }
-    }
-
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
         response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR);
 
-        if(response != null) {
-            if (shipmentDetails.getEventsList() == null)
-                shipmentDetails.setEventsList(new ArrayList<>());
-            shipmentDetails.getEventsList().add(response);
+        if (shipmentDetails.getEventsList() == null) {
+            shipmentDetails.setEventsList(new ArrayList<>());
         }
+        shipmentDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {

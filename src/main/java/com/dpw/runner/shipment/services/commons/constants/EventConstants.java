@@ -67,19 +67,17 @@ public class EventConstants {
     public static final String SHPCMPLT = "SHPCMPLT";
     public static final String CONCRTD = "CONCRTD";
     public static final String SHPCRTD = "SHPCRTD";
-    public static final String VESSELDEPARTUREWITHCONTAINER = "vesselDepartureWithContainer";
     public static final String VESSEL_DEPARTURE = "Vessel Departure";
     public static final String VESSEL_DEPARTURE_FROM_POL = "Vessel Departure from POL";
-    public static final String VESSELARRIVALWITHCONTAINER = "vesselArrivalWithContainer";
+    public static final String VESSEL_ARRIVAL_WITH_CONTAINER = "vesselArrivalWithContainer";
     public static final String VESSEL_DEPARTURE_FROM_TS_PORT = "Vessel Departure from T/S Port";
     public static final String VESSEL_ARRIVAL = "Vessel Arrival";
     public static final String VESSEL_ARRIVAL_AT_TS_PORT = "Vessel Arrival at T/S Port";
     public static final String VESSEL_ARRIVAL_AT_POD = "Vessel Arrival at POD";
-    public static final String GateInWithContainerEmpty = "gateInWithContainerEmpty";
-    public static final String GateInWithContainerFull = "gateInWithContainerFull";
-    public static final String VesselDepartureWithContainer = "vesselDepartureWithContainer";
-    public static final String VesselArrivalWithContainer = "vesselArrivalWithContainer";
-    public static final String GateOutWithContainerFull = "gateOutWithContainerFull";
+    public static final String GATE_IN_WITH_CONTAINER_EMPTY = "gateInWithContainerEmpty";
+    public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
+    public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
+    public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
 
     public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
 }

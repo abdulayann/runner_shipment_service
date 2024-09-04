@@ -162,14 +162,14 @@ public class RoutingsService implements IRoutingsService {
     }
 
     private boolean isVesselDepartureEvent(String eventType, String description, String descriptionFromSource) {
-        return EventConstants.VESSELDEPARTUREWITHCONTAINER.equalsIgnoreCase(eventType)
+        return EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(eventType)
                 && EventConstants.VESSEL_DEPARTURE.equalsIgnoreCase(description)
                 && (EventConstants.VESSEL_DEPARTURE_FROM_POL.equalsIgnoreCase(descriptionFromSource)
                 || EventConstants.VESSEL_DEPARTURE_FROM_TS_PORT.equalsIgnoreCase(descriptionFromSource));
     }
 
     private boolean isVesselArrivalEvent(String eventType, String description, String descriptionFromSource) {
-        return EventConstants.VESSELARRIVALWITHCONTAINER.equalsIgnoreCase(eventType)
+        return EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(eventType)
                 && EventConstants.VESSEL_ARRIVAL.equalsIgnoreCase(description)
                 && (EventConstants.VESSEL_ARRIVAL_AT_TS_PORT.equalsIgnoreCase(descriptionFromSource)
                 || EventConstants.VESSEL_ARRIVAL_AT_POD.equalsIgnoreCase(descriptionFromSource));

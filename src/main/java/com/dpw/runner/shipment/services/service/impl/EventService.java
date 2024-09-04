@@ -491,21 +491,21 @@ public class EventService implements IEventService {
     }
 
     private boolean isGateInWithContainerEmpty(String entityType, String locationRole, String shipmentType) {
-        return EventConstants.GateInWithContainerEmpty.equalsIgnoreCase(safeString(entityType))
+        return EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeString(entityType))
                 && (safeString(locationRole).startsWith("origin") || safeString(locationRole).startsWith("destination"))
                 && isFclShipment(shipmentType);
     }
 
     private boolean isGateInWithContainerFull(String entityType, String locationRole, String shipmentType) {
-        return EventConstants.GateInWithContainerFull.equalsIgnoreCase(safeString(entityType))
+        return EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeString(entityType))
                 && "originPort".equalsIgnoreCase(safeString(locationRole))
                 && isFclShipment(shipmentType);
     }
 
     private boolean isVesselDepartureOrArrival(String entityType, String locationRole, String shipmentType, String transportMode) {
-        boolean isDeparture = EventConstants.VesselDepartureWithContainer.equalsIgnoreCase(safeString(entityType))
+        boolean isDeparture = EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeString(entityType))
                 && "originPort".equalsIgnoreCase(safeString(locationRole));
-        boolean isArrival = EventConstants.VesselArrivalWithContainer.equalsIgnoreCase(safeString(entityType))
+        boolean isArrival = EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeString(entityType))
                 && "destinationPort".equalsIgnoreCase(safeString(locationRole));
 
         return (isDeparture || isArrival) &&
@@ -513,7 +513,7 @@ public class EventService implements IEventService {
     }
 
     private boolean isGateOutWithContainerFull(String entityType, String locationRole, String shipmentType) {
-        return EventConstants.GateOutWithContainerFull.equalsIgnoreCase(safeString(entityType))
+        return EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeString(entityType))
                 && "destinationPort".equalsIgnoreCase(safeString(locationRole))
                 && isFclShipment(shipmentType);
     }
@@ -579,7 +579,7 @@ public class EventService implements IEventService {
 
     @Override
     public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
-        if (events != null && events.size() > 0) {
+        if (ObjectUtils.isNotEmpty(events)) {
             Events lastEvent = events.get(events.size() - 1);
             if (tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
                 if (lastEvent.getActual() != null) {

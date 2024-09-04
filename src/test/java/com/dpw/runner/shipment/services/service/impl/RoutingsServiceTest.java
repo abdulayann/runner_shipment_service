@@ -82,7 +82,7 @@ class RoutingsServiceTest extends CommonMocks {
 
         event = new Event();
         event.setLocation(1);
-        event.setEventType(EventConstants.VESSELDEPARTUREWITHCONTAINER);
+        event.setEventType(EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER);
         event.setDescription(EventConstants.VESSEL_DEPARTURE);
         event.setDescriptionFromSource(EventConstants.VESSEL_DEPARTURE_FROM_POL);
         event.setProjectedEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
@@ -90,7 +90,7 @@ class RoutingsServiceTest extends CommonMocks {
 
         event2 = new Event();
         event2.setLocation(2);
-        event2.setEventType(EventConstants.VESSELARRIVALWITHCONTAINER);
+        event2.setEventType(EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER);
         event2.setDescription(EventConstants.VESSEL_ARRIVAL);
         event2.setDescriptionFromSource(EventConstants.VESSEL_ARRIVAL_AT_POD);
         event2.setProjectedEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
