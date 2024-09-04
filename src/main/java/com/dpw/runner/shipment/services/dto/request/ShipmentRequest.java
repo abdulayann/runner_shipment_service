@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -168,6 +165,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private String department;
+    private OceanDGStatus oceanDGStatus;
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
