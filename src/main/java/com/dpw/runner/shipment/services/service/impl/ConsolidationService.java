@@ -3318,7 +3318,7 @@ public class ConsolidationService implements IConsolidationService {
         return true;
     }
 
-    private void dgOceanFlowsAndValidations(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Map<Long, ShipmentDetails> dgStatusChangeInShipments) {
+    private void dgOceanFlowsAndValidations(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
         if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()))
         {
             List<Containers> containersList = consolidationDetails.getContainersList();
@@ -3349,7 +3349,8 @@ public class ConsolidationService implements IConsolidationService {
                                             valueChanged = true;
                                             shipmentDetails1.setContainsHazardous(true);
                                         }
-                                        valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
+                                        if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
+                                            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
                                         if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
                                             shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
                                             valueChanged = true;

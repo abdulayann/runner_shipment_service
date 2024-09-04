@@ -1059,15 +1059,6 @@ public class ShipmentService implements IShipmentService {
         return false;
     }
 
-    private boolean checkIfAnyDGClass(String dgClass) throws RunnerException {
-        if(!IsStringNullOrEmpty(dgClass)) {
-            if(dgClass.charAt(0) == '7')
-                throw new RunnerException("As per the DG SOP, you are not allowed to deal in Class 7 DG shipments");
-            return true;
-        }
-        return false;
-    }
-
     private void changeDGStatusFromPacks(List<PackingRequest> packingList, Set<Long> dgConts, AtomicBoolean dgApprovalReqd, ShipmentDetails shipmentDetails,
                                          ShipmentDetails oldEntity, AtomicBoolean dgClass1Exists, Set<Long> newPackAttachedInConts) throws RunnerException {
         Map<Long, Packing> oldPacksMap = new HashMap<>();
@@ -1077,10 +1068,10 @@ public class ShipmentService implements IShipmentService {
             Packing oldPacking = null;
             if(Boolean.TRUE.equals(pack.getHazardous())) {
                 dgConts.add(pack.getContainerId());
-                if(checkIfAnyDGClass(pack.getDGClass()))
+                if(commonUtils.checkIfAnyDGClass(pack.getDGClass()))
                     dgApprovalReqd.set(true);
                 if(!Objects.isNull(oldEntity) &&
-                        (shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_ACCEPTED) || shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED))) {
+                        (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))) {
                     if(pack.getId() == null)
                         commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
@@ -1106,7 +1097,7 @@ public class ShipmentService implements IShipmentService {
 
     private void changeDGStatusFromContainers(List<ContainerRequest> containersList, Set<Long> dgConts, AtomicBoolean dgApprovalReqd,
                                               ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, AtomicBoolean dgClass1Exists,
-                                              Set<Long> newPackAttachedInConts) {
+                                              Set<Long> newPackAttachedInConts) throws RunnerException {
         Map<Long, Containers> oldContainersMap = new HashMap<>();
         if(!Objects.isNull(oldEntity))
             oldContainersMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
@@ -1114,11 +1105,11 @@ public class ShipmentService implements IShipmentService {
             Containers oldContainer = null;
             if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
                 container.setHazardous(true);
-            if(!IsStringNullOrEmpty(container.getDgClass()))
+            if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
                 dgApprovalReqd.set(true);
             if(Boolean.TRUE.equals(container.getHazardous())) {
                 if(!Objects.isNull(oldEntity) &&
-                        (shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_ACCEPTED) || shipmentDetails.getOceanDGStatus().equals(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED))) {
+                        (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))) {
                     if(container.getId() == null)
                         commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                 }
