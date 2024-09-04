@@ -941,4 +941,40 @@ class AWBLabelReportTest extends CommonMocks {
         assertEquals(newRemarks, awbLabelReport.getRemarks());
     }
 
+    @Test
+    void testGetConsolGrossWeightAndUnit_WhenConsolidationDetailsIsPresent() throws RunnerException {
+        // Arrange
+        Long consoleId = 123L;
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setTotalPacksWeight("500KG");
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(packSummaryResponse);
+
+        // Act
+        String result = awbLabelReport.getConsolGrossWeightAndUnit(consoleId);
+
+        // Assert
+        assertEquals("500KG", result);
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(packingService).calculatePackSummary(any(), any(), any(), any());
+    }
+
+    @Test
+    void testGetConsolGrossWeightAndUnit_WhenConsolidationDetailsIsNotPresent() throws RunnerException {
+        // Arrange
+        Long consoleId = 123L;
+
+        when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.empty());
+
+        // Act
+        String result = awbLabelReport.getConsolGrossWeightAndUnit(consoleId);
+
+        // Assert
+        assertNull(result);  // Assuming the response is null when not present
+        verify(consolidationDetailsDao).findById(consoleId);
+        verify(packingService, never()).calculatePackSummary(any(), any(), any(), any());
+    }
+
 }
