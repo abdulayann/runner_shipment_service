@@ -205,7 +205,9 @@ public class EntityTransferService implements IEntityTransferService {
 
         emailFuture.join();
 
-        SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds).build();
+        SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
+                .message(String.format("Shipment Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
+                .build();
         return ResponseHelper.buildSuccessResponse(sendShipmentResponse);
     }
 
@@ -316,7 +318,9 @@ public class EntityTransferService implements IEntityTransferService {
 
         emailFuture.join();
 
-        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
+        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
+                .message(String.format("Consolidation Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
+            .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
 
     }
@@ -327,19 +331,28 @@ public class EntityTransferService implements IEntityTransferService {
             commonUtils.setInterBranchContextForHub();
             Set<Integer> uniqueTenants = new HashSet<>(sendConsolidationRequest.getSendToBranch());
             var tenantSettingsMap = v1ServiceUtil.getTenantSettingsMap(uniqueTenants.stream().toList());
-            List<Integer> shipmentTenantId = consol.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList();
             List<Integer> errorTenants = new ArrayList<>();
 
-            for(var tenantSet : tenantSettingsMap.entrySet()) {
-                var tenant = tenantSet.getKey();
-                var tenantSetting = tenantSettingsMap.get(tenant);
-                if(tenantSetting.getColoadingBranchIds() != null && !tenantSetting.getColoadingBranchIds().containsAll(shipmentTenantId)) {
-                    errorTenants.add(tenant);
+            for (int i = 0; i < sendConsolidationRequest.getSendToBranch().size(); i++) {
+                var consoleReceivingBranch = sendConsolidationRequest.getSendToBranch().get(i);
+                var tenantSettings = tenantSettingsMap.get(consoleReceivingBranch);
+                if (Objects.isNull(tenantSettings)) {
+                    errorTenants.add(consoleReceivingBranch);
+                }
+                else {
+                    for (var set : sendConsolidationRequest.getShipmentGuidSendToBranch().entrySet()) {
+                        var list = set.getValue();
+
+                        if (!Objects.equals(consoleReceivingBranch, list.get(i)) &&
+                                (!Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled()) || Objects.isNull(tenantSettings.getColoadingBranchIds()) || !tenantSettings.getColoadingBranchIds().contains(list.get(i))) ) {
+                            errorTenants.add(consoleReceivingBranch);
+                        }
+                    }
                 }
             }
 
             if(!errorTenants.isEmpty()) {
-                throw new ValidationException(String.format("Destination branches %s not having co-loading branch ids", errorTenants));
+                throw new ValidationException(String.format("Destination branches %s not having co-loading branch relation!!", String.join(", ", getTenantName(errorTenants))));
             }
         }
     }
