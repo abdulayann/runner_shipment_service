@@ -3055,7 +3055,7 @@ public class ShipmentService implements IShipmentService {
             else {
                 containersMap = containers.getContent().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
             }
-            shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds());
+            shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds(), shipmentDetails.getGuid().toString());
             makeShipmentsDG(containersMap, shipmentDetails);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -3155,7 +3155,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             if(!Objects.isNull(containerIds) && !containerIds.isEmpty()) {
-                shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds);
+                shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
             return ResponseHelper.buildSuccessResponse();
