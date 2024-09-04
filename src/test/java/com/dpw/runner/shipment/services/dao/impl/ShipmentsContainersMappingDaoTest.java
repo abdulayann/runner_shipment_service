@@ -29,6 +29,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -122,7 +123,7 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByShipmentId(shipmentsContainersMapping.getShipmentId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId())));
+        assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId()), UUID.randomUUID().toString()));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
 
@@ -137,7 +138,7 @@ class ShipmentsContainersMappingDaoTest {
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByShipmentId(shipmentsContainersMapping.getShipmentId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
         when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
-        assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId())));
+        assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId()), UUID.randomUUID().toString()));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
 
