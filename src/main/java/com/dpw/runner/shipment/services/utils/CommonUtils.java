@@ -1140,6 +1140,15 @@ public class CommonUtils {
         return false;
     }
 
+    public boolean checkIfAnyDGClass(String dgClass) throws RunnerException {
+        if(!IsStringNullOrEmpty(dgClass)) {
+            if(dgClass.charAt(0) == '7')
+                throw new RunnerException("As per the DG SOP, you are not allowed to deal in Class 7 DG shipments");
+            return true;
+        }
+        return false;
+    }
+
     public boolean checkIfDGFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
         if(!Objects.equals(newContainer.getHazardous(), oldContainer.getHazardous()))
             return true;
