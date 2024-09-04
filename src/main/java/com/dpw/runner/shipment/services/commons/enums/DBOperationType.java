@@ -4,5 +4,11 @@ public enum DBOperationType {
     CREATE,
     UPDATE,
     DELETE,
-    LOG
+    LOG,
+    DG_REQUEST,
+    DG_APPROVE,
+    DG_REJECT,
+    COMMERCIAL_REQUEST,
+    COMMERCIAL_APPROVE,
+    COMMERCIAL_REJECT
 }

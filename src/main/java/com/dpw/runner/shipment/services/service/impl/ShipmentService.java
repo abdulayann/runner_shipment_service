@@ -6097,11 +6097,27 @@ public class ShipmentService implements IShipmentService {
             sendEmailForApproval(shipmentDetails, remarks);
         }
 
-        //TODO : AUDIT Details + ApproverName
-        OceanDGStatus dgStatus = checkForClass1(shipmentDetails)
-            ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED
-            : OceanDGStatus.OCEAN_DG_REQUESTED;
+        OceanDGStatus dgStatus = checkForClass1(shipmentDetails) ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OceanDGStatus.OCEAN_DG_REQUESTED;
         shipmentDetails.setOceanDGStatus(dgStatus);
+
+        DBOperationType operationType = dgStatus == OceanDGStatus.OCEAN_DG_REQUESTED ? DBOperationType.DG_REQUEST : DBOperationType.COMMERCIAL_REQUEST;
+        try {
+            auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                    .newData(OceanDGRequestLog.builder()
+                        .time(LocalDateTime.now())
+                        .userName(UserContext.getUser().DisplayName)
+                        .build())
+                    .prevData(null)
+                    .parent(ShipmentDetails.class.getSimpleName())
+                    .parentId(shipmentDetails.getId())
+                    .entityType(OceanDGRequestLog.class.getSimpleName())
+                    .operation(operationType.name()).build()
+            );
+
+        }catch (Exception ex){
+            log.error(ex.getMessage());
+        }
 
         shipmentDao.save(shipmentDetails, false);
 
@@ -6121,32 +6137,59 @@ public class ShipmentService implements IShipmentService {
 
         sendEmailResponseToDGRequester(request, shipmentDetails);
 
+        DBOperationType operationType = null;
+        if(shipmentDetails.getOceanDGStatus() == OceanDGStatus.OCEAN_DG_REQUESTED){
+             if(request.getStatus() == ApprovalStatus.APPROVE){
+                 operationType = DBOperationType.DG_APPROVE;
+             }else{
+                 operationType = DBOperationType.DG_REJECT;
+             }
+        }else if(shipmentDetails.getOceanDGStatus() == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED){
+            if(request.getStatus() == ApprovalStatus.APPROVE){
+                operationType = DBOperationType.COMMERCIAL_APPROVE;
+            }else{
+                operationType = DBOperationType.COMMERCIAL_REJECT;
+            }
+        }
+
+        try {
+            auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                .newData(OceanDGRequestLog.builder()
+                    .time(LocalDateTime.now())
+                    .userName(UserContext.getUser().DisplayName)
+                    .build())
+                .prevData(null)
+                .parent(ShipmentDetails.class.getSimpleName())
+                .parentId(shipmentDetails.getId())
+                .entityType(OceanDGRequestLog.class.getSimpleName())
+                .operation(operationType.name()).build()
+            );
+
+        }catch (Exception ex){
+            log.error(ex.getMessage());
+        }
+
         shipmentDao.save(shipmentDetails, false);
 
         return ResponseHelper.buildSuccessResponse();
     }
-    private boolean checkForClass1(ShipmentDetails shipmentDetails){
-        List<Containers> containersList = shipmentDetails.getContainersList();
-        List<Packing> packingList = shipmentDetails.getPackingList();
-
-        for(Containers containers : containersList){
-            if(containers != null && containers.getHazardous() && containers.getDgClass()!=null){
-                if(containers.getDgClass().startsWith("1")){
-                    return true;
-                }
-            }
-        }
-
-        for(Packing packing : packingList){
-            if(packing != null && packing.getHazardous() && packing.getDGClass()!=null){
-                if(packing.getDGClass().startsWith("1")){
-                    return true;
-                }
-            }
-        }
-
-        return false;
+    private boolean checkForClass1(ShipmentDetails shipmentDetails) {
+        return shipmentDetails.getContainersList().stream()
+            .filter(Objects::nonNull)
+            .anyMatch(containers -> containers.getHazardous() &&
+                Optional.ofNullable(containers.getDgClass())
+                    .map(dgClass -> dgClass.startsWith("1"))
+                    .orElse(false))
+            ||
+            shipmentDetails.getPackingList().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(packing -> packing.getHazardous() &&
+                    Optional.ofNullable(packing.getDGClass())
+                        .map(dgClass -> dgClass.startsWith("1"))
+                        .orElse(false));
     }
+
 
     private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
         OceanDGStatus currentStatus = shipmentDetails.getOceanDGStatus();
@@ -6408,14 +6451,15 @@ public class ShipmentService implements IShipmentService {
         Element rowTemplate = table.select("tbody tr").get(1);
 
         rowTemplate.remove();
-        //TODO : ContainerIdvsContainerNumberMap
+        Map<Long, String> containerIdNumberMap=  shipmentDetails.getContainersList().stream()
+            .collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
 
         for (Packing packing : shipmentDetails.getPackingList()) {
             if(!packing.getHazardous()) continue;
 
             Element newRow = rowTemplate.clone();
             newRow.select("td").get(0).text(packing.getPacks() + " " + packing.getPacksType()).attr("style", "padding: 10px;");
-        //    newRow.select("td").get(1).text(String.valueOf(packing.getCon)).attr("style", "padding: 10px;"); TODO : ContainerNumber --> Packing ??
+            newRow.select("td").get(1).text(String.valueOf(containerIdNumberMap.get(packing.getContainerId()))).attr("style", "padding: 10px;");
             newRow.select("td").get(2).text(packing.getDGClass()).attr("style", "padding: 10px;");
             newRow.select("td").get(3).text(packing.getUnNumber()).attr("style", "padding: 10px;");
             newRow.select("td").get(4).text(packing.getProperShippingName()).attr("style", "padding: 10px;");

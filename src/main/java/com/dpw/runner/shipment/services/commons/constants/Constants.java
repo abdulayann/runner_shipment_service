@@ -362,6 +362,8 @@ public class Constants {
 
     public static final String OCEAN_DG_ROLE = "OCEAN_DG_ROLE";
     public static final String COMMERCIAL_OCEAN_DG_ROLE = "OCEAN_DG_ROLE";
+    public static final String DG_APPROVER_NAME = "DG_APPROVER_NAME";
+    public static final String DG_APPROVER_TIME = "DG_APPROVER_TIME";
 
     public static final String IS_NULL = "ISNULL";
     public static final String CONTAINERS_LIST = "containersList";
