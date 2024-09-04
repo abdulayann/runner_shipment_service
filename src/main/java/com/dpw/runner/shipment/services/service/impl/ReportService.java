@@ -353,12 +353,7 @@ public class ReportService implements IReportService {
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null,false);
             int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
             if(copies < 1) throw new ValidationException("Copy count is less than 1");
-           // AWbLabelModel aWbLabelModel = (AWbLabelModel) awbLabelReport.getDocumentModel(Long.parseLong(reportRequest.getReportId()));
-
-            int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (int) dataRetrived.getOrDefault(ReportConstants.HAWB_NOS_PACKS, 0);
-                    //aWbLabelModel.getShipment().getPackingList().stream()
-//                    .mapToInt(packingModel -> Integer.parseInt(packingModel.getPacks()))
-//                    .sum();
+            int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
             for(int i = 1; i <=copies; i++) {
                 for (int packs = 1; packs <= noOfPacks; packs++) {
                     String packsCount = getSerialCount(packs, copies);

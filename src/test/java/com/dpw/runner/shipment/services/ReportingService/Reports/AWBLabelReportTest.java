@@ -315,10 +315,12 @@ class AWBLabelReportTest extends CommonMocks {
 
         aWbLabelModel.setShipment(shipmentModel);
         aWbLabelModel.setConsolidation(consolidationModel);
+        aWbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit("100 KG");
+        aWbLabelModel.getShipment().setWeightUnit("KG");
     }
 
     @Test
-    void populateDictionary() { // when its not mawb
+    void populateDictionary() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -345,7 +347,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary5() { // when its not mawb
+    void populateDictionary5() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -371,7 +373,7 @@ class AWBLabelReportTest extends CommonMocks {
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
     @Test
-    void populateDictionary7() { // when its not mawb
+    void populateDictionary7() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -399,7 +401,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary8() { // when its not mawb
+    void populateDictionary8() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -532,7 +534,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary6() { // when its not mawb
+    void populateDictionary6() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -568,7 +570,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary3() { // when its not mawb
+    void populateDictionary3() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -602,7 +604,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary4() { // when its not mawb
+    void populateDictionary4() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -637,7 +639,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb() { // when its  mawb
+    void populateDictionary_whenMawb() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -668,7 +670,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb2() { // when its  mawb
+    void populateDictionary_whenMawb2() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -773,7 +775,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb3() { // when its  mawb
+    void populateDictionary_whenMawb3() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -806,7 +808,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionaryWithMawbNull() {
+    void populateDictionaryWithMawbNull() throws RunnerException {
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -834,7 +836,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionaryWithMasterBillLessThan11() {
+    void populateDictionaryWithMasterBillLessThan11() throws RunnerException {
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -901,7 +903,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void getData(){
+    void getData() throws RunnerException {
         var spyReport = Mockito.spy(this.awbLabelReport);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
