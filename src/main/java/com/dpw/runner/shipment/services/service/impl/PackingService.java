@@ -618,6 +618,7 @@ public class PackingService implements IPackingService {
             double volumetricWeight = 0;
             double chargeableWeight = 0;
             int totalPacks = 0;
+            int dgPacks = 0;
             int totalInnerPacks = 0;
             String packsUnit = null;
             String innerPacksUnit = null;
@@ -652,6 +653,10 @@ public class PackingService implements IPackingService {
                         if(!IsStringNullOrEmpty(packing.getPacksType())) {
                             map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
                         }
+                        if(Boolean.TRUE.equals(packing.getHazardous()))
+                        {
+                            dgPacks += packs;
+                        }
                     }
                     if(!IsStringNullOrEmpty(packing.getInnerPackageNumber())) {
                         int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
@@ -675,6 +680,7 @@ public class PackingService implements IPackingService {
                 if (i + 1 < sortedKeys.size())
                     packsCount.append(", ");
             }
+            response.setDgPacks(dgPacks);
             response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null? packsUnit : ""));
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));

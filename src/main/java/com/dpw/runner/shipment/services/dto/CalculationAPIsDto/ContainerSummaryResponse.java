@@ -12,4 +12,5 @@ public class ContainerSummaryResponse implements IRunnerResponse {
     private String chargeableWeight;
     private String totalContainerVolume;
     private String summary;
+    private Integer dgContainers;
 }

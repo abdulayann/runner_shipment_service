@@ -885,10 +885,14 @@ public class ConsolidationService implements IConsolidationService {
                 );
             }
         }
-        if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails)) {
+        if(checkForNonDGConsoleAndAirDGFlag(consolidationDetails) || checkForOceanNonDGConsolidation(consolidationDetails)) {
             List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(x -> Boolean.TRUE.equals(x.getContainsHazardous())).toList();
             if(shipments != null && !shipments.isEmpty()) {
                 consolidationDetails.setHazardous(true);
+                if(!checkConsolidationTypeValidation(consolidationDetails))
+                {
+                    throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                }
                 consolidationDetailsDao.update(consolidationDetails, false);
             }
         }
@@ -924,6 +928,11 @@ public class ConsolidationService implements IConsolidationService {
         if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
             return false;
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
+    }
+
+    private boolean checkForOceanNonDGConsolidation(ConsolidationDetails consolidationDetails)
+    {
+        return Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
     @Transactional
@@ -3358,6 +3367,14 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
+    private boolean checkConsolidationTypeValidation(ConsolidationDetails consolidationDetails) {
+        if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+            if(!StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType()))
+                return false;
+        }
+        return true;
+    }
+
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
@@ -3365,6 +3382,25 @@ public class ConsolidationService implements IConsolidationService {
         // assign consolidation bol to mawb field as well
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
+        }
+        if(checkForOceanNonDGConsolidation(consolidationDetails))
+        {
+            List<Containers> containersList = consolidationDetails.getContainersList();
+            if(containersList != null && !containersList.isEmpty())
+            {
+                for(var container: containersList)
+                {
+                    if(Boolean.TRUE.equals(container.getHazardous()))
+                    {
+                        consolidationDetails.setHazardous(true);
+                        break;
+                    }
+                }
+            }
+        }
+        if(!checkConsolidationTypeValidation(consolidationDetails))
+        {
+            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
         }
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
@@ -4559,6 +4595,35 @@ public class ConsolidationService implements IConsolidationService {
             .requestedBy(consoleShipmentsMap.get(shipment.getId()).getCreatedBy())
             .requestedOn(consoleShipmentsMap.get(shipment.getId()).getCreatedAt())
             .build();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getDGShipment(CommonRequestModel commonRequestModel)
+    {
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        if(commonGetRequest.getId() == null)
+            throw new ValidationException("Consolidation Id is required");
+        var consolidationId = commonGetRequest.getId();
+        var console = consolidationDetailsDao.findById(consolidationId);
+        if(!console.isPresent())
+        {
+            throw new ValidationException("No Consolidation found for the Id: " + consolidationId);
+        }
+        var shipments = console.get().getShipmentsList();
+        Boolean isDgShipmentPresent = false;
+        if(shipments != null && !shipments.isEmpty())
+        {
+            for(var shipment: shipments)
+            {
+                if(Boolean.TRUE.equals(shipment.getContainsHazardous()))
+                {
+                    isDgShipmentPresent = true;
+                    break;
+                }
+            }
+        }
+        var DGShipmentResponse = CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
+        return ResponseHelper.buildSuccessResponse(DGShipmentResponse);
     }
 
 }
