@@ -204,6 +204,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponse.aircraftRegistration(routings.getAircraftRegistration());
         routingsResponse.flightNumber(routings.getFlightNumber());
         routingsResponse.aircraftType(routings.getAircraftType());
+        routingsResponse.vehicleNumber(routings.getVehicleNumber());
         routingsResponse.routeLegId(routings.getRouteLegId());
         routingsResponse.transitDays(routings.getTransitDays());
         routingsResponse.carrier(routings.getCarrier());
