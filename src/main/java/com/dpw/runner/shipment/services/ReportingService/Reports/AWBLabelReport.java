@@ -351,7 +351,7 @@ public class AWBLabelReport extends IReport{
         return dictionary;
     }
 
-    private String getConsolGrossWeightAndUnit(Long consoleId) throws RunnerException {
+    public String getConsolGrossWeightAndUnit(Long consoleId) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().build();
         request.setId(consoleId);
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
