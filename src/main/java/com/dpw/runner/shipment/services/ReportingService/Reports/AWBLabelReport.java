@@ -145,7 +145,6 @@ public class AWBLabelReport extends IReport{
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
             if (awbLabelModel.shipment.getCarrierDetails() != null && awbLabelModel.shipment.getCarrierDetails().getDestinationPort() != null)
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
-           //todo dictionary.put()
             dictionary.put(SHIPMENT_GROSS_WEIGHT_AND_UNIT, awbLabelModel.shipment.getWeight() + " " +   ConvertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
         }
         if(awbLabelModel.getConsolidation() != null){
