@@ -14,4 +14,5 @@ public interface IAuditLogDao {
     Page<AuditLog> findAll(Specification<AuditLog> spec, Pageable pageable);
     Optional<AuditLog> findById(Long id);
     void delete(AuditLog auditLog);
+    List<AuditLog> findByOperationAndEntityId(String operation, Long entityId);
 }
