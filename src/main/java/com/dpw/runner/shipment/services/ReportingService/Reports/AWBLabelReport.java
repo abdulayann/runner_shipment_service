@@ -49,9 +49,6 @@ public class AWBLabelReport extends IReport{
     private IV1Service v1Service;
 
     @Autowired
-    private ConsolidationService consolidationService;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
@@ -82,11 +79,12 @@ public class AWBLabelReport extends IReport{
     }
 
     @Override
-    public IDocumentModel getDocumentModel(Long id) {
+    public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         if(isMawb) {
             awbLabelModel.setConsolidation(getConsolidation(id));
             awbLabelModel.setAwb(getMawb(id, true));
+            awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation().getId()));
         }
         else {
             awbLabelModel.shipment = getShipment(id);
@@ -161,7 +159,7 @@ public class AWBLabelReport extends IReport{
             if(awbLabelModel.getConsolidation().getCarrierDetails() != null && awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort() != null)
                 unlocations.add(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort());
 
-            String totalGrossWeightAndUnit = getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation().getId());
+            String totalGrossWeightAndUnit = awbLabelModel.getConsolidation().getConsoleGrossWeightAndUnit();
             String[] parts = totalGrossWeightAndUnit.split(" ");
             String totalGrossWeight = parts[0];
             String unit = parts[1];
@@ -359,9 +357,9 @@ public class AWBLabelReport extends IReport{
         request.setId(consoleId);
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
-
-        PackSummaryResponse response = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
-
+        PackSummaryResponse response = new PackSummaryResponse();
+        if(consolidationDetails.isPresent())
+            response = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
         return response.getTotalPacksWeight();
     }
 

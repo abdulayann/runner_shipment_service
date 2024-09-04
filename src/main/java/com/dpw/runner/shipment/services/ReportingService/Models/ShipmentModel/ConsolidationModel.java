@@ -239,4 +239,6 @@ public class ConsolidationModel implements IDocumentModel {
     private String aomFreeText;
     @JsonProperty("securityStatus")
     private String securityStatus;
+    @JsonProperty("consoleGrossWeightAndUnit")
+    private String consoleGrossWeightAndUnit;
 }

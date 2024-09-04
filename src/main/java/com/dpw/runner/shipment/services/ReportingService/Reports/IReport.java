@@ -229,6 +229,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.KG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POUNDS;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -2199,8 +2201,8 @@ public abstract class IReport {
                 throw new IllegalArgumentException("Weight unit cannot be null or empty");
             }
         return switch (weightUnit.toLowerCase()) {
-            case "kg" -> "K";
-            case "pounds" -> "L";
+            case KG -> "K";
+            case POUNDS -> "L";
             default -> throw new IllegalArgumentException("Unknown weight unit: " + weightUnit);
         };
     }
