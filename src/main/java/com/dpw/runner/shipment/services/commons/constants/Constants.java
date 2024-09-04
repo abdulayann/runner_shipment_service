@@ -494,6 +494,8 @@ public class Constants {
     public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";
     public static final String INTERBRANCH_CONSOLIDATION_NUMBER = "Interbranch_Consolidation_Number";
     public static final String SHIPMENT_NUMBER = "Shipment_Number";
+    public static final String APPROVER_NAME = "APPROVER_NAME";
+    public static final String APPROVED_TIME = "APPROVED_TIME";
     public static final String LAT = "LAT";
     public static final String SHIPMENT_WEIGHT = "Shipment_Weight";
     public static final String SHIPMENT_WEIGHT_UNIT = "Shipment_Weight_Unit";
