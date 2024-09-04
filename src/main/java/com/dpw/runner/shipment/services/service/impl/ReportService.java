@@ -337,6 +337,9 @@ public class ReportService implements IReportService {
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
+        } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
+            dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createAutoEvent(reportRequest.getReportId(), EventConstants.BOCO, tenantSettingsRow);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import javax.persistence.OrderBy;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
@@ -151,6 +152,7 @@ public class ShipmentDetails extends MultiTenancy {
     private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OrderBy("leg ASC")
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
