@@ -1539,7 +1539,7 @@ class EntityTransferServiceTest {
     }
 
     @Test
-    public void testPopulateTableWithData_SingleShipment() {
+    void testPopulateTableWithData_SingleShipment() {
         // Arrange
         String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
 
@@ -1574,7 +1574,7 @@ class EntityTransferServiceTest {
     }
 
     @Test
-    public void testPopulateTableWithData_MultipleShipments() {
+    void testPopulateTableWithData_MultipleShipments() {
         // Arrange
         String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
 
@@ -1617,7 +1617,7 @@ class EntityTransferServiceTest {
     }
 
     @Test
-    public void testPopulateTableWithData_EmptyList() {
+    void testPopulateTableWithData_EmptyList() {
         // Arrange
         String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
         List<ShipmentDetails> shipmentDetailsList = List.of();
