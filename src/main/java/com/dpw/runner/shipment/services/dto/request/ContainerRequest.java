@@ -58,7 +58,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String hblDeliveryMode;
     private LocalDateTime allocationDate;
     private String dgClass;
-    private Boolean hazardous;
+    private Boolean hazardous = false;
     private String hazardousUn;
     private BigDecimal tareWeight;
     private String tareWeightUnit;
@@ -112,5 +112,5 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String packingGroup;
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
-    private Boolean marinePollutant;
+    private Boolean marinePollutant = false;
 }
