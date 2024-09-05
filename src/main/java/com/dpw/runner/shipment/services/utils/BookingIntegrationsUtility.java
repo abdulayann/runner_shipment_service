@@ -429,40 +429,40 @@ public class BookingIntegrationsUtility {
                 .build();
     }
 
-    private RouteRequest createRoute(ShipmentDetails shipmentDetails) {
-        List<RouteLegRequest> legRequestList = new ArrayList<>();
-        List<Routings> routingsList = shipmentDetails.getRoutingsList();
-        if(routingsList == null || routingsList.isEmpty())
-            return RouteRequest.builder().legs(legRequestList).build();
-        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.fetchInBulkVessels(routingsList.stream().map(Routings::getVesselName).filter(Objects::nonNull).toList());
-        Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.fetchInBulkCarriers(routingsList.stream().map(Routings::getCarrier).filter(Objects::nonNull).toList());
-        for (int counter = 0; counter < routingsList.size(); counter++) {
-            var vessel = entityTransferVesselsMap.get(routingsList.get(counter).getVesselName());
-            var carrier = entityTransferCarrierMap.get(routingsList.get(counter).getCarrier());
-            legRequestList.add(RouteLegRequest.builder()
-                    .destination_code(routingsList.get(counter).getPod())
-                    .origin_code(routingsList.get(counter).getPol())
-                    .order(String.valueOf(routingsList.get(counter).getLeg()))
-                    .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : shipmentDetails.getTransportMode())
-                    .voyageNumber(routingsList.get(counter).getVoyage())
-                    .flightNumber(routingsList.get(counter).getFlightNumber())
-                    .eta(routingsList.get(counter).getEta())
-                    .ets(routingsList.get(counter).getEtd())
-                    .ata(routingsList.get(counter).getAta())
-                    .ats(routingsList.get(counter).getAtd())
-                    .carrierScacCode(!Objects.isNull(carrier) ? carrier.getIdentifier1() : null)
-                    .airlinePrefix(!Objects.isNull(carrier) ? carrier.getAirlineCode() : null)
-                    .airlineIataCode(!Objects.isNull(carrier) ? carrier.getIATACode() : null)
-                    .vesselName(!Objects.isNull(vessel) ? vessel.getName() : null)
-                    .vesselImo(!Objects.isNull(vessel) ? vessel.getImo() : null)
-                    .vesselMmsi(!Objects.isNull(vessel) ? vessel.getMmsi() : null)
-                    .build());
-        }
-
-        return RouteRequest.builder()
-                .legs(legRequestList)
-                .build();
-    }
+//    private RouteRequest createRoute(ShipmentDetails shipmentDetails) {
+//        List<RouteLegRequest> legRequestList = new ArrayList<>();
+//        List<Routings> routingsList = shipmentDetails.getRoutingsList();
+//        if(routingsList == null || routingsList.isEmpty())
+//            return RouteRequest.builder().legs(legRequestList).build();
+//        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.fetchInBulkVessels(routingsList.stream().map(Routings::getVesselName).filter(Objects::nonNull).toList());
+//        Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.fetchInBulkCarriers(routingsList.stream().map(Routings::getCarrier).filter(Objects::nonNull).toList());
+//        for (int counter = 0; counter < routingsList.size(); counter++) {
+//            var vessel = entityTransferVesselsMap.get(routingsList.get(counter).getVesselName());
+//            var carrier = entityTransferCarrierMap.get(routingsList.get(counter).getCarrier());
+//            legRequestList.add(RouteLegRequest.builder()
+//                    .destination_code(routingsList.get(counter).getPod())
+//                    .origin_code(routingsList.get(counter).getPol())
+//                    .order(String.valueOf(routingsList.get(counter).getLeg()))
+//                    .transport_mode(routingsList.get(counter).getMode() != null ? routingsList.get(counter).getMode() : shipmentDetails.getTransportMode())
+//                    .voyageNumber(routingsList.get(counter).getVoyage())
+//                    .flightNumber(routingsList.get(counter).getFlightNumber())
+//                    .eta(routingsList.get(counter).getEta())
+//                    .ets(routingsList.get(counter).getEtd())
+//                    .ata(routingsList.get(counter).getAta())
+//                    .ats(routingsList.get(counter).getAtd())
+//                    .carrierScacCode(!Objects.isNull(carrier) ? carrier.getIdentifier1() : null)
+//                    .airlinePrefix(!Objects.isNull(carrier) ? carrier.getAirlineCode() : null)
+//                    .airlineIataCode(!Objects.isNull(carrier) ? carrier.getIATACode() : null)
+//                    .vesselName(!Objects.isNull(vessel) ? vessel.getName() : null)
+//                    .vesselImo(!Objects.isNull(vessel) ? vessel.getImo() : null)
+//                    .vesselMmsi(!Objects.isNull(vessel) ? vessel.getMmsi() : null)
+//                    .build());
+//        }
+//
+//        return RouteRequest.builder()
+//                .legs(legRequestList)
+//                .build();
+//    }
 
     private DimensionDTO getDimension(String cargoType, Packing packing) {
         if (Objects.equals(cargoType, "LSE") || Objects.equals(cargoType, "LCL"))
@@ -569,46 +569,46 @@ public class BookingIntegrationsUtility {
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
 
-    private List<ReferenceNumbersRequest> createReferenceNumbers(ShipmentDetails shipmentDetails) {
-        List<ReferenceNumbersRequest> requestList = new ArrayList<>();
-        if(!StringUtility.isEmpty(shipmentDetails.getHouseBill()))
-        {
-            Map<String, String> metaMap = new HashMap<>();
-            if(Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal())){
-                metaMap.put("Status", "ORIGINAL");
-            }
-            else{
-                metaMap.put("Status", "DRAFT");
-            }
-            requestList.add(ReferenceNumbersRequest.builder()
-                    .key("HBL")
-                    .value(shipmentDetails.getHouseBill())
-                    .meta(metaMap)
-                    .build());
-        }
-        if(!StringUtility.isEmpty(shipmentDetails.getMasterBill()))
-        {
-            requestList.add(ReferenceNumbersRequest.builder()
-                    .key("MBL")
-                    .value(shipmentDetails.getMasterBill())
-                    .meta(new HashMap<>())
-                    .build());
-        }
-        var referenceNumbers = shipmentDetails.getReferenceNumbersList();
-        if(!Objects.isNull(referenceNumbers) && !referenceNumbers.isEmpty())
-        {
-            referenceNumbers.forEach(r -> {
-                Map<String, String> metaMap = new HashMap<>();
-                metaMap.put("country_of_issue", r.getCountryOfIssue());
-                requestList.add(ReferenceNumbersRequest.builder()
-                                .key(r.getType())
-                                .value(r.getReferenceNumber())
-                                .meta(metaMap)
-                        .build());
-            });
-        }
-        return requestList;
-    }
+//    private List<ReferenceNumbersRequest> createReferenceNumbers(ShipmentDetails shipmentDetails) {
+//        List<ReferenceNumbersRequest> requestList = new ArrayList<>();
+//        if(!StringUtility.isEmpty(shipmentDetails.getHouseBill()))
+//        {
+//            Map<String, String> metaMap = new HashMap<>();
+//            if(Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal())){
+//                metaMap.put("Status", "ORIGINAL");
+//            }
+//            else{
+//                metaMap.put("Status", "DRAFT");
+//            }
+//            requestList.add(ReferenceNumbersRequest.builder()
+//                    .key("HBL")
+//                    .value(shipmentDetails.getHouseBill())
+//                    .meta(metaMap)
+//                    .build());
+//        }
+//        if(!StringUtility.isEmpty(shipmentDetails.getMasterBill()))
+//        {
+//            requestList.add(ReferenceNumbersRequest.builder()
+//                    .key("MBL")
+//                    .value(shipmentDetails.getMasterBill())
+//                    .meta(new HashMap<>())
+//                    .build());
+//        }
+//        var referenceNumbers = shipmentDetails.getReferenceNumbersList();
+//        if(!Objects.isNull(referenceNumbers) && !referenceNumbers.isEmpty())
+//        {
+//            referenceNumbers.forEach(r -> {
+//                Map<String, String> metaMap = new HashMap<>();
+//                metaMap.put("country_of_issue", r.getCountryOfIssue());
+//                requestList.add(ReferenceNumbersRequest.builder()
+//                                .key(r.getType())
+//                                .value(r.getReferenceNumber())
+//                                .meta(metaMap)
+//                        .build());
+//            });
+//        }
+//        return requestList;
+//    }
 
     private String mapBookingStatus(ShipmentStatus status) {
         if (status == ShipmentStatus.Created)
