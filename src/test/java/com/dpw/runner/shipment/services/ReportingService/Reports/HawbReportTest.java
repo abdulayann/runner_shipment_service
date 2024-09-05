@@ -1029,7 +1029,7 @@ class HawbReportTest extends CommonMocks {
     }
 
     @Test
-    public void testDictionaryUpdateWhenCsdInfoIsNotEmpty() {
+    void testDictionaryUpdateWhenCsdInfoIsNotEmpty() {
         // Arrange
         HawbReport hawbReport1 = spy(HawbReport.class);
         String csdInfo = "some info";

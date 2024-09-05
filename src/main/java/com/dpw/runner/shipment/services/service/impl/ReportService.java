@@ -807,7 +807,7 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
-    public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdf_Bytes) {
+    public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
@@ -827,7 +827,7 @@ public class ReportService implements IReportService {
                 else
                     hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
                 byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
-                pdf_Bytes.add(docBytes);
+                pdfBytes.add(docBytes);
             }
         }
     }
