@@ -9,9 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
@@ -458,5 +456,14 @@ public class JsonTestUtility {
 
     public ListContractResponse getListContractResponse() {
         return objectMapper.convertValue(payload.get("LIST_CONTRACT_RESPONSE"), ListContractResponse.class);
+    }
+    public EntityTransferShipmentDetails getImportShipmentData() {
+        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferShipmentDetails.class);
+    }
+    public EntityTransferConsolidationDetails getImportConsolidationAir() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferConsolidationDetails.class);
+    }
+    public EntityTransferConsolidationDetails getImportConsolidationSea() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
     }
 }

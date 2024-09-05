@@ -75,7 +75,6 @@ public class TasksService implements ITasksService {
     @Override
     public ResponseEntity<IRunnerResponse> createTask(CommonRequestModel commonRequestModel) {
         var request = (TaskCreateRequest) commonRequestModel.getData();
-//        TODO:
         request.setTaskStatus(TaskStatus.PENDING_ACTION.getDescription());
         return ResponseHelper.buildSuccessResponse(iv1Service.createTask(request));
     }
