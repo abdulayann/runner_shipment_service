@@ -5104,7 +5104,7 @@ class V1ServiceImplTest {
 
     @Test
     void retrieveTask() {
-        var mockResponse = V1DataResponse.builder().build();
+        var mockResponse = V1RetrieveResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
