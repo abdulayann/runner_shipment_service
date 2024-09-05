@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
@@ -84,7 +85,7 @@ public class AWBLabelReport extends IReport{
         if(isMawb) {
             awbLabelModel.setConsolidation(getConsolidation(id));
             awbLabelModel.setAwb(getMawb(id, true));
-            awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation().getId()));
+            awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
         }
         else {
             awbLabelModel.shipment = getShipment(id);
@@ -351,14 +352,9 @@ public class AWBLabelReport extends IReport{
         return dictionary;
     }
 
-    public String getConsolGrossWeightAndUnit(Long consoleId) throws RunnerException {
-        CommonGetRequest request = CommonGetRequest.builder().build();
-        request.setId(consoleId);
-        log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
-        PackSummaryResponse response = new PackSummaryResponse();
-        if(consolidationDetails.isPresent())
-            response = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
+    public String getConsolGrossWeightAndUnit(ConsolidationModel consolidationModel) throws RunnerException {
+        List<Packing> packingList = commonUtils.convertToList(consolidationModel.getPackingList(), Packing.class);
+        PackSummaryResponse response = packingService.calculatePackSummary(packingList, consolidationModel.getTransportMode(), consolidationModel.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         return response.getTotalPacksWeight();
     }
 
