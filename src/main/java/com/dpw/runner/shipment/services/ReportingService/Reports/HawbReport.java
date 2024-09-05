@@ -274,11 +274,7 @@ public class HawbReport extends IReport{
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
-                    LocalDateTime dateTime = hawbModel.getAwb().getOriginalPrintedAt() != null ? hawbModel.getAwb().getOriginalPrintedAt() : null;
-                    assert dateTime != null;
-                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true) + " " + dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute());
-                }
+                checkCsdInfo(cargoInfoRows, hawbModel, dictionary, v1TenantSettingsResponse);
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
 
             }
@@ -711,6 +707,18 @@ public class HawbReport extends IReport{
 
         return otherChargesResponses;
     }
+
+    public void checkCsdInfo(AwbCargoInfo cargoInfoRows, HawbModel hawbModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
+            LocalDateTime dateTime = hawbModel.getAwb().getOriginalPrintedAt();
+            if (dateTime != null) {
+                String formattedDate = ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true);
+                String time = dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute();
+                dictionary.put(ORIGINAL_PRINT_DATE, formattedDate + " " + time);
+            }
+        }
+    }
+
     public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
     {
         Map<String, String> carrierCharges = new HashMap<>();
