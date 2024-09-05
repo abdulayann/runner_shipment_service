@@ -177,10 +177,6 @@ public class EntityTransferService implements IEntityTransferService {
         validationsBeforeSendTask(uniqueDestinationTenants);
         var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
-        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
-            sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())
-        );
-
         List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
@@ -203,7 +199,9 @@ public class EntityTransferService implements IEntityTransferService {
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
-        emailFuture.join();
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+                sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())
+        );
 
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
                 .message(String.format("Shipment Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
@@ -241,9 +239,6 @@ public class EntityTransferService implements IEntityTransferService {
 
         ConsolidationDetails consol = consolidationDetails.get();
 
-        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
-            sendConsolidationEmailNotification(consol, sendToBranch)
-        );
         interBranchValidation(consol, sendConsolidationRequest);
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
 
@@ -285,7 +280,9 @@ public class EntityTransferService implements IEntityTransferService {
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
 
-        emailFuture.join();
+        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+                sendConsolidationEmailNotification(consol, sendToBranch)
+        );
 
         SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
                 .message(String.format("Consolidation Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
