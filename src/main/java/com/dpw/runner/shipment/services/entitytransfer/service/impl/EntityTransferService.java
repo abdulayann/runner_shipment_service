@@ -253,6 +253,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
         List<String> sendToOrg = sendConsolidationRequest.getSendToOrg();
         List<Integer> successTenantIds = new ArrayList<>();
+        Map<String, List<Integer>> shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
 
         if ((sendToBranch == null || sendToBranch.isEmpty()) && (sendToOrg == null || sendToOrg.isEmpty())) {
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
@@ -272,20 +273,37 @@ public class EntityTransferService implements IEntityTransferService {
         CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
             sendConsolidationEmailNotification(consol, sendToBranch)
         );
-
         interBranchValidation(consol, sendConsolidationRequest);
+        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
 
-        List<EntityTransferConsolidationDetails> entityTransferConsolList = new ArrayList<>();
-        for (int i = 0; i < sendToBranch.size(); i++) {
-            var tenant = sendToBranch.get(i);
-            var entityTransferPayload = prepareConsolidationPayload(consolidationDetails.get(), i, sendConsolidationRequest);
-            entityTransferConsolList.add(entityTransferPayload);
-            createTask(entityTransferPayload, consolidationDetails.get().getId(), Constants.Consolidations, tenant);
+        for (int index = 0; index < sendToBranch.size(); index++) {
+            var tenant = sendToBranch.get(index);
 
+            var consolidationPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferConsolidationDetails.class);
+            consolidationPayload.setSendToBranch(tenant);
+            boolean reverseDirection = false;
+            if(Long.valueOf(tenant).equals(consol.getReceivingBranch())) {
+                consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
+                reverseDirection = true;
+            }
+
+            if(!consolidationPayload.getShipmentsList().isEmpty()) {
+                for(var entityTransferShipment : consolidationPayload.getShipmentsList()) {
+                    var guid = entityTransferShipment.getGuid();
+                    if(reverseDirection) {
+                        entityTransferShipment.setDirection(reverseDirection(entityTransferShipment.getDirection()));
+                    }
+                    if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
+                        entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                    else
+                        entityTransferShipment.setSendToBranch(tenant);
+                }
+            }
+
+            createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
             successTenantIds.add(tenant);
         }
 
-        // ~~~~~~~~~~ KEEP IT AS IS ~~~~~~~~~~~~~
         this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
         List<String> tenantName = getTenantName(successTenantIds);
         String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
@@ -295,12 +313,10 @@ public class EntityTransferService implements IEntityTransferService {
             if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
-        // ~~~~~~~~~~ END ~~~~~~~~~~~~~
+
         emailFuture.join();
 
-        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
-            .jsonString(jsonHelper.convertToJson(entityTransferConsolList))
-            .build();
+        SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds).build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
 
     }
@@ -1328,25 +1344,16 @@ public class EntityTransferService implements IEntityTransferService {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-    private EntityTransferConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, int index, SendConsolidationRequest sendConsolidationRequest) {
-        List<Integer> sendToBranch = sendConsolidationRequest.getSendToBranch();
-        Map<String, List<Integer>> shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
+
+    private EntityTransferConsolidationDetails prepareConsolidationPayload(ConsolidationDetails consolidationDetails, SendConsolidationRequest sendConsolidationRequest) {
         List<Integer> tenantIds = new ArrayList<>();
         tenantIds.add(consolidationDetails.getTenantId());
         tenantIds.addAll(consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
-        var currentTenant = sendToBranch.get(index);
         var tenantMap = getTenantMap(tenantIds);
         EntityTransferConsolidationDetails payload = jsonHelper.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
-        payload.setSendToBranch(currentTenant);
-        boolean reverseDirection = false;
-        if(Long.valueOf(currentTenant).equals(consolidationDetails.getReceivingBranch())) {
-            payload.setShipmentType(reverseDirection(consolidationDetails.getShipmentType()));
-            reverseDirection = true;
-        }
 
         // Map container guid vs List<shipmentGuid>
         Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
-        // List EntityTransferShipmentDetails
         List<EntityTransferShipmentDetails> transferShipmentDetails = new ArrayList<>();
         if(!consolidationDetails.getShipmentsList().isEmpty()) {
             for(var shipment : consolidationDetails.getShipmentsList()) {
@@ -1362,13 +1369,8 @@ public class EntityTransferService implements IEntityTransferService {
                     shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString());
                 }
                 var entityTransferShipment = prepareShipmentPayload(shipmentDetailsOptional.get());
-                if(reverseDirection) {
-                    entityTransferShipment.setDirection(reverseDirection(shipment.getDirection()));
-                }
-                if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
-                    entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
-                else
-                    entityTransferShipment.setSendToBranch(sendConsolidationRequest.getSendToBranch().get(index));
+
+
                 entityTransferShipment.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                 entityTransferShipment.setAdditionalDocs(shipAdditionalDocs);
                 transferShipmentDetails.add(entityTransferShipment);
@@ -1376,16 +1378,19 @@ public class EntityTransferService implements IEntityTransferService {
 
                 // populate container vs shipment guid map
                 var shipmentGuid = shipmentDetailsOptional.get().getGuid();
-                shipmentDetailsOptional.get().getContainersList().stream().map(Containers::getGuid).forEach(
-                        containerGuid -> {
-                            if(!containerVsShipmentGuid.containsKey(containerGuid)) {
-                                containerVsShipmentGuid.put(containerGuid, new ArrayList<>());
+                if(shipmentDetailsOptional.get().getContainersList() != null) {
+                    shipmentDetailsOptional.get().getContainersList().stream().map(Containers::getGuid).forEach(
+                            containerGuid -> {
+                                if(!containerVsShipmentGuid.containsKey(containerGuid)) {
+                                    containerVsShipmentGuid.put(containerGuid, new ArrayList<>());
+                                }
+                                containerVsShipmentGuid.get(containerGuid).add(shipmentGuid);
                             }
-                            containerVsShipmentGuid.get(containerGuid).add(shipmentGuid);
-                        }
-                );
+                    );
+                }
             }
         }
+
         payload.setSourceBranchTenantName(tenantMap.get(consolidationDetails.getTenantId()).getTenantName());
         payload.setShipmentsList(transferShipmentDetails);
         payload.setContainerVsShipmentGuid(containerVsShipmentGuid);
@@ -1393,9 +1398,12 @@ public class EntityTransferService implements IEntityTransferService {
 
         // packing guid vs container guid
         Map<UUID, UUID> packsVsContainerGuid = new HashMap<>();
-        consolidationDetails.getContainersList().forEach(container ->
-            container.getPacksList().forEach(pack -> packsVsContainerGuid.put(pack.getGuid(), container.getGuid()))
-        );
+        if(consolidationDetails.getContainersList() != null) {
+            consolidationDetails.getContainersList().forEach(container -> {
+                if(container.getPacksList() != null)
+                    container.getPacksList().forEach(pack -> packsVsContainerGuid.put(pack.getGuid(), container.getGuid()));
+            });
+        }
         payload.setPackingVsContainerGuid(packsVsContainerGuid);
         // populate master data and other fields
         payload.setMasterData(getConsolMasterData(consolidationDetails));
