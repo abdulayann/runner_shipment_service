@@ -338,7 +338,6 @@ class ShippingRequestAirReportTest extends CommonMocks {
         shipmentModel.setTruckDriverDetails(Arrays.asList(new TruckDriverDetailsModel()));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
         assertNotNull(shippingRequestAirReport.getDocumentModel(123L));
     }
 

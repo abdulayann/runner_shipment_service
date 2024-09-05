@@ -272,7 +272,6 @@ class ShippingInstructionReportTest extends CommonMocks {
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
-        mockShipmentSettings();
         mockTenantSettings();
         assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
     }
@@ -311,7 +310,6 @@ class ShippingInstructionReportTest extends CommonMocks {
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         when(hblRepository.findByShipmentId(any())).thenReturn(Arrays.asList(hbl));
-        mockShipmentSettings();
         mockTenantSettings();
         assertNotNull(shippingInstructionReport.populateDictionary(shippingInstructionModel));
     }

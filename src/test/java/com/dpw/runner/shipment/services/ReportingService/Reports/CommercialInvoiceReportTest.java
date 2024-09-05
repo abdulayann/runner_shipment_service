@@ -118,7 +118,6 @@ class CommercialInvoiceReportTest extends CommonMocks {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
 
         doReturn(new HashMap<>()).when(jsonHelper).convertValue(any(CommercialInvoiceModel.class), any(TypeReference.class));
-        mockShipmentSettings();
 
         assertNotNull(commercialInvoiceReport.getData(123L));
     }
@@ -143,7 +142,6 @@ class CommercialInvoiceReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        mockShipmentSettings();
         assertNotNull(commercialInvoiceReport.getDocumentModel(123L));
     }
 
