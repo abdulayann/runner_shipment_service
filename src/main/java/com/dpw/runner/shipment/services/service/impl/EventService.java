@@ -51,6 +51,7 @@ import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -461,8 +462,10 @@ public class EventService implements IEventService {
 
         // Sets the location role value in the EventsResponse object based on the master data.
         String locationRoleIdentifier2 = eventsResponse.getLocationRole();
-        EntityTransferMasterLists locationRoleMasterData = identifier2ToLocationRoleMap.get(locationRoleIdentifier2);
-        eventsResponse.setLocationRole(locationRoleMasterData.getItemValue());
+        Optional.ofNullable(locationRoleIdentifier2)
+                .map(identifier2ToLocationRoleMap::get)
+                .map(EntityTransferMasterLists::getItemValue)
+                .ifPresent(eventsResponse::setLocationRole);
 
         // Sets the shipment ID in the EventsResponse if the shipmentId is present.
         shipmentId.ifPresent(eventsResponse::setShipmentId);
@@ -473,21 +476,35 @@ public class EventService implements IEventService {
 
     @NotNull
     private Map<String, EntityTransferMasterLists> getIdentifier2ToLocationRoleMap() {
-        List<Object> locationRoleMasterDataCriteria = Arrays.asList(
-                List.of(MasterDataConstants.ITEM_TYPE),
-                "=",
-                MasterDataType.LOCATION_ROLE.getId()
-        );
+        try {
+            // Define criteria for fetching location role master data
+            List<Object> locationRoleMasterDataCriteria = Arrays.asList(
+                    List.of(MasterDataConstants.ITEM_TYPE),
+                    "=",
+                    MasterDataType.LOCATION_ROLE.getId()
+            );
 
-        V1DataResponse locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
-                .criteriaRequests(locationRoleMasterDataCriteria).build());
-        List<EntityTransferMasterLists> locationRoleMasterDataList = jsonHelper.convertValueToList(locationRoleV1DataResponse.entities, EntityTransferMasterLists.class);
+            // Fetch location role data using the defined criteria
+            V1DataResponse locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                    .criteriaRequests(locationRoleMasterDataCriteria).build());
 
-        return locationRoleMasterDataList.stream().collect(Collectors.toMap(
-                EntityTransferMasterLists::getIdentifier2,
-                Function.identity(),
-                (existing, replacement) -> existing
-        ));
+            // Convert the response entities to a list of EntityTransferMasterLists
+            List<EntityTransferMasterLists> locationRoleMasterDataList =
+                    jsonHelper.convertValueToList(locationRoleV1DataResponse.entities, EntityTransferMasterLists.class);
+
+            // Convert the list to a map with identifier2 as the key
+            return locationRoleMasterDataList.stream().collect(Collectors.toMap(
+                    EntityTransferMasterLists::getIdentifier2,
+                    Function.identity(),
+                    (existing, replacement) -> existing // Handle duplicate keys by keeping the existing entry
+            ));
+        } catch (Exception e) {
+            // Log the error message for debugging purposes
+            log.error("Error fetching or processing location role master data: {}", e.getMessage(), e);
+
+            // Return an empty map if an error occurs
+            return Collections.emptyMap();
+        }
     }
 
     private void saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType, ShipmentDetails shipmentDetails) {

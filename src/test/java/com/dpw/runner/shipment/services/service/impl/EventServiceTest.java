@@ -36,18 +36,19 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -128,6 +129,9 @@ class EventServiceTest extends CommonMocks {
 
     @Mock
     private IEventDumpDao eventDumpDao;
+
+    @Mock
+    private IV1Service v1Service;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
