@@ -24,7 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
@@ -1260,9 +1260,8 @@ public class CommonUtils {
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndEntityId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null){
-            OceanDGRequestLog oceanDGRequestLog = new OceanDGRequestLog();
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
-            //TODO : Mapping to oceanDG
+            OceanDGRequestLog oceanDGRequestLog = mapAuditChangesToOceanDGRequestLog(changesMap);
             dictionary.put(DG_APPROVER_NAME, oceanDGRequestLog.getUserName());
             dictionary.put(DG_APPROVER_TIME, oceanDGRequestLog.getTime());
         }
@@ -1339,13 +1338,14 @@ public class CommonUtils {
     }
 
     public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId, TaskCreateResponse taskCreateResponse){
-        TaskRequest taskRequest = TaskRequest
+        TaskCreateRequest taskRequest = TaskCreateRequest
             .builder()
             .entityType(Shipments)
-            .entityID(shipmentDetails.getId().toString())
-            .roleId(roleId)
+            .entityId(shipmentDetails.getId().toString())
+            .roleId(roleId.toString())
             .taskType(OCEAN_DG_TASKTYPE)
-            .userId(UserContext.getUser().getUserId().toString())
+            .taskStatus(PENDING_ACTION)
+            .userId(UserContext.getUser().getUserId())
             .tenantId(UserContext.getUser().getTenantId().toString())
             .build();
 
@@ -1436,6 +1436,28 @@ public class CommonUtils {
         dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
         dictionary.put(APPROVED_TIME, LocalDateTime.now());
 
+    }
+
+    private OceanDGRequestLog mapAuditChangesToOceanDGRequestLog(Map<String, AuditLogChanges> changesMap) {
+        OceanDGRequestLog log = new OceanDGRequestLog();
+
+        for (AuditLogChanges change : changesMap.values()) {
+            switch (change.getFieldName()) {
+                case "time":
+                    if (change.getNewValue() != null) {
+                        log.setTime((LocalDateTime) change.getNewValue());
+                    }
+                    break;
+                case "username":
+                    if (change.getNewValue() != null) {
+                        log.setUserName((String) change.getNewValue());
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return log;
     }
 
 }

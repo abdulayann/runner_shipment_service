@@ -42,7 +42,7 @@ public class TaskCreateRequest implements IRunnerRequest {
     private String rejectionRemarks;
 
     @JsonProperty("UserId")
-    private Integer userId;
+    private Long userId;
 
     @JsonProperty("UserName")
     private String userName;

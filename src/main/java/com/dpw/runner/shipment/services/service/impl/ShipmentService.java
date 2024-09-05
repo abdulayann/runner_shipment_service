@@ -6109,7 +6109,7 @@ public class ShipmentService implements IShipmentService {
                 AuditLogMetaData.builder()
                     .newData(OceanDGRequestLog.builder()
                         .time(LocalDateTime.now())
-                        .userName(UserContext.getUser().DisplayName)
+                        .userName(UserContext.getUser().getUsername())
                         .build())
                     .prevData(null)
                     .parent(ShipmentDetails.class.getSimpleName())
