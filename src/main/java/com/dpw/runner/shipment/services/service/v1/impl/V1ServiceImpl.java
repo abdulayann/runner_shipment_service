@@ -2130,12 +2130,12 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public V1DataResponse createTask(Object request) {
-        ResponseEntity<V1DataResponse> response;
+    public TaskCreateResponse createTask(Object request) {
+        ResponseEntity<TaskCreateResponse> response;
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
-            response = this.restTemplate.postForEntity(this.createTaskUrl, entity, V1DataResponse.class);
+            response = this.restTemplate.postForEntity(this.createTaskUrl, entity, TaskCreateResponse.class);
             log.info("Token time taken in createTask() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -2219,14 +2219,14 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-            ResponseEntity<Integer> response = this.restTemplate.exchange(
+            ResponseEntity<V1RoleIdResponse> response = this.restTemplate.exchange(
                 this.getRolesIdByRoleName,
                 HttpMethod.POST,
                 entity,
-                new ParameterizedTypeReference<Integer>() {}
+                new ParameterizedTypeReference<V1RoleIdResponse>() {}
             );
             log.info("Token time taken in getRoleIdsByRoleName() function {}", (System.currentTimeMillis() - time));
-            return response.getBody();
+            return response.getBody().getRoleId();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);

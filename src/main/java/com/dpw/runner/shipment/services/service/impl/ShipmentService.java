@@ -6237,7 +6237,8 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setOceanDGStatus(newStatus);
     }
 
-    private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks){
+    private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks)
+        throws RunnerException {
         OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus templateStatus = emailTemplateForDGApproval(oceanDGStatus);
 
@@ -6263,13 +6264,13 @@ public class ShipmentService implements IShipmentService {
         CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
         Integer roleId = commonUtils.getRoleId(templateStatus);
         commonUtils.getUserEmailsByRoleId(toUserEmails, roleId);
-        commonUtils.createTask(shipmentDetails, roleId, taskCreateResponse);
+        taskCreateResponse =  commonUtils.createTask(shipmentDetails, roleId, taskCreateResponse);
 
         try {
             sendEmailForApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,
                 taskCreateResponse);
-        } catch (Exception e) {
-            log.error(ERROR_WHILE_SENDING_EMAIL);
+        } catch (Exception ex) {
+            throw new RunnerException(ex.getMessage());
         }
     }
 
@@ -6279,7 +6280,7 @@ public class ShipmentService implements IShipmentService {
         } else if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) {
             return OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
         } else {
-            return null;
+            return currentStatus;
         }
     }
 
@@ -6461,7 +6462,7 @@ public class ShipmentService implements IShipmentService {
 
         emailTemplate.setBody(generateEmailBody(dictionary, shipmentDetails, emailTemplate.getBody()));
         notificationService.sendEmail(commonUtils.replaceTagsFromData(dictionary, emailTemplate.getBody()),
-            emailTemplate.getSubject(), new ArrayList<>(toEmailIds), null);
+            emailTemplate.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>());
     }
 
     private void populateDictionary(OceanDGStatus templateStatus, Map<String, Object> dictionary,
@@ -6489,14 +6490,43 @@ public class ShipmentService implements IShipmentService {
             if(!Boolean.TRUE.equals(packing.getHazardous())) continue;
 
             Element newRow = rowTemplate.clone();
-            newRow.select("td").get(0).text(packing.getPacks() + " " + packing.getPacksType()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(1).text(String.valueOf(containerIdNumberMap.get(packing.getContainerId()))).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(2).text(packing.getDGClass()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(3).text(packing.getUnNumber()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(4).text(packing.getProperShippingName()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(5).text(packing.getPackingGroup()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(6).text(packing.getMinimumFlashPoint() + "" + packing.getMinimumFlashPointUnit()).attr(STYLE, PADDING_10_PX);
-            newRow.select("td").get(7).text(Boolean.TRUE.equals(packing.getMarinePollutant())?"Yes":"No").attr(STYLE, PADDING_10_PX);
+            newRow.select("td").get(0).text(
+                (packing.getPacks() != null ? packing.getPacks() : "") +
+                    " " +
+                    (packing.getPacksType() != null ? packing.getPacksType() : "")
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(1).text(
+                containerIdNumberMap.get(packing.getContainerId()) != null
+                    ? String.valueOf(containerIdNumberMap.get(packing.getContainerId()))
+                    : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(2).text(
+                packing.getDGClass() != null ? packing.getDGClass() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(3).text(
+                packing.getUnNumber() != null ? packing.getUnNumber() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(4).text(
+                packing.getProperShippingName() != null ? packing.getProperShippingName() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(5).text(
+                packing.getPackingGroup() != null ? packing.getPackingGroup() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(6).text(
+                (packing.getMinimumFlashPoint() != null ? packing.getMinimumFlashPoint() : "") +
+                    (packing.getMinimumFlashPointUnit() != null ? packing.getMinimumFlashPointUnit() : "")
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(7).text(
+                Boolean.TRUE.equals(packing.getMarinePollutant()) ? "Yes" : "No"
+            ).attr(STYLE, PADDING_10_PX);
+
 
             table.select("tbody").first().appendChild(newRow);
         }
@@ -6505,7 +6535,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public String extractTableTemplate(String htmlTemplate) {
-        int tableStartIndex = htmlTemplate.indexOf("<table>");
+        int tableStartIndex = htmlTemplate.indexOf("<table");
         int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
 
         if (tableStartIndex != -1 && tableEndIndex > tableStartIndex) {
