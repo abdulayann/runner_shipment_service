@@ -1239,8 +1239,6 @@ public class ShipmentService implements IShipmentService {
         }
         if(pack.getId() == null)
             return;
-        if(oldPacksMap.containsKey(pack.getId()))
-            oldPacking = oldPacksMap.get(pack.getId());
         if(oldPacking != null && commonUtils.checkIfDGFieldsChangedInPacking(pack, oldPacking))
             commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
     }
@@ -1253,6 +1251,8 @@ public class ShipmentService implements IShipmentService {
             dgConts.add(pack.getContainerId());
             if(commonUtils.checkIfAnyDGClass(pack.getDGClass()))
                 dgApprovalReqd.set(true);
+            if(oldPacksMap.containsKey(pack.getId()))
+                oldPacking = oldPacksMap.get(pack.getId());
             callChangeShipmentDGStatusFromPack(shipmentDetails, oldEntity, pack, oldPacksMap, oldPacking);
             if(commonUtils.checkIfDGClass1(pack.getDGClass())) {
                 dgClass1Exists = true;
@@ -1298,7 +1298,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void changeShipmentDGValuesFromContainer(List<ContainerRequest> containersList, Set<Long> dgConts, AtomicBoolean dgApprovalReqd,
+    private void changeShipmentDGValuesFromContainer(Set<Long> dgConts, AtomicBoolean dgApprovalReqd,
                                                      ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, AtomicBoolean dgClass1Exists,
                                                      Set<Long> newPackAttachedInConts, ContainerRequest container, Map<Long, Containers> oldContainersMap) throws RunnerException {
         if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
@@ -1324,7 +1324,7 @@ public class ShipmentService implements IShipmentService {
         if(Objects.isNull(containersList))
             return;
         for(ContainerRequest container: containersList) {
-            changeShipmentDGValuesFromContainer(containersList, dgConts, dgApprovalReqd, shipmentDetails, oldEntity, dgClass1Exists, newPackAttachedInConts, container, oldContainersMap);
+            changeShipmentDGValuesFromContainer(dgConts, dgApprovalReqd, shipmentDetails, oldEntity, dgClass1Exists, newPackAttachedInConts, container, oldContainersMap);
         }
     }
 

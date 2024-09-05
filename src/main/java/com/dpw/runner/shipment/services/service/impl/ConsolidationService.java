@@ -3458,11 +3458,8 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean checkConsolidationTypeValidation(ConsolidationDetails consolidationDetails) {
-        if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-                && !StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType())) {
-                return false;
-        }
-        return true;
+        return !(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
+                && !StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType()));
     }
 
     private void changeDgShipmentMapValues(ShipmentDetails shipmentDetails, Map<Long, ShipmentDetails> dgStatusChangeInShipments, Containers container) throws RunnerException {
@@ -3490,7 +3487,7 @@ public class ConsolidationService implements IConsolidationService {
         if(container.getId() != null && oldContainersMap.containsKey(container.getId())) {
             oldContainer = oldContainersMap.get(container.getId());
             if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
-                    && !commonUtils.listIsNullOrEmpty(oldContainer.getShipmentsList())) {
+                    && !listIsNullOrEmpty(oldContainer.getShipmentsList())) {
                 for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
                     changeDgShipmentMapValues(shipmentDetails, dgStatusChangeInShipments, container);
                 }
@@ -3502,7 +3499,7 @@ public class ConsolidationService implements IConsolidationService {
         if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()))
         {
             List<Containers> containersList = consolidationDetails.getContainersList();
-            if(!commonUtils.listIsNullOrEmpty(containersList))
+            if(!listIsNullOrEmpty(containersList))
             {
                 Map<Long, Containers> oldContainersMap = new HashMap<>();
                 if(!Objects.isNull(oldEntity))
@@ -3512,9 +3509,8 @@ public class ConsolidationService implements IConsolidationService {
                     if(!Boolean.TRUE.equals(container.getHazardous()))
                         continue;
                     consolidationDetails.setHazardous(true);
-                    if(Objects.isNull(oldEntity))
-                        break;
-                    changeShipmentDGValuesFromContainer(container, oldContainersMap, dgStatusChangeInShipments);
+                    if(!Objects.isNull(oldEntity))
+                        changeShipmentDGValuesFromContainer(container, oldContainersMap, dgStatusChangeInShipments);
                 }
             }
         }
