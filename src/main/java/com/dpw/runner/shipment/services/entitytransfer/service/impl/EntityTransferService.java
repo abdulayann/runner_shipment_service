@@ -1636,7 +1636,8 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
-        commonUtils.getToAndCCEmailIds(tenantIds, toAndCcMailIds);
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
         Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -1665,7 +1666,7 @@ public class EntityTransferService implements IEntityTransferService {
 
 
         for(Integer tenantId: tenantIds) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, toAndCCMasterDataMap, tenantId, false);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
             List<String> importerEmailIds = getRoleListByRoleId(tenantId);
             List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
 
