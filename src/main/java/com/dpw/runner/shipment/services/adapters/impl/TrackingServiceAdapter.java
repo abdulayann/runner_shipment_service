@@ -496,25 +496,27 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
                             List<Events> rows = container.getEvents().stream()
                                 .filter(Objects::nonNull)
-                                .flatMap(ce -> container.getPlaces().stream()
-                                    .filter(pl -> pl != null && ce.getLocation() != null && ce.getLocation().equals(pl.getId()))
-                                    .flatMap(pl -> {
+                                .flatMap(event -> container.getPlaces().stream()
+                                    .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
+                                    .flatMap(place -> {
                                         List<TrackingServiceApiResponse.Source> sources = new ArrayList<>();
-                                        sources.addAll(Optional.ofNullable(ce.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
-                                        sources.addAll(Optional.ofNullable(ce.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
+                                        sources.addAll(Optional.ofNullable(event.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
+                                        sources.addAll(Optional.ofNullable(event.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
                                         if (sources == null) return Stream.empty();
                                         return sources.stream()
                                             .filter(Objects::nonNull)
                                             .map(src -> Events.builder()
-                                                .latitude(pl.getLatitude())
-                                                .longitude(pl.getLongitude())
-                                                .placeDescription(pl.getFormattedDescription())
-                                                .placeName(pl.getName())
-                                                .actual(ce.getActualEventTime() != null ? ce.getActualEventTime().getDateTime() : null)
-                                                .estimated(ce.getProjectedEventTime() != null ? ce.getProjectedEventTime().getDateTime() : null)
+                                                .latitude(place.getLatitude())
+                                                .longitude(place.getLongitude())
+                                                .placeDescription(place.getFormattedDescription())
+                                                .placeName(place.getName())
+                                                .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
+                                                .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
                                                 .source(src.getSource())
-                                                .eventCode(ce.getEventType())
-                                                .description(ce.getDescriptionFromSource())
+                                                .eventCode(event.getEventType())
+                                                .description(event.getDescriptionFromSource())
+                                                .containerNumber(container.getContainerNumber())
+                                                .locationRole(event.getLocationRole())
                                                 .build()
                                             );
                                     })
