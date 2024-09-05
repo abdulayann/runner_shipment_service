@@ -706,7 +706,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setEventsList(List.of(EventsRequest.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .eventCode("eventType").build()));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -726,7 +726,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingResponse);
         Events eventType = Events.builder()
                 .eventCode("eventType")
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .build();
         List<Events> eventTypeList = List.of(eventType);
         when(commonUtils.convertToEntityList(any(), eq(Events.class), any())).thenReturn(eventTypeList);
@@ -766,7 +766,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setEventsList(List.of(EventsRequest.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .eventCode("eventType").build()));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -786,7 +786,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.fetchTrackingData(any())).thenThrow(new RunnerException());
         Events eventType = Events.builder()
                 .eventCode("eventType")
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .build();
         List<Events> eventTypeList = List.of(eventType);
         when(commonUtils.convertToEntityList(any(), eq(Events.class), any())).thenReturn(eventTypeList);
@@ -826,7 +826,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setEventsList(List.of(EventsRequest.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .eventCode("eventType").build()));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -846,7 +846,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(null);
         Events eventType = Events.builder()
                 .eventCode("eventType")
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .build();
         List<Events> eventTypeList = List.of(eventType);
         when(commonUtils.convertToEntityList(any(), eq(Events.class), any())).thenReturn(eventTypeList);
@@ -885,7 +885,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         mockShipmentRequest.setEventsList(List.of(EventsRequest.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .eventCode("eventType").build()));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -905,7 +905,7 @@ ShipmentServiceTest extends CommonMocks {
         when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingResponse);
         Events eventType = Events.builder()
                 .eventCode("eventType")
-                .source(Constants.MASTER_DATA_SOURCE_CTS)
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
                 .build();
         List<Events> eventTypeList = List.of(eventType);
         when(commonUtils.convertToEntityList(any(), eq(Events.class), any())).thenReturn(eventTypeList);
@@ -7089,12 +7089,12 @@ ShipmentServiceTest extends CommonMocks {
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setEventCode(EventConstants.CURE);
         eventsRequest.setActual(LocalDateTime.now());
-        eventsRequest.setSource(Constants.CARGORUNNER);
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
 
-        Events event  = Events.builder().build().setEventCode(EventConstants.CURE).setActual(LocalDateTime.now()).setSource(Constants.CARGORUNNER);
+        Events event  = Events.builder().build().setEventCode(EventConstants.CURE).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
 
         ShipmentDetails oldshipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
@@ -7135,13 +7135,13 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(Arrays.asList(event));
         mockTenantSettings();
         List<Events> eventsList = Arrays.asList(
-                Events.builder().build().setEventCode(EventConstants.CURE).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.CACO).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.CADE).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.DOTP).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.PRDE).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.SEPU).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER),
-                Events.builder().build().setEventCode(EventConstants.CAFS).setEntityType("SHIPMENT").setSource(Constants.CARGORUNNER)
+                Events.builder().build().setEventCode(EventConstants.CURE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.CACO).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.CADE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.DOTP).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.PRDE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.SEPU).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
+                Events.builder().build().setEventCode(EventConstants.CAFS).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER)
         );
         when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(eventsList);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);

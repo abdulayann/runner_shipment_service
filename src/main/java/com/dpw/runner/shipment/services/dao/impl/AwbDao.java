@@ -281,7 +281,7 @@ public class AwbDao implements IAwbDao {
 
     private void createAirMessagingEvents(Long entityId, String entityType, String eventCode, String description, Integer tenantId) {
         eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), entityId, entityType, eventCode, description, LocalDateTime.now(), LocalDateTime.now(),
-                Constants.MASTER_DATA_SOURCE_CRN,
+                Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER,
                 tenantId, null, LocalDateTime.now(), LocalDateTime.now());
     }
 

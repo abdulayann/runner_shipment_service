@@ -353,7 +353,7 @@ public class EventDao implements IEventDao {
             if (isEstimatedRequired) {
                 eventsRow.setEstimated(LocalDate.now().atStartOfDay());
             }
-            eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CRN);
+            eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             eventsRow.setIsPublicTrackingEvent(true);
             eventsRow.setEntityType(entityType);
             eventsRow.setEntityId(entityId);

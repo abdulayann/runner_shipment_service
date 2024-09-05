@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -29,13 +31,17 @@ import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -44,6 +50,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -54,6 +61,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -81,16 +89,17 @@ public class EventService implements IEventService {
     private IConsolidationDetailsDao consolidationDao;
     private SyncConfig syncConfig;
     private IDateTimeChangeLogService dateTimeChangeLogService;
-
     @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
     private String trackEventDetailsUrl;
-
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
+    private IV1Service v1Service;
 
     @Autowired
-    public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao, IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService, PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao) {
+    public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
+            , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -104,6 +113,7 @@ public class EventService implements IEventService {
         this.partialFetchUtils = partialFetchUtils;
         this.trackingServiceAdapter = trackingServiceAdapter;
         this.eventDumpDao = eventDumpDao;
+        this.v1Service = v1Service;
     }
 
     @Transactional
@@ -398,6 +408,8 @@ public class EventService implements IEventService {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
 
+        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+
         TrackingEventsResponse trackingEventsResponse = null;
 
         try {
@@ -412,8 +424,7 @@ public class EventService implements IEventService {
             if (trackingEventsResponse.getEventsList() != null) {
                 ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
                 for (var trackingEvent : trackingEventsResponse.getEventsList()) {
-                    EventsResponse eventsResponse = modelMapper.map(trackingEvent, EventsResponse.class);
-                    shipmentId.ifPresent(eventsResponse::setShipmentId);
+                    EventsResponse eventsResponse = getEventsResponse(shipmentId, identifier2ToLocationRoleMap, trackingEvent);
                     res.add(eventsResponse);
                     if (Objects.equals(trackingEvent.getEventCode(), EventConstants.EMCR)) {
                         isEmptyContainerReturnedEvent = true;
@@ -439,6 +450,44 @@ public class EventService implements IEventService {
         }
 
         return ResponseHelper.buildSuccessResponse(res);
+    }
+
+    @NotNull
+    private EventsResponse getEventsResponse(Optional<Long> shipmentId,
+            Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap,
+            Events trackingEvent) {
+
+        EventsResponse eventsResponse = modelMapper.map(trackingEvent, EventsResponse.class);
+
+        // Sets the location role value in the EventsResponse object based on the master data.
+        String locationRoleIdentifier2 = eventsResponse.getLocationRole();
+        EntityTransferMasterLists locationRoleMasterData = identifier2ToLocationRoleMap.get(locationRoleIdentifier2);
+        eventsResponse.setLocationRole(locationRoleMasterData.getItemValue());
+
+        // Sets the shipment ID in the EventsResponse if the shipmentId is present.
+        shipmentId.ifPresent(eventsResponse::setShipmentId);
+
+        // Returns the fully populated EventsResponse object.
+        return eventsResponse;
+    }
+
+    @NotNull
+    private Map<String, EntityTransferMasterLists> getIdentifier2ToLocationRoleMap() {
+        List<Object> locationRoleMasterDataCriteria = Arrays.asList(
+                List.of(MasterDataConstants.ITEM_TYPE),
+                "=",
+                MasterDataType.LOCATION_ROLE.getId()
+        );
+
+        V1DataResponse locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                .criteriaRequests(locationRoleMasterDataCriteria).build());
+        List<EntityTransferMasterLists> locationRoleMasterDataList = jsonHelper.convertValueToList(locationRoleV1DataResponse.entities, EntityTransferMasterLists.class);
+
+        return locationRoleMasterDataList.stream().collect(Collectors.toMap(
+                EntityTransferMasterLists::getIdentifier2,
+                Function.identity(),
+                (existing, replacement) -> existing
+        ));
     }
 
     private void saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType, ShipmentDetails shipmentDetails) {
@@ -548,7 +597,7 @@ public class EventService implements IEventService {
         // Set entity-related details and source
         event.setEntityId(entityId);
         event.setEntityType(entityType);
-        event.setSource(Constants.MASTER_DATA_SOURCE_CTS);
+        event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
 
         return event;
     }
@@ -627,7 +676,7 @@ public class EventService implements IEventService {
             }
             event.setEntityId(entityId);
             event.setEntityType(entityType);
-            event.setSource(Constants.MASTER_DATA_SOURCE_CTS);
+            event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
             updatedEvents.add(event);
         });
 
