@@ -158,6 +158,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long containerCount;
     private BigDecimal teuCount;
     private Integer packCount;
+    private String department;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {
@@ -172,6 +173,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
 
     private CustomerCategoryRates customerCategory;
     private String contractId;
+    private String parentContractId;
     private String contractType;
     private String clientCountry;
     private String consignorCountry;
@@ -207,4 +209,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;
     private FileStatus fileStatus;
+    private Boolean isReceivingBranchAdded;
 }

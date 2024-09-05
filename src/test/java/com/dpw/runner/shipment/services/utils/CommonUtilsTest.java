@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -16,11 +16,11 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -652,6 +652,7 @@ class CommonUtilsTest {
 
     @Test
     void testUpdateConsolOpenForAttachment_withWeightUtilizationAbove100() {
+        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
         when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
         when(achievedQuantities.getWeightUtilization()).thenReturn("150");
         when(achievedQuantities.getVolumeUtilization()).thenReturn("50");
@@ -661,6 +662,7 @@ class CommonUtilsTest {
 
     @Test
     void testUpdateConsolOpenForAttachment_withVolumeUtilizationAbove100() {
+        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
         when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
         when(achievedQuantities.getWeightUtilization()).thenReturn("50");
         when(achievedQuantities.getVolumeUtilization()).thenReturn("150");
@@ -1040,8 +1042,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("createdShipment");
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1061,7 +1062,7 @@ class CommonUtilsTest {
                     put("username", "username@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1081,8 +1082,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("createdShipment");
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1097,7 +1097,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1163,8 +1163,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("createdShipment");
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
@@ -1183,7 +1182,7 @@ class CommonUtilsTest {
                     put("username", "username@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1203,8 +1202,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("createdShipment");
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
@@ -1218,7 +1216,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1286,8 +1284,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1307,7 +1304,7 @@ class CommonUtilsTest {
                     put("username", "username@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1328,8 +1325,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1344,7 +1340,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1412,8 +1408,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1433,7 +1428,7 @@ class CommonUtilsTest {
                     put("username", "username@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1454,8 +1449,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1470,7 +1464,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1537,8 +1531,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
@@ -1557,7 +1550,7 @@ class CommonUtilsTest {
                     put("username", "username@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1578,8 +1571,7 @@ class CommonUtilsTest {
         shipmentDetails.setCreatedBy("createdShipment");
         shipmentDetails.setTenantId(56);
         UserContext.getUser().setEmail(null);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(180).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
                 consolidationDetails1,
@@ -1593,7 +1585,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1632,8 +1624,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("created");
         shipmentDetails.setTenantId(56);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
                 shipmentDetails,
@@ -1654,7 +1645,7 @@ class CommonUtilsTest {
                     put("created", "created@gmail.com");
                 }},
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1668,8 +1659,7 @@ class CommonUtilsTest {
                 .build();
         shipmentDetails.setCreatedBy("created");
         shipmentDetails.setTenantId(56);
-        List<EntityTransferMasterLists> entityTransferMasterLists = new ArrayList<>();
-        entityTransferMasterLists.add(EntityTransferMasterLists.builder().ItemValue("value").ItemType(181).build());
+        V1TenantSettingsResponse v1TenantSettingsResponse = V1TenantSettingsResponse.builder().build();
         UserContext.getUser().setEmail(null);
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         commonUtils.sendEmailForPullPushRequestStatus(
@@ -1688,7 +1678,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>() {{
-                    put(56, entityTransferMasterLists);
+                    put(56, v1TenantSettingsResponse);
                 }},
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
@@ -1714,13 +1704,9 @@ class CommonUtilsTest {
     void getToAndCCEmailIds() {
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(1);
-        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
-        toAndCcMailIds.add(EntityTransferMasterLists.builder().build());
-        when(iv1Service.getMasterDetails(any())).thenReturn(V1DataResponse.builder().entities(toAndCcMailIds).build());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(toAndCcMailIds);
-        List<EntityTransferMasterLists> response = new ArrayList<>();
-        commonUtils.getToAndCCEmailIds(tenantIds, response);
-        assertEquals(1, response.size());
+        Map<Integer, V1TenantSettingsResponse> response = new HashMap<>();
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, response);
+        assertEquals(0, response.size());
     }
 
     @Test
@@ -1786,6 +1772,21 @@ class CommonUtilsTest {
         spyService.sendRejectionEmailsExplicitly(List.of(ShipmentDetails.builder().build()), List.of(ConsoleShipmentMapping.builder().build()),
                 new HashSet<>(), List.of(ConsolidationDetails.builder().build()));
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void testGetTenantSettings() {
+        Map<Integer, Object> response = commonUtils.getTenantSettings(new ArrayList<>());
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantSettings1() {
+        when(iv1Service.getTenantDetails(any()))
+                .thenReturn(TenantDetailsByListResponse.builder()
+                        .entities(new ArrayList<>(List.of(TenantDetailsByListResponse.TenantDetails.builder().tenantId(2).build()))).build());
+        Map<Integer, Object> response = commonUtils.getTenantSettings(List.of(2));
+        assertFalse(response.isEmpty());
     }
 
     private Runnable mockRunnable() {

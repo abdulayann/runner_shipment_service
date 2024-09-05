@@ -131,4 +131,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime latDate;
+    private String department;
 }

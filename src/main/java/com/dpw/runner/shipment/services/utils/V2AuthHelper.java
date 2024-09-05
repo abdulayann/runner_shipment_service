@@ -1,0 +1,33 @@
+package com.dpw.runner.shipment.services.utils;
+
+import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
+
+@Component
+public class V2AuthHelper {
+
+    @Autowired
+    private BillingServiceUrlConfig billingServiceUrlConfig;
+
+    public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String SHIPMENT = "Shipment";
+
+    public HttpHeaders getInvoiceServiceXApiKeyHeader() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add("x-api-key", billingServiceUrlConfig.getXApiKey());
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        return headers;
+    }
+
+    public HttpHeaders getOrderManagementServiceSourceHeader() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
+        return headers;
+    }
+
+}

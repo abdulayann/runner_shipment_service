@@ -225,6 +225,8 @@ public class ShipmentModel implements IDocumentModel {
     private List<PickupDeliveryDetailsModel> pickupDeliveryDetailsInstructions;
     @JsonProperty("TransportInstructionId")
     private Long transportInstructionId;
+    @JsonProperty("OrderManagementNumber")
+    private String orderManagementNumber;
 
     private String document;
 }

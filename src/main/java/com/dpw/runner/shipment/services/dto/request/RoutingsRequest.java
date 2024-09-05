@@ -34,6 +34,8 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime atd;
     private Long consolidationId;
     private Boolean isLinked;
+    @Builder.Default
+    private Boolean isSelectedForDocument = false;
     private String voyage;
     private String aircraftRegistration;
     private String flightNumber;
