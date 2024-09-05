@@ -464,6 +464,7 @@ public class Constants {
     public static final String MAWB_NUMBER = "MAWB_Number";
     public static final String HAWB_NUMBER = "HAWB_Number";
     public static final String INTERBRANCH_SHIPMENT_NUMBER = "Interbranch_Shipment_Number";
+    public static final String INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK = "Interbranch_Shipment_Number_Without_Link";
     public static final String CARRIER_CODE = "Carrier_Code";
     public static final String CARRIER_NAME = "Carrier_name";
     public static final String FLIGHT_NUMBER1 = "Flight_Number";
@@ -480,6 +481,7 @@ public class Constants {
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
     public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";
     public static final String INTERBRANCH_CONSOLIDATION_NUMBER = "Interbranch_Consolidation_Number";
+    public static final String INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK = "Interbranch_Consolidation_Number_Without_Link";
     public static final String SHIPMENT_NUMBER = "Shipment_Number";
     public static final String LAT = "LAT";
     public static final String SHIPMENT_WEIGHT = "Shipment_Weight";
