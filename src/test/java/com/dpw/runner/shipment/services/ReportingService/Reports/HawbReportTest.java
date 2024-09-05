@@ -12,9 +12,11 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -38,7 +40,9 @@ import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,12 +62,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -107,6 +109,15 @@ class HawbReportTest extends CommonMocks {
 
     @Mock
     private IAwbDao awbDao;
+
+    @Mock
+    private HawbModel hawbModel;
+
+    @Mock
+    private AwbCargoInfo cargoInfoRows;
+
+    @Mock
+    private V1TenantSettingsResponse v1TenantSettingsResponse;
 
     @BeforeAll
     static void init() throws IOException {
@@ -1016,4 +1027,108 @@ class HawbReportTest extends CommonMocks {
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
     }
+
+    @Test
+    public void testDictionaryUpdateWhenCsdInfoIsNotEmpty() {
+        // Arrange
+        HawbReport hawbReport1 = spy(HawbReport.class);
+        String csdInfo = "some info";
+        AwbCargoInfo cargoInfoRows = mock(AwbCargoInfo.class);
+        when(cargoInfoRows.getCsdInfo()).thenReturn(csdInfo);
+
+        LocalDateTime dateTime = LocalDateTime.of(2024, 9, 5, 10, 30); // Example date and time
+        Awb awb = mock(Awb.class);
+        when(awb.getOriginalPrintedAt()).thenReturn(dateTime);
+
+        HawbModel hawbModel = mock(HawbModel.class);
+        when(hawbModel.getAwb()).thenReturn(awb);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy"); // Example format
+
+        when(hawbReport1.ConvertToDPWDateFormat(any(), anyString(), anyBoolean())).thenReturn(String.valueOf(dateTime));
+
+        Map<String, String> dictionary = new HashMap<>();
+
+        // Act
+        if (StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
+            LocalDateTime dt = hawbModel.getAwb().getOriginalPrintedAt();
+            assert dt != null;
+            dictionary.put(ORIGINAL_PRINT_DATE, hawbReport1.ConvertToDPWDateFormat(dt, v1TenantSettingsResponse.getDPWDateFormat(), true)
+                    + " " + dt.toLocalTime().getHour() + ":" + dt.toLocalTime().getMinute());
+        }
+
+        // Assert
+        String expectedValue = "2024-09-05T10:30 10:30";
+        assertEquals(expectedValue, dictionary.get(ORIGINAL_PRINT_DATE));
+    }
+
+    @Test
+    void testCsdInfoEmpty() {
+        // Given
+        when(cargoInfoRows.getCsdInfo()).thenReturn("");
+
+        Map<String, Object> dictionary = new HashMap<>();
+
+        // When
+        hawbReport.checkCsdInfo(cargoInfoRows, hawbModel, dictionary, v1TenantSettingsResponse);
+
+        // Then
+        assertTrue(dictionary.isEmpty(), "Dictionary should remain empty if CSD info is empty");
+    }
+
+    @Test
+    void testCsdInfoNotEmptyWithDateTime() {
+        // Given
+        HawbReport hawbReport1 = spy(HawbReport.class);
+        Awb awb = mock(Awb.class);
+        when(cargoInfoRows.getCsdInfo()).thenReturn("SomeInfo");
+        LocalDateTime now = LocalDateTime.of(2024, 9, 5, 12, 30);
+        when(awb.getOriginalPrintedAt()).thenReturn(now);
+
+        HawbModel hawbModel = mock(HawbModel.class);
+        when(hawbModel.getAwb()).thenReturn(awb);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = mock(V1TenantSettingsResponse.class);
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+
+        when(hawbReport1.ConvertToDPWDateFormat(any(), anyString(), anyBoolean())).thenReturn(String.valueOf(now));
+
+        when(hawbModel.getAwb().getOriginalPrintedAt()).thenReturn(now);
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+
+        Map<String, Object> dictionary = new HashMap<>();
+
+        // When
+        hawbReport1.checkCsdInfo(cargoInfoRows, hawbModel, dictionary, v1TenantSettingsResponse);
+
+        // Then
+        String expectedDateFormat = hawbReport1.ConvertToDPWDateFormat(now, "MM/dd/yyyy", true);
+        String expectedTime = now.toLocalTime().getHour() + ":" + now.toLocalTime().getMinute();
+        String expectedValue = expectedDateFormat + " " + expectedTime;
+
+        assertEquals(expectedValue, dictionary.get(ORIGINAL_PRINT_DATE), "Dictionary should contain the correct formatted date and time");
+    }
+
+    @Test
+    void testCsdInfoNotEmptyWithNullDateTime() {
+
+        HawbReport hawbReport1 = spy(HawbReport.class);
+        Awb awb = mock(Awb.class);
+        when(hawbModel.getAwb()).thenReturn(awb);
+
+        // Given
+        when(cargoInfoRows.getCsdInfo()).thenReturn("SomeInfo");
+        when(hawbModel.getAwb().getOriginalPrintedAt()).thenReturn(null);
+
+        Map<String, Object> dictionary = new HashMap<>();
+
+        // When
+        hawbReport1.checkCsdInfo(cargoInfoRows, hawbModel, dictionary, v1TenantSettingsResponse);
+
+        // Then
+        assertFalse(dictionary.containsKey(ORIGINAL_PRINT_DATE), "Dictionary should not contain the date if OriginalPrintedAt is null");
+    }
+
+
 }

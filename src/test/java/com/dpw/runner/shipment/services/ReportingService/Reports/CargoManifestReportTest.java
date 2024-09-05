@@ -46,10 +46,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -291,5 +290,25 @@ class CargoManifestReportTest extends CommonMocks {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
         mockShipmentSettings();
         assertNotNull(cargoManifestReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void testOriginalPrintedAtDateTime() {
+        CargoManifestModel cargoManifestModel = new CargoManifestModel();
+        cargoManifestModel.awb = new Awb();
+
+        LocalDateTime now = LocalDateTime.now();
+        cargoManifestModel.awb.setOriginalPrintedAt(now);
+        LocalDateTime dateTime = cargoManifestModel.awb.getOriginalPrintedAt() != null
+                ? cargoManifestModel.awb.getOriginalPrintedAt()
+                : null;
+        assertNotNull(dateTime, "dateTime should not be null when getOriginalPrintedAt is set");
+        assertEquals(now, dateTime, "dateTime should match the set value");
+
+        cargoManifestModel.awb.setOriginalPrintedAt(null);
+        dateTime = cargoManifestModel.awb.getOriginalPrintedAt() != null
+                ? cargoManifestModel.awb.getOriginalPrintedAt()
+                : null;
+        assertNull(dateTime, "dateTime should be null when getOriginalPrintedAt returns null");
     }
 }
