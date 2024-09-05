@@ -1181,8 +1181,11 @@ public abstract class IReport {
                     var cargoInfoRows = awb.getAwbCargoInfo();
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
+                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
+                        LocalDateTime dateTime = awb.getOriginalPrintedAt() != null ? awb.getOriginalPrintedAt() : null;
+                        assert dateTime != null;
+                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(dateTime, commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true) + " " + dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute());
+                    }
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);

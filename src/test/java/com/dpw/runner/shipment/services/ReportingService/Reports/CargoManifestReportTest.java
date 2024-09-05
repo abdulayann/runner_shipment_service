@@ -134,6 +134,7 @@ class CargoManifestReportTest extends CommonMocks {
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         awbCargoInfo.setSci("test");
         cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
+        cargoManifestModel.awb.setOriginalPrintedAt(LocalDateTime.now());
 
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(ReportConstants.SEA);

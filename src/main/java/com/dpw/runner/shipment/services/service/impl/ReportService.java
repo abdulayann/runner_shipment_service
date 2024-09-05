@@ -350,29 +350,8 @@ public class ReportService implements IReportService {
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)){
             List<byte[]> pdf_Bytes = new ArrayList<>();
-            DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null,false);
-            int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
-            if(copies < 1) throw new ValidationException("Copy count is less than 1");
-            int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
-            for(int i = 1; i <=copies; i++) {
-                for (int packs = 1; packs <= noOfPacks; packs++) {
-                    String packsCount = getSerialCount(packs, copies);
-                    if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null)
-                        dataRetrived.put(ReportConstants.COUNT, packsCount);
-                    else dataRetrived.put(ReportConstants.COUNT, null);
-                    byte[] mainDocPage = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-                    if (mainDocPage == null)
-                        throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-                    String mawbNumber = StringUtility.getEmptyString();
-                    String hawbNumber = StringUtility.getEmptyString();
-                    if(reportRequest.isFromConsolidation())
-                        mawbNumber = dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER) + packsCount : packsCount;
-                    else
-                        hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
-                    byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
-                    pdf_Bytes.add(docBytes);
-                }
-            }
+            DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null,false);
+            generatePdfBytes(reportRequest, pages, dataRetrived, pdf_Bytes);
             return CommonUtils.concatAndAddContent(pdf_Bytes);
         }
         else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB))
@@ -831,6 +810,31 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
+    public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdf_Bytes) {
+        int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
+        if(copies < 1) throw new ValidationException("Copy count is less than 1");
+        int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
+        for(int i = 1; i <=copies; i++) {
+            for (int packs = 1; packs <= noOfPacks; packs++) {
+                String packsCount = getSerialCount(packs, copies);
+                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null)
+                    dataRetrived.put(ReportConstants.COUNT, packsCount);
+                else dataRetrived.put(ReportConstants.COUNT, null);
+                byte[] mainDocPage = GetFromDocumentService(dataRetrived, pages.getMainPageId());
+                if (mainDocPage == null)
+                    throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+                String mawbNumber = StringUtility.getEmptyString();
+                String hawbNumber = StringUtility.getEmptyString();
+                if(reportRequest.isFromConsolidation())
+                    mawbNumber = dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER) + packsCount : packsCount;
+                else
+                    hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
+                byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
+                pdf_Bytes.add(docBytes);
+            }
+        }
+    }
+
     public byte[] GetFromDocumentService(Object json, String templateId) {
         try {
             if (Objects.isNull(templateId)) return null;
@@ -1157,7 +1161,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private String getSerialCount(int copyNumber, int totalCopies){
+    public String getSerialCount(int copyNumber, int totalCopies){
         String _copy_count = Integer.toString(copyNumber);
         String _total_copies = Integer.toString(totalCopies);
         String ans = _copy_count;
@@ -1175,7 +1179,7 @@ public class ReportService implements IReportService {
         return ans;
     }
 
-    private byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
+    public byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
             bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-190, ReportConstants.MAWB);
