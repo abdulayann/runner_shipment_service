@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
@@ -254,13 +255,22 @@ public class CargoManifestReport extends IReport{
             AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
             dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-            LocalDateTime dateTime = cargoManifestModel.awb.getOriginalPrintedAt() != null ? cargoManifestModel.awb.getOriginalPrintedAt() : null;
-            assert dateTime != null;
-            dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true) + " " + dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute());
+            checkCsdInfo(cargoInfoRows, cargoManifestModel, dictionary, v1TenantSettingsResponse);
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
         return dictionary;
+    }
+
+    public void checkCsdInfo(AwbCargoInfo cargoInfoRows, CargoManifestModel cargoManifestModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
+            LocalDateTime dateTime = cargoManifestModel.awb.getOriginalPrintedAt();
+            if (dateTime != null) {
+                String formattedDate = ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true);
+                String time = dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute();
+                dictionary.put(ORIGINAL_PRINT_DATE, formattedDate + " " + time);
+            }
+        }
     }
 
 }
