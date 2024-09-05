@@ -4257,7 +4257,8 @@
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
     "weightUnit": "KG",
-    "volumeUnit": "M3"
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "PACK_SUMMARY_RESPONSE_AIR": {
     "totalPacks": "1 BAG, 1 CNA",
@@ -4269,7 +4270,8 @@
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
     "weightUnit": "KG",
-    "volumeUnit": "M3"
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "VOL_WT_CHARGEABLE": {
     "chargeable": "166.67",
