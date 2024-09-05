@@ -234,6 +234,9 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
         hawbModel.setShipmentDetails(shipmentModel);
+        String csdInfo = "some info";
+        hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
+        hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
 
@@ -1026,40 +1029,5 @@ class HawbReportTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
-    }
-
-    @Test
-    void testDictionaryUpdateWhenCsdInfoIsNotEmpty() {
-        // Arrange
-        HawbReport hawbReport1 = spy(HawbReport.class);
-        String csdInfo = "some info";
-        AwbCargoInfo cargoInfoRows = mock(AwbCargoInfo.class);
-        when(cargoInfoRows.getCsdInfo()).thenReturn(csdInfo);
-
-        LocalDateTime dateTime = LocalDateTime.of(2024, 9, 5, 10, 30); // Example date and time
-        Awb awb = mock(Awb.class);
-        when(awb.getOriginalPrintedAt()).thenReturn(dateTime);
-
-        HawbModel hawbModel = mock(HawbModel.class);
-        when(hawbModel.getAwb()).thenReturn(awb);
-
-        V1TenantSettingsResponse v1TenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy"); // Example format
-
-        when(hawbReport1.ConvertToDPWDateFormat(any(), anyString(), anyBoolean())).thenReturn(String.valueOf(dateTime));
-
-        Map<String, String> dictionary = new HashMap<>();
-
-        // Act
-        if (StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
-            LocalDateTime dt = hawbModel.getAwb().getOriginalPrintedAt();
-            assert dt != null;
-            dictionary.put(ORIGINAL_PRINT_DATE, hawbReport1.ConvertToDPWDateFormat(dt, v1TenantSettingsResponse.getDPWDateFormat(), true)
-                    + " " + dt.toLocalTime().getHour() + ":" + dt.toLocalTime().getMinute());
-        }
-
-        // Assert
-        String expectedValue = "2024-09-05T10:30 10:30";
-        assertEquals(expectedValue, dictionary.get(ORIGINAL_PRINT_DATE));
     }
 }
