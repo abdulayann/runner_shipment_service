@@ -55,13 +55,6 @@ import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IHblService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -70,31 +63,9 @@ import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -3019,7 +2990,9 @@ ShipmentServiceTest extends CommonMocks {
 
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails1));
         //doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
         mockShipmentSettings();
 
@@ -3680,6 +3653,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setShipmentId("SHP001");
+        shipmentDetails.setGuid(UUID.randomUUID());
 
         Containers container = Containers.builder().bookingId(1L).isPart(true).containerNumber("1").build();
         PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(container));
@@ -4677,11 +4651,14 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setId(1L);
         shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
         shipmentDetails.setContainerAutoWeightVolumeUpdate(true);
+        shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED);
 
         Packing packing = new Packing();
         packing.setContainerId(1L);
         packing.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        packing.setHazardous(true);
+        packing.setDGClass("1.1");
         shipmentDetails.setPackingList(Arrays.asList(packing));
 
         Routings routings = new Routings();
@@ -4724,8 +4701,11 @@ ShipmentServiceTest extends CommonMocks {
                                 shipmentDetails
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
         when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(Arrays.asList(ContainerRequest.builder().id(1L).build()));
