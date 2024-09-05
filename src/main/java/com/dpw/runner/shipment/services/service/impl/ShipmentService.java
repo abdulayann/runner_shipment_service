@@ -5626,13 +5626,13 @@ public class ShipmentService implements IShipmentService {
 
         DBOperationType operationType = null;
         if(shipmentDetails.getOceanDGStatus() == OceanDGStatus.OCEAN_DG_REQUESTED){
-             if(request.getStatus() == ApprovalStatus.APPROVE){
+             if(request.getStatus() == TaskStatus.APPROVED){
                  operationType = DBOperationType.DG_APPROVE;
              }else{
                  operationType = DBOperationType.DG_REJECT;
              }
         }else if(shipmentDetails.getOceanDGStatus() == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == ApprovalStatus.APPROVE){
+            if(request.getStatus() == TaskStatus.REJECTED){
                 operationType = DBOperationType.COMMERCIAL_APPROVE;
             }else{
                 operationType = DBOperationType.COMMERCIAL_REJECT;
@@ -5711,6 +5711,7 @@ public class ShipmentService implements IShipmentService {
         // making v1 calls for master data
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
         var vesselResponseFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getVesselsData(shipmentDetails.getCarrierDetails(), vesselsResponse)), executorService);
+        /**
         CompletableFuture<Integer> roleIdFuture = CompletableFuture.supplyAsync(
             (Supplier<Integer>) masterDataUtils.withMdc(() -> commonUtils.getRoleId(oceanDGStatus)),
             executorService
@@ -5720,6 +5721,11 @@ public class ShipmentService implements IShipmentService {
             taskCreateResponse)), executorService));
 
         CompletableFuture.allOf(emailTemplateFuture, userEmailsFuture, vesselResponseFuture, taskResponseFuture).join();
+        */
+        CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
+        Integer roleId = commonUtils.getRoleId(templateStatus);
+        commonUtils.getUserEmailsByRoleId(toUserEmails, roleId);
+        commonUtils.createTask(shipmentDetails, roleId, taskCreateResponse);
 
         try {
             sendEmailForApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,
@@ -5739,13 +5745,13 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private OceanDGStatus emailTemplateForDGResponse(OceanDGStatus currentStatus, ApprovalStatus approvalStatus) {
+    private OceanDGStatus emailTemplateForDGResponse(OceanDGStatus currentStatus, TaskStatus approvalStatus) {
         if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED) {
-            return approvalStatus == ApprovalStatus.APPROVE ?
+            return approvalStatus == TaskStatus.APPROVED ?
                 OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED :
                 OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
         } else if (currentStatus == OceanDGStatus.OCEAN_DG_REQUESTED) {
-            return approvalStatus == ApprovalStatus.APPROVE ?
+            return approvalStatus == TaskStatus.APPROVED  ?
                 OceanDGStatus.OCEAN_DG_ACCEPTED :
                 OceanDGStatus.OCEAN_DG_REJECTED;
         }
