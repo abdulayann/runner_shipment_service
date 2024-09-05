@@ -341,7 +341,8 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         cargoManifestAirShipmentModel.setTenantModel(new TenantModel());
 
         Awb awb = new Awb();
-        awb.setAwbCargoInfo(new AwbCargoInfo());
+        awb.setAwbCargoInfo(AwbCargoInfo.builder().csdInfo("csd Info").build());
+        awb.setOriginalPrintedAt(LocalDateTime.now());
 
         AwbSpecialHandlingCodesMappingInfo awbSpecialHandlingCodesMappingInfo = new AwbSpecialHandlingCodesMappingInfo();
         awbSpecialHandlingCodesMappingInfo.setShcId("123");

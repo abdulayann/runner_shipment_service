@@ -1027,11 +1027,11 @@ public abstract class IReport {
             }
             if(shipment.getPickupDetails() != null) {
                 if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
                     dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
                 } else {
                     if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
-                        dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                        dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
                     } else {
                         dictionary.put(ReportConstants.PICKUP_TIME, "");
                     }
@@ -2205,7 +2205,7 @@ public abstract class IReport {
         return strDate;
     }
 
-    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    public static String convertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
     {
         return convertToDPWDateFormatWithTime(date, tsDatetimeFormat, isTimeZone, false);
     }
