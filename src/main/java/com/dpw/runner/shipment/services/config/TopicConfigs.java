@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
 import javax.annotation.PostConstruct;
 
 @Configuration
+@Generated
 public class TopicConfigs {
 
     @Autowired

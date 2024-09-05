@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.openapitools.jackson.nullable.JsonNullableModule;
@@ -9,7 +10,7 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.time.LocalDateTime;
 
-@Configuration
+@Configuration @Generated
 public class JacksonConfig {
 
   @Bean

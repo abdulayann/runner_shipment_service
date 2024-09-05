@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.config;
 
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableSwagger2
+@Generated
 public class SwaggerConfig implements WebMvcConfigurer {
 
     public static final String BAD_REQUEST_MSG = "Bad Request!";

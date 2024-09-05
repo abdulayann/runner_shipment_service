@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +13,7 @@ import java.util.concurrent.Executors;
 
 @Configuration
 @EnableAsync
-@Slf4j
+@Slf4j @Generated
 public class AsyncConfig implements AsyncConfigurer {
 
 
