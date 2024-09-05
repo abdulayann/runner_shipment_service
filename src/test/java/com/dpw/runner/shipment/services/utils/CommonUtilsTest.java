@@ -12,7 +12,9 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
@@ -20,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListRespo
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -59,6 +62,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGApprover;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGCommercialApprover;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -1787,8 +1792,267 @@ class CommonUtilsTest {
         assertFalse(response.isEmpty());
     }
 
+    @Test
+    void testChangeShipmentDGStatusToReqd1() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build());
+        assertFalse(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd2() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build());
+        assertTrue(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd3() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build());
+        assertFalse(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd4() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build());
+        assertTrue(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd5() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build());
+        assertFalse(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd6() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build());
+        assertTrue(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd7() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
+        assertTrue(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd8() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
+        assertTrue(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd9() {
+        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        UserContext.getUser().getPermissions().put(oceanDGCommercialApprover, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfDGClass1() {
+        boolean response = commonUtils.checkIfDGClass1("1.1");
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGClass2() {
+        boolean response = commonUtils.checkIfDGClass1("2");
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfDGClass3() {
+        boolean response = commonUtils.checkIfDGClass1(null);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfAnyDGClass() throws RunnerException {
+        boolean response = commonUtils.checkIfAnyDGClass(null);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfAnyDGClass2() throws RunnerException {
+        boolean response = commonUtils.checkIfAnyDGClass("1.1");
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfAnyDGClass3() throws RunnerException {
+        assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking1() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setHazardous(true);
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking2() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setDGClass("2.1");
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking3() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setUnNumber("un");
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking4() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setProperShippingName("psp");
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking5() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setPackingGroup("pg");
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking6() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setMinimumFlashPointUnit("CEL");
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking7() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setMinimumFlashPoint(BigDecimal.ONE);
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPacking8() {
+        Packing packing = new Packing();
+        PackingRequest packingRequest = new PackingRequest();
+        packingRequest.setMarinePollutant(true);
+        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
+        assertTrue(response);
+    }
+
     private Runnable mockRunnable() {
         return () -> {};
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer1() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setHazardous(true);
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer2() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setDgClass("2.1");
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer3() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setUnNumber("un");
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer4() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setProperShippingName("psp");
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer5() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setPackingGroup("pg");
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer6() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setMinimumFlashPointUnit("CEL");
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer7() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setMinimumFlashPoint(BigDecimal.ONE);
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInContainer8() {
+        Containers containers = new Containers();
+        ContainerRequest containerRequest = new ContainerRequest();
+        containerRequest.setMarinePollutant(true);
+        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
+        assertTrue(response);
     }
 
 }

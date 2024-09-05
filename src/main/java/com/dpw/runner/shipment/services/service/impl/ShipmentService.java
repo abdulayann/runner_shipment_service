@@ -1039,31 +1039,13 @@ public class ShipmentService implements IShipmentService {
         return containersList;
     }
 
-    private boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
-        if(!Objects.equals(newPack.getHazardous(), oldPack.getHazardous()))
-            return true;
-        if(!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
-            return true;
-        if(!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
-            return true;
-        if(!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
-            return true;
-        if(!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
-            return true;
-        if(!Objects.equals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
-            return true;
-        if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
-            return true;
-        if(!Objects.equals(newPack.getMarinePollutant(), oldPack.getMarinePollutant()))
-            return true;
-        return false;
-    }
-
     private void changeDGStatusFromPacks(List<PackingRequest> packingList, Set<Long> dgConts, AtomicBoolean dgApprovalReqd, ShipmentDetails shipmentDetails,
                                          ShipmentDetails oldEntity, AtomicBoolean dgClass1Exists, Set<Long> newPackAttachedInConts) throws RunnerException {
         Map<Long, Packing> oldPacksMap = new HashMap<>();
         if(!Objects.isNull(oldEntity))
             oldPacksMap = oldEntity.getPackingList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
+        if(Objects.isNull(packingList))
+            return;
         for(PackingRequest pack: packingList) {
             Packing oldPacking = null;
             if(Boolean.TRUE.equals(pack.getHazardous())) {
@@ -1079,7 +1061,7 @@ public class ShipmentService implements IShipmentService {
                     if(oldPacksMap.containsKey(pack.getId()))
                         oldPacking = oldPacksMap.get(pack.getId());
                     if(oldPacking != null) {
-                        if(checkIfDGFieldsChangedInPacking(pack, oldPacking))
+                        if(commonUtils.checkIfDGFieldsChangedInPacking(pack, oldPacking))
                             commonUtils.changeShipmentDGStatusToReqd(shipmentDetails);
                     }
                 }
@@ -1101,6 +1083,8 @@ public class ShipmentService implements IShipmentService {
         Map<Long, Containers> oldContainersMap = new HashMap<>();
         if(!Objects.isNull(oldEntity))
             oldContainersMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
+        if(Objects.isNull(containersList))
+            return;
         for(ContainerRequest container: containersList) {
             Containers oldContainer = null;
             if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
