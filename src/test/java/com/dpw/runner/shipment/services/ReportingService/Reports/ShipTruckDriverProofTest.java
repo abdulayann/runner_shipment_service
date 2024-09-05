@@ -340,7 +340,6 @@ class ShipTruckDriverProofTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        mockShipmentSettings();
         assertNotNull(shipTruckDriverProof.getDocumentModel(123L));
     }
 

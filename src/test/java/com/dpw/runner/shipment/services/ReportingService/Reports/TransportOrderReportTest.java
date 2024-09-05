@@ -296,7 +296,6 @@ class TransportOrderReportTest extends CommonMocks {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
         assertNotNull(transportOrderReport.getDocumentModel(123L));
     }
 
