@@ -36,12 +36,14 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -756,6 +758,13 @@ class EventServiceTest extends CommonMocks {
         trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
         trackingEventsResponse.setEventsList(List.of(mockEvent));
         EventsResponse eventsResponse = new EventsResponse();
+        V1DataResponse v1DataResponse = new V1DataResponse();
+
+        EntityTransferMasterLists entityTransferMasterLists = EntityTransferMasterLists.builder()
+                .ItemValue("ItemValue")
+                .ItemType(99)
+                .ItemDescription("ItemDescription").build();
+        v1DataResponse.setEntities(List.of(entityTransferMasterLists));
 
         EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
@@ -767,11 +776,13 @@ class EventServiceTest extends CommonMocks {
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
         when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(entityTransferMasterLists));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(Optional.of(12L), Optional.of(12L));
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
