@@ -1021,11 +1021,11 @@ public abstract class IReport {
             }
             if(shipment.getPickupDetails() != null) {
                 if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
                     dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
                 } else {
                     if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
-                        dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                        dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
                     } else {
                         dictionary.put(ReportConstants.PICKUP_TIME, "");
                     }
@@ -1182,7 +1182,7 @@ public abstract class IReport {
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                     if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
+                        dict.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true, true));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
@@ -2127,15 +2127,22 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString());
     }
 
-    public static DateTimeFormatter GetDPWDateFormatWithTime(String tsDatetimeFormat)
+    public static DateTimeFormatter getDPWDateFormatWithTime(String tsDatetimeFormat, boolean withoutSec)
     {
-        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
-            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" HH:mm:ss");
+        String timeString;
+
+        if(withoutSec) {
+            timeString = "HH:mm";
+        } else {
+            timeString = "HH:mm:ss";
         }
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
+            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" " +timeString);
+        }
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString() +" "+timeString);
     }
 
     public static String GetDPWDateFormatOrDefaultString()
@@ -2159,15 +2166,20 @@ public abstract class IReport {
         return strDate;
     }
 
-    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    public static String convertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    {
+        return convertToDPWDateFormatWithTime(date, tsDatetimeFormat, isTimeZone, false);
+    }
+
+    public static String convertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone, boolean withoutSec)
     {
         String strDate = "";
         if (date != null)
         {
             if(isTimeZone) {
-                strDate = LocalTimeZoneHelper.getDateTime(date).format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+                strDate = LocalTimeZoneHelper.getDateTime(date).format(getDPWDateFormatWithTime(tsDatetimeFormat, withoutSec));
             } else {
-                strDate = date.format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+                strDate = date.format(getDPWDateFormatWithTime(tsDatetimeFormat, withoutSec));
             }
         }
         return strDate;
