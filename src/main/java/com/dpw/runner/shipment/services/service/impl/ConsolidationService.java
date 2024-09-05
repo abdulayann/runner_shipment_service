@@ -1873,6 +1873,9 @@ public class ConsolidationService implements IConsolidationService {
         CalculatePackUtilizationRequest request = (CalculatePackUtilizationRequest) commonRequestModel.getData();
         try {
             commonUtils.setInterBranchContextForHub();
+            if(Boolean.FALSE.equals(request.getIsHub())) {
+                commonUtils.setInterBranchContextForColoadStation();
+            }
             PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(request);
             CalculatePackUtilizationResponse response = jsonHelper.convertValue(packSummaryResponse, CalculatePackUtilizationResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
@@ -3443,6 +3446,8 @@ public class ConsolidationService implements IConsolidationService {
                 awbDao.save(awb);
             }
         }
+        if (Boolean.TRUE.equals(isCreate))
+            consolidationDetails.setOpenForAttachment(true);
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
         CompletableFuture.allOf(carrierDetailsFuture).join();
@@ -3934,7 +3939,8 @@ public class ConsolidationService implements IConsolidationService {
                             break;
                         case "ORIGIN PORT/ DESTINATION PORT":
                             if(StringUtility.isNotEmpty(request.getPol()) && StringUtility.isNotEmpty(request.getPod())){
-                                consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
+                                if (!Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) || !Objects.equals(Constants.TRANSPORT_MODE_AIR, request.getTransportMode()))
+                                    consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
                                 consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
                                 isConditionSatisfied = true;
                                 response.setFilteredDetailName("Origin Port/ Destination Port");

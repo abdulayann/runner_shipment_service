@@ -1028,6 +1028,7 @@ public class ShipmentService implements IShipmentService {
                         .build()
                 ).
                 contractId(customerBookingRequest.getContractId()).
+                parentContractId(customerBookingRequest.getParentContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
                 noOfPacks(customerBookingRequest.getQuantity()).
                 packsUnit(customerBookingRequest.getQuantityUnit()).
