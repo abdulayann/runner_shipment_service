@@ -50,8 +50,8 @@ public class PlatformUpdateRequest extends CommonRequest implements IRunnerReque
     private RouteRequest route;
     @JsonProperty(value = "reference_numbers")
     private List<ReferenceNumbersRequest> referenceNumbers;
-//    @JsonProperty(value = "contract_id")
-//    private String contractId;
-//    @JsonProperty(value = "parent_contract_id")
-//    private String parentContractId;
+    @JsonProperty(value = "contract_id")
+    private String contractId;
+    @JsonProperty(value = "parent_contract_id")
+    private String parentContractId;
 }
