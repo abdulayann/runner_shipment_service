@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.exception.exceptions.billing;
 
+import com.dpw.runner.shipment.services.utils.Generated;
+
+@Generated
 public class BillingException extends RuntimeException {
 
     public BillingException() {
