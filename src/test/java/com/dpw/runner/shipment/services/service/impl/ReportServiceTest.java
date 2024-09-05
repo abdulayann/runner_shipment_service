@@ -3097,7 +3097,6 @@ class ReportServiceTest {
 
         // Assert that the correct mawbNumber is generated
         assertTrue(pdfBytes.size() > 0);
-        assertEquals("00001", "00001"); // Only packsCount should be used since MAWB_NUMBER is null
     }
 
 
