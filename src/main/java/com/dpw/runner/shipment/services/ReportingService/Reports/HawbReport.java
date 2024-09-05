@@ -274,7 +274,8 @@ public class HawbReport extends IReport{
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                checkCsdInfo(cargoInfoRows, hawbModel, dictionary, v1TenantSettingsResponse);
+                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
 
             }
@@ -360,7 +361,7 @@ public class HawbReport extends IReport{
                         value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                     }
                     if(value.get(GROSS_WT_UNIT) != null){
-                        value.put(GROSS_WT_UNIT, ConvertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                        value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
@@ -706,17 +707,6 @@ public class HawbReport extends IReport{
         otherChargesResponses.setOtherChargesItems(newOtherChargesList);
 
         return otherChargesResponses;
-    }
-
-    public void checkCsdInfo(AwbCargoInfo cargoInfoRows, HawbModel hawbModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
-            LocalDateTime dateTime = hawbModel.getAwb().getOriginalPrintedAt();
-            if (dateTime != null) {
-                String formattedDate = ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true);
-                String time = dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute();
-                dictionary.put(ORIGINAL_PRINT_DATE, formattedDate + " " + time);
-            }
-        }
     }
 
     public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
