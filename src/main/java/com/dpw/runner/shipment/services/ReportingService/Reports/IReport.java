@@ -230,6 +230,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.KG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POUNDS;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -441,7 +443,7 @@ public abstract class IReport {
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
-    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
+    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException;
 
     public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
@@ -2231,6 +2233,17 @@ public abstract class IReport {
     public String ConvertToWeightNumberFormat(BigDecimal weight) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+    }
+
+    public String convertToSingleCharWeightFormat(String weightUnit) {
+            if (weightUnit == null || weightUnit.isEmpty()) {
+                throw new IllegalArgumentException("Weight unit cannot be null or empty");
+            }
+        return switch (weightUnit.toLowerCase()) {
+            case KG -> "K";
+            case POUNDS -> "L";
+            default -> throw new IllegalArgumentException("Unknown weight unit: " + weightUnit);
+        };
     }
 
     public static String ConvertToWeightNumberFormat(Object weight, V1TenantSettingsResponse v1TenantSettingsResponse) {

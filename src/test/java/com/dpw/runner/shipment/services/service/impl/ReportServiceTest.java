@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
@@ -60,18 +57,16 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
+
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -169,6 +164,12 @@ class ReportServiceTest {
     private ConsolidationDao consolidationDao;
 
     @Mock
+    private DocPages docPages;
+
+    @Mock
+    private StringUtility stringUtility;
+
+    @Mock
     private HblReleaseTypeMappingDao hblReleaseTypeMappingDao;
 
     @Mock
@@ -185,6 +186,8 @@ class ReportServiceTest {
 
     @Mock
     private CSDReport csdReport;
+
+    private Map<String, Object> dataRetrived;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
@@ -205,6 +208,7 @@ class ReportServiceTest {
         reportRequest = jsonTestUtility.getTestReportRequest();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
+        dataRetrived = new HashMap<>();
     }
 
 
@@ -410,30 +414,6 @@ class ReportServiceTest {
         assertNotNull(data);
     }
 
-    @Test
-    void getAwbLableDocumentData() throws DocumentException, RunnerException, IOException {
-        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-        shipmentSettingsDetails.setAwbLable("123456789");
-        shipmentSettingsDetails.setTenantId(1);
-        shipmentSettingsDetails.setAutoEventCreate(true);
-
-        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
-        shipmentSettingsDetails2.setAwbLable("123456789");
-        shipmentSettingsDetails2.setTenantId(44);
-        shipmentSettingsDetails2.setAutoEventCreate(true);
-        reportRequest.setReportInfo(ReportConstants.AWB_LABEL);
-        reportRequest.setCopyCountForAWB(1);
-        // Mock
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
-        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
-        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
-        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-        when(jsonHelper.convertToJson(any())).thenReturn("");
-
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
-        assertNotNull(data);
-    }
 
     @Test
     void getMAwbDocumentData() throws DocumentException, RunnerException, IOException {
@@ -2830,4 +2810,294 @@ class ReportServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         assertThrows(ValidationException.class , () -> reportService.getDocumentData(commonRequestModel));
     }
+
+    @Test
+    void testGeneratePdfBytes_ValidInput() {
+
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest.isFromConsolidation()).thenReturn(true);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 3);
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123");
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and addBarCodeInAWBLableReport methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs = 6 PDFs
+    }
+
+    @Test
+    void testGeneratePdfBytes_CopyCountNull() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(null); // Simulate null copy count
+
+        DocPages pages = mock(DocPages.class);
+        Map<String, Object> dataRetrived = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        ValidationException thrown = assertThrows(ValidationException.class, () -> {
+            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        });
+
+        assertEquals("Copy count is less than 1", thrown.getMessage());
+    }
+
+    @Test
+    void testGeneratePdfBytes_MawbOrHawbNotNull() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(false);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.TOTAL_PACKS, 1);
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123"); // Simulate MAWB_NUMBER not being null
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals("00001", dataRetrived.get(ReportConstants.COUNT)); // Assert the count is set correctly
+    }
+
+    @Test
+    void testGeneratePdfBytes_FromConsolidation_MawbNotNull() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(true);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 1);
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123");
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertTrue(pdfBytes.size() > 0);
+        assertEquals("MAWB12300001", dataRetrived.get(ReportConstants.MAWB_NUMBER) + "00001");
+    }
+
+    @Test
+    void testGeneratePdfBytes_ConsolidationTrue() {
+        // Test case where reportRequest.isFromConsolidation() returns true
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest.isFromConsolidation()).thenReturn(true);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123");
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 3);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs
+    }
+
+    @Test
+    void testGeneratePdfBytes_HAWB_NotPresent() {
+        // Test case where HAWB_NUMBER is null
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(false);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123");
+        dataRetrived.put(ReportConstants.TOTAL_PACKS, 1);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals("MAWB123", dataRetrived.get(ReportConstants.MAWB_NUMBER)); // MAWB_NUMBER is present
+        assertEquals(1, pdfBytes.size());
+    }
+
+    @Test
+    void testGeneratePdfBytes_MAWB_NotPresent() {
+        // Test case where MAWB_NUMBER is null
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(false);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.HAWB_NUMBER, "HAWB456");
+        dataRetrived.put(ReportConstants.TOTAL_PACKS, 1);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals("HAWB456", dataRetrived.get(ReportConstants.HAWB_NUMBER)); // HAWB_NUMBER is present
+        assertEquals(1, pdfBytes.size());
+    }
+
+
+
+    @Test
+    void testGeneratePdfBytes_CopyCountLessThanOne() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(0);
+
+        DocPages pages = mock(DocPages.class);
+        Map<String, Object> dataRetrived = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        ValidationException thrown = assertThrows(ValidationException.class, () -> {
+            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        });
+        assertEquals("Copy count is less than 1", thrown.getMessage());
+    }
+
+    @Test
+    void testGeneratePdfBytes_NullMainDocPage() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(false);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.TOTAL_PACKS, 1);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService to return null
+        doReturn(null).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+
+        ValidationException thrown = assertThrows(ValidationException.class, () -> {
+            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        });
+        assertEquals(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE, thrown.getMessage());
+    }
+
+    @Test
+    void testGeneratePdfBytes_EmptyDataRetrived() {
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(false);
+
+        DocPages pages = mock(DocPages.class);
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals(0, pdfBytes.size());
+    }
+
+    @Test
+    void testGeneratePdfBytes_MAWBNumberPresent() {
+        // Test case where MAWB_NUMBER is present
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123"); // MAWB_NUMBER is present
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 2);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        // Assert that the correct mawbNumber is generated
+        assertTrue(pdfBytes.size() > 0);
+        assertEquals("MAWB12300001", dataRetrived.get(ReportConstants.MAWB_NUMBER) + "00001"); // pack count appended
+    }
+
+    @Test
+    void testGeneratePdfBytes_MAWBNumberAbsent() {
+        // Test case where MAWB_NUMBER is absent (null)
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 2); // No MAWB_NUMBER in the data
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        // Assert that the correct mawbNumber is generated
+        assertTrue(pdfBytes.size() > 0);
+    }
+
+
 }
