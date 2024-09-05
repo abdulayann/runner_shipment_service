@@ -2166,7 +2166,7 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString());
     }
 
     public static DateTimeFormatter getDPWDateFormatWithTime(String tsDatetimeFormat, boolean withoutSec)
@@ -2181,7 +2181,7 @@ public abstract class IReport {
         if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
             return DateTimeFormatter.ofPattern(tsDatetimeFormat+" " +timeString);
         }
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy" +" "+timeString);
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString() +" "+timeString);
     }
 
     public static String GetDPWDateFormatOrDefaultString()
