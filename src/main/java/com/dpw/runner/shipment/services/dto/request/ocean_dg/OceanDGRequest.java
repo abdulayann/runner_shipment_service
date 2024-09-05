@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request.oceanDG;
+package com.dpw.runner.shipment.services.dto.request.ocean_dg;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;

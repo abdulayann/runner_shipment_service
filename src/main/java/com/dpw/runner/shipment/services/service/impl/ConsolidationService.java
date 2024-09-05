@@ -250,6 +250,32 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+
 @SuppressWarnings("ALL")
 @Service
 @Slf4j
@@ -2170,9 +2196,8 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDetails.forEach(e -> {
                 e.setContainsHazardous(true);
                 commonUtils.changeShipmentDGStatusToReqd(e);
-                if(commonUtils.checkIfDGClass1(container.getDgClass())) {
-                    if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(e.getOceanDGStatus()))
-                        e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+                if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(e.getOceanDGStatus())) {
+                    e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
                 }
             });
             shipmentDao.saveAll(shipmentDetails);
@@ -3433,64 +3458,68 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean checkConsolidationTypeValidation(ConsolidationDetails consolidationDetails) {
-        if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
-            if(!StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType()))
+        if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
+                && !StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType())) {
                 return false;
         }
         return true;
+    }
+
+    private void changeDgShipmentMapValues(ShipmentDetails shipmentDetails, Map<Long, ShipmentDetails> dgStatusChangeInShipments, Containers container) throws RunnerException {
+        ShipmentDetails shipmentDetails1 = shipmentDetails;
+        if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId()))
+            shipmentDetails1 = dgStatusChangeInShipments.get(shipmentDetails.getId());
+        boolean valueChanged = false;
+        if(!Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous())) {
+            valueChanged = true;
+            shipmentDetails1.setContainsHazardous(true);
+        }
+        if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
+            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
+        if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
+            shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+            valueChanged = true;
+        }
+        if(valueChanged)
+            dgStatusChangeInShipments.put(shipmentDetails1.getId(), shipmentDetails1);
+    }
+
+    private void changeShipmentDGValuesFromContainer(Containers container, Map<Long, Containers> oldContainersMap,
+                                                     Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
+        Containers oldContainer = null;
+        if(container.getId() != null && oldContainersMap.containsKey(container.getId())) {
+            oldContainer = oldContainersMap.get(container.getId());
+            if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
+                    && !commonUtils.listIsNullOrEmpty(oldContainer.getShipmentsList())) {
+                for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
+                    changeDgShipmentMapValues(shipmentDetails, dgStatusChangeInShipments, container);
+                }
+            }
+        }
     }
 
     private void dgOceanFlowsAndValidations(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
         if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()))
         {
             List<Containers> containersList = consolidationDetails.getContainersList();
-            if(containersList != null && !containersList.isEmpty())
+            if(!commonUtils.listIsNullOrEmpty(containersList))
             {
                 Map<Long, Containers> oldContainersMap = new HashMap<>();
                 if(!Objects.isNull(oldEntity))
                     oldContainersMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
-                for(var container: containersList)
+                for(Containers container: containersList)
                 {
-                    if(Boolean.TRUE.equals(container.getHazardous()))
-                    {
-                        consolidationDetails.setHazardous(true);
-                        if(Objects.isNull(oldEntity))
-                            break;
-                        else {
-                            Containers oldContainer = null;
-                            if(oldContainersMap.containsKey(container.getId())) {
-                                oldContainer = oldContainersMap.get(container.getId());
-                                if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
-                                        && oldContainer.getShipmentsList() != null && !oldContainer.getShipmentsList().isEmpty()) {
-                                    for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
-                                        ShipmentDetails shipmentDetails1 = shipmentDetails;
-                                        if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId()))
-                                            shipmentDetails1 = dgStatusChangeInShipments.get(shipmentDetails.getId()); // TODO- check if this is required or jpa itself will give updated data
-                                        boolean valueChanged = false;
-                                        if(!Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous())) {
-                                            valueChanged = true;
-                                            shipmentDetails1.setContainsHazardous(true);
-                                        }
-                                        if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
-                                            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
-                                        if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
-                                            shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-                                            valueChanged = true;
-                                        }
-                                        if(valueChanged)
-                                            dgStatusChangeInShipments.put(shipmentDetails1.getId(), shipmentDetails1);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    if(!Boolean.TRUE.equals(container.getHazardous()))
+                        continue;
+                    consolidationDetails.setHazardous(true);
+                    if(Objects.isNull(oldEntity))
+                        break;
+                    changeShipmentDGValuesFromContainer(container, oldContainersMap, dgStatusChangeInShipments);
                 }
             }
         }
         if(!checkConsolidationTypeValidation(consolidationDetails))
-        {
             throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
-        }
     }
 
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
@@ -4281,14 +4310,14 @@ public class ConsolidationService implements IConsolidationService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getGuid() == null) {
                 log.error("Request Guid is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(UUID.fromString(request.getGuid()));
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
@@ -4308,14 +4337,14 @@ public class ConsolidationService implements IConsolidationService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
@@ -4335,14 +4364,14 @@ public class ConsolidationService implements IConsolidationService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
@@ -4499,7 +4528,7 @@ public class ConsolidationService implements IConsolidationService {
             UUID guid = UUID.fromString(request.getGuid());
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(guid);
             if (!consolidationDetails.isPresent()) {
-                log.debug("Consolidation Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(CONSOLIDATION_DETAILS_NULL, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             MeasurementBasisResponse response = null;
@@ -4730,8 +4759,8 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        var DGShipmentResponse = CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
-        return ResponseHelper.buildSuccessResponse(DGShipmentResponse);
+        var dgShipmentResponse = CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
+        return ResponseHelper.buildSuccessResponse(dgShipmentResponse);
     }
 
 }

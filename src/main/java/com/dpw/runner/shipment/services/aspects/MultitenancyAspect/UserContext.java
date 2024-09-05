@@ -20,13 +20,13 @@ public class UserContext {
     }
 
     public static boolean isOceanDgUser() {
-        return getUser().getPermissions().containsKey(oceanDGApprover)
-                && getUser().getPermissions().get(oceanDGApprover);
+        return getUser().getPermissions().containsKey(OCEAN_DG_APPROVER)
+                && getUser().getPermissions().get(OCEAN_DG_APPROVER);
     }
 
     public static boolean isOceanDgCommercialUser() {
-        return getUser().getPermissions().containsKey(oceanDGCommercialApprover)
-                && getUser().getPermissions().get(oceanDGCommercialApprover);
+        return getUser().getPermissions().containsKey(OCEAN_DG_COMMERCIAL_APPROVER)
+                && getUser().getPermissions().get(OCEAN_DG_COMMERCIAL_APPROVER);
     }
 
     public static void setUser(UsersDto userId) {

@@ -340,7 +340,7 @@ public class V1ServiceImpl implements IV1Service {
     private String getUserEmailsByRoleId;
 
     @Value("${v1service.url.base}${v1service.url.rolesIdByRoleName}")
-    private String ROLES_ID_BY_ROLENAME;
+    private String getRolesIdByRoleName;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -2218,14 +2218,14 @@ public class V1ServiceImpl implements IV1Service {
     public Integer getRoleIdsByRoleName(V1RoleIdRequest request) {
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             ResponseEntity<Integer> response = this.restTemplate.exchange(
-                this.ROLES_ID_BY_ROLENAME,
+                this.getRolesIdByRoleName,
                 HttpMethod.POST,
                 entity,
                 new ParameterizedTypeReference<Integer>() {}
             );
-            log.info("Token time taken in getRoleIdsByRoleName() function " + (System.currentTimeMillis() - time));
+            log.info("Token time taken in getRoleIdsByRoleName() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

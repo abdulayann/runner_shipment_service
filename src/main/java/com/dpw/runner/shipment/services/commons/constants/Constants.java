@@ -520,6 +520,8 @@ public class Constants {
     public static final String OCEAN_DG_SENDER_EMAIL_TYPE = "OCEAN_DG_SENDER";
     public static final String OCEAN_DG_COMMERCIAL_APPROVER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVER";
     public static final String OCEAN_DG_COMMERCIAL_SENDER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_SENDER";
+    public static final String HTML_HREF_TAG_PREFIX = "<html><body>" + "<a href='";
+    public static final String HTML_HREF_TAG_SUFFIX = "</a>" + "</body></html>";
 
     //OCEAN DG Email Templates Type
     public static final String OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE";
