@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.Kafka.Config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@Generated
 public class ConsumerConfiguration {
 
     @Value("${shipmentsKafka.bootstrapServer}")

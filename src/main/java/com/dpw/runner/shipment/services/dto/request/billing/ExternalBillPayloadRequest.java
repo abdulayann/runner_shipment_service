@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.billing;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InvoiceBigDecimal2JsonDeserializer;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -17,7 +18,7 @@ import lombok.Getter;
 import org.springframework.stereotype.Component;
 
 @Data
-@Component
+@Component @Generated
 public class ExternalBillPayloadRequest implements IRunnerRequest {
 
     private List<ExternalBillRequest> externalBillRequestList;

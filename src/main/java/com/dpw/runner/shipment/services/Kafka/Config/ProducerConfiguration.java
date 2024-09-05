@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.Kafka.Config;
 
 import com.dpw.runner.shipment.services.Kafka.Serializer.ProducerSerializer;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
+@Generated
 public class ProducerConfiguration {
 
     @Value("${shipmentsKafka.bootstrapServer}")
