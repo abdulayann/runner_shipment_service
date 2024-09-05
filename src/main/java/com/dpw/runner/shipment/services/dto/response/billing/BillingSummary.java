@@ -1,13 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
+
 import java.math.BigDecimal;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Data
 @Builder

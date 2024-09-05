@@ -5,8 +5,9 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsUpdateRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import java.util.List;
 import org.springframework.http.ResponseEntity;
+
+import java.util.List;
 
 public interface IRoutingsService {
 

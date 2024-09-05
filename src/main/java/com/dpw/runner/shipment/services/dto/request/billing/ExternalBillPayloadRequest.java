@@ -5,16 +5,17 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.InvoiceBigDecimal2JsonDeserializer;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import org.springframework.stereotype.Component;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Component

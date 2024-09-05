@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Builder;
 import lombok.Data;
 

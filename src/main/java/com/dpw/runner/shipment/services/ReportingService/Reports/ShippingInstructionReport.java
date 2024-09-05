@@ -26,7 +26,8 @@ import java.util.List;
 import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.GenerateFormattedDate;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
 import static java.lang.Long.sum;
 
 @Component

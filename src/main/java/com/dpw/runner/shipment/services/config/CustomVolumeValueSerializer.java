@@ -4,12 +4,12 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Configurable;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Configurable;
 
 @Configurable
 @Slf4j

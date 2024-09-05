@@ -4,8 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
-
-
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 

@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.dto.request.platform;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
-import com.dpw.runner.shipment.services.dto.request.platform.AirCarrierDetailsRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;

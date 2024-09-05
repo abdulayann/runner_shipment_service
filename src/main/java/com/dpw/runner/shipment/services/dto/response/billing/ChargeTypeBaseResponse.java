@@ -3,13 +3,10 @@ package com.dpw.runner.shipment.services.dto.response.billing;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
+
 import java.math.BigDecimal;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
 @Setter

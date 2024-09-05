@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.billing;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter

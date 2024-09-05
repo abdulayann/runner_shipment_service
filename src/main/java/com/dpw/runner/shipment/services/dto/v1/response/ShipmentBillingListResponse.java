@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Map;
 
 @Data
 @AllArgsConstructor
