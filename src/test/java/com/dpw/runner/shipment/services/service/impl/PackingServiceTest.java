@@ -1084,7 +1084,7 @@ class PackingServiceTest extends CommonMocks {
         achievedResponse.setWeightUtilization("100.0");
         packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
         ConsolidationDetails consol = new ConsolidationDetails();
-
+        consol.setTransportMode("AIR");
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
@@ -1134,6 +1134,7 @@ class PackingServiceTest extends CommonMocks {
         achievedResponse.setVolumeUtilization("100.0");
         packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
         ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setTransportMode("AIR");
 
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));

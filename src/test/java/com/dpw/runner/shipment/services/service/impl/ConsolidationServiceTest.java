@@ -2265,6 +2265,21 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
+    void testCalculatePackUtilisationSuccessForRegionalBranch() throws RunnerException {
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setPackingList(List.of());
+        request.setIsHub(false);
+        Packing packing = new Packing();
+        packing.setId(1L);
+        PackSummaryResponse response = new PackSummaryResponse();
+
+        when(packingService.calculatePacksUtilisationForConsolidation(any())).thenReturn(response);
+        when(jsonHelper.convertValue(any(), eq(CalculatePackUtilizationResponse.class))).thenReturn(new CalculatePackUtilizationResponse());
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testCalculatePackUtilisationFailure() throws RunnerException {
         CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
         request.setPackingList(List.of());
