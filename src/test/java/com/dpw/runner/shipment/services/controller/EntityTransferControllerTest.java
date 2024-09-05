@@ -269,4 +269,34 @@ class EntityTransferControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void importShipment() throws RunnerException {
+        // Mock
+        when(entityTransferService.importShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.importShipment(ImportShipmentRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void importShipment2() throws RunnerException {
+        // Mock
+        when(entityTransferService.importShipment(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.importShipment(ImportShipmentRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void importShipment3() throws RunnerException {
+        // Mock
+        when(entityTransferService.importShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.importShipment(ImportShipmentRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

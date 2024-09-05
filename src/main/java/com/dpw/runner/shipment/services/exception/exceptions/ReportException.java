@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.exception.exceptions;
 
+import com.dpw.runner.shipment.services.utils.Generated;
+
+@Generated
 public class ReportException extends RuntimeException {
 
     public ReportException() {

@@ -215,37 +215,6 @@ public class EntityTransferService implements IEntityTransferService {
         return shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
     }
 
-    private List<Integer> tenantIdFromOrganizations (List<String> sendToOrg) {
-        List<String> guidList = new ArrayList<>();
-        CommonV1ListRequest orgRequest = new CommonV1ListRequest();
-        List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
-        String operator = Operators.IN.getValue();
-        List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(sendToOrg)));
-        orgRequest.setCriteriaRequests(orgCriteria);
-        V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-        List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-        orgList.forEach(org -> {
-            if(org.WhitelistedTenantGUID != null)
-                guidList.add(org.WhitelistedTenantGUID);
-            else {
-                throw new ValidationException("No WhiteListedGuid is attached with org: " + org.FullName);
-            }
-        });
-        log.info("Guids list: "+ guidList);
-
-        List<Integer> tenantIds = new ArrayList<>();
-        if(guidList != null || !guidList.isEmpty()) {
-            guidList.forEach(guid -> {
-                CommonV1ListRequest request = new CommonV1ListRequest();
-                List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.GUID));
-                List<Object> criteria = new ArrayList<>(List.of(field, "=", guid));
-                request.setCriteriaRequests(criteria);
-                TenantIdResponse tenantId = v1Service.tenantByGuid(request);
-                tenantIds.add(tenantId.getId());
-            });
-        }
-        return tenantIds;
-    }
 
     @Override
     @Transactional
