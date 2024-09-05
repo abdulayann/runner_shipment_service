@@ -127,6 +127,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String orderManagementNumber;
     private CustomerCategoryRates customerCategory;
     private String contractId;
+    private String parentContractId;
     private String contractType;
     private Boolean replaceConsoleRoute;
     private Boolean createMainLegRoute;
@@ -165,11 +166,13 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private DateBehaviorType dateType;
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
+    private String department;
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
 
     private LocalDateTime cargoReadyDate;
     private LocalDateTime cargoDeliveryDate;
+    private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
 }

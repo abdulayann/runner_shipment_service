@@ -4,7 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.intraBranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -18,17 +19,17 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -75,7 +76,6 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.MasterDataConstants.ITEM_TYPE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -507,6 +507,12 @@ public class CommonUtils {
         InterBranchContext.removeContext();
     }
 
+    public static Integer getCurrentWorkingTenantId() {
+        if(InterBranchTenantIdContext.getContext() != null)
+            return InterBranchTenantIdContext.getContext().getTenantId();
+        return UserContext.getUser().TenantId;
+    }
+
     public void setInterBranchContextForHub() {
         /**
          * Check current branch should be enabled both
@@ -594,7 +600,7 @@ public class CommonUtils {
     private void fetchDataForRejectionExplicitEmails(List<ShipmentDetails> shipmentDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
                                                      Set<Integer> tenantIds, Set<String> usernamesList, List<ConsolidationDetails> otherConsolidationDetails,
                                                      Map<String, String> usernameEmailsMap, Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests,
-                                                     List<EntityTransferMasterLists> toAndCcMailIds) {
+                                                     Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap) {
         for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
             usernamesList.add(shipmentDetails1.getCreatedBy());
             usernamesList.add(shipmentDetails1.getAssignedTo());
@@ -610,7 +616,7 @@ public class CommonUtils {
         }
 
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplatesRequests)), syncExecutorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getToAndCCEmailIds(tenantIds, toAndCcMailIds)), syncExecutorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), syncExecutorService);
         var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getUserDetails(usernamesList, usernameEmailsMap)), syncExecutorService);
         CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
     }
@@ -621,14 +627,13 @@ public class CommonUtils {
         Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
         Map<String, String> usernameEmailsMap = new HashMap<>();
         Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
-        List<EntityTransferMasterLists> toAndCcMailIds = new ArrayList<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
 
         // fetch data from db and v1
-        fetchDataForRejectionExplicitEmails(shipmentDetails, consoleShipmentMappings, tenantIds, usernamesList, otherConsolidationDetails, usernameEmailsMap, emailTemplatesRequests, toAndCcMailIds);
+        fetchDataForRejectionExplicitEmails(shipmentDetails, consoleShipmentMappings, tenantIds, usernamesList, otherConsolidationDetails, usernameEmailsMap, emailTemplatesRequests, v1TenantSettingsMap);
 
-        Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap = toAndCcMailIds.stream().collect(Collectors.groupingBy(EntityTransferMasterLists::getTenantId));
         if(!otherConsolidationDetails.isEmpty()) {
             Map<Long, ConsolidationDetails> finalConsolidationDetailsMap = otherConsolidationDetails.stream().collect(Collectors.toMap(BaseEntity::getId, y -> y));
             Map<Long, ShipmentDetails> finalShipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(BaseEntity::getId, e1 -> e1));
@@ -636,9 +641,9 @@ public class CommonUtils {
                 try {
                     if(finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId()) && finalShipmentDetailsMap.containsKey(consoleShipmentMapping.getShipmentId())) {
                         if(consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, toAndCCMasterDataMap, consoleShipmentMapping.getCreatedBy());
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy());
                         else
-                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, toAndCCMasterDataMap, consoleShipmentMapping.getCreatedBy());
+                            sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy());
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -665,7 +670,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -693,7 +698,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -721,7 +726,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), true);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -747,7 +752,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getConsolidationDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -773,7 +778,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -799,7 +804,7 @@ public class CommonUtils {
         if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
             ccEmailIds.add(UserContext.getUser().getEmail());
         // fetching to and cc from master lists
-        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getToAndCCMasterDataMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), false);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
@@ -807,7 +812,7 @@ public class CommonUtils {
 
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
                                                   Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequestMap, Set<ShipmentRequestedType> shipmentRequestedTypes, Map<String, UnlocationsResponse> unLocMap,
-                                                  Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap, String requestedUser) throws Exception{
+                                                  Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap , String requestedUser) throws Exception{
         SendEmailDto sendEmailDto = SendEmailDto.builder()
                 .shipmentDetails(shipmentDetails)
                 .consolidationDetails(consolidationDetails)
@@ -818,7 +823,7 @@ public class CommonUtils {
                 .unLocMap(unLocMap)
                 .carrierMasterDataMap(carrierMasterDataMap)
                 .usernameEmailsMap(usernameEmailsMap)
-                .toAndCCMasterDataMap(toAndCCMasterDataMap)
+                .v1TenantSettingsMap(v1TenantSettingsMap)
                 .requestedUser(requestedUser)
                 .build();
         sendEmailForPullPushRequestStatus(sendEmailDto);
@@ -835,25 +840,22 @@ public class CommonUtils {
         }
     }
 
-    private void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, List<EntityTransferMasterLists>> toAndCCMasterDataMap,
-                                            Integer tenantId, boolean isShipment) {
-        int toId = MasterDataType.ConsolidationAttachDefaultToMailId.getId();
-        int ccId = MasterDataType.ConsolidationAttachDefaultCCMailId.getId();
-        if(isShipment) {
-            toId = MasterDataType.ShipmentAttachDefaultToMailId.getId();
-            ccId = MasterDataType.ShipmentAttachDefaultCCMailId.getId();
-        }
-        if(toAndCCMasterDataMap.containsKey(tenantId)) {
-            for(EntityTransferMasterLists entityTransferMasterLists : toAndCCMasterDataMap.get(tenantId)) {
-                if(!IsStringNullOrEmpty(entityTransferMasterLists.getItemValue())) {
-                    if(entityTransferMasterLists.getItemType() == toId)
-                        toEmailIds.addAll(Arrays.stream(entityTransferMasterLists.getItemValue().split(",")).map(String::trim)
-                                .filter(s -> !s.isEmpty()).toList());
-
-                    if(entityTransferMasterLists.getItemType() == ccId)
-                        ccEmailIds.addAll(Arrays.stream(entityTransferMasterLists.getItemValue().split(",")).map(String::trim)
-                                .filter(s -> !s.isEmpty()).toList());
-                }
+    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
+        if(v1TenantSettingsMap.containsKey(tenantId)) {
+            if(isShipment) {
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId()))
+                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId()))
+                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+            } else {
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId()))
+                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
+                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId()))
+                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
+                        .filter(s -> !s.isEmpty()).toList());
             }
         }
     }
@@ -869,7 +871,7 @@ public class CommonUtils {
     public void populateDictionaryForPullAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
         populateDictionaryForEmailFromShipment(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPullRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks) {
@@ -877,8 +879,9 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPushRequested(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
@@ -890,16 +893,17 @@ public class CommonUtils {
     public void populateDictionaryForPushAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                    Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
         populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPushRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestUser) {
         dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
         dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
+        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
         dictionary.put(REQUESTED_USER_NAME, requestUser);
     }
 
@@ -911,6 +915,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(HAWB_NUMBER, shipmentDetails.getHouseBill());
         dictionary.put(ETD_CAPS, convertToDPWDateFormat(shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
@@ -946,6 +951,7 @@ public class CommonUtils {
         dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
         dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
+        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
         dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
@@ -1040,22 +1046,30 @@ public class CommonUtils {
         }
     }
 
-    public void getToAndCCEmailIds(Set<Integer> tenantIds, List<EntityTransferMasterLists> toAndCcMailIds) {
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        request.setTake(tenantIds.size() * 4);
+    public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
+        Map<Integer, Object> map = getTenantSettings(new ArrayList<>(tenantIds));
+        map.forEach((key, value) -> tenantSettingsMap.put(key, modelMapper.map(value, V1TenantSettingsResponse.class)));
+    }
 
-        List<Object> field = new ArrayList<>(List.of("TenantId"));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria1 = new ArrayList<>(List.of(field, operator, List.of(tenantIds.stream().toList())));
+    public Map<Integer, Object> getTenantSettings(List<Integer> tenantIds) {
+        if (tenantIds.isEmpty())
+            return new HashMap<>();
 
-        field = new ArrayList<>(List.of(ITEM_TYPE));
-        List<Object> criteria2 = new ArrayList<>(List.of(field, operator, List.of(List.of(MasterDataType.ConsolidationAttachDefaultToMailId.getId(),
-                MasterDataType.ConsolidationAttachDefaultCCMailId.getId(), MasterDataType.ShipmentAttachDefaultToMailId.getId(),
-                MasterDataType.ShipmentAttachDefaultCCMailId.getId()))));
-
-        request.setCriteriaRequests(new ArrayList<>(List.of(criteria1, "and", criteria2)));
-        V1DataResponse v1DataResponse = iv1Service.getMasterDetails(request);
-        toAndCcMailIds.addAll(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class));
+        try {
+            var v1Response = iv1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
+            return v1Response.getEntities()
+                    .stream()
+                    .collect(Collectors.groupingBy(
+                            TenantDetailsByListResponse.TenantDetails::getTenantId,
+                            Collectors.collectingAndThen(
+                                    Collectors.toList(),
+                                    list -> list.get(0).getTenantSettings()
+                            )));
+        }
+        catch (Exception ex) {
+            log.error(ex.getMessage());
+            return new HashMap<>();
+        }
     }
 
     public void getUserDetails(Set<String> usernamesList, Map<String, String> usernameEmailsMap) {
@@ -1095,7 +1109,6 @@ public class CommonUtils {
                 carrierDetails.setDestinationLocCode(destination.getLocCode());
                 carrierDetails.setOriginPortLocCode(pol.getLocCode());
                 carrierDetails.setDestinationPortLocCode(pod.getLocCode());
-                carrierDetailsDao.saveUnLocCodes(carrierDetails);
             }
         }
         catch (Exception e) {

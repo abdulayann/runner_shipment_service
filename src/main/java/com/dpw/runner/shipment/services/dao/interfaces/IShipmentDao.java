@@ -21,7 +21,7 @@ public interface IShipmentDao {
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
     Optional<ShipmentDetails> findByGuid(UUID id);
-    List<ShipmentDetails> findByHouseBill(String Hbl);
+    List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String Hbl);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
@@ -30,7 +30,9 @@ public interface IShipmentDao {
     void saveEntityTransfer(Long id, Boolean entityTransfer);
     List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids);
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
+    List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
     void entityDetach(List<ShipmentDetails> shipmentDetails);
+    List<ShipmentDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 }

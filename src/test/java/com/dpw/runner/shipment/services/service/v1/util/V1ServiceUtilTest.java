@@ -489,5 +489,39 @@ class V1ServiceUtilTest {
         var response = v1ServiceUtil.getTenantDetails(Arrays.asList(11));
         assertTrue(response.isEmpty());
     }
+
+
+    @Test
+    void testGetTenantSettingsMap() {
+        var mockResponse = new TenantDetailsByListResponse();
+        var tenant1 = new TenantDetailsByListResponse.TenantDetails();
+        tenant1.setTenantId(1);
+        tenant1.setTenantSettings(new HashMap<>());
+
+        var tenant2 = new TenantDetailsByListResponse.TenantDetails();
+        tenant2.setTenantId(2);
+        tenant2.setTenantSettings(new HashMap<>());
+        mockResponse.setEntities(Arrays.asList(tenant1, tenant2));
+
+        when(iV1Service.getTenantDetails(any())).thenReturn(mockResponse);
+
+        var response = v1ServiceUtil.getTenantSettingsMap(Arrays.asList(11));
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantSettingsMap2() {
+        var response = v1ServiceUtil.getTenantSettingsMap(Arrays.asList());
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testGetTenantSettingsMap3() {
+
+        when(iV1Service.getTenantDetails(any())).thenThrow(new RuntimeException());
+
+        var response = v1ServiceUtil.getTenantSettingsMap(Arrays.asList(11));
+        assertTrue(response.isEmpty());
+    }
 }
 

@@ -39,4 +39,20 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private String maxTransitHours;
     @JsonProperty(value = "main_leg_carrier_code")
     private String mainLegCarrierCode;
+//    @JsonProperty(value = "carrier_display_name")
+//    private String carrierDisplayName;
+//    @JsonProperty(value = "vessel_name")
+//    private String vesselName;
+//    private String voyage;
+//    private LocalDateTime eta;
+//    private LocalDateTime ets;
+//    private LocalDateTime ata;
+//    private LocalDateTime ats;
+//    @JsonProperty(value = "transport_mode")
+//    private String transportMode;
+//    @JsonProperty(value = "shipment_movement")
+//    private String shipmentMovement;
+//    @JsonProperty(value = "is_hazardous")
+//    private Boolean isDg;
+
 }

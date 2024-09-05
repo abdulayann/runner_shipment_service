@@ -624,6 +624,13 @@ class ConsolidationDaoTest extends CommonMocks {
     }
 
     @Test
+    void findBySourceGuid() {
+        when(consolidationRepository.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
+        var response = consolidationsDao.findBySourceGuid(UUID.randomUUID());
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
     void testGetIdWithPendingActions() {
         List<Long> eligibleId = List.of(1L, 2L, 3L);
         Page<Long> consolIdPage = new PageImpl<>(eligibleId);

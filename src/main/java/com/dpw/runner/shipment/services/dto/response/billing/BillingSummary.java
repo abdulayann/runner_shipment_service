@@ -69,6 +69,8 @@ public class BillingSummary {
     private Double cumulativeGPPercentage;
     @JsonProperty("moduleGuid")
     private String moduleGuid;
+    @JsonProperty("branchId")
+    private String branchId;
 }
 
 

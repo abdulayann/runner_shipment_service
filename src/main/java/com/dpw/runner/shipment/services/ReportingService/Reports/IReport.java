@@ -189,6 +189,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDDELIVERY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDPICKUP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_FLIGHT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORDER_MANAGEMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_INSTRUCTIONTYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISAIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISSEA;
@@ -250,6 +251,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pi
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
@@ -367,6 +369,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -590,6 +593,9 @@ public abstract class IReport {
 
         if(shipment.getCarrierDetails() != null)
             dictionary.put(TI_FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
+
+        if(shipment.getOrderManagementNumber()!=null)
+            dictionary.put(ORDER_MANAGEMENT_NUMBER, shipment.getOrderManagementNumber());
 
         if(shipment.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary , shipment);
@@ -1144,6 +1150,39 @@ public abstract class IReport {
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+
+    public Map<String, Object> populateFromRouting(List<RoutingsModel> routingsList, CarrierDetailModel carrierDetails,
+                                                   Map<String, Object> dictionary){
+        RoutingsModel routingSelectedForDocument = null;
+        if(ObjectUtils.isNotEmpty(routingsList)){
+            for (RoutingsModel routing: routingsList){
+                if(Boolean.TRUE.equals(routing.getIsSelectedForDocument())){
+                    routingSelectedForDocument = routing;
+                    break;
+                }
+            }
+        }
+        if(routingSelectedForDocument!=null) {
+            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
+            dictionary.put(ReportConstants.VOYAGE, routingSelectedForDocument.getVoyage());
+            dictionary.put(ReportConstants.FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
+            dictionary.put(VESSEL_NAME, routingSelectedForDocument.getVesselName());
+            var array = new String[] {"" + routingSelectedForDocument.getVesselName(), routingSelectedForDocument.getVoyage()};
+            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
+        } else if (carrierDetails != null) {
+            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, carrierDetails.getFlightNumber());
+            dictionary.put(ReportConstants.VOYAGE, carrierDetails.getVoyage());
+            dictionary.put(ReportConstants.FLIGHT_NUMBER, carrierDetails.getFlightNumber());
+            VesselsResponse vesselsResponse = getVesselsData(carrierDetails.getVessel());
+            if(vesselsResponse!=null){
+                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            }
+            var array = new String[] {"" + dictionary.get(VESSEL_NAME), carrierDetails.getVoyage()};
+            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
+        }
+        return dictionary;
     }
 
     private String getConcatenatedContact(String code, String number) {

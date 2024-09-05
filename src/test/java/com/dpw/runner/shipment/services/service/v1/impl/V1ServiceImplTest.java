@@ -23,18 +23,18 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.*;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
@@ -43,6 +43,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -80,11 +81,29 @@ class V1ServiceImplTest {
     @MockBean
     private CommonUtils commonUtils;
 
+    private V1UsersEmailRequest request;
+    private UsersRoleListResponse userRole;
+
     @BeforeAll
     static void init() throws IOException {
         objectMapper = JsonTestUtility.getMapper();
         v1ErrorResponse = V1ErrorResponse.builder().error(V1ErrorResponse.V1Error.builder().message(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE).build()).build();
         v1ErrorInString = objectMapper.writeValueAsString(v1ErrorInString);
+    }
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        request = new V1UsersEmailRequest();
+        request.setRoleId(1);
+        request.setTake(10);
+
+        userRole = UsersRoleListResponse.builder()
+                .roleId(1L)
+                .userName("John Doe")
+                .email("john.doe@example.com")
+                .build();
     }
 
     /**
@@ -4982,5 +5001,179 @@ class V1ServiceImplTest {
         assertNotNull(throwable);
     }
 
+    @Test
+    void testGetUserEmailsByRoleId_Success() {
+        List<UsersRoleListResponse> responseList = Arrays.asList(userRole);
+        ResponseEntity<List<UsersRoleListResponse>> responseEntity = ResponseEntity.ok(responseList);
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        List<UsersRoleListResponse> result = v1ServiceImpl.getUserEmailsByRoleId(request);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("john.doe@example.com", result.get(0).getEmail());
+    }
+
+    @Test
+    void testGetUserEmailsByRoleId_HttpClientErrorException() {
+        HttpClientErrorException ex = mock(HttpClientErrorException.class);
+        when(ex.getResponseBodyAsString()).thenReturn("{\"error\": {\"message\": \"Client Error\"}}");
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Client Error")));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("Client Error", thrown.getMessage());
+    }
+
+    @Test
+    void testGetUserEmailsByRoleId_HttpServerErrorException() {
+        HttpServerErrorException ex = mock(HttpServerErrorException.class);
+        when(ex.getResponseBodyAsString()).thenReturn("{\"error\": {\"message\": \"Server Error\"}}");
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Server Error")));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("Server Error", thrown.getMessage());
+    }
+
+
+    @Test
+    void testGetUserEmailsByRoleId_GeneralException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(new RuntimeException("General Error"));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("General Error", thrown.getMessage());
+    }
+
+    @Test
+    void updateTask() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.updateTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void updateTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.updateTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void updateTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.updateTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void retrieveTask() {
+        var mockResponse = V1RetrieveResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.retrieveTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void retrieveTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void retrieveTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.retrieveTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void createTask() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.createTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void createTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.createTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void createTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.createTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
 
 }

@@ -7,6 +7,7 @@ public class EntityTransferConstants {
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";
     public static final String CHECK_TASK_EXIST = "/check-task-exist";
+    public static final String CHECK_ENTIRY_EXIST = "/check-entity-exist";
     public static final String SEND_CONSOLIDATION = "/send-consolidation";
     public static final String SEND_CONSOLIDATION_VALIDATION = "/send-consolidation-validation";
     public static final String IMPORT_SHIPMENT = "/import-shipment";
@@ -38,4 +39,5 @@ public class EntityTransferConstants {
 
     public static final String MISSING_RECEIVING_BRANCH_VALIDATION = "Please enter the receiving agent in entity transfer tab before proceeding with the transfer !";
 
+    public static final String TRANSFERRED_ENTITY_ALREADY_PRESENT = "%s already exists, do you want to update the entry?";
 }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -25,9 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -44,12 +49,20 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String baseUrl;
     @Value("${order.management.getOrder}")
     private String getOrderUrl;
+    @Value("${order.management.getOrderbyGuid}")
+    private String getOrderbyGuidUrl;
+
+    @Autowired
+    private V2AuthHelper v2AuthHelper;
 
     @Autowired
     private IV1Service v1Service;
 
     @Autowired
     private JsonHelper jsonHelper;
+
+    public static final String X_SOURCE= "x-source";
+    public static final String X_SOURCE_VALUE= "shipment-service";
 
 
     @Override
@@ -59,6 +72,21 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
             var shipment = generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
             return shipment;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
+    public ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException {
+        try {
+            String url = baseUrl + getOrderbyGuidUrl + orderGuid;
+            HttpEntity<Object> httpEntity = new HttpEntity<>(v2AuthHelper.getOrderManagementServiceSourceHeader());
+            log.info("Request to Order Service: {}", url);
+            var response = restTemplate.exchange(url, HttpMethod.GET, httpEntity, OrderManagementResponse.class);
+            log.info("Response from Order Service: {}", response.getBody());
+            return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -163,6 +191,12 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgData(partyMap.get(order.getSendingAgentCode()));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressCode(order.getSendingAgentAddressCode());
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressData(order.getSendingAgentAddress());
+
+            shipmentDetails.getAdditionalDetails().setExportBroker(new Parties());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setOrgCode(order.getSendingAgentCode());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setOrgData(partyMap.get(order.getSendingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getExportBroker().setAddressCode(order.getSendingAgentAddressCode());
+            shipmentDetails.getAdditionalDetails().getExportBroker().setAddressData(order.getSendingAgentAddress());
         }
         if(partyMap.get(order.getReceivingAgentCode()) != null) {
             shipmentDetails.getAdditionalDetails().setReceivingAgent(new Parties());
@@ -170,6 +204,15 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgData(partyMap.get(order.getReceivingAgentCode()));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressCode(order.getReceivingAgentAddressCode());
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressData(order.getReceivingAgentAddress());
+
+
+            shipmentDetails.getAdditionalDetails().setImportBroker(new Parties());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setOrgCode(order.getReceivingAgentCode());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setOrgData(partyMap.get(order.getReceivingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getImportBroker().setAddressCode(order.getReceivingAgentAddressCode());
+            shipmentDetails.getAdditionalDetails().getImportBroker().setAddressData(order.getReceivingAgentAddress());
+
+
         }
 
         shipmentDetails.setShipmentType(order.getContainerMode());
@@ -185,6 +228,15 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.setVolume(order.getVolumeAmount().getAmount());
             shipmentDetails.setVolumeUnit(order.getVolumeAmount().getUnit());
         }
+        if (order.getGoodsDescription() != null) {
+            shipmentDetails.setGoodsDescription(order.getGoodsDescription());
+        }
+
+        if (order.getReferences() != null) {
+            var referenceNumbersList = getReferenceNumbersList(order.getReferences());
+            shipmentDetails.setReferenceNumbersList(referenceNumbersList);
+        }
+
         shipmentDetails.setOrderManagementId(order.getGuid().toString());
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
 
@@ -215,4 +267,22 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         }
         return res;
     }
+
+    private List<ReferenceNumbers> getReferenceNumbersList(List<ReferencesResponse> references) {
+
+        List<ReferenceNumbers> newReferenceNumbersList = new ArrayList<>();
+        for (ReferencesResponse refMap : references) {
+            ReferenceNumbers referenceNumberObj = new ReferenceNumbers();
+
+            referenceNumberObj.setCountryOfIssue(refMap.getCountryOfIssue());
+            referenceNumberObj.setType(refMap.getType());
+            referenceNumberObj.setReferenceNumber(refMap.getReference());
+
+            newReferenceNumbersList.add(referenceNumberObj);
+        }
+        return newReferenceNumbersList;
+
+
+    }
+
 }

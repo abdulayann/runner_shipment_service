@@ -160,4 +160,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     @ExcludeTimeZone
     private LocalDateTime latDate;
     private Integer pendingActionCount;
+    private String department;
 }

@@ -77,7 +77,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FAX;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_CARRIER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FREIGHT_OVERSEAS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FREIGHT_OVERSEAS_CURRENCY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
@@ -183,7 +182,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_AND_UNIT_AIR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOYAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.V_WEIGHT_AND_UNIT_AIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT_AND_UNIT;
@@ -717,10 +715,8 @@ public class HblReport extends IReport {
 
         // SHIPMENT FIELDS
         dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRefNo());
-        VesselsResponse vesselsResponse = getVesselsData(hblModel.shipment.getCarrierDetails().getVessel());
-        if(vesselsResponse != null)
-            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-        dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
+
+        populateFromRouting(hblModel.shipment.getRoutingsList(), hblModel.shipment.getCarrierDetails(), dictionary);
         dictionary.put(TRANSPORT_MODE, hblModel.shipment.getTransportMode());
         dictionary.put(DESCRIPTION, hblModel.blObject != null ? hblModel.blObject.getHblData().getCargoDescription()
                 : hblModel.shipment.getGoodsDescription());
@@ -989,7 +985,6 @@ public class HblReport extends IReport {
             dictionary.put(MESSERS, getValueFromMap(hblModel.shipment.getConsignee().getAddressData(), FULL_NAME));
         dictionary.put(IGM_NO, hblModel.shipment.getAdditionalDetails().getIGMFileNo());
         dictionary.put(FLIGHT_NAME, hblModel.shipment.getCarrierDetails().getShippingLine());
-        dictionary.put(FLIGHT_NUMBER, hblModel.shipment.getCarrierDetails().getFlightNumber());
         dictionary.put(MBL_NUMBER, hblModel.shipment.getMasterBill());
         dictionary.put(HBL_NUMBER, hblModel.shipment.getHouseBill());
 

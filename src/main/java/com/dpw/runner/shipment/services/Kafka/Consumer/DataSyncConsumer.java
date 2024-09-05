@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.Kafka.Consumer;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.service.impl.SyncService;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
@@ -30,7 +29,7 @@ public class DataSyncConsumer {
         try {
             log.info("DataSyncConsumer message :" + message);
             SyncKafkaDto obj = objectMapper.readValue(message, SyncKafkaDto.class);
-            syncService.callSync(obj.getData(), obj.getId(), obj.getGuid(), obj.getEntity(), v1AuthHelper.getHeadersForDataSyncFromKafka(obj.getUserName(), obj.getTenantId()));
+            syncService.callSync(obj.getData(), obj.getId(), obj.getGuid(), obj.getEntity(), v1AuthHelper.getHeadersForDataSyncFromKafka(obj.getUserName(), obj.getTenantId(), obj.getUpdateUsername()));
             log.info("Passed");
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_PULL_FOR_V1_SYNC, message, ex.getLocalizedMessage());
