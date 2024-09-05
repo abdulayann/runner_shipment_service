@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +50,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long documentationPartner;
     private List<ELDetailsRequest> elDetailsList;
     private String entryDetail;
-    private List<EventsRequest> eventsList;
+    private List<EventsRequest> eventsList = new ArrayList<>();
     private List<FileRepoRequest> fileRepoList;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
