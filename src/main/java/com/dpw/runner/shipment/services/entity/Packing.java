@@ -250,7 +250,7 @@ public class Packing extends MultiTenancy {
     private String minimumFlashPointUnit;
 
     @Column(name = "marine_pollutant")
-    private Boolean marinePollutant;
+    private Boolean marinePollutant = false;
 
 }
 
