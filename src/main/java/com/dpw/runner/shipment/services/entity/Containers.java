@@ -156,7 +156,7 @@ public class Containers extends MultiTenancy {
     private String dgClass;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "hazardous_un")
     private String hazardousUn;
@@ -360,5 +360,5 @@ public class Containers extends MultiTenancy {
     private String minimumFlashPointUnit;
 
     @Column(name = "marine_pollutant")
-    private Boolean marinePollutant;
+    private Boolean marinePollutant = false;
 }

@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
@@ -1147,9 +1148,7 @@ public class CommonUtils {
             if(!UserContext.isOceanDgUser())
                 shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
         }
-        if(!Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus()))
-            return true;
-        return false;
+        return !Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus());
     }
 
     public boolean checkIfDGClass1(String dgClass) {
@@ -1167,8 +1166,26 @@ public class CommonUtils {
         return false;
     }
 
+    public boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
+        if(!oldPack.getHazardous().equals(newPack.getHazardous()))
+            return true;
+        if(!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
+            return true;
+        if(!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
+            return true;
+        if(!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
+            return true;
+        if(!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
+            return true;
+        if(!Objects.equals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
+            return true;
+        if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
+            return true;
+        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+    }
+
     public boolean checkIfDGFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
-        if(!Objects.equals(newContainer.getHazardous(), oldContainer.getHazardous()))
+        if(!oldContainer.getHazardous().equals(newContainer.getHazardous()))
             return true;
         if(!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
             return true;
@@ -1182,9 +1199,7 @@ public class CommonUtils {
             return true;
         if(!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
             return true;
-        if(!Objects.equals(newContainer.getMarinePollutant(), oldContainer.getMarinePollutant()))
-            return true;
-        return false;
+        return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
     }
 
     public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {

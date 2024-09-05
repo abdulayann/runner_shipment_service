@@ -3384,7 +3384,9 @@ ShipmentServiceTest extends CommonMocks {
 
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails1));
         //doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
         mockShipmentSettings();
 
@@ -4047,6 +4049,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setShipmentId("SHP001");
+        shipmentDetails.setGuid(UUID.randomUUID());
 
         Containers container = Containers.builder().bookingId(1L).isPart(true).containerNumber("1").build();
         PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(container));
@@ -5046,11 +5049,14 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setId(1L);
         shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
         shipmentDetails.setContainerAutoWeightVolumeUpdate(true);
+        shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED);
 
         Packing packing = new Packing();
         packing.setContainerId(1L);
         packing.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        packing.setHazardous(true);
+        packing.setDGClass("1.1");
         shipmentDetails.setPackingList(Arrays.asList(packing));
 
         Routings routings = new Routings();
@@ -5107,8 +5113,11 @@ ShipmentServiceTest extends CommonMocks {
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
         when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(Arrays.asList(ContainerRequest.builder().id(1L).build()));

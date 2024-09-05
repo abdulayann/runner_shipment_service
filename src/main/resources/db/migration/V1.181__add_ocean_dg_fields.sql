@@ -18,3 +18,7 @@ ALTER TABLE IF EXISTS containers
 
 ALTER TABLE IF EXISTS shipment_details
     ADD COLUMN IF NOT EXISTS ocean_dg_status VARCHAR(63);
+
+ALTER TABLE containers
+ALTER COLUMN hazardous set default false;
+Update containers set hazardous = false where hazardous is null;
