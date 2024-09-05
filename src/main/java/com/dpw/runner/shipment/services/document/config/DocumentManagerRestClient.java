@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.document.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
@@ -10,8 +11,11 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDow
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,6 +26,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Component
 @Generated
+@Slf4j
 public class DocumentManagerRestClient {
 
     @Value("${document-manager.baseUrl}")
@@ -29,10 +34,15 @@ public class DocumentManagerRestClient {
 
     @Value("${document-manager.copy-file}")
     private String copyFileUrl;
+    private JsonHelper jsonHelper;
 
+    private RestTemplate restTemplate;
 
     @Autowired
-    private RestTemplate restTemplate;
+    DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
+        this.jsonHelper = jsonHelper;
+        this.restTemplate = restTemplate;
+    }
 
     public DocumentManagerResponse<DocumentManagerDataResponse> getFileAndRules(String token, DocumentManagerFileAndRulesRequest fileAndRulesRequest) {
         HttpHeaders headers = getHttpHeaders(token);
@@ -55,6 +65,8 @@ public class DocumentManagerRestClient {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
+        headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
+        headers.add(LoggingConstants.SOURCE_SERVICE_TYPE, LoggingConstants.SHIPMENT);
         return headers;
     }
 
@@ -123,14 +135,19 @@ public class DocumentManagerRestClient {
     }
 
     public ResponseEntity<Object> copyDocuments(CommonRequestModel commonRequestModel) {
-        var request = (CopyDocumentsRequest) commonRequestModel.getData();
+        try {
+            var request = (CopyDocumentsRequest) commonRequestModel.getData();
+            log.info("Copy Document Request {}", jsonHelper.convertToJson(request));
 
-        HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
 
-        String url = baseUrl + copyFileUrl;
-
-        HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
-
-        return restTemplate.postForEntity(url, httpEntity, Object.class);
+            var response = restTemplate.postForEntity(baseUrl + copyFileUrl, httpEntity, Object.class);
+            log.info("Copy Document Response {}", jsonHelper.convertToJson(response));
+            return response;
+        } catch (Exception ex) {
+            log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
+            throw ex;
+        }
     }
 }
