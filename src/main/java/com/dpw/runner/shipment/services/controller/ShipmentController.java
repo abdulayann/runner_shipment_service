@@ -31,8 +31,8 @@ import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Reques
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGApprovalRequest;
-import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;

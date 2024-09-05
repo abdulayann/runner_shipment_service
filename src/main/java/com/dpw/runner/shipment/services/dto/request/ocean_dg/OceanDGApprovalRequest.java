@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.request.oceanDG;
+package com.dpw.runner.shipment.services.dto.request.ocean_dg;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

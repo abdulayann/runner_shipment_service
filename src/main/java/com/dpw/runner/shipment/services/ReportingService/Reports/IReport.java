@@ -3401,39 +3401,47 @@ public abstract class IReport {
 
     }
 
+    private void validateAirDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            boolean dgPack = false;
+            if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
+                for (PackingModel packingModel: shipmentModel.getPackingList()) {
+                    if(Boolean.TRUE.equals(packingModel.getHazardous())) {
+                        dgPack = true;
+                        break;
+                    }
+                }
+            }
+            if(!dgPack) {
+                throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
+            }
+        }
+    }
+
+    private void validateOceanDGCheck(ShipmentModel shipmentModel) {
+        if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
+                throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
+            }
+            boolean dgContainer = false;
+            if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
+                for (ContainerModel containerModel: shipmentModel.getContainersList()) {
+                    if(Boolean.TRUE.equals(containerModel.getHazardous())) {
+                        dgContainer = true;
+                        break;
+                    }
+                }
+            }
+            if(!dgContainer) {
+                throw new ValidationException("The shipment is marked as DG but does not contain any DG containers. Please add DG containers before printing.");
+            }
+        }
+    }
+
     public void validateAirAndOceanDGCheck(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(shipmentModel.getContainsHazardous())) {
-            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-                boolean dgPack = false;
-                if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
-                    for (PackingModel packingModel: shipmentModel.getPackingList()) {
-                        if(Boolean.TRUE.equals(packingModel.getHazardous())) {
-                            dgPack = true;
-                            break;
-                        }
-                    }
-                }
-                if(!dgPack) {
-                    throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
-                }
-            }
-            if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
-                    throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
-                }
-                boolean dgContainer = false;
-                if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
-                    for (ContainerModel containerModel: shipmentModel.getContainersList()) {
-                        if(Boolean.TRUE.equals(containerModel.getHazardous())) {
-                            dgContainer = true;
-                            break;
-                        }
-                    }
-                }
-                if(!dgContainer) {
-                    throw new ValidationException("The shipment is marked as DG but does not contain any DG containers. Please add DG containers before printing.");
-                }
-            }
+            validateAirDGCheck(shipmentModel);
+            validateOceanDGCheck(shipmentModel);
         }
     }
 

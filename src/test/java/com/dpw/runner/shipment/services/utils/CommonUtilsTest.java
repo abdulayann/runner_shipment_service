@@ -62,8 +62,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGApprover;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.oceanDGCommercialApprover;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -1796,64 +1796,64 @@ class CommonUtilsTest {
 
     @Test
     void testChangeShipmentDGStatusToReqd1() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build());
         assertFalse(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd2() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build());
         assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd3() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build());
         assertFalse(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd4() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build());
         assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd5() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build());
         assertFalse(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd6() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build());
         assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd7() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
         assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd8() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, false);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
         assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd9() {
-        UserContext.getUser().getPermissions().put(oceanDGApprover, true);
-        UserContext.getUser().getPermissions().put(oceanDGCommercialApprover, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_COMMERCIAL_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build());
         assertFalse(response);
     }

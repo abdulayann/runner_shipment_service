@@ -23,7 +23,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.request.oceanDG.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -708,7 +708,7 @@ public class CommonUtils {
         Map<String, Object> dictionary = new HashMap<>();
         List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
 
-        populateDGReceiverDictionary(dictionary,request , shipmentDetails);
+        populateDGReceiverDictionary(dictionary, shipmentDetails);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
             template.getSubject(), new ArrayList<>(recipientEmails), null);
@@ -1035,17 +1035,17 @@ public class CommonUtils {
 
     public String getShipmentIdHyperLink(String shipmentId, Long id) {
         String link = baseUrl + "/v2/shipments/edit/" + id;
-        return "<html><body>" + "<a href='" + link + "'>" + shipmentId + "</a>" + "</body></html>";
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
     public String getTaskIdHyperLink(String shipmentId, String taskId) {
         String link = baseUrl + "/v2/shipments/task/" + taskId;
-        return "<html><body>" + "<a href='" + link + "'>" + shipmentId + "</a>" + "</body></html>";
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
-        return "<html><body>" + "<a href='" + link + "'>" + consolidationId + "</a>" + "</body></html>";
+        return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
     }
 
     public String replaceTagsFromData(Map<String, Object> map, String val) {
@@ -1127,16 +1127,14 @@ public class CommonUtils {
         usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
-    // called when new dg pack is added or dg fields are changed or new dg container is added, or new pack added in dg container or dg fields are changed
+    // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed
     public boolean changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails) {
         OceanDGStatus oldOceanDGStatus = shipmentDetails.getOceanDGStatus();
-        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
         }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
         }
         if(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
             if(!UserContext.isOceanDgCommercialUser())
@@ -1144,17 +1142,14 @@ public class CommonUtils {
             if(!UserContext.isOceanDgUser())
                 shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
         }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
         }
         return !Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus());
     }
 
     public boolean checkIfDGClass1(String dgClass) {
-        if(!IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1')
-            return true;
-        return false;
+        return !IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1';
     }
 
     public boolean checkIfAnyDGClass(String dgClass) throws RunnerException {
@@ -1443,8 +1438,7 @@ public class CommonUtils {
         dictionary.put(REQUESTER_REMARKS, remarks);
     }
 
-    private void populateDGReceiverDictionary(Map<String, Object> dictionary, OceanDGRequest request,
-        ShipmentDetails shipmentDetails){
+    private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails){
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());

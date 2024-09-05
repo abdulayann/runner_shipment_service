@@ -62,4 +62,6 @@ public class ConsolidationConstants {
     public static final String CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR = "Request is empty for Consolidation list with Request Id {}";
     public static final String CONSOLIDATION_LIST_REQUEST_NULL_ERROR = "Consolidation List Request is Null";
     public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
+    public static final String CONSOLIDATION_RETRIEVE_EMPTY_REQUEST = "Request is empty for Consolidation retrieve with Request Id {}";
+    public static final String CONSOLIDATION_DETAILS_NULL = "Consolidation Details is null for Guid {} with Request Id {}";
 }
