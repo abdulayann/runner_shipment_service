@@ -25,7 +25,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
@@ -1039,7 +1039,7 @@ public class CommonUtils {
     }
 
     public String getTaskIdHyperLink(String shipmentId, String taskId) {
-        String link = baseUrl + "/v2/shipments/task/" + taskId;
+        String link = baseUrl + "/v2/shipments/tasks/" + taskId;
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
@@ -1347,8 +1347,9 @@ public class CommonUtils {
         return userEmailIds;
     }
 
-    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId, TaskCreateResponse taskCreateResponse){
-        TaskCreateRequest taskRequest = TaskCreateRequest
+    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId, TaskCreateResponse taskCreateResponse)
+        throws RunnerException {
+        DGTaskCreateRequest taskRequest = DGTaskCreateRequest
             .builder()
             .entityType(Shipments)
             .entityId(shipmentDetails.getId().toString())
@@ -1359,9 +1360,11 @@ public class CommonUtils {
             .tenantId(UserContext.getUser().getTenantId().toString())
             .build();
 
-        V1DataResponse v1DataResponse =  iv1Service.createTask(taskRequest);
-        if(v1DataResponse != null) {
-            taskCreateResponse =  jsonHelper.convertValue(v1DataResponse.entities, TaskCreateResponse.class);
+        try {
+            taskCreateResponse = iv1Service.createTask(taskRequest);
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
+                shipmentDetails.getId(), e.getMessage()));
         }
         return taskCreateResponse;
     }
@@ -1393,14 +1396,17 @@ public class CommonUtils {
             dictionary.put(DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
             dictionary.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
             dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
+            dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
+            dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
         }
         dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
         dictionary.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(CARGO_TYPE, shipmentDetails.getShipmentType());
-        dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-        dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
-        dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
+        if(vesselsResponse != null){
+            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+        }
+
 
         //Summary of cargo Details
         long totalContainerCount = shipmentDetails.getContainersList().stream()
@@ -1427,7 +1433,7 @@ public class CommonUtils {
 
         dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
         dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
-        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTaskId()));
+        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
     }
 
     private void populateDictionaryApprovalRequestForDGEmail(Map<String,Object> dictionary, String remarks) {
