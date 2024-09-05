@@ -72,7 +72,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
-    private long SourceTenantId;
+    private long sourceTenantId;
     private long documentationPartner;
     private long triangulationPartner;
     private long receivingBranch;
