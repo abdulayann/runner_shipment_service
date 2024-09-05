@@ -79,6 +79,4 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String minTransitHours;
     @JsonProperty("maxTransitHours")
     private String maxTransitHours;
-    @JsonProperty("isDg")
-    private Boolean isDg;
 }
