@@ -1220,11 +1220,8 @@ public abstract class IReport {
                     var cargoInfoRows = awb.getAwbCargoInfo();
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
-                        LocalDateTime dateTime = awb.getOriginalPrintedAt() != null ? awb.getOriginalPrintedAt() : null;
-                        assert dateTime != null;
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(dateTime, commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true) + " " + dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute());
-                    }
+                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
@@ -2238,7 +2235,7 @@ public abstract class IReport {
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
     }
 
-    public String ConvertToSingleCharWeightFormat(String weightUnit) {
+    public String convertToSingleCharWeightFormat(String weightUnit) {
             if (weightUnit == null || weightUnit.isEmpty()) {
                 throw new IllegalArgumentException("Weight unit cannot be null or empty");
             }

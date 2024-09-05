@@ -65,33 +65,33 @@ public class CargoManifestReport extends IReport{
         addTenantDetails(dictionary, cargoManifestModel.tenantDetails);
 
         List<String> consigner = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getConsigner() != null) {
+        if (cargoManifestModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsigner());
-            if(cargoManifestModel.shipmentDetails.getConsigner().getOrgData() != null) {
+            if (cargoManifestModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsigner().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if (!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     consigner.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
         }
 
         List<String> consignee = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getConsignee() != null) {
+        if (cargoManifestModel.shipmentDetails.getConsignee() != null) {
             consignee = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsignee());
-            if(cargoManifestModel.shipmentDetails.getConsignee().getOrgData() != null) {
+            if (cargoManifestModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsignee().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if (!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     consignee.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
         }
 
         List<String> notify = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+        if (cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
             notify = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
-            if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
+            if (cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                if (!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
                     notify.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
                 }
             }
@@ -100,7 +100,7 @@ public class CargoManifestReport extends IReport{
         List<String> tenantsDataList = getListOfStrings(cargoManifestModel.tenantDetails.tenantName, cargoManifestModel.tenantDetails.address1, cargoManifestModel.tenantDetails.address2,
                 cargoManifestModel.tenantDetails.city, cargoManifestModel.tenantDetails.state, cargoManifestModel.tenantDetails.zipPostCode, cargoManifestModel.tenantDetails.country,
                 cargoManifestModel.tenantDetails.email, cargoManifestModel.tenantDetails.websiteUrl, cargoManifestModel.tenantDetails.phone);
-        if(tenantsDataList != null)
+        if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.CONSIGNOR, consigner);
         dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, consignee);
@@ -111,9 +111,9 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.MAWB_NO, cargoManifestModel.shipmentDetails.getMasterBill());
         dictionary.put(ReportConstants.HAWB_NO, cargoManifestModel.shipmentDetails.getHouseBill());
         dictionary.put(ReportConstants.SHIPMENT_NO, cargoManifestModel.shipmentDetails.getShipmentId());
-        if(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
+        if (cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
             UnlocationsResponse origin = getUNLocRow(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if(origin != null)
+            if (origin != null)
                 dictionary.put(ReportConstants.POR, origin.getNameWoDiacritics());
         }
         dictionary.put(ReportConstants.POL, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()));
@@ -122,17 +122,17 @@ public class CargoManifestReport extends IReport{
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
-        if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
+        if (cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
             dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
         }
-        if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta() != null) {
+        if (cargoManifestModel.shipmentDetails.getCarrierDetails().getEta() != null) {
             dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
         }
         dictionary.put(ReportConstants.FLIGHT_NAME, cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.FLIGHT_NUMBER, cargoManifestModel.shipmentDetails.getCarrierDetails().getFlightNumber());
         dictionary.put(ReportConstants.PP_CC, cargoManifestModel.shipmentDetails.getPaymentTerms());
         dictionary.put(ReportConstants.BOOKING_NO, cargoManifestModel.shipmentDetails.getBookingNumber());
-        if(cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
+        if (cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
             var request = cargoManifestModel.shipmentDetails.getPackingList().stream().filter(c -> StringUtility.isNotEmpty(c.getCommodity())).map(PackingModel::getCommodity).toList();
             var v1DataMap = masterDataUtils.fetchInBulkCommodityTypes(request);
             List<Map<String, Object>> packDictionary = new ArrayList<>();
@@ -154,36 +154,70 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MMM/y hh:mm a")));
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(cargoManifestModel.shipmentDetails);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-        try {dictionary.put(ReportConstants.POR_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POL_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getPortName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.FPOD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getPortName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getName().toUpperCase());} catch (Exception ignored) {}
-
-        try {dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POL_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getCountry().toUpperCase());} catch (Exception ignored) {}
-
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
-            MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
-            try {dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());} catch (Exception ignored) {}
-            try {dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());} catch (Exception ignored) {}
+        try {
+            dictionary.put(ReportConstants.POR_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getName().toUpperCase());
+        } catch (Exception ignored) {
         }
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
+        try {
+            dictionary.put(ReportConstants.POL_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getPortName().toUpperCase());
+        } catch (Exception ignored) {
+        }
+        try {
+            dictionary.put(ReportConstants.FPOD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getPortName().toUpperCase());
+        } catch (Exception ignored) {
+        }
+        try {
+            dictionary.put(ReportConstants.POD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getName().toUpperCase());
+        } catch (Exception ignored) {
+        }
+
+        try {
+            dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getCountry().toUpperCase());
+        } catch (Exception ignored) {
+        }
+        try {
+            dictionary.put(ReportConstants.POL_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getCountry().toUpperCase());
+        } catch (Exception ignored) {
+        }
+        try {
+            dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getCountry().toUpperCase());
+        } catch (Exception ignored) {
+        }
+        try {
+            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getCountry().toUpperCase());
+        } catch (Exception ignored) {
+        }
+
+        if (!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
+            MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
+            try {
+                dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());
+            } catch (Exception ignored) {
+            }
+            try {
+                dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());
+            } catch (Exception ignored) {
+            }
+        }
+        if (!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
             MasterData packsUnitDesc = getMasterListData(MasterDataType.PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
             String packsUnit = null;
-            try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
-            if(CommonUtils.IsStringNullOrEmpty(packsUnit))
+            try {
+                packsUnit = packsUnitDesc.getItemDescription();
+            } catch (Exception ignored) {
+            }
+            if (CommonUtils.IsStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
             dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
         }
         try {
-            if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
+            if (!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
                 CarrierMasterData carrierMasterData = getCarrier(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
                 dictionary.put(ReportConstants.FLIGHT_IATA_CODE, carrierMasterData.getIataCode());
             }
-        } catch (Exception ignored) {}
-        if(cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && cargoManifestModel.shipmentDetails.getBookingCarriagesList().size() > 0) {
+        } catch (Exception ignored) {
+        }
+        if (cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && cargoManifestModel.shipmentDetails.getBookingCarriagesList().size() > 0) {
             for (BookingCarriageModel bookingCarriageModel : cargoManifestModel.shipmentDetails.getBookingCarriagesList()) {
                 if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PreCarriage) || bookingCarriageModel.getCarriageType().equals(Constants.Main))) {
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.Vessel, bookingCarriageModel.getVessel());
@@ -210,29 +244,30 @@ public class CargoManifestReport extends IReport{
         BigDecimal Total_GrossVolume = BigDecimal.ZERO;
         long Total_ContainerCount = 0;
         long Total_Packs = 0;
-        if(cargoManifestModel.shipmentDetails.getContainersList() != null && cargoManifestModel.shipmentDetails.getContainersList().size() > 0) {
+        if (cargoManifestModel.shipmentDetails.getContainersList() != null && cargoManifestModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
             for (ContainerModel item : cargoManifestModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = getShipmentContainer(item);
                 shipmentContainersList.add(shipmentContainers);
-                if(item.getGrossWeight() != null)
+                if (item.getGrossWeight() != null)
                     Total_GrossWeight = Total_GrossWeight.add(item.getGrossWeight());
-                if(item.getGrossVolume() != null)
+                if (item.getGrossVolume() != null)
                     Total_GrossVolume = Total_GrossVolume.add(item.getGrossVolume());
-                if(item.getContainerCount() != null) {
+                if (item.getContainerCount() != null) {
                     Total_ContainerCount = Total_ContainerCount + item.getContainerCount();
                 }
-                if(!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
+                if (!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
                     Total_Packs = Total_Packs + Long.parseLong(item.getPacks());
                 }
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentContainersList);
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : shipmentContainersList) {
-                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
+                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {
+                }));
             }
             for (Map<String, Object> v : valuesContainer) {
-                if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
+                if (v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
                     v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
                     v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
@@ -250,26 +285,15 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
         }
 
-        if(cargoManifestModel.awb != null) {
+        if (cargoManifestModel.awb != null) {
             AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
             dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-            checkCsdInfo(cargoInfoRows, cargoManifestModel, dictionary, v1TenantSettingsResponse);
+            dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormatWithTime(cargoManifestModel.awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
         return dictionary;
-    }
-
-    public void checkCsdInfo(AwbCargoInfo cargoInfoRows, CargoManifestModel cargoManifestModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo())) {
-            LocalDateTime dateTime = cargoManifestModel.awb.getOriginalPrintedAt();
-            if (dateTime != null) {
-                String formattedDate = ConvertToDPWDateFormat(dateTime, v1TenantSettingsResponse.getDPWDateFormat(), true);
-                String time = dateTime.toLocalTime().getHour() + ":" + dateTime.toLocalTime().getMinute();
-                dictionary.put(ORIGINAL_PRINT_DATE, formattedDate + " " + time);
-            }
-        }
     }
 
 }

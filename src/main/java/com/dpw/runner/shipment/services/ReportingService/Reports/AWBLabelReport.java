@@ -146,7 +146,7 @@ public class AWBLabelReport extends IReport{
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestination());
             if (awbLabelModel.shipment.getCarrierDetails() != null && awbLabelModel.shipment.getCarrierDetails().getDestinationPort() != null)
                 unlocations.add(awbLabelModel.shipment.getCarrierDetails().getDestinationPort());
-            dictionary.put(SHIPMENT_GROSS_WEIGHT_AND_UNIT, awbLabelModel.shipment.getWeight() + " " +   ConvertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
+            dictionary.put(SHIPMENT_GROSS_WEIGHT_AND_UNIT, awbLabelModel.shipment.getWeight() + " " +   convertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
         }
         if(awbLabelModel.getConsolidation() != null){
             String shippingLine = awbLabelModel.getConsolidation().getCarrierDetails() != null ? awbLabelModel.getConsolidation().getCarrierDetails().getShippingLine() : "";
@@ -163,7 +163,7 @@ public class AWBLabelReport extends IReport{
             String[] parts = totalGrossWeightAndUnit.split(" ");
             String totalGrossWeight = parts[0];
             String unit = parts[1];
-            dictionary.put(CONSOLIDATION_GROSS_WEIGHT_AND_UNIT, totalGrossWeight  + " " +   ConvertToSingleCharWeightFormat(unit));
+            dictionary.put(CONSOLIDATION_GROSS_WEIGHT_AND_UNIT, totalGrossWeight  + " " +   convertToSingleCharWeightFormat(unit));
         }
 
         if (!unlocations.isEmpty()) {
