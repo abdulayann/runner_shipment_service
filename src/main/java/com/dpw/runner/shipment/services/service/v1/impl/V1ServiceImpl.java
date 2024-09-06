@@ -334,6 +334,8 @@ public class V1ServiceImpl implements IV1Service {
     private String updateTaskUrl;
     @Value("${v1service.url.base}${v1service.url.retrieveTask}")
     private String retrieveTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.listTask}")
+    private String listTaskUrl;
     @Value("${v1service.url.base}${v1service.url.userEmails}")
     private String getUserEmailsByRoleId;
     @Autowired
@@ -2162,6 +2164,21 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
             response = this.restTemplate.postForEntity(this.retrieveTaskUrl, entity, V1RetrieveResponse.class);
+            log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+    @Override
+    public V1DataResponse listTask(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listTaskUrl, entity, V1DataResponse.class);
             log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {

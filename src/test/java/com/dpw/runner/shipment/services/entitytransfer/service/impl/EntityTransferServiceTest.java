@@ -18,11 +18,11 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
@@ -830,17 +830,18 @@ class EntityTransferServiceTest {
     @Test
     void testCheckTaskExist_Success_Shipment() {
         try {
-            ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(shipmentDetails.getId())
+                .entityId(123L)
                 .entityType(Constants.Shipments)
                 .sendToBranch(List.of(66))
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
                 .build();
-            CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(request.getSendToBranch()).sendToOrg(request.getSendToOrg()).build();
+            CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(Set.of(66)).build();
+            List<TaskCreateRequest> taskCreateRequests = new ArrayList<>();
+            taskCreateRequests.add(TaskCreateRequest.builder().tenantId(String.valueOf(66)).build());
+            V1DataResponse v1DataResponse = V1DataResponse.builder().entities(taskCreateRequests).build();
 
-            when(shipmentDao.findById(request.getEntityId())).thenReturn(Optional.of(shipmentDetails));
-            when(v1Service.checkTaskExist(any())).thenReturn(response);
+            when(v1Service.listTask(any())).thenReturn(v1DataResponse);
+            when(jsonHelper.convertValueToList(any(), eq(TaskCreateRequest.class))).thenReturn(taskCreateRequests);
 
             ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
             assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -852,120 +853,29 @@ class EntityTransferServiceTest {
     }
 
     @Test
-    void testCheckTaskExist_Success_Shipment1() {
-        try{
-            ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
-            CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(shipmentDetails.getId())
-                .entityType(Constants.Shipments)
-                .sendToBranch(null)
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
-                .build();
-            CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(request.getSendToBranch()).sendToOrg(request.getSendToOrg()).build();
-
-            when(shipmentDao.findById(request.getEntityId())).thenReturn(Optional.of(shipmentDetails));
-            when(v1Service.checkTaskExist(any())).thenReturn(response);
-
-            ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
-            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-            assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
-        }
-        catch (Exception e) {
-            fail(e);
-        }
-    }
-
-    @Test
-    void testCheckTaskExist_Success_Shipment2() {
+    void testCheckTaskExist_Empty_sendToBranch() {
         try {
-            ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(shipmentDetails.getId())
-                .entityType(Constants.Shipments)
-                .sendToBranch(List.of(66))
-                .sendToOrg(null)
-                .build();
-            CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(request.getSendToBranch()).sendToOrg(request.getSendToOrg()).build();
-
-            when(shipmentDao.findById(request.getEntityId())).thenReturn(Optional.of(shipmentDetails));
-            when(v1Service.checkTaskExist(any())).thenReturn(response);
-
+                    .entityId(123L)
+                    .entityType(Constants.Shipments)
+                    .sendToBranch(List.of())
+                    .build();
             ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
             assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-            assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
         }
         catch (Exception e) {
             fail(e);
         }
     }
-
     @Test
-    void testCheckTaskExist_Failure_Shipment() {
-        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+    void testCheckTaskExist_V1Error_Shipment() {
         CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(shipmentDetails.getId())
+                .entityId(123L)
                 .entityType(Constants.Shipments)
                 .sendToBranch(List.of(66))
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        when(shipmentDao.findById(request.getEntityId())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
-    }
-
-
-    @Test
-    void testCheckTaskExist_Success_Consolidation() {
-        try {
-            ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-            CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(consolidationDetails.getId())
-                .entityType(Constants.Consolidations)
-                .sendToBranch(List.of(66))
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
-                .build();
-            CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(request.getSendToBranch()).sendToOrg(request.getSendToOrg()).build();
-
-            when(consolidationDetailsDao.findById(request.getEntityId())).thenReturn(Optional.of(consolidationDetails));
-            when(v1Service.checkTaskExist(any())).thenReturn(response);
-
-            ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
-            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-            assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
-        }
-        catch (Exception e) {
-            fail(e);
-        }
-    }
-
-    @Test
-    void testCheckTaskExist_Failure_Consolidation() {
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-        CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(consolidationDetails.getId())
-                .entityType(Constants.Consolidations)
-                .sendToBranch(List.of(66))
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
-                .build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        when(consolidationDetailsDao.findById(request.getEntityId())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
-    }
-
-    @Test
-    void testCheckTaskExist_Failure_Consolidation_V1Error() {
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-        CheckTaskExistRequest request = CheckTaskExistRequest.builder()
-                .entityId(consolidationDetails.getId())
-                .entityType(Constants.Consolidations)
-                .sendToBranch(List.of(66))
-                .sendToOrg(List.of(UUID.randomUUID().toString()))
-                .build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        when(consolidationDetailsDao.findById(request.getEntityId())).thenReturn(Optional.of(consolidationDetails));
-        when(v1Service.checkTaskExist(any())).thenThrow(new RuntimeException());
+        when(v1Service.listTask(any())).thenThrow(new RuntimeException());
 
         assertThrows(RunnerException.class, () -> entityTransferService.checkTaskExist(commonRequestModel));
     }

@@ -174,5 +174,6 @@ public interface IV1Service {
     V1DataResponse createTask(Object request);
     V1DataResponse updateTask(Object request);
     V1RetrieveResponse retrieveTask(Object request);
+    V1DataResponse listTask(Object request);
     List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
 }

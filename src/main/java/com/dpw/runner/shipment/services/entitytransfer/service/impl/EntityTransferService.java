@@ -957,40 +957,34 @@ public class EntityTransferService implements IEntityTransferService {
     @Override
     public ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException {
         CheckTaskExistRequest request = (CheckTaskExistRequest) commonRequestModel.getData();
-        CheckTaskExistV1Request requestV1 = CheckTaskExistV1Request.builder().entityType(request.getEntityType())
-                .sendToBranch(request.getSendToBranch())
-                .sendToOrg(request.getSendToOrg())
-                .build();
-        if(request.getSendToBranch() == null){
-            requestV1.setSendToBranch(new ArrayList<>());
+        if(CommonUtils.listIsNullOrEmpty(request.getSendToBranch())){
+            return ResponseHelper.buildSuccessResponse();
         }
-        if(request.getSendToOrg() == null){
-            requestV1.setSendToOrg(new ArrayList<>());
-        }
-        if(request.getEntityType().equals(Constants.Shipments)){
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getEntityId());
-            if (!shipmentDetails.isPresent()) {
-                log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            requestV1.setShipId(shipmentDetails.get().getShipmentId());
-        } else if (request.getEntityType().equals(Constants.Consolidations)) {
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getEntityId());
-            if (!consolidationDetails.isPresent()) {
-                log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getEntityId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            requestV1.setConsoleId(consolidationDetails.get().getConsolidationNumber());
-        }
+        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getEntityId().toString(), request.getEntityType(), request.getSendToBranch());
+        log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
+
         CheckTaskExistResponse response = new CheckTaskExistResponse();
+        V1DataResponse v1Response;
         try {
-            response = v1Service.checkTaskExist(requestV1);
+            v1Response = v1Service.listTask(commonV1ListRequest);
         }
         catch (Exception ex) {
             log.error("Check Task exist failed to check from V1: " + ex);
             throw new RunnerException("Check Task exist failed to check from V1: " + ex);
         }
+        List<TaskCreateRequest> taskCreateRequestList = jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class);
+
+        response.setSendToBranch(taskCreateRequestList.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet()));
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private CommonV1ListRequest createCriteriaTaskListRequest(Object value1, Object value2, Object value4) {
+        List<Object> criteria1 = new ArrayList<>(List.of(List.of("EntityId"), "=", value1));
+        List<Object> criteria2 = new ArrayList<>(List.of(List.of("EntityType"), "=", value2));
+        List<Object> criteria3 = new ArrayList<>(List.of(List.of("IsCreatedFromV2"), "=", 1));
+        List<Object> criteria4 = new ArrayList<>(List.of(List.of("TenantId"), "In", List.of(value4)));
+
+        return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(List.of(criteria1, "and", criteria2), "and", criteria3), "and" , criteria4)).build();
     }
 
     private void createAutoEvent(String entityId, String eventCode, String entityType) {
