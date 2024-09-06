@@ -3040,9 +3040,10 @@ class ReportServiceTest {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-
-        assertEquals(0, pdfBytes.size());
+        ValidationException thrown = assertThrows(ValidationException.class, () -> {
+            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        });
+        assertEquals("no of pack is less than 1", thrown.getMessage());
     }
 
     @Test
