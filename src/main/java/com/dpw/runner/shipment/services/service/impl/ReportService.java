@@ -825,7 +825,7 @@ public class ReportService implements IReportService {
                     throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                 String mawbNumber = StringUtility.getEmptyString();
                 String hawbNumber = StringUtility.getEmptyString();
-                if(reportRequest.isFromConsolidation() || StringUtility.isEmpty(hawbNumber))
+                if(reportRequest.isFromConsolidation() || dataRetrived.get(ReportConstants.HAWB_NUMBER) == null || StringUtility.isEmpty(dataRetrived.get(ReportConstants.HAWB_NUMBER).toString()))
                     mawbNumber = dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER) + packsCount : packsCount;
                 else
                     hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
