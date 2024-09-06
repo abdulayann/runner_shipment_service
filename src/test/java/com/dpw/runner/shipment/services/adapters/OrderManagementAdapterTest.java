@@ -358,4 +358,30 @@ class OrderManagementAdapterTest {
             orderManagementAdapter.getOrderByGuid("1234");
         });
     }
+
+    @Test
+    void getOrderUsingGuidPartyList() throws Exception {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+        response.setOrder(orderManagementDTO);
+        HttpHeaders headers = new HttpHeaders();
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+        HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull1234-5678-9123-4567", HttpMethod.GET, httpEntity, OrderManagementResponse.class);
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        List<Map<String, Object>> responseMap = new ArrayList<>();
+        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        ShipmentDetails shipmentDetails = orderManagementAdapter.getOrderByGuid("1234-5678-9123-4567");
+        assertNotNull(shipmentDetails);
+        assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
+    }
 }
