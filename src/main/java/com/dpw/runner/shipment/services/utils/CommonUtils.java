@@ -1340,17 +1340,18 @@ public class CommonUtils {
         return iv1Service.getRoleIdsByRoleName(v1RoleIdRequest);
     }
 
-    public List<String> getUserEmailsByRoleId(List<String> userEmailIds, Integer roleId) {
+    public List<String> getUserEmailsByRoleId(Integer roleId) {
         V1UsersEmailRequest request = new V1UsersEmailRequest();
         request.setRoleId(roleId);
         request.setTake(10);
+        List<String> userEmailIds = new ArrayList<>();
         List<UsersRoleListResponse> userEmailResponse = iv1Service.getUserEmailsByRoleId(request);
         userEmailResponse.forEach(e -> userEmailIds.add(e.getEmail()));
 
         return userEmailIds;
     }
 
-    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId, TaskCreateResponse taskCreateResponse)
+    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId)
         throws RunnerException {
         DGTaskCreateRequest taskRequest = DGTaskCreateRequest
             .builder()
@@ -1364,12 +1365,12 @@ public class CommonUtils {
             .build();
 
         try {
-            taskCreateResponse = iv1Service.createTask(taskRequest);
+            TaskCreateResponse taskCreateResponse = iv1Service.createTask(taskRequest);
+            return taskCreateResponse;
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
                 shipmentDetails.getId(), e.getMessage()));
         }
-        return taskCreateResponse;
     }
 
     public void getVesselsData(CarrierDetails carrierDetails, VesselsResponse vesselsResponse) {
