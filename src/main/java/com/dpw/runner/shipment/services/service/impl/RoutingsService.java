@@ -23,9 +23,11 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -82,15 +84,17 @@ public class RoutingsService implements IRoutingsService {
         List<Routings> routings;
         try {
             routings = commonUtils.convertToEntityList(routingsUpdateRequest.getRoutingsRequests(), Routings.class);
-
             Long shipmentId = routings.stream().findFirst().map(Routings::getShipmentId).orElse(null);
 
             updateRoutingsBasedOnTracking(shipmentId, routings);
         } catch (RuntimeException | RunnerException e) {
             throw new RoutingException(e);
         }
-
-        List<RoutingsResponse> routingsResponses = routingsListToRoutingsResponseList(routings);
+        List<RoutingsResponse> routingsResponses = new ArrayList<>(
+                Optional.ofNullable(routingsListToRoutingsResponseList(routings))
+                        .orElse(Collections.emptyList())
+        );
+        routingsResponses.sort(Comparator.comparingLong(RoutingsResponse::getLeg));
 
         return ResponseHelper.buildListSuccessResponse(
                 new ArrayList<>(routingsResponses != null ? routingsResponses : Collections.emptyList()),
