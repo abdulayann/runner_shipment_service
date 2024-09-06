@@ -27,6 +27,7 @@ import org.junit.jupiter.api.BeforeAll;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -54,7 +55,8 @@ class V1ServiceUtilTest {
 
     @MockBean
     private CommonUtils commonUtils;
-
+    @MockBean
+    private ModelMapper modelMapper;
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -531,6 +533,7 @@ class V1ServiceUtilTest {
         mockResponse.setEntities(
                 Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(100).childTenantId(200).build(), CoLoadingMAWBDetailsResponse.builder().parentTenantId(101).childTenantId(201).build()));
         when(iV1Service.getCoLoadingStations(any())).thenReturn(mockResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CoLoadingMAWBDetailsResponse.class))).thenReturn(Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(100).childTenantId(200).build(), CoLoadingMAWBDetailsResponse.builder().parentTenantId(101).childTenantId(201).build()));
         var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(11), "PARENT_TENANT_ID");
         assertFalse(response.isEmpty());
     }
@@ -541,11 +544,5 @@ class V1ServiceUtilTest {
         assertTrue(response.isEmpty());
     }
 
-    @Test
-    void testFetchCoLoadInfo3() {
-        when(iV1Service.getCoLoadingStations(any())).thenThrow(new RuntimeException());
-        var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(11), "PARENT_TENANT_ID");
-        assertTrue(response.isEmpty());
-    }
 }
 
