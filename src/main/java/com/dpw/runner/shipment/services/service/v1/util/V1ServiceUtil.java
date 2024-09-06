@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
@@ -8,19 +9,18 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Respo
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -41,6 +41,8 @@ public class V1ServiceUtil {
     JsonHelper jsonHelper;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private ModelMapper modelMapper;
 
     public CreateBookingModuleInV1 createBookingRequestForV1(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid) {
         return CreateBookingModuleInV1.builder()
@@ -357,12 +359,27 @@ public class V1ServiceUtil {
                     TenantDetailsByListResponse.TenantDetails::getTenantId,
                     Collectors.collectingAndThen(
                         Collectors.toList(),
-                        list -> jsonHelper.convertValue(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
+                        list ->  modelMapper.map(list.get(0).getTenantSettings(), V1TenantSettingsResponse.class)
                     )));
         }
         catch (Exception ex) {
             log.error(ex.getMessage());
             return new HashMap<>();
         }
+    }
+
+
+    public Map<Integer, Set<Integer>> fetchCoLoadInfo(List<Integer> sendToBranch, String field) {
+        List<Object> criteria = new ArrayList<>(List.of(List.of(field), "In", List.of(sendToBranch)));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
+        var coloadInfoList = jsonHelper.convertValueToList(v1Service.getCoLoadingStations(commonV1ListRequest), CoLoadingMAWBDetailsResponse.class);
+
+        return coloadInfoList.stream()
+                .collect(Collectors.groupingBy(
+                        CoLoadingMAWBDetailsResponse::getParentTenantId,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                list -> list.stream().map(CoLoadingMAWBDetailsResponse::getChildTenantId).collect(Collectors.toSet())
+                        )));
     }
 }

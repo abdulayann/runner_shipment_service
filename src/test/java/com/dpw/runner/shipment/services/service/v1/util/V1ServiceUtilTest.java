@@ -523,5 +523,29 @@ class V1ServiceUtilTest {
         var response = v1ServiceUtil.getTenantSettingsMap(Arrays.asList(11));
         assertTrue(response.isEmpty());
     }
+
+
+    @Test
+    void testFetchCoLoadInfo() {
+        var mockResponse = new V1DataResponse();
+        mockResponse.setEntities(
+                Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(100).childTenantId(200).build(), CoLoadingMAWBDetailsResponse.builder().parentTenantId(101).childTenantId(201).build()));
+        when(iV1Service.getCoLoadingStations(any())).thenReturn(mockResponse);
+        var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(11), "PARENT_TENANT_ID");
+        assertFalse(response.isEmpty());
+    }
+
+    @Test
+    void testFetchCoLoadInfo2() {
+        var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(), "PARENT_TENANT_ID");
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testFetchCoLoadInfo3() {
+        when(iV1Service.getCoLoadingStations(any())).thenThrow(new RuntimeException());
+        var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(11), "PARENT_TENANT_ID");
+        assertTrue(response.isEmpty());
+    }
 }
 

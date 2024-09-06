@@ -380,6 +380,9 @@ class EntityTransferServiceTest {
                 Map.entry(66, mockV1TenantSettings)
         );
 
+        var coLoadMap = new HashMap<Integer, Set<Integer>>();
+        coLoadMap.put(66, Set.of(69));
+
         when(consolidationDetailsDao.findById(consolidationDetails.getId())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
@@ -390,6 +393,7 @@ class EntityTransferServiceTest {
         when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
         when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
+        when(v1ServiceUtil.fetchCoLoadInfo(any(), any())).thenReturn(coLoadMap);
 
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
