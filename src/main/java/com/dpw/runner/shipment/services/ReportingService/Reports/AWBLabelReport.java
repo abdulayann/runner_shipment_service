@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -212,19 +213,42 @@ public class AWBLabelReport extends IReport{
         }
 
         List<UnlocationsResponse> airLegs;
+        List<RoutingsModel> routingsModels = null;
         if(awbLabelModel.getConsolidation() != null){
-            unlocations = awbLabelModel.getConsolidation().getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.getConsolidation().getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).filter(c -> !c.getPod().equalsIgnoreCase(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort())).map(RoutingsModel::getPod).distinct().toList();
-            airLegs = getUnlocationsResponses(unlocations);
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, airLegs.get(0).getIataCode());
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, airLegs.get(1).getIataCode());
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, airLegs.get(2).getIataCode());
+            routingsModels = awbLabelModel.getConsolidation().getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.getConsolidation().getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).filter(c -> !c.getPod().equalsIgnoreCase(awbLabelModel.getConsolidation().getCarrierDetails().getDestinationPort())).toList();
+        }else if(awbLabelModel.getShipment() != null){
+            routingsModels = awbLabelModel.shipment.getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.shipment.getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).filter(c -> !c.getPod().equalsIgnoreCase(awbLabelModel.getShipment().getCarrierDetails().getDestinationPort())).toList();
         }
-        if(awbLabelModel.getShipment() != null){
-            unlocations = awbLabelModel.shipment.getRoutingsList() == null ? Collections.emptyList() : awbLabelModel.shipment.getRoutingsList().stream().filter(c -> c.getMode().equals(AIR)).filter(c -> !c.getPod().equalsIgnoreCase(awbLabelModel.getShipment().getCarrierDetails().getDestinationPort())).map(RoutingsModel::getPod).distinct().toList();
-            airLegs = getUnlocationsResponses(unlocations);
-            if(!airLegs.isEmpty()) dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, airLegs.get(0).getIataCode());
-            if(airLegs.size() >= 2) dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, airLegs.get(1).getIataCode());
-            if(airLegs.size() >= 3) dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, airLegs.get(2).getIataCode());
+
+        if(!CollectionUtils.isEmpty(routingsModels)) {
+            airLegs = getUnlocationsResponses(routingsModels.stream().map(RoutingsModel::getPod).distinct().toList());
+            Map<String, UnlocationsResponse> locationMap = new HashMap<>();
+            if(!airLegs.isEmpty()) {
+                for(UnlocationsResponse unlocationsResponse : airLegs) {
+                    locationMap.put(unlocationsResponse.getLocationsReferenceGUID(), unlocationsResponse);
+                }
+            }
+            List<String> iataCodeList = new ArrayList<>();
+            for (RoutingsModel routingsModel : routingsModels) {
+                if(locationMap.containsKey(routingsModel.getPod()) && !iataCodeList.contains(locationMap.get(routingsModel.getPod()).getIataCode())) {
+                    iataCodeList.add(locationMap.get(routingsModel.getPod()).getIataCode());
+                }
+            }
+            if(awbLabelModel.getConsolidation() != null) {
+                if (!iataCodeList.isEmpty())
+                    dictionary.put(ReportConstants.CONSOL_FIRST_LEG_DESTINATION, iataCodeList.get(0));
+                if (iataCodeList.size() >= 2)
+                    dictionary.put(ReportConstants.CONSOL_SECOND_LEG_DESTIATION, iataCodeList.get(1));
+                if (iataCodeList.size() >= 3)
+                    dictionary.put(ReportConstants.CONSOL_THIRD_LEG_DESTINATION, iataCodeList.get(2));
+            } else {
+                if (!iataCodeList.isEmpty())
+                    dictionary.put(ReportConstants.FIRST_LEG_DESTINATION, iataCodeList.get(0));
+                if (iataCodeList.size() >= 2)
+                    dictionary.put(ReportConstants.SECOND_LEG_DESTINATION, iataCodeList.get(1));
+                if (iataCodeList.size() >= 3)
+                    dictionary.put(ReportConstants.THIRD_LEG_DESTINATION, iataCodeList.get(2));
+            }
         }
 
         if(awbLabelModel.getShipment() != null) {
