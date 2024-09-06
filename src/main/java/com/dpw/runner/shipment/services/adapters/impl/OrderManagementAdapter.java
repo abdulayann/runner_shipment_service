@@ -150,7 +150,9 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails.setCarrierDetails(new CarrierDetails());
-        var partyMap = getPartyDetails(List.of(order.getSupplierCode(), order.getBuyerCode(), order.getNotifyPartyCode(), order.getSendingAgentCode(), order.getReceivingAgentCode()));
+        List<String> partyList = getPartyList(order);
+
+        var partyMap = getPartyDetails(partyList);
 
         shipmentDetails.setTransportMode(order.getTransportMode());
         shipmentDetails.setIncoterms(order.getIncoTerm());
@@ -249,6 +251,26 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         return shipmentDetails;
+    }
+
+    private List<String> getPartyList(OrderManagementDTO order) {
+        List<String> partyList = new ArrayList<>();
+        if(!Objects.isNull(order.getSupplierCode())){
+            partyList.add(order.getSupplierCode());
+        }
+        if(!Objects.isNull(order.getBuyerCode())){
+            partyList.add(order.getBuyerCode());
+        }
+        if(!Objects.isNull(order.getNotifyPartyCode())){
+            partyList.add(order.getNotifyPartyCode());
+        }
+        if(!Objects.isNull(order.getSendingAgentCode())){
+            partyList.add(order.getSendingAgentCode());
+        }
+        if(!Objects.isNull(order.getReceivingAgentCode())){
+            partyList.add(order.getReceivingAgentCode());
+        }
+        return partyList;
     }
 
     private Map<String, Map<String, Object>> getPartyDetails (List<String> orgCodes) {
