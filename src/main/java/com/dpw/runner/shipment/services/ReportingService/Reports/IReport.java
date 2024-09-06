@@ -229,6 +229,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.KG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.POUNDS;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -438,7 +440,7 @@ public abstract class IReport {
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
-    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel);
+    abstract Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException;
 
     public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
@@ -1019,11 +1021,11 @@ public abstract class IReport {
             }
             if(shipment.getPickupDetails() != null) {
                 if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
                     dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
                 } else {
                     if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
-                        dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                        dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
                     } else {
                         dictionary.put(ReportConstants.PICKUP_TIME, "");
                     }
@@ -1180,7 +1182,7 @@ public abstract class IReport {
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                     if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true));
+                        dict.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true, true));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
@@ -2125,15 +2127,22 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString());
     }
 
-    public static DateTimeFormatter GetDPWDateFormatWithTime(String tsDatetimeFormat)
+    public static DateTimeFormatter getDPWDateFormatWithTime(String tsDatetimeFormat, boolean withoutSec)
     {
-        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
-            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" HH:mm:ss");
+        String timeString;
+
+        if(withoutSec) {
+            timeString = "HH:mm";
+        } else {
+            timeString = "HH:mm:ss";
         }
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy HH:mm:ss");
+        if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
+            return DateTimeFormatter.ofPattern(tsDatetimeFormat+" " +timeString);
+        }
+        return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString() +" "+timeString);
     }
 
     public static String GetDPWDateFormatOrDefaultString()
@@ -2157,15 +2166,20 @@ public abstract class IReport {
         return strDate;
     }
 
-    public static String ConvertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    public static String convertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone)
+    {
+        return convertToDPWDateFormatWithTime(date, tsDatetimeFormat, isTimeZone, false);
+    }
+
+    public static String convertToDPWDateFormatWithTime(LocalDateTime date, String tsDatetimeFormat, boolean isTimeZone, boolean withoutSec)
     {
         String strDate = "";
         if (date != null)
         {
             if(isTimeZone) {
-                strDate = LocalTimeZoneHelper.getDateTime(date).format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+                strDate = LocalTimeZoneHelper.getDateTime(date).format(getDPWDateFormatWithTime(tsDatetimeFormat, withoutSec));
             } else {
-                strDate = date.format(GetDPWDateFormatWithTime(tsDatetimeFormat));
+                strDate = date.format(getDPWDateFormatWithTime(tsDatetimeFormat, withoutSec));
             }
         }
         return strDate;
@@ -2192,6 +2206,13 @@ public abstract class IReport {
     public String ConvertToWeightNumberFormat(BigDecimal weight) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         return ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+    }
+
+    public String convertToSingleCharWeightFormat(String weightUnit) {
+        if(StringUtility.isEmpty(weightUnit)) {
+            return "";
+        }
+        return weightUnit.substring(0, 1).toUpperCase();
     }
 
     public static String ConvertToWeightNumberFormat(Object weight, V1TenantSettingsResponse v1TenantSettingsResponse) {

@@ -254,7 +254,7 @@ public class CargoManifestReport extends IReport{
             AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
             dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-            dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(cargoManifestModel.awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
+            dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(cargoManifestModel.awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
