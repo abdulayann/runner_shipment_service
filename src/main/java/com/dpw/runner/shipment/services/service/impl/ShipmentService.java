@@ -5880,6 +5880,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<IRunnerResponse> requestInterBranchConsole(Long shipId, Long consoleId) throws RunnerException {
+        commonUtils.setInterBranchContextForColoadStation();
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipId);
         for (var consoleShip: consoleShipmentMappings) {
             if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
