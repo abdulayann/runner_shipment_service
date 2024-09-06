@@ -6036,6 +6036,9 @@ public class ShipmentService implements IShipmentService {
         OceanDGStatus currentStatus = shipmentDetails.getOceanDGStatus();
 
         OceanDGStatus newStatus = emailTemplateForDGResponse(currentStatus, request.getStatus());
+        if(newStatus == null){
+            throw new RunnerException( String.format("Ocean DG status value %s is invalid", newStatus));
+        }
 
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new EnumMap<>(OceanDGStatus.class);
         CompletableFuture<Void> emailTemplateFuture = CompletableFuture.runAsync(
@@ -6049,6 +6052,9 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL, e);
         }
+        if(newStatus == OceanDGStatus.OCEAN_DG_ACCEPTED && checkForClass1(shipmentDetails)){
+            newStatus = OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+        }
 
         shipmentDetails.setOceanDGStatus(newStatus);
     }
@@ -6058,11 +6064,11 @@ public class ShipmentService implements IShipmentService {
         OceanDGStatus oceanDGStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus templateStatus = emailTemplateForDGApproval(oceanDGStatus);
 
+        if(templateStatus == null){
+            throw new RunnerException( String.format("User cannot send email in %s DGStatus", oceanDGStatus));
+        }
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
-        List<String> toUserEmails = new ArrayList<>();
         VesselsResponse vesselsResponse = null;
-        TaskCreateResponse taskCreateResponse = null;
-
         // making v1 calls for master data
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
         var vesselResponseFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getVesselsData(shipmentDetails.getCarrierDetails(), vesselsResponse)), executorService);
@@ -6079,8 +6085,8 @@ public class ShipmentService implements IShipmentService {
         */
         CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
         Integer roleId = commonUtils.getRoleId(templateStatus);
-        commonUtils.getUserEmailsByRoleId(toUserEmails, roleId);
-        taskCreateResponse =  commonUtils.createTask(shipmentDetails, roleId, taskCreateResponse);
+        List<String> toUserEmails = commonUtils.getUserEmailsByRoleId(roleId);
+        TaskCreateResponse taskCreateResponse =  commonUtils.createTask(shipmentDetails, roleId);
 
         try {
             sendEmailForApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,
@@ -6091,12 +6097,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private OceanDGStatus emailTemplateForDGApproval(OceanDGStatus currentStatus) {
-        if (currentStatus == null || currentStatus == OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED) {
+        if (currentStatus == null || currentStatus == OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED || currentStatus == OceanDGStatus.OCEAN_DG_REJECTED ) {
             return OceanDGStatus.OCEAN_DG_REQUESTED;
-        } else if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) {
+        } else if (currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || currentStatus == OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED) {
             return OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
         } else {
-            return currentStatus;
+            return null;
         }
     }
 
@@ -6110,7 +6116,7 @@ public class ShipmentService implements IShipmentService {
                 OceanDGStatus.OCEAN_DG_ACCEPTED :
                 OceanDGStatus.OCEAN_DG_REJECTED;
         }
-        return currentStatus;  // return the current status if no change is needed
+        return null;  // return the current status if no change is needed
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
@@ -6290,7 +6296,7 @@ public class ShipmentService implements IShipmentService {
             commonUtils.populateDictionaryForOceanDGCommercialApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
         }
     }
-    public String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
+    private String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
@@ -6349,7 +6355,7 @@ public class ShipmentService implements IShipmentService {
         return table.outerHtml();
     }
 
-    public String extractTableTemplate(String htmlTemplate) {
+    private String extractTableTemplate(String htmlTemplate) {
         int tableStartIndex = htmlTemplate.indexOf("<table");
         int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
 
