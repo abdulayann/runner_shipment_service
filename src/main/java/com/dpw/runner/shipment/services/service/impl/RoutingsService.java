@@ -97,10 +97,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponses.sort(Comparator.comparingLong(RoutingsResponse::getLeg));
 
         return ResponseHelper.buildListSuccessResponse(
-                new ArrayList<>(routingsResponses != null ? routingsResponses : Collections.emptyList()),
-                0,
-                routingsResponses != null ? routingsResponses.size() : 0
-        );
+                new ArrayList<>(routingsResponses), 0, routingsResponses.size());
     }
 
     private Map<String, Routings> createRoutingMap(List<Routings> routings, boolean isPol) {
