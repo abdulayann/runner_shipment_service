@@ -301,6 +301,7 @@ public class EntityTransferService implements IEntityTransferService {
             commonUtils.setInterBranchContextForHub();
             Set<Integer> uniqueTenants = new HashSet<>(sendConsolidationRequest.getSendToBranch());
             var tenantSettingsMap = v1ServiceUtil.getTenantSettingsMap(uniqueTenants.stream().toList());
+            var coloadInfoMap = v1ServiceUtil.fetchCoLoadInfo(sendConsolidationRequest.getSendToBranch(), EntityTransferConstants.PARENT_TENANT_ID);
             List<Integer> errorTenants = new ArrayList<>();
 
             for (int i = 0; i < sendConsolidationRequest.getSendToBranch().size(); i++) {
@@ -314,7 +315,7 @@ public class EntityTransferService implements IEntityTransferService {
                         var list = set.getValue();
 
                         if (!Objects.equals(consoleReceivingBranch, list.get(i)) &&
-                                (!Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled()) || Objects.isNull(tenantSettings.getColoadingBranchIds()) || !tenantSettings.getColoadingBranchIds().contains(list.get(i))) ) {
+                                (!Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled()) || !coloadInfoMap.containsKey(consoleReceivingBranch) || !coloadInfoMap.get(consoleReceivingBranch).contains(list.get(i))) ) {
                             errorTenants.add(consoleReceivingBranch);
                         }
                     }
