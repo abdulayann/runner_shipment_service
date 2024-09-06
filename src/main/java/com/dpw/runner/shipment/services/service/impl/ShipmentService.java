@@ -6277,8 +6277,7 @@ public class ShipmentService implements IShipmentService {
         populateDictionary(templateStatus, dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
 
         emailTemplate.setBody(generateEmailBody(dictionary, shipmentDetails, emailTemplate.getBody()));
-        notificationService.sendEmail(commonUtils.replaceTagsFromData(dictionary, emailTemplate.getBody()),
-            emailTemplate.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>());
+        notificationService.sendEmail(emailTemplate.getBody(), emailTemplate.getSubject(), new ArrayList<>(toEmailIds), new ArrayList<>());
     }
 
     private void populateDictionary(OceanDGStatus templateStatus, Map<String, Object> dictionary,
@@ -6366,8 +6365,8 @@ public class ShipmentService implements IShipmentService {
 
         String populatedTable = populateTableWithData(tableTemplate, shipmentDetails);
 
-        String emailBody = commonUtils.replaceTagsFromData(dictionary, htmlTemplate);
-        emailBody = emailBody.replace(tableTemplate, populatedTable);
+        String emailBody = htmlTemplate.replace(tableTemplate, populatedTable);
+        emailBody = commonUtils.replaceTagsFromData(dictionary, emailBody);
         return emailBody;
     }
 }
