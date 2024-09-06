@@ -199,7 +199,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
-        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+        CompletableFuture.runAsync(() ->
                 sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())
         );
 
@@ -280,7 +280,7 @@ public class EntityTransferService implements IEntityTransferService {
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
 
-        CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() ->
+        CompletableFuture.runAsync(() ->
                 sendConsolidationEmailNotification(consol, sendToBranch)
         );
 
@@ -1515,10 +1515,10 @@ public class EntityTransferService implements IEntityTransferService {
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
-        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
-        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
-        body = body.replace(BL_NUMBER_PLACEHOLDER, shipmentDetails.getHouseBill());
-        body = body.replace(MBL_NUMBER_PLACEHOLDER, shipmentDetails.getMasterBill());
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(user.getTenantDisplayName()));
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
+        body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
