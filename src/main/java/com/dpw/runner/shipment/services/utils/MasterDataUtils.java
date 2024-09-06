@@ -5,10 +5,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -1136,17 +1133,20 @@ public class MasterDataUtils{
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
         var tenantId = TenantContext.getCurrentTenant();
+        var userContext = UserContext.getUser();
         return () -> {
             try {
                 MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
                 TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(userContext);
                 runnable.run();
             } finally {
                 MDC.clear();
                 RequestAuthContext.removeToken();
                 TenantSettingsDetailsContext.remove();
                 TenantContext.removeTenant();
+                UserContext.removeUser();
             }
 
         };
