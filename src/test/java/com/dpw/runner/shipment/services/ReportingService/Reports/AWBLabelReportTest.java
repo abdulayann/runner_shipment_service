@@ -20,11 +20,9 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -315,10 +313,12 @@ class AWBLabelReportTest extends CommonMocks {
 
         aWbLabelModel.setShipment(shipmentModel);
         aWbLabelModel.setConsolidation(consolidationModel);
+        aWbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit("100 KG");
+        aWbLabelModel.getShipment().setWeightUnit("KG");
     }
 
     @Test
-    void populateDictionary() { // when its not mawb
+    void populateDictionary() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -345,7 +345,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary5() { // when its not mawb
+    void populateDictionary5() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -371,7 +371,7 @@ class AWBLabelReportTest extends CommonMocks {
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
     @Test
-    void populateDictionary7() { // when its not mawb
+    void populateDictionary7() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -399,7 +399,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary8() { // when its not mawb
+    void populateDictionary8() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -532,7 +532,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary6() { // when its not mawb
+    void populateDictionary6() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -568,7 +568,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary3() { // when its not mawb
+    void populateDictionary3() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -602,7 +602,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary4() { // when its not mawb
+    void populateDictionary4() throws RunnerException { // when its not mawb
         awbLabelReport.setMawb(false);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -637,7 +637,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb() { // when its  mawb
+    void populateDictionary_whenMawb() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -668,7 +668,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb2() { // when its  mawb
+    void populateDictionary_whenMawb2() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -773,15 +773,32 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionary_whenMawb3() { // when its  mawb
+    void populateDictionary_whenMawb3() throws RunnerException { // when its  mawb
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
         awbLabelReport.setMawb(true);
         populateModel(aWbLabelModel);
         aWbLabelModel.setShipment(null);
-        aWbLabelModel.getConsolidation().setCarrierDetails(null);
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOriginPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        carrierDetailModel.setDestinationPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        aWbLabelModel.getConsolidation().setCarrierDetails(carrierDetailModel);
         aWbLabelModel.getConsolidation().setMawb(null);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        routingsModel.setPod("bb69aefb-0294-4be9-baec-835a431123df");
+        RoutingsModel routingsModel2 = new RoutingsModel();
+        routingsModel2.setLeg(2L);
+        routingsModel2.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel2.setCarrier("test2");
+        routingsModel2.setPod("bb69aefb-0294-4be9-baec-835a431123df2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        routingsModels.add(routingsModel2);
+        aWbLabelModel.getConsolidation().setRoutingsList(routingsModels);
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -799,14 +816,58 @@ class AWBLabelReportTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
-//        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
 //        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
     @Test
-    void populateDictionaryWithMawbNull() {
+    void populateDictionary_whenMawb4() throws RunnerException { // when its  mawb
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        awbLabelReport.setMawb(true);
+        populateModel(aWbLabelModel);
+        aWbLabelModel.setShipment(null);
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOriginPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        carrierDetailModel.setDestinationPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        aWbLabelModel.getConsolidation().setCarrierDetails(carrierDetailModel);
+        aWbLabelModel.getConsolidation().setMawb(null);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        routingsModel.setPod("bb69aefb-0294-4be9-baec-835a431123df2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        aWbLabelModel.getConsolidation().setRoutingsList(routingsModels);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
+//        mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionaryWithMawbNull() throws RunnerException {
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -834,7 +895,7 @@ class AWBLabelReportTest extends CommonMocks {
     }
 
     @Test
-    void populateDictionaryWithMasterBillLessThan11() {
+    void populateDictionaryWithMasterBillLessThan11() throws RunnerException {
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
         aWbLabelModel.setTenant(new TenantModel());
@@ -877,7 +938,6 @@ class AWBLabelReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        mockShipmentSettings();
         assertNotNull(awbLabelReport.getDocumentModel(123L));
     }
 
@@ -896,12 +956,16 @@ class AWBLabelReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setTotalPacksWeight("500KG");
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(packSummaryResponse);
 //        mockShipmentSettings();
         assertNotNull(awbLabelReport.getDocumentModel(123L));
     }
 
     @Test
-    void getData(){
+    void getData() throws RunnerException {
         var spyReport = Mockito.spy(this.awbLabelReport);
         AWbLabelModel aWbLabelModel = new AWbLabelModel();
         aWbLabelModel.setTenantAddress(new ArrayList<>());
@@ -937,6 +1001,25 @@ class AWBLabelReportTest extends CommonMocks {
         String newRemarks = "Updated Remarks";
         awbLabelReport.setRemarks(newRemarks);
         assertEquals(newRemarks, awbLabelReport.getRemarks());
+    }
+
+    @Test
+    void testGetConsolGrossWeightAndUnit_WhenConsolidationDetailsIsPresent() throws RunnerException {
+        // Arrange
+        Long consoleId = 123L;
+        ConsolidationModel consolidationModel = mock(ConsolidationModel.class);
+        ConsolidationDetails consolidationDetails = mock(ConsolidationDetails.class);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setTotalPacksWeight("500KG");
+
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(packSummaryResponse);
+
+        // Act
+        String result = awbLabelReport.getConsolGrossWeightAndUnit(consolidationModel);
+
+        // Assert
+        assertEquals("500KG", result);
+        verify(packingService).calculatePackSummary(any(), any(), any(), any());
     }
 
 }

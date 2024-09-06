@@ -39,6 +39,7 @@ public class EventsResponse implements IRunnerResponse {
 
     // Conditional response from TrackingEvents
     private String containerNumber;
+    private String locationRole;
     private String awbNumber;
     private String status;
     private Integer pieces;

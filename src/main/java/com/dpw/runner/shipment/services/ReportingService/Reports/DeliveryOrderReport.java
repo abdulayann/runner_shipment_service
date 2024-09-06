@@ -70,7 +70,7 @@ public class DeliveryOrderReport extends IReport{
         DeliveryOrderModel deliveryOrderModel = new DeliveryOrderModel();
         deliveryOrderModel.shipmentDetails = getShipment(id);
         validateAirDGCheckShipments(deliveryOrderModel.shipmentDetails);
-        validateAirDGCheck(deliveryOrderModel.shipmentDetails);
+        validateAirAndOceanDGCheck(deliveryOrderModel.shipmentDetails);
         deliveryOrderModel.usersDto = UserContext.getUser();
         deliveryOrderModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(deliveryOrderModel.shipmentDetails.getConsolidationList() != null && deliveryOrderModel.shipmentDetails.getConsolidationList().size() > 0)
@@ -159,7 +159,7 @@ public class DeliveryOrderReport extends IReport{
         if(deliveryDetails != null) {
             LocalDateTime deliveryTime = deliveryDetails.getActualPickupOrDelivery() != null ? deliveryDetails.getActualPickupOrDelivery() :
                     deliveryDetails.getEstimatedPickupOrDelivery();
-            dictionary.put(DELIVERY_TIME,  ConvertToDPWDateFormatWithTime(deliveryTime, v1TenantSettingsResponse.getDPWDateFormat(), true));
+            dictionary.put(DELIVERY_TIME,  convertToDPWDateFormatWithTime(deliveryTime, v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
 
         if(!Objects.isNull(deliveryOrderModel.shipmentDetails.getPackingList()) && !deliveryOrderModel.shipmentDetails.getPackingList().isEmpty()) {

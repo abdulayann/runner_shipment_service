@@ -55,7 +55,7 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private String goodsDescription;
     private String referenceNumber;
     private String DGClass;
-    private Boolean hazardous;
+    private Boolean hazardous = false;
     private BigDecimal netWeight;
     private String netWeightUnit;
     private BigDecimal volumeWeight;
@@ -82,4 +82,10 @@ public class PackingRequest extends CommonRequest implements IRunnerRequest {
     private DateBehaviorType dateType;
     private LocalDateTime cargoGateInDate;
     private Integer tenantId;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
 }

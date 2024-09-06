@@ -462,7 +462,7 @@ public class HblReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HblModel hblModel = (HblModel) documentModel;
-        validateAirDGCheck(hblModel.shipment);
+        validateAirAndOceanDGCheck(hblModel.shipment);
         String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault());
         if(hblModel.blObject == null) {
             hblModel.blObject = new Hbl();
@@ -808,16 +808,16 @@ public class HblReport extends IReport {
             dictionary.put(PICKUP_SHIPPERS_REF, hblModel.shipment.getPickupDetails().getShipperRef());
             dictionary.put(PICKUP_INSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
             dictionary.put(SHIPMENT_PICKUP_PICKUPINSTRUCTION, hblModel.shipment.getPickupDetails().getPickupDeliveryInstruction());
-            dictionary.put(ESTIMATED_READY_FOR_PICKUP, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+            dictionary.put(ESTIMATED_READY_FOR_PICKUP, convertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
             dictionary.put(PICKUP_TIME, dictionary.get(ESTIMATED_READY_FOR_PICKUP));
             if (hblModel.shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
                 dictionary.put(ReportConstants.STATUS, "Confirmed");
-                dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+                dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
                 dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
             } else {
                 dictionary.put(ReportConstants.STATUS, "Planned");
                 if (hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
-                    dictionary.put(ReportConstants.PICKUP_TIME, ConvertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+                    dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(hblModel.shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
                 } else {
                     dictionary.put(ReportConstants.PICKUP_TIME, "");
                 }

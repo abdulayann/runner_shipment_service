@@ -9,29 +9,37 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdC
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
+import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -73,9 +81,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAGE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -105,6 +124,9 @@ public class CommonUtils {
 
     @Autowired
     public IShipmentSettingsDao shipmentSettingsDao;
+
+    @Autowired
+    private IAuditLogDao iAuditLogDao;
 
     @Autowired
     private TenantSettingsService tenantSettingsService;
@@ -676,6 +698,19 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
+    public void sendEmailResponseToDGRequester(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates,
+        OceanDGRequest request, OceanDGStatus status, ShipmentDetails shipmentDetails) throws RunnerException {
+        EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(status))
+            .orElseThrow(() -> new RunnerException("No template is present for status: " + status));
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
+
+        populateDGReceiverDictionary(dictionary, shipmentDetails);
+
+        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
+            template.getSubject(), new ArrayList<>(recipientEmails), null);
+    }
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -685,7 +720,7 @@ public class CommonUtils {
         }
         EmailTemplatesRequest emailTemplatesRequest =  sendEmailDto.getEmailTemplatesRequestMap().get(SHIPMENT_PULL_ACCEPTED);
         Map<String, Object> dictionary = new HashMap<>();
-        populateDictionaryForPullAccepted(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap());
+        populateDictionaryForPullAccepted(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap(), sendEmailDto.getRequestedUser());
 
         if(!IsStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getCreatedBy()))
             toEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getCreatedBy()));
@@ -713,7 +748,7 @@ public class CommonUtils {
         }
         EmailTemplatesRequest emailTemplatesRequest =  sendEmailDto.getEmailTemplatesRequestMap().get(SHIPMENT_PULL_REJECTED);
         Map<String, Object> dictionary = new HashMap<>();
-        populateDictionaryForPullRejected(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getRejectRemarks());
+        populateDictionaryForPullRejected(dictionary, sendEmailDto.getConsolidationDetails(), sendEmailDto.getRejectRemarks(), sendEmailDto.getRequestedUser());
 
         if(!IsStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getCreatedBy()))
             toEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getCreatedBy()));
@@ -767,7 +802,7 @@ public class CommonUtils {
         }
         EmailTemplatesRequest emailTemplatesRequest = sendEmailDto.getEmailTemplatesRequestMap().get(SHIPMENT_PUSH_ACCEPTED);
         Map<String, Object> dictionary = new HashMap<>();
-        populateDictionaryForPushAccepted(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap());
+        populateDictionaryForPushAccepted(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getUnLocMap(), sendEmailDto.getCarrierMasterDataMap(), sendEmailDto.getRequestedUser());
 
         if(!IsStringNullOrEmpty(sendEmailDto.getShipmentDetails().getAssignedTo()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getShipmentDetails().getAssignedTo()))
             toEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getShipmentDetails().getAssignedTo()));
@@ -866,15 +901,17 @@ public class CommonUtils {
         dictionary.put(CONSOL_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(CONSOL_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_NAME, consolidationDetails.getCreatedBy());
+        dictionary.put(REQUESTED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPullAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                                                  Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
+                                                  Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap, String requestedUser) {
         populateDictionaryForEmailFromShipment(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
         dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(REQUESTED_USER_NAME, requestedUser);
     }
 
-    public void populateDictionaryForPullRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks) {
+    public void populateDictionaryForPullRejected(Map<String, Object> dictionary, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestedUser) {
         dictionary.put(CONSOLIDATION_CREATE_USER, consolidationDetails.getCreatedBy());
         dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
         dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
@@ -882,18 +919,21 @@ public class CommonUtils {
         dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
         dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(REQUESTED_USER_NAME, requestedUser);
     }
 
     public void populateDictionaryForPushRequested(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
         populateDictionaryForEmailFromShipment(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
         dictionary.put(USER_NAME, shipmentDetails.getCreatedBy());
+        dictionary.put(REQUESTED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForPushAccepted(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap) {
+                                                   Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap, String requestedUser) {
         populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails, consolidationDetails, unLocMap, carrierMasterDataMap);
         dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(REQUESTED_USER_NAME, requestedUser);
     }
 
     public void populateDictionaryForPushRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestUser) {
@@ -998,15 +1038,20 @@ public class CommonUtils {
 
     public String getShipmentIdHyperLink(String shipmentId, Long id) {
         String link = baseUrl + "/v2/shipments/edit/" + id;
-        return "<html><body>" + "<a href='" + link + "'>" + shipmentId + "</a>" + "</body></html>";
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
+    }
+
+    public String getTaskIdHyperLink(String shipmentId, String taskId) {
+        String link = baseUrl + "/v2/shipments/tasks/" + taskId;
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
-        return "<html><body>" + "<a href='" + link + "'>" + consolidationId + "</a>" + "</body></html>";
+        return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
     }
 
-    private String replaceTagsFromData(Map<String, Object> map, String val) {
+    public String replaceTagsFromData(Map<String, Object> map, String val) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if(!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
                 val = val.replace("{" + entry.getKey() + "}", entry.getValue().toString());
@@ -1085,6 +1130,76 @@ public class CommonUtils {
         usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
+    // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed
+    public boolean changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails) {
+        OceanDGStatus oldOceanDGStatus = shipmentDetails.getOceanDGStatus();
+        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
+            if(!UserContext.isOceanDgCommercialUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
+            if(!UserContext.isOceanDgUser())
+                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+        }
+        return !Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus());
+    }
+
+    public boolean checkIfDGClass1(String dgClass) {
+        return !IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1';
+    }
+
+    public boolean checkIfAnyDGClass(String dgClass) throws RunnerException {
+        if(!IsStringNullOrEmpty(dgClass)) {
+            if(dgClass.charAt(0) == '7')
+                throw new RunnerException("As per the DG SOP, you are not allowed to deal in Class 7 DG shipments");
+            return true;
+        }
+        return false;
+    }
+
+    public boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
+        if(!oldPack.getHazardous().equals(newPack.getHazardous()))
+            return true;
+        if(!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
+            return true;
+        if(!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
+            return true;
+        if(!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
+            return true;
+        if(!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
+            return true;
+        if(!Objects.equals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
+            return true;
+        if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
+            return true;
+        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+    }
+
+    public boolean checkIfDGFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
+        if(!oldContainer.getHazardous().equals(newContainer.getHazardous()))
+            return true;
+        if(!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
+            return true;
+        if(!Objects.equals(newContainer.getUnNumber(), oldContainer.getUnNumber()))
+            return true;
+        if(!Objects.equals(newContainer.getProperShippingName(), oldContainer.getProperShippingName()))
+            return true;
+        if(!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
+            return true;
+        if(!Objects.equals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
+            return true;
+        if(!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
+            return true;
+        return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
+    }
+
     public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
         try {
             if( !Objects.isNull(carrierDetails) && ( Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
@@ -1146,5 +1261,221 @@ public class CommonUtils {
         return charge;
     }
 
+    public void populateDictionaryForOceanDGApproval(Map<String,Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks,
+        TaskCreateResponse taskCreateResponse){
+
+        populateDictionaryForDGEmailFromShipment(dictionary, shipmentDetails, vesselsResponse, taskCreateResponse);
+        populateDictionaryApprovalRequestForDGEmail(dictionary, remarks);
+    }
+
+    public void populateDictionaryForOceanDGCommercialApproval(Map<String,Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse){
+        populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
+        List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndEntityId(
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
+        if(auditLogList != null){
+            Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
+            OceanDGRequestLog oceanDGRequestLog = mapAuditChangesToOceanDGRequestLog(changesMap);
+            dictionary.put(DG_APPROVER_NAME, oceanDGRequestLog.getUserName());
+            dictionary.put(DG_APPROVER_TIME, oceanDGRequestLog.getTime());
+        }
+    }
+
+    public void getDGEmailTemplate(Map<OceanDGStatus, EmailTemplatesRequest> response) {
+        List<String> requests = new ArrayList<>(
+            List.of(OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE, OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE, OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE,
+                OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE, OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE,
+                OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE));
+
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        if (v1DataResponse != null && v1DataResponse.entities != null) {
+            List<EmailTemplatesRequest> emailTemplates = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
+
+            if (emailTemplates != null && !emailTemplates.isEmpty()) {
+                emailTemplates.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(template -> {
+                        switch (template.getType()) {
+                            case OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE:
+                                response.put(OCEAN_DG_REQUESTED, template);
+                                break;
+                            case OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE:
+                                response.put(OCEAN_DG_ACCEPTED, template);
+                                break;
+                            case OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE:
+                                response.put(OCEAN_DG_REJECTED, template);
+                                break;
+                            case OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE:
+                                response.put(OCEAN_DG_COMMERCIAL_REQUESTED, template);
+                                break;
+                            case OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE:
+                                response.put(OCEAN_DG_COMMERCIAL_ACCEPTED, template);
+                                break;
+                            case OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE:
+                                response.put(OCEAN_DG_COMMERCIAL_REJECTED, template);
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+            }
+        }
+    }
+
+    public Integer getRoleId(OceanDGStatus oceanDGStatus){
+        String roleName = oceanDGStatus == OCEAN_DG_REQUESTED ? OCEAN_DG_ROLE : COMMERCIAL_OCEAN_DG_ROLE;
+        return getRoleIDByRoleName(roleName, UserContext.getUser().getTenantId());
+    }
+
+    private Integer getRoleIDByRoleName(String roleName, Integer tenantId){
+        V1RoleIdRequest v1RoleIdRequest = V1RoleIdRequest
+            .builder()
+            .roleName(roleName)
+            .tenantId(tenantId)
+            .build();
+        return iv1Service.getRoleIdsByRoleName(v1RoleIdRequest);
+    }
+
+    public List<String> getUserEmailsByRoleId(List<String> userEmailIds, Integer roleId) {
+        V1UsersEmailRequest request = new V1UsersEmailRequest();
+        request.setRoleId(roleId);
+        request.setTake(10);
+        List<UsersRoleListResponse> userEmailResponse = iv1Service.getUserEmailsByRoleId(request);
+        userEmailResponse.forEach(e -> userEmailIds.add(e.getEmail()));
+
+        return userEmailIds;
+    }
+
+    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId, TaskCreateResponse taskCreateResponse)
+        throws RunnerException {
+        DGTaskCreateRequest taskRequest = DGTaskCreateRequest
+            .builder()
+            .entityType(Shipments)
+            .entityId(shipmentDetails.getId().toString())
+            .roleId(roleId.toString())
+            .taskType(OCEAN_DG_TASKTYPE)
+            .taskStatus(PENDING_ACTION)
+            .userId(UserContext.getUser().getUserId())
+            .tenantId(UserContext.getUser().getTenantId().toString())
+            .build();
+
+        try {
+            taskCreateResponse = iv1Service.createTask(taskRequest);
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
+                shipmentDetails.getId(), e.getMessage()));
+        }
+        return taskCreateResponse;
+    }
+
+    public void getVesselsData(CarrierDetails carrierDetails, VesselsResponse vesselsResponse) {
+        if(carrierDetails == null) return;
+        String guid = carrierDetails.getVessel();
+        if (IsStringNullOrEmpty(guid)) {
+            return ;
+        }
+        List<Object> vesselCriteria = Arrays.asList(
+            List.of(Constants.VESSEL_GUID_V1),
+            "=",
+            guid
+        );
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        V1DataResponse vesselResponse = iv1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+
+        if(vesselsResponseList != null && !vesselsResponseList.isEmpty()) {
+          vesselsResponse.setName(vesselsResponseList.get(0).getName());
+        }
+
+    }
+
+    private void populateDictionaryForDGEmailFromShipment(Map<String,Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, TaskCreateResponse taskCreateResponse){
+        if(shipmentDetails.getCarrierDetails() != null){
+            dictionary.put(ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort());
+            dictionary.put(DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
+            dictionary.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
+            dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
+            dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
+            dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
+        }
+        dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
+        dictionary.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(CARGO_TYPE, shipmentDetails.getShipmentType());
+        if(vesselsResponse != null){
+            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+        }
+
+
+        //Summary of cargo Details
+        long totalContainerCount = shipmentDetails.getContainersList().stream()
+            .mapToLong(Containers::getContainerCount)
+            .sum();
+
+        long dgContainerCount = shipmentDetails.getContainersList().stream()
+            .filter(Containers::getHazardous)
+            .mapToLong(Containers::getContainerCount)
+            .sum();
+
+        dictionary.put(CONTAINER_COUNT, totalContainerCount);
+        dictionary.put(DG_CONTAINER_COUNT, dgContainerCount);
+
+
+        String dgPackageTypeAndCount = shipmentDetails.getPackingList().stream()
+            .filter(Packing::getHazardous)
+            .map(packing -> packing.getPacks() + " " + packing.getPacksType())
+            .collect(Collectors.joining(", "));
+
+        String packagesTypeAndCount = shipmentDetails.getPackingList().stream()
+            .map(packing -> packing.getPacks() + " " + packing.getPacksType())
+            .collect(Collectors.joining(", "));
+
+        dictionary.put(DG_PACKAGES_TYPE, dgPackageTypeAndCount);
+        dictionary.put(TOTAL_PACKAGES_TYPE, packagesTypeAndCount);
+        dictionary.put(VIEWS, getTaskIdHyperLink(shipmentDetails.getShipmentId(), taskCreateResponse.getTasksId()));
+    }
+
+    private void populateDictionaryApprovalRequestForDGEmail(Map<String,Object> dictionary, String remarks) {
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now());
+        dictionary.put(REQUESTER_REMARKS, remarks);
+    }
+
+    private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails){
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(APPROVED_TIME, LocalDateTime.now());
+
+    }
+
+    private OceanDGRequestLog mapAuditChangesToOceanDGRequestLog(Map<String, AuditLogChanges> changesMap) {
+        OceanDGRequestLog log = new OceanDGRequestLog();
+
+        for (AuditLogChanges change : changesMap.values()) {
+            switch (change.getFieldName()) {
+                case "time":
+                    if (change.getNewValue() != null) {
+                        log.setTime((LocalDateTime) change.getNewValue());
+                    }
+                    break;
+                case "username":
+                    if (change.getNewValue() != null) {
+                        log.setUserName((String) change.getNewValue());
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+        return log;
+    }
 
 }

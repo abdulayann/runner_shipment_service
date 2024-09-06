@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -17,6 +14,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -49,7 +47,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long documentationPartner;
     private List<ELDetailsRequest> elDetailsList;
     private String entryDetail;
-    private List<EventsRequest> eventsList;
+    private List<EventsRequest> eventsList = new ArrayList<>();
     private List<FileRepoRequest> fileRepoList;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
@@ -167,6 +165,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private String department;
+    private OceanDGStatus oceanDGStatus;
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;

@@ -69,6 +69,7 @@ public class ReportConstants {
     public static final String CARGO_GROSS_QUANTITY = "CargoGrossQunatity";
     public static final String CARGO_GROSS_QUANTITY_CODE = "CargoGrossQunatityCode";
     public static final String BL_COMMENTS = "BlComments";
+    public static final String GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
 
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
@@ -441,6 +442,7 @@ public class ReportConstants {
     public static final String SHIPMENTS = "Shipments";
     public static final String SEAL_NUMBER = "SealNumber";
     public static final String CONTAINER_COUNT = "ContainerCount";
+    public static final String DG_CONTAINER_COUNT = "DGContainerCount";
     public static final String CONTAINER_COUNT_GROUPED = "ContainerCountGrouped";
     public static final String CONTAINER_PACKS_GROUPED = "ContainerPacksGrouped";
     public static final String ContainerWeightWithXSeparated = "ContainerWeightWithXSeparated";
@@ -629,6 +631,7 @@ public class ReportConstants {
     public static final String RATE_CHARGE = "RateCharge";
     public static final String CHARGEABLE_WT = "ChargeableWt";
     public static final String GROSS_WT = "GrossWt";
+    public static final String GROSS_WT_UNIT = "GrossWtUnit";
     public static final String RATE_CLASS = "RateClass";
     public static final String NATURE_QLTY_OF_GOODS = "NatureQltyOfGoods";
     public static final String PACKING_LIST = "PackingList";
@@ -1072,6 +1075,12 @@ public class ReportConstants {
     public static final String PLEASE_UPLOAD_VALID_TEMPLATE = "Please Upload Valid Template";
     public static final String DeliveryTo = "DeliveryTo";
     public static final String DeliveryTransport = "DeliveryTransport";
+    public static final String OCEAN_UN_NUMBER = "OceanUNNumber";
+    public static final String OCEAN_DG_PSN = "OceanDGPSN";
+    public static final String OCEAN_DG_CLASS = "OceanDGClass";
+    public static final String PACKING_GROUP = "PackingGroup";
+    public static final String FLASH_POINT_AND_UNIT = "FlashPointAndUnit";
+    public static final String MARINE_POLLUTANT = "MarinePollutant";
 
     //arrival notice report keys
     public static final String VesselsNameFlightName = "VesselsNameFlightName";
@@ -1213,6 +1222,6 @@ public class ReportConstants {
     public static final String SLAC = "SLAC";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 
-    public static final String ORDER_MANAGEMENT_NUMBER = "Order_Management_Number";
+    public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
 
 }

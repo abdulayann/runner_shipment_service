@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -14,6 +11,7 @@ import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import javax.persistence.OrderBy;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
@@ -151,6 +149,7 @@ public class ShipmentDetails extends MultiTenancy {
     private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @OrderBy("leg ASC")
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
@@ -510,5 +509,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Size(max=32, message = "max size is 32 for department")
     @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
     private String department;
+    
+     @Column(name = "ocean_dg_status")
+     @Enumerated(EnumType.STRING)
+     private OceanDGStatus oceanDGStatus;
 
 }

@@ -333,7 +333,6 @@ class ShipTruckwayBillReportTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
         assertNotNull(shipTruckwayBillReport.getDocumentModel(123L));
     }
 

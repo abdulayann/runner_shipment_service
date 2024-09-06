@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.RoutingsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
@@ -82,17 +82,17 @@ class RoutingsServiceTest extends CommonMocks {
 
         event = new Event();
         event.setLocation(1);
-        event.setEventType(Constants.VESSELDEPARTUREWITHCONTAINER);
-        event.setDescription(Constants.VESSEL_DEPARTURE);
-        event.setDescriptionFromSource(Constants.VESSEL_DEPARTURE_FROM_POL);
+        event.setEventType(EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER);
+        event.setDescription(EventConstants.VESSEL_DEPARTURE);
+        event.setDescriptionFromSource(EventConstants.VESSEL_DEPARTURE_FROM_POL);
         event.setProjectedEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
         event.setActualEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
 
         event2 = new Event();
         event2.setLocation(2);
-        event2.setEventType(Constants.VESSELARRIVALWITHCONTAINER);
-        event2.setDescription(Constants.VESSEL_ARRIVAL);
-        event2.setDescriptionFromSource(Constants.VESSEL_ARRIVAL_AT_POD);
+        event2.setEventType(EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER);
+        event2.setDescription(EventConstants.VESSEL_ARRIVAL);
+        event2.setDescriptionFromSource(EventConstants.VESSEL_ARRIVAL_AT_POD);
         event2.setProjectedEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
         event2.setActualEventTime(DateAndSources.builder().dateTime(LocalDateTime.MIN).build());
 

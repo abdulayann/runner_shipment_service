@@ -419,7 +419,6 @@ class PackingListReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
         when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        mockShipmentSettings();
         assertNotNull(packingListReport.getDocumentModel(123L));
     }
 }

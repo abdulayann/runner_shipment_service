@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -46,10 +47,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -102,6 +102,15 @@ class CargoManifestReportTest extends CommonMocks {
     @Mock
     private IAwbDao awbDao;
 
+    @Mock
+    private CargoManifestModel cargoManifestModel;
+
+    @Mock
+    private AwbCargoInfo cargoInfoRows;
+
+    @Mock
+    private V1TenantSettingsResponse v1TenantSettingsResponse;
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -134,6 +143,7 @@ class CargoManifestReportTest extends CommonMocks {
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         awbCargoInfo.setSci("test");
         cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
+        cargoManifestModel.awb.setOriginalPrintedAt(LocalDateTime.now());
 
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(ReportConstants.SEA);
@@ -291,4 +301,25 @@ class CargoManifestReportTest extends CommonMocks {
         mockShipmentSettings();
         assertNotNull(cargoManifestReport.getDocumentModel(123L));
     }
+
+    @Test
+    void testOriginalPrintedAtDateTime() {
+        CargoManifestModel cargoManifestModel = new CargoManifestModel();
+        cargoManifestModel.awb = new Awb();
+
+        LocalDateTime now = LocalDateTime.now();
+        cargoManifestModel.awb.setOriginalPrintedAt(now);
+        LocalDateTime dateTime = cargoManifestModel.awb.getOriginalPrintedAt() != null
+                ? cargoManifestModel.awb.getOriginalPrintedAt()
+                : null;
+        assertNotNull(dateTime, "dateTime should not be null when getOriginalPrintedAt is set");
+        assertEquals(now, dateTime, "dateTime should match the set value");
+
+        cargoManifestModel.awb.setOriginalPrintedAt(null);
+        dateTime = cargoManifestModel.awb.getOriginalPrintedAt() != null
+                ? cargoManifestModel.awb.getOriginalPrintedAt()
+                : null;
+        assertNull(dateTime, "dateTime should be null when getOriginalPrintedAt returns null");
+    }
+
 }

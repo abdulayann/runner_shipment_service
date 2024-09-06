@@ -40,6 +40,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String aircraftRegistration;
     private String flightNumber;
     private String aircraftType;
+    private String vehicleNumber;
     private String entityType;
     private Long entityId;
     private Long routeLegId;

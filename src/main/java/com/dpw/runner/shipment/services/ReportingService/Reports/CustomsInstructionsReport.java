@@ -37,7 +37,7 @@ public class CustomsInstructionsReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) {
         CustomsInstructionsModel customsInstructionsModel = new CustomsInstructionsModel();
         customsInstructionsModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(customsInstructionsModel.shipmentDetails);
+        validateAirAndOceanDGCheck(customsInstructionsModel.shipmentDetails);
         if(customsInstructionsModel.shipmentDetails.getContainersList() != null && customsInstructionsModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
             for (ContainerModel containerModel: customsInstructionsModel.shipmentDetails.getContainersList()) {

@@ -349,14 +349,18 @@ public class MasterDataUtils{
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
         if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
-            V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
-            List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(requests);
             masterLists.forEach(masterData -> {
                 String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
                 keyMasterDataMap.put(key, masterData);
             });
         }
         return keyMasterDataMap;
+    }
+
+    public List<EntityTransferMasterLists> fetchMultipleMasterData(MasterListRequestV2 requests) {
+        V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
+        return jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
     }
 
     // Fetch All Locations in single call from V1
