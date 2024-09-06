@@ -171,4 +171,16 @@ public class ContainerModel implements Serializable {
     private List<EventsModel> eventsList;
     @JsonProperty("PacksList")
     private List<PackingModel> packsList;
+    @JsonProperty("UnNumber")
+    private String unNumber;
+    @JsonProperty("ProperShippingName")
+    private String properShippingName;
+    @JsonProperty("PackingGroup")
+    private String packingGroup;
+    @JsonProperty("MinimumFlashPoint")
+    private BigDecimal minimumFlashPoint;
+    @JsonProperty("MinimumFlashPointUnit")
+    private String minimumFlashPointUnit;
+    @JsonProperty("MarinePollutant")
+    private Boolean marinePollutant;
 }

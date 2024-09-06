@@ -1226,7 +1226,7 @@
         "tenantId": 728
       },
       {
-        "id": 150409,
+        "id": 150410,
         "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
         "consolidationId": 1,
         "containerCode": "20RE",
@@ -1268,7 +1268,7 @@
         "tenantId": 728
       },
       {
-        "id": 150409,
+        "id": 150411,
         "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
         "consolidationId": 1,
         "containerCode": "40GP",
@@ -1310,7 +1310,7 @@
         "tenantId": 728
       },
       {
-        "id": 150409,
+        "id": 150412,
         "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
         "consolidationId": 1,
         "containerCode": "40RE",
@@ -4257,7 +4257,8 @@
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
     "weightUnit": "KG",
-    "volumeUnit": "M3"
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "PACK_SUMMARY_RESPONSE_AIR": {
     "totalPacks": "1 BAG, 1 CNA",
@@ -4269,7 +4270,8 @@
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
     "weightUnit": "KG",
-    "volumeUnit": "M3"
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "VOL_WT_CHARGEABLE": {
     "chargeable": "166.67",

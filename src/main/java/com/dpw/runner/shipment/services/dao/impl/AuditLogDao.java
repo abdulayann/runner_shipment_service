@@ -43,4 +43,11 @@ public class AuditLogDao implements IAuditLogDao {
     public void delete(AuditLog auditLog) {
         auditLogRepository.delete(auditLog);
     }
+
+
+    @Override
+    public List<AuditLog> findByOperationAndEntityId(String operation, Long entityId) {
+        return auditLogRepository.findByOperationAndEntityId(operation, entityId);
+    }
+
 }

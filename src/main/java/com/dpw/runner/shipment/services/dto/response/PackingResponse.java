@@ -94,6 +94,12 @@ public class PackingResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoGateInDate;
     private Integer tenantId;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant;
 
     public boolean getAssigned() {return containerId != null;}
 }

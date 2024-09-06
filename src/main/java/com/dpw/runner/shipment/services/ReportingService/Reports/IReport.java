@@ -241,17 +241,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
@@ -265,12 +255,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
@@ -286,29 +271,15 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.ExchangeRateType;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxType;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.*;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
@@ -324,13 +295,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
-import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
-import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
-import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
-import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
-import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.*;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -343,30 +308,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -375,6 +316,20 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Slf4j
 @SuppressWarnings("unchecked")
@@ -476,7 +431,17 @@ public abstract class IReport {
         ship.ShipperSealNumber = row.getShipperSealNumber();
         ship.HazardousUn = row.getHazardousUn();
         ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), getCurrentTenantSettings()), row.getGrossWeightUnit());
-
+        ship.OceanUNNumber = row.getUnNumber();
+        ship.OceanDGPSN = row.getProperShippingName();
+        ship.OceanDGClass = row.getDgClass();
+        ship.PackingGroup = row.getPackingGroup();
+        if(!Objects.isNull(row.getMinimumFlashPoint()))
+        {
+            ship.FlashPointAndUnit = String.valueOf(row.getMinimumFlashPoint());
+            if(!StringUtility.isEmpty(row.getMinimumFlashPointUnit()))
+                ship.FlashPointAndUnit = ship.FlashPointAndUnit + " " + row.getMinimumFlashPointUnit();
+        }
+        ship.MarinePollutant = Boolean.TRUE.equals(row.getMarinePollutant()) ? "Marine Pollutant" : null;
         try {
             List<MasterListRequest> requests = new ArrayList<>();
             Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
@@ -2825,6 +2790,23 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
+            if(!StringUtility.isEmpty(pack.getUnNumber()))
+                dict.put(OCEAN_UN_NUMBER, pack.getUnNumber());
+            if(!StringUtility.isEmpty(pack.getProperShippingName()))
+                dict.put(OCEAN_DG_PSN, pack.getProperShippingName());
+            if(!StringUtility.isEmpty(pack.getDGClass()))
+                dict.put(OCEAN_DG_CLASS, pack.getDGClass());
+            if(pack.getMinimumFlashPoint() != null)
+            {
+                String flashPointAndUnit = String.valueOf(pack.getMinimumFlashPoint());
+                if(!StringUtility.isEmpty(pack.getMinimumFlashPointUnit()))
+                    flashPointAndUnit = flashPointAndUnit + " " + pack.getMinimumFlashPointUnit();
+                dict.put(FLASH_POINT_AND_UNIT, flashPointAndUnit);
+            }
+            if(!StringUtility.isEmpty(pack.getPackingGroup()))
+                dict.put(PACKING_GROUP, pack.getPackingGroup());
+            if(Boolean.TRUE.equals(pack.getMarinePollutant()))
+                dict.put(MARINE_POLLUTANT, "Marine Pollutant");
             if(pack.getCommodity() != null) {
                 dict.put(COMMODITY_DESC, pack.getCommodity());
                 if(commodityTypeMap != null && commodityTypeMap.containsKey(pack.getCommodity()))
@@ -3446,38 +3428,64 @@ public abstract class IReport {
 
     }
 
-    public void validateAirDGCheck(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-           boolean dgPack = false;
-           if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
-               for (PackingModel packingModel: shipmentModel.getPackingList()) {
-                   if(Boolean.TRUE.equals(packingModel.getHazardous())) {
-                       dgPack = true;
-                       break;
-                   }
-               }
-           }
-           if(!dgPack) {
-               throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
-           }
+    private void validateAirDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            boolean dgPack = false;
+            if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
+                for (PackingModel packingModel: shipmentModel.getPackingList()) {
+                    if(Boolean.TRUE.equals(packingModel.getHazardous())) {
+                        dgPack = true;
+                        break;
+                    }
+                }
+            }
+            if(!dgPack) {
+                throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
+            }
         }
     }
 
-    private static boolean isDgUser() {
-        return UserContext.isDgUser();
+    private void validateOceanDGCheck(ShipmentModel shipmentModel) {
+        if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
+                throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
+            }
+            boolean dgContainer = false;
+            if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
+                for (ContainerModel containerModel: shipmentModel.getContainersList()) {
+                    if(Boolean.TRUE.equals(containerModel.getHazardous())) {
+                        dgContainer = true;
+                        break;
+                    }
+                }
+            }
+            if(!dgContainer) {
+                throw new ValidationException("The shipment is marked as DG but does not contain any DG containers. Please add DG containers before printing.");
+            }
+        }
+    }
+
+    public void validateAirAndOceanDGCheck(ShipmentModel shipmentModel) {
+        if(Boolean.TRUE.equals(shipmentModel.getContainsHazardous())) {
+            validateAirDGCheck(shipmentModel);
+            validateOceanDGCheck(shipmentModel);
+        }
+    }
+
+    private static boolean isAirDgUser() {
+        return UserContext.isAirDgUser();
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
+                Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
     public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isDgUser()) {
+                Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
                 throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }

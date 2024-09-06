@@ -156,7 +156,7 @@ public class Containers extends MultiTenancy {
     private String dgClass;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "hazardous_un")
     private String hazardousUn;
@@ -338,4 +338,27 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "invoice_value")
     private BigDecimal invoiceValue;
+
+    @Column(name = "un_number")
+    @Size(max=31, message = "max size is 31 for un_number")
+    private String unNumber;
+
+    @Column(name = "proper_shipping_name")
+    @Size(max=63, message = "max size is 63 for proper_shipping_name")
+    private String properShippingName;
+
+    @Column(name = "packing_group")
+    @Size(max=31, message = "max size is 31 for packing_group")
+    private String packingGroup;
+
+    @Column(name = "minimum_flash_point")
+    private BigDecimal minimumFlashPoint;
+
+    @Column(name = "minimum_flash_point_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
+    @Size(max = 3, message = "max size is 3 for minimum_flash_point_unit")
+    private String minimumFlashPointUnit;
+
+    @Column(name = "marine_pollutant")
+    private Boolean marinePollutant = false;
 }

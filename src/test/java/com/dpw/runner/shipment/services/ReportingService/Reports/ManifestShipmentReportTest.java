@@ -377,7 +377,6 @@ class ManifestShipmentReportTest extends CommonMocks {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
         assertNotNull(manifestShipmentReport.getDocumentModel(123L));
     }
 }

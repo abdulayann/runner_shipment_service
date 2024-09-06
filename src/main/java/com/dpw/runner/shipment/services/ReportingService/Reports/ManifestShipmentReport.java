@@ -32,7 +32,7 @@ public class ManifestShipmentReport extends IReport{
 
         ManifestShipmentModel manifestShipmentModel = new ManifestShipmentModel();
         manifestShipmentModel.shipmentDetails = getShipment(id);
-        validateAirDGCheck(manifestShipmentModel.shipmentDetails);
+        validateAirAndOceanDGCheck(manifestShipmentModel.shipmentDetails);
         if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getConsolidationList() != null && !manifestShipmentModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             manifestShipmentModel.consolidationDetails = manifestShipmentModel.shipmentDetails.getConsolidationList().get(0);

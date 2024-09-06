@@ -364,7 +364,6 @@ class CustomsInstructionsReportTest extends CommonMocks {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
         assertNotNull(customsInstructionsReport.getDocumentModel(123L));
     }
 }

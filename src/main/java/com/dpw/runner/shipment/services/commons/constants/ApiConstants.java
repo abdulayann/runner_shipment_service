@@ -99,8 +99,10 @@ public class ApiConstants {
     public static final String POPULATE_CHARGE_TYPE_DETAILS = "/get/chargeType";
     public static final String VALIDATE_IATA_AGENT = "/validate-iata-agent";
     public static final String GET_GUID_BY_ID= "/get/guid";
+    public static final String GET_CONTAINER_EDIT_ALLOW= "/get/dg-container/edit-allow";
     public static final String FNM_STATUS_MESSAGE = "/get/fnmStatus";
     public static final String FETCH_IATA_RATES = "/fetch-iata-rate";
+    public static final String GET_DG_SHIPMENT= "/get/dgShipment";
 
     public static final String X_API_KEY = "x-api-key";
     public static final String X_DPW_APPLICATION_ID = "X-DPW-ApplicationId";
@@ -115,5 +117,8 @@ public class ApiConstants {
 
     // Notifications
     public static final String GET_PENDING_NOTIFICATIONS = "/get/pendingNotifications";
+
+    public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
+    public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
 
 }

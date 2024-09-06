@@ -90,7 +90,7 @@ public class AWBLabelReport extends IReport{
         else {
             awbLabelModel.shipment = getShipment(id);
             awbLabelModel.setAwb(getHawb(id));
-            validateAirDGCheck(awbLabelModel.shipment);
+            validateAirAndOceanDGCheck(awbLabelModel.shipment);
         }
         awbLabelModel.tenant = getTenant();
         awbLabelModel.setRemarks(this.remarks);

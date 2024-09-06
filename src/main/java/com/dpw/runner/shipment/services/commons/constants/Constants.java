@@ -15,6 +15,7 @@ public class Constants {
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
+    public static final String CARGO_TYPE = "cargoType";
     public static final String CONTAINER_CATEGORY = "containerCategory";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
@@ -49,6 +50,8 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
+    public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
     public static final String MPK = "MPK";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
@@ -179,6 +182,9 @@ public class Constants {
     public static final String OWNERSHIP = "OwnerShip";
 
     public static final String SERVICE = "Service";
+    public static final String PENDING_ACTION = "Pending Action";
+    public static final String OCEAN_DG_TASKTYPE = "DG Ocean Approval";
+
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
@@ -353,6 +359,12 @@ public class Constants {
     public static final String VOYAGE = "voyage";
     public static final String ORIGIN_PORT = "originPort";
     public static final String DESTINATION_PORT = "destinationPort";
+
+    public static final String OCEAN_DG_ROLE = "OCEAN_DG_ROLE";
+    public static final String COMMERCIAL_OCEAN_DG_ROLE = "COMMERCIAL_OCEAN_DG_ROLE";
+    public static final String DG_APPROVER_NAME = "DG_APPROVER_NAME";
+    public static final String DG_APPROVER_TIME = "DG_APPROVER_TIME";
+
     public static final String IS_NULL = "ISNULL";
     public static final String CONTAINERS_LIST = "containersList";
     public static final String CONSOLIDATION_LIST = "consolidationList";
@@ -458,12 +470,17 @@ public class Constants {
     public static final String REQUEST_DATE_TIME = "Request_Date_Time";
     public static final String BRANCH_TIME_ZONE = "Branch_TimeZone";
     public static final String USER_NAME = "User_name";
+    public static final String USER_BRANCH = "User_Branch";
+    public static final String USER_COUNTRY = "User_Country";
+
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
     public static final String SHIPMENT_BRANCH_NAME = "Shipment_Branch_Name";
     public static final String INTERBRANCH_CONSOLIDATION_NUMBER = "Interbranch_Consolidation_Number";
     public static final String INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK = "Interbranch_Consolidation_Number_Without_Link";
     public static final String SHIPMENT_NUMBER = "Shipment_Number";
+    public static final String APPROVER_NAME = "APPROVER_NAME";
+    public static final String APPROVED_TIME = "APPROVED_TIME";
     public static final String LAT = "LAT";
     public static final String SHIPMENT_WEIGHT = "Shipment_Weight";
     public static final String SHIPMENT_WEIGHT_UNIT = "Shipment_Weight_Unit";
@@ -473,6 +490,7 @@ public class Constants {
     public static final String REJECT_REMARKS = "Reject_remarks";
     public static final String AUTO_REJECTION_REMARK = "Target Shipment is attached to another consolidation already.";
     public static final String REQUESTED_USER_NAME = "Requested_User_Name";
+    public static final String REQUESTER_REMARKS = "Requester_Remarks";
     public static final String ERROR_WHILE_SENDING_EMAIL = "Error while sending email";
     public static final String SHIPMENT_PULL_REQUESTED_EMAIL_TYPE = "Attach Shipment Request";
     public static final String SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE = "Consolidation Request - Accept";
@@ -498,6 +516,20 @@ public class Constants {
     public static final String CONSOLIDATION_NUMBER_PLACEHOLDER = "{#CONSOLIDATION_NUMBER}";
     public static final String NUMBER_OF_SHIPMENTS_PLACEHOLDER = "{#NUMBER_OF_SHIPMENTS}";
     public static final String SHIPMENT_NUMBERS_PLACEHOLDER = "{#SHIPMENT_NUMBERS}";
+    public static final String OCEAN_DG_APPROVER_EMAIL_TYPE = "OCEAN_DG_APPROVER";
+    public static final String OCEAN_DG_SENDER_EMAIL_TYPE = "OCEAN_DG_SENDER";
+    public static final String OCEAN_DG_COMMERCIAL_APPROVER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVER";
+    public static final String OCEAN_DG_COMMERCIAL_SENDER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_SENDER";
+    public static final String HTML_HREF_TAG_PREFIX = "<html><body>" + "<a href='";
+    public static final String HTML_HREF_TAG_SUFFIX = "</a>" + "</body></html>";
+
+    //OCEAN DG Email Templates Type
+    public static final String OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE";
+    public static final String OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE = "OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE";
+    public static final String OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE = "OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE";
+    public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE";
+    public static final String OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE";
+    public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE";
 
     private Constants() {
     }

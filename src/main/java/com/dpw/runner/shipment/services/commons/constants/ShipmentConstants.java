@@ -106,4 +106,11 @@ public class ShipmentConstants {
     public static final String SHIPMENT_LIST_REQUEST_NULL_ERROR = "Shipment List Request is Null";
     public static final String CHECK_CREDIT_LIMIT_FAILED = "Check Credit Limit failed due to : ";
     public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
+
+    public static final String OCEAN_DG_EMAIL_SEND_SUCCESS = "Ocean DG Email Sent Successfully";
+
+    public static final String OCEAN_DG_APPROVAL_REQUEST_RESPONSE = "Ocean DG Approval Request Response";
+    public static final String PADDING_10_PX = "padding: 10px;";
+    public static final String STYLE = "style";
+
 }
