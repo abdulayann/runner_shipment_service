@@ -27,8 +27,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_INFO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -257,6 +256,24 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormat(cargoManifestModel.awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
+
+        if(!Objects.isNull(cargoManifestModel.shipmentDetails.getPackingList()) && !cargoManifestModel.shipmentDetails.getPackingList().isEmpty()) {
+            getPackingDetails(cargoManifestModel.shipmentDetails, dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
 
         return dictionary;
     }
