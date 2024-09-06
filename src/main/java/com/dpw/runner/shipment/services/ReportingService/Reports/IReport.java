@@ -2248,14 +2248,10 @@ public abstract class IReport {
     }
 
     public String convertToSingleCharWeightFormat(String weightUnit) {
-            if (weightUnit == null || weightUnit.isEmpty()) {
-                throw new IllegalArgumentException("Weight unit cannot be null or empty");
-            }
-        return switch (weightUnit.toLowerCase()) {
-            case KG -> "K";
-            case POUNDS -> "L";
-            default -> throw new IllegalArgumentException("Unknown weight unit: " + weightUnit);
-        };
+        if(StringUtility.isEmpty(weightUnit)) {
+            return "";
+        }
+        return weightUnit.substring(0, 1).toUpperCase();
     }
 
     public static String ConvertToWeightNumberFormat(Object weight, V1TenantSettingsResponse v1TenantSettingsResponse) {
