@@ -1215,6 +1215,6 @@ public class ReportConstants {
     public static final String SLAC = "SLAC";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 
-    public static final String ORDER_MANAGEMENT_NUMBER = "Order_Management_Number";
+    public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
 
 }
