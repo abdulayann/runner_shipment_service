@@ -46,8 +46,8 @@ public class AuditLogDao implements IAuditLogDao {
 
 
     @Override
-    public List<AuditLog> findByOperationAndEntityId(String operation, Long entityId) {
-        return auditLogRepository.findByOperationAndEntityId(operation, entityId);
+    public List<AuditLog> findByOperationAndParentId(String operation, Long parentId) {
+        return auditLogRepository.findByOperationAndParentId(operation, parentId);
     }
 
 }

@@ -1270,13 +1270,11 @@ public class CommonUtils {
 
     public void populateDictionaryForOceanDGCommercialApproval(Map<String,Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse){
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
-        List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndEntityId(
+        List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
         if(auditLogList != null){
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
-            OceanDGRequestLog oceanDGRequestLog = mapAuditChangesToOceanDGRequestLog(changesMap);
-            dictionary.put(DG_APPROVER_NAME, oceanDGRequestLog.getUserName());
-            dictionary.put(DG_APPROVER_TIME, oceanDGRequestLog.getTime());
+            populateDGSenderDetailsFromAudit(changesMap, dictionary);
         }
     }
 
@@ -1457,26 +1455,15 @@ public class CommonUtils {
 
     }
 
-    private OceanDGRequestLog mapAuditChangesToOceanDGRequestLog(Map<String, AuditLogChanges> changesMap) {
-        OceanDGRequestLog log = new OceanDGRequestLog();
+    private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
 
         for (AuditLogChanges change : changesMap.values()) {
-            switch (change.getFieldName()) {
-                case "time":
-                    if (change.getNewValue() != null) {
-                        log.setTime((LocalDateTime) change.getNewValue());
-                    }
-                    break;
-                case "username":
-                    if (change.getNewValue() != null) {
-                        log.setUserName((String) change.getNewValue());
-                    }
-                    break;
-                default:
-                    break;
+            if(change.getFieldName().equals("time")){
+                dictionary.put(DG_APPROVER_NAME, change.getNewValue());
+            }else if(change.getFieldName().equals("userName")){
+                dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }
         }
-        return log;
     }
 
 }
