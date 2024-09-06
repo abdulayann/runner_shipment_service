@@ -1549,8 +1549,16 @@ public abstract class IReport {
             v1BillCharge.setMeasurementBasis(null); //TODO: SUBHAM check for cost/revenue MeasurementBasis
 
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
-            v1BillCharge.setChargeTypeCode(chargeTypeDetails.getChargeCode());
-            v1BillCharge.setChargeTypeDescription(chargeTypeDetails.getChargeCodeDescription());
+            v1BillCharge.setChargeTypeCode(
+                    Optional.ofNullable(chargeTypeDetails)
+                            .map(ChargeTypeBaseResponse::getChargeCode)
+                            .orElse(null)
+            );
+            v1BillCharge.setChargeTypeDescription(
+                    Optional.ofNullable(chargeTypeDetails)
+                            .map(ChargeTypeBaseResponse::getChargeCodeDescription)
+                            .orElse(null)
+            );
             v1BillCharge.setLocalCostCurrency(costDetails.getLocalCostCurrency());
 
             v1BillCharges.add(v1BillCharge);
