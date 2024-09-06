@@ -338,4 +338,29 @@ class OrderManagementAdapterTest {
         assertNotNull(shipmentDetails);
         assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
     }
+
+    @Test
+    void getOrderUsingGuidException() throws RunnerException {
+        OrderManagementResponse response = new OrderManagementResponse();
+        QuantityPair quantityPair = new QuantityPair();
+        quantityPair.setAmount(new BigDecimal(23));
+        quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
+        UUID guid = UUID.randomUUID();
+        OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
+                .supplierCode("supCode")
+                .buyerCode("buyCode")
+                .notifyPartyCode("notifyCode")
+                .sendingAgentCode("sendingCode")
+                .receivingAgentCode("receivingCode")
+                .packsAmount(quantityPair)
+                .weightAmount(quantityPair)
+                .volumeAmount(quantityPair)
+                .guid(guid)
+                .build();
+        response.setOrder(orderManagementDTO);
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull123", HttpMethod.GET, null, OrderManagementResponse.class);
+        assertThrows(RunnerException.class, () -> {
+            orderManagementAdapter.getOrderByGuid("1234");
+        });
+    }
 }
