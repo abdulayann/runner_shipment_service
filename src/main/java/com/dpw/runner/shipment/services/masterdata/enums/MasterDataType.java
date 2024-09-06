@@ -152,10 +152,10 @@ public enum MasterDataType {
     SECURITY_STATUS(159, "SecurityStatus"),
     EXEMPTION_CODES(160, "ExemptionCodes"),
     SCI(166, "SCI"),
-    MODULE_MASTER(183, "MODULE MASTER"),
-    DEPARTMENT_MASTER_LIST(184, "Department Master List"),
-    NATURE_OF_GOODS(185, "NATURE OF GOODS"),
-    IATA_CHARGE_CODES(186, "IATA Charge Codes");
+    MODULE_MASTER(183, "ModuleMaster"),
+    DEPARTMENT_MASTER_LIST(184, "DepartmentMasterList"),
+    NATURE_OF_GOODS(185, "NatureOfGoods"),
+    IATA_CHARGE_CODES(186, "IATAChargeCodes");
 
     private int id;
     private String description;
