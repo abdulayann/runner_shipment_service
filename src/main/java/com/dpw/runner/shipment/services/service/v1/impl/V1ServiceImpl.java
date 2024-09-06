@@ -2226,7 +2226,7 @@ public class V1ServiceImpl implements IV1Service {
                 new ParameterizedTypeReference<V1RoleIdResponse>() {}
             );
             log.info("Token time taken in getRoleIdsByRoleName() function {}", (System.currentTimeMillis() - time));
-            return response.getBody().getRoleId();
+            return Objects.requireNonNull(response.getBody()).getRoleId();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
