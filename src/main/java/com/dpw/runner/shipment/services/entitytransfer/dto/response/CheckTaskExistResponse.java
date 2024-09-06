@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -11,6 +12,6 @@ import java.util.List;
 @Builder
 @ToString
 public class CheckTaskExistResponse implements IRunnerResponse {
-    private List<Integer> sendToBranch;
+    private Set<Integer> sendToBranch;
     private List<String> sendToOrg;
 }
