@@ -5179,7 +5179,7 @@ class V1ServiceImplTest {
 
     @Test
     void createTask() {
-        var mockResponse = V1DataResponse.builder().build();
+        var mockResponse = TaskCreateResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
