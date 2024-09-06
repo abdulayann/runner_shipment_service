@@ -423,7 +423,7 @@ public class ReportService implements IReportService {
                         mainDocPage = CommonUtils.removeLastPage(mainDocPage);
                     }
                     if(reportRequest.isPrintBarcode())
-                        mainDocPage = addBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB);
+                        mainDocPage = addBarCodeInReport(mainDocPage, dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), 140, -50, ReportConstants.MAWB, false);
                     pdf_Bytes.add(mainDocPage);
                 }
                 if(lastPage != null)
@@ -1182,13 +1182,13 @@ public class ReportService implements IReportService {
     public byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
     {
         if(StringUtility.isNotEmpty(mawbNumber) && mawbNumber.length() > 5)
-            bytes = this.addBarCodeInReport(bytes, mawbNumber,140,-190, ReportConstants.MAWB);
+            bytes = this.addBarCodeInReport(bytes, mawbNumber,10,-75, ReportConstants.MAWB, true);
         else if(StringUtility.isNotEmpty(hawbNumber))
-            bytes = this.addBarCodeInReport(bytes, hawbNumber, 140, -210, ReportConstants.HAWB);
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 10, -75, ReportConstants.HAWB, true);
         return bytes;
     }
 
-    private byte[] addBarCodeInReport(byte[] bytes, String str, int x, int y, String docType) throws ValidationException {
+    private byte[] addBarCodeInReport(byte[] bytes, String str, int x, int y, String docType, boolean isAirlabel) throws ValidationException {
         if (StringUtility.isEmpty(str)) return bytes;
         if (CommonUtils.HasUnsupportedCharacters(str)) {
             if (docType != null) {
@@ -1213,7 +1213,11 @@ public class ReportService implements IReportService {
             // Generate barcode image
             byte[] imgBytes1 = CommonUtils.generateBarcodeImage(str);
             Image image1 = Image.getInstance(imgBytes1);
-            image1.scaleAbsolute(300, 30);
+            if(isAirlabel) {
+                image1.scaleAbsolute(250, 30);
+            } else {
+                image1.scaleAbsolute(300, 30);
+            }
             image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
             dc.addImage(image1);
 

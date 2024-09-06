@@ -69,8 +69,7 @@ public class ReportConstants {
     public static final String CARGO_GROSS_QUANTITY = "CargoGrossQunatity";
     public static final String CARGO_GROSS_QUANTITY_CODE = "CargoGrossQunatityCode";
     public static final String BL_COMMENTS = "BlComments";
-    public static final String SHIPMENT_GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
-    public static final String CONSOLIDATION_GROSS_WEIGHT_AND_UNIT = "ConsolGrossWeightandUnit";
+    public static final String GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
 
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
