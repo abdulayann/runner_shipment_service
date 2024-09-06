@@ -308,6 +308,8 @@ public class Constants {
     public static final String CARRIER_BOOKING_CREATE = "CarrierBooking:Create";
     public static final String CARRIER_BOOKING_VIEW = "CarrierBooking:View";
 
+    public static final String POUNDS = "pounds";
+    public static final String KG = "kg";
     public static final String CONTAINER_CODE = "containerCode";
     public static final String IS_DELETED = "isDeleted";
     public static final String ID = "id";

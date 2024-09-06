@@ -275,8 +275,7 @@ public class HawbReport extends IReport{
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
                 if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                    dictionary.put(ORIGINAL_PRINT_DATE, ConvertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true));
-
+                    dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
 
             }
@@ -360,6 +359,9 @@ public class HawbReport extends IReport{
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){
                         value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
+                    }
+                    if(value.get(GROSS_WT_UNIT) != null){
+                        value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
@@ -706,6 +708,7 @@ public class HawbReport extends IReport{
 
         return otherChargesResponses;
     }
+
     public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
     {
         Map<String, String> carrierCharges = new HashMap<>();
