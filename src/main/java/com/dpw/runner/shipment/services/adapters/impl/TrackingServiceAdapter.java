@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -12,13 +16,19 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -30,6 +40,20 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,17 +66,6 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -483,25 +496,27 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
                             List<Events> rows = container.getEvents().stream()
                                 .filter(Objects::nonNull)
-                                .flatMap(ce -> container.getPlaces().stream()
-                                    .filter(pl -> pl != null && ce.getLocation() != null && ce.getLocation().equals(pl.getId()))
-                                    .flatMap(pl -> {
+                                .flatMap(event -> container.getPlaces().stream()
+                                    .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
+                                    .flatMap(place -> {
                                         List<TrackingServiceApiResponse.Source> sources = new ArrayList<>();
-                                        sources.addAll(Optional.ofNullable(ce.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
-                                        sources.addAll(Optional.ofNullable(ce.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
+                                        sources.addAll(Optional.ofNullable(event.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
+                                        sources.addAll(Optional.ofNullable(event.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
                                         if (sources == null) return Stream.empty();
                                         return sources.stream()
                                             .filter(Objects::nonNull)
                                             .map(src -> Events.builder()
-                                                .latitude(pl.getLatitude())
-                                                .longitude(pl.getLongitude())
-                                                .placeDescription(pl.getFormattedDescription())
-                                                .placeName(pl.getName())
-                                                .actual(ce.getActualEventTime() != null ? ce.getActualEventTime().getDateTime() : null)
-                                                .estimated(ce.getProjectedEventTime() != null ? ce.getProjectedEventTime().getDateTime() : null)
+                                                .latitude(place.getLatitude())
+                                                .longitude(place.getLongitude())
+                                                .placeDescription(place.getFormattedDescription())
+                                                .placeName(place.getName())
+                                                .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
+                                                .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
                                                 .source(src.getSource())
-                                                .eventCode(ce.getEventType())
-                                                .description(ce.getDescriptionFromSource())
+                                                .eventCode(event.getEventType())
+                                                .description(event.getDescriptionFromSource())
+                                                .containerNumber(container.getContainerNumber())
+                                                .locationRole(event.getLocationRole())
                                                 .build()
                                             );
                                     })

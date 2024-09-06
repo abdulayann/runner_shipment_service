@@ -335,6 +335,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
+    @OrderBy("leg ASC")
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
@@ -162,17 +162,17 @@ public class RoutingsService implements IRoutingsService {
     }
 
     private boolean isVesselDepartureEvent(String eventType, String description, String descriptionFromSource) {
-        return Constants.VESSELDEPARTUREWITHCONTAINER.equalsIgnoreCase(eventType)
-                && Constants.VESSEL_DEPARTURE.equalsIgnoreCase(description)
-                && (Constants.VESSEL_DEPARTURE_FROM_POL.equalsIgnoreCase(descriptionFromSource)
-                || Constants.VESSEL_DEPARTURE_FROM_TS_PORT.equalsIgnoreCase(descriptionFromSource));
+        return EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(eventType)
+                && EventConstants.VESSEL_DEPARTURE.equalsIgnoreCase(description)
+                && (EventConstants.VESSEL_DEPARTURE_FROM_POL.equalsIgnoreCase(descriptionFromSource)
+                || EventConstants.VESSEL_DEPARTURE_FROM_TS_PORT.equalsIgnoreCase(descriptionFromSource));
     }
 
     private boolean isVesselArrivalEvent(String eventType, String description, String descriptionFromSource) {
-        return Constants.VESSELARRIVALWITHCONTAINER.equalsIgnoreCase(eventType)
-                && Constants.VESSEL_ARRIVAL.equalsIgnoreCase(description)
-                && (Constants.VESSEL_ARRIVAL_AT_TS_PORT.equalsIgnoreCase(descriptionFromSource)
-                || Constants.VESSEL_ARRIVAL_AT_POD.equalsIgnoreCase(descriptionFromSource));
+        return EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(eventType)
+                && EventConstants.VESSEL_ARRIVAL.equalsIgnoreCase(description)
+                && (EventConstants.VESSEL_ARRIVAL_AT_TS_PORT.equalsIgnoreCase(descriptionFromSource)
+                || EventConstants.VESSEL_ARRIVAL_AT_POD.equalsIgnoreCase(descriptionFromSource));
     }
 
     @Override
@@ -204,6 +204,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponse.aircraftRegistration(routings.getAircraftRegistration());
         routingsResponse.flightNumber(routings.getFlightNumber());
         routingsResponse.aircraftType(routings.getAircraftType());
+        routingsResponse.vehicleNumber(routings.getVehicleNumber());
         routingsResponse.routeLegId(routings.getRouteLegId());
         routingsResponse.transitDays(routings.getTransitDays());
         routingsResponse.carrier(routings.getCarrier());

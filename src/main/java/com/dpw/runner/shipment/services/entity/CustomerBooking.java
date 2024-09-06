@@ -136,6 +136,7 @@ public class CustomerBooking extends MultiTenancy {
     private List<Packing> packingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @OrderBy("leg ASC")
     private List<Routings> routingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
