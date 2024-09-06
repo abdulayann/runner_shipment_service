@@ -347,8 +347,6 @@ class OrderManagementAdapterTest {
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
