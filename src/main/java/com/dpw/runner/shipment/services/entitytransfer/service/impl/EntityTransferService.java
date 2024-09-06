@@ -321,9 +321,9 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             }
 
-            if(!errorTenants.isEmpty()) {
-                throw new ValidationException(String.format("Destination branches %s not having co-loading branch relation!!", String.join(", ", getTenantName(errorTenants))));
-            }
+//            if(!errorTenants.isEmpty()) {
+//                throw new ValidationException(String.format("Destination branches %s not having co-loading branch relation!!", String.join(", ", getTenantName(errorTenants))));
+//            }
         }
     }
 
