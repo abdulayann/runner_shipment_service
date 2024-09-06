@@ -1108,6 +1108,7 @@ public class PackingService implements IPackingService {
             var convertedVolume = BigDecimal.valueOf(convertUnit(VOLUME, packSummaryResponse.getAchievedVolume(), packSummaryResponse.getVolumeUnit(), toVolumeUnit).doubleValue());
             achievedQuantities.setConsolidatedWeight(convertedWeight);
             achievedQuantities.setConsolidatedVolume(convertedVolume);
+            consol.setAchievedQuantities(achievedQuantities);
             consol = commonUtils.calculateConsolUtilization(consol);
             packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
             packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
