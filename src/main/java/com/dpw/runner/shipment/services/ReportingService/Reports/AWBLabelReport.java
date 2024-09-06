@@ -324,13 +324,7 @@ public class AWBLabelReport extends IReport{
             dictionary.put(CONSOL_TOTAL_WEIGHT_AND_UNIT,  value + " " + (!packingModelList.isEmpty() ? packingModelList.get(0).getWeightUnit() : null));
         }
         if (awbLabelModel.shipment != null && awbLabelModel.shipment.getPackingList() != null) {
-            var totalPacks = 0;
-            int size = awbLabelModel.shipment.getPackingList().size();
-            for(int i = 0; i < size; i++) {
-                if(awbLabelModel.shipment.getPackingList().get(i).getPacks() != null)
-                    totalPacks += Integer.parseInt(awbLabelModel.shipment.getPackingList().get(i).getPacks());
-            }
-            dictionary.put(ReportConstants.TOTAL_PACKS, totalPacks);
+            dictionary.put(ReportConstants.TOTAL_PACKS, awbLabelModel.shipment.getNoOfPacks());
         }
         dictionary.put(ReportConstants.IS_MAWB, this.isMawb);
         dictionary.put(ReportConstants.IS_HAWB, !this.isMawb);
