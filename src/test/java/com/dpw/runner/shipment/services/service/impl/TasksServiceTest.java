@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -108,7 +109,7 @@ class TasksServiceTest {
     @Test
     void createTask() {
         var mockInput = TaskCreateRequest.builder().build();
-        when(iv1Service.createTask(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.createTask(any())).thenReturn(TaskCreateResponse.builder().build());
         ResponseEntity<IRunnerResponse> responseEntity = tasksService.createTask(CommonRequestModel.buildRequest(mockInput));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
