@@ -605,6 +605,11 @@ public class ShipmentService implements IShipmentService {
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             if (routingsRequest != null)
                 shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
+
+            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
+            if (referenceNumbersRequest != null)
+                shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
+
             Hbl hbl = null;
             if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
                 hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
