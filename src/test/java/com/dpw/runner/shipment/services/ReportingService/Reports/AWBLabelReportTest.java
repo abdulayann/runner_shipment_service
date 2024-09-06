@@ -780,8 +780,25 @@ class AWBLabelReportTest extends CommonMocks {
         awbLabelReport.setMawb(true);
         populateModel(aWbLabelModel);
         aWbLabelModel.setShipment(null);
-        aWbLabelModel.getConsolidation().setCarrierDetails(null);
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOriginPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        carrierDetailModel.setDestinationPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        aWbLabelModel.getConsolidation().setCarrierDetails(carrierDetailModel);
         aWbLabelModel.getConsolidation().setMawb(null);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        routingsModel.setPod("bb69aefb-0294-4be9-baec-835a431123df");
+        RoutingsModel routingsModel2 = new RoutingsModel();
+        routingsModel2.setLeg(2L);
+        routingsModel2.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel2.setCarrier("test2");
+        routingsModel2.setPod("bb69aefb-0294-4be9-baec-835a431123df2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        routingsModels.add(routingsModel2);
+        aWbLabelModel.getConsolidation().setRoutingsList(routingsModels);
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -799,8 +816,52 @@ class AWBLabelReportTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
-//        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
+//        mockTenantSettings();
+        assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
+    }
+
+    @Test
+    void populateDictionary_whenMawb4() throws RunnerException { // when its  mawb
+        AWbLabelModel aWbLabelModel = new AWbLabelModel();
+        aWbLabelModel.setTenantAddress(new ArrayList<>());
+        aWbLabelModel.setTenant(new TenantModel());
+        awbLabelReport.setMawb(true);
+        populateModel(aWbLabelModel);
+        aWbLabelModel.setShipment(null);
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOriginPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        carrierDetailModel.setDestinationPort("bb69aefb-0294-4be9-baec-835a431123df2");
+        aWbLabelModel.getConsolidation().setCarrierDetails(carrierDetailModel);
+        aWbLabelModel.getConsolidation().setMawb(null);
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
+        routingsModel.setCarrier("test");
+        routingsModel.setPod("bb69aefb-0294-4be9-baec-835a431123df2");
+        List<RoutingsModel> routingsModels = new ArrayList<>();
+        routingsModels.add(routingsModel);
+        aWbLabelModel.getConsolidation().setRoutingsList(routingsModels);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
+        unlocationsResponses.add(unlocationsResponse);
+
+        when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
 //        mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
