@@ -431,7 +431,17 @@ public abstract class IReport {
         ship.ShipperSealNumber = row.getShipperSealNumber();
         ship.HazardousUn = row.getHazardousUn();
         ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), getCurrentTenantSettings()), row.getGrossWeightUnit());
-
+        ship.OceanUNNumber = row.getUnNumber();
+        ship.OceanDGPSN = row.getProperShippingName();
+        ship.OceanDGClass = row.getDgClass();
+        ship.PackingGroup = row.getPackingGroup();
+        if(!Objects.isNull(row.getMinimumFlashPoint()))
+        {
+            ship.FlashPointAndUnit = String.valueOf(row.getMinimumFlashPoint());
+            if(!StringUtility.isEmpty(row.getMinimumFlashPointUnit()))
+                ship.FlashPointAndUnit = ship.FlashPointAndUnit + " " + row.getMinimumFlashPointUnit();
+        }
+        ship.MarinePollutant = Boolean.TRUE.equals(row.getMarinePollutant()) ? "Marine Pollutant" : null;
         try {
             List<MasterListRequest> requests = new ArrayList<>();
             Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
@@ -2780,6 +2790,23 @@ public abstract class IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
             Map<String, Object> dict = new HashMap<>();
+            if(!StringUtility.isEmpty(pack.getUnNumber()))
+                dict.put(OCEAN_UN_NUMBER, pack.getUnNumber());
+            if(!StringUtility.isEmpty(pack.getProperShippingName()))
+                dict.put(OCEAN_DG_PSN, pack.getProperShippingName());
+            if(!StringUtility.isEmpty(pack.getDGClass()))
+                dict.put(OCEAN_DG_CLASS, pack.getDGClass());
+            if(pack.getMinimumFlashPoint() != null)
+            {
+                String flashPointAndUnit = String.valueOf(pack.getMinimumFlashPoint());
+                if(!StringUtility.isEmpty(pack.getMinimumFlashPointUnit()))
+                    flashPointAndUnit = flashPointAndUnit + " " + pack.getMinimumFlashPointUnit();
+                dict.put(FLASH_POINT_AND_UNIT, flashPointAndUnit);
+            }
+            if(!StringUtility.isEmpty(pack.getPackingGroup()))
+                dict.put(PACKING_GROUP, pack.getPackingGroup());
+            if(Boolean.TRUE.equals(pack.getMarinePollutant()))
+                dict.put(MARINE_POLLUTANT, "Marine Pollutant");
             if(pack.getCommodity() != null) {
                 dict.put(COMMODITY_DESC, pack.getCommodity());
                 if(commodityTypeMap != null && commodityTypeMap.containsKey(pack.getCommodity()))

@@ -1,15 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AGENT_REFERENCE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORT_REFERENCE_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
@@ -154,6 +145,24 @@ public class ArrivalNoticeReport extends IReport {
 
         populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
         HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
+        if(!Objects.isNull(arrivalNoticeModel.shipmentDetails.getPackingList()) && !arrivalNoticeModel.shipmentDetails.getPackingList().isEmpty()) {
+            getPackingDetails(arrivalNoticeModel.shipmentDetails, dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = arrivalNoticeModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = arrivalNoticeModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
 
         return dictionary;
     }

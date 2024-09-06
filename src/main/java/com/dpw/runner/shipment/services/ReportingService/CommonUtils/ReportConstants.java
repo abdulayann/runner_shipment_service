@@ -1075,6 +1075,12 @@ public class ReportConstants {
     public static final String PLEASE_UPLOAD_VALID_TEMPLATE = "Please Upload Valid Template";
     public static final String DeliveryTo = "DeliveryTo";
     public static final String DeliveryTransport = "DeliveryTransport";
+    public static final String OCEAN_UN_NUMBER = "OceanUNNumber";
+    public static final String OCEAN_DG_PSN = "OceanDGPSN";
+    public static final String OCEAN_DG_CLASS = "OceanDGClass";
+    public static final String PACKING_GROUP = "PackingGroup";
+    public static final String FLASH_POINT_AND_UNIT = "FlashPointAndUnit";
+    public static final String MARINE_POLLUTANT = "MarinePollutant";
 
     //arrival notice report keys
     public static final String VesselsNameFlightName = "VesselsNameFlightName";
