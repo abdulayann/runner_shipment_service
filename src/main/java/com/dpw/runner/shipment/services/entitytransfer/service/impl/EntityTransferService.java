@@ -1610,7 +1610,7 @@ public class EntityTransferService implements IEntityTransferService {
         return emailTemplate;
     }
 
-    public String generateSubject(List<ShipmentDetails> shipmentDetailsList, String consolidationBranch) {
+    private String generateSubject(List<ShipmentDetails> shipmentDetailsList, String consolidationBranch) {
         String shipmentNumbers = shipmentDetailsList.stream()
                 .map(ShipmentDetails::getShipmentId)
                 .collect(Collectors.joining(", "));
@@ -1623,7 +1623,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    public String generateEmailBody(Map<String, Object> tagDetails, List<ShipmentDetails> shipmentDetailsList, String htmlTemplate, Map<Integer, V1TenantResponse> tenantMap) {
+    private String generateEmailBody(Map<String, Object> tagDetails, List<ShipmentDetails> shipmentDetailsList, String htmlTemplate, Map<Integer, V1TenantResponse> tenantMap) {
         String tableTemplate = extractTableTemplate(htmlTemplate);
 
         String populatedTable = populateTableWithData(tableTemplate, shipmentDetailsList, tenantMap);
@@ -1633,7 +1633,7 @@ public class EntityTransferService implements IEntityTransferService {
         return emailBody;
     }
 
-    public String extractTableTemplate(String htmlTemplate) {
+    private String extractTableTemplate(String htmlTemplate) {
         int tableStartIndex = htmlTemplate.indexOf("<table>");
         int tableEndIndex = htmlTemplate.indexOf("</table>") + "</table>".length();
 
@@ -1645,7 +1645,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    public String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList, Map<Integer, V1TenantResponse> tenantMap) {
+    private String populateTableWithData(String tableTemplate, List<ShipmentDetails> shipmentDetailsList, Map<Integer, V1TenantResponse> tenantMap) {
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
