@@ -36,7 +36,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -48,9 +47,6 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +55,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -74,7 +69,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -124,6 +118,18 @@ class EntityTransferServiceTest {
     private ConsolidationDetails consolidationDetails;
 
     @Mock
+    private ConsolidationDetailsResponse consolidationDetailsResponse;
+    @Mock
+    private ShipmentDetails shipmentDetails;
+    @Mock
+    private V1TenantResponse v1TenantResponse;
+    @Mock
+    private TenantModel tenantModel;
+    @Mock
+    private UsersDto usersDto;
+    @Mock
+    private ShipmentSettingsDetails shipmentSettingsDetails;
+    @Mock
     private List<ShipmentDetails> shipmentDetailsForTenant;
     @Mock
     private IEventDao eventDao;
@@ -165,6 +171,8 @@ class EntityTransferServiceTest {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setTenantDisplayName("abc");
+        mockUser.setDisplayName("abc");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
@@ -1221,217 +1229,6 @@ class EntityTransferServiceTest {
         assertEquals(expected, result);
     }
 
-    @Test
-    void testExtractTableTemplate_withValidTable() {
-        String htmlTemplate = "<html><body><p>Some content before table</p><table><tr><td>Data</td></tr></table><p>Some content after table</p></body></html>";
-
-        String expected = "<table><tr><td>Data</td></tr></table>";
-        String actual = entityTransferService.extractTableTemplate(htmlTemplate);
-
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void testExtractTableTemplate_withNoTable() {
-        String htmlTemplate = "<html><body><p>No table here</p></body></html>";
-
-        String expected = "";
-        String actual = entityTransferService.extractTableTemplate(htmlTemplate);
-
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void testExtractTableTemplate_withEmptyString() {
-        String htmlTemplate = "";
-
-        String expected = "";
-        String actual = entityTransferService.extractTableTemplate(htmlTemplate);
-
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void testExtractTableTemplate_withNestedTables() {
-        String htmlTemplate = "<html><body><table><tr><td><table><tr><td>Nested Data</td></tr></table></td></tr></table></body></html>";
-
-        String expected = "<table><tr><td><table><tr><td>Nested Data</td></tr></table>";
-        String actual = entityTransferService.extractTableTemplate(htmlTemplate);
-
-        assertEquals(expected, actual);
-    }
-
-
-    @Test
-    void testGenerateEmailBody_withValidInputs() {
-        // Arrange
-        EntityTransferService entityTransferService1 = Mockito.spy(new EntityTransferService());
-
-        Map<String, Object> tagDetails = new HashMap<>();
-        tagDetails.put("GS_ConsolidationBranch", "Branch001");
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-
-        ShipmentDetails sd2 = new ShipmentDetails();
-        sd2.setShipmentId("SN002");
-        sd2.setReceivingBranch(2L);
-        sd2.setHouseBill("HB002");
-        sd2.setMasterBill("MB002");
-        sd2.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T11:00:00"));
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(sd1, sd2);
-
-        String htmlTemplate = "<html><body><p>Dear User,</p><p>Details:</p><table><tr><td>Placeholder</td></tr></table></body></html>";
-
-        String tableTemplate = "<table><tr><td>Placeholder</td></tr></table>";
-        String populatedTable = "<table><tr><td>SN001</td><td>Branch001</td><td>HB001</td><td>MB001</td><td>2024-08-31T10:00:00</td></tr><tr><td>SN002</td><td>Branch002</td><td>HB002</td><td>MB002</td><td>2024-08-31T11:00:00</td></tr></table>";
-        String replacedTags = "<html><body><p>Dear User,</p><p>Details:</p>" + tableTemplate + "</body></html>";
-
-        doReturn(tableTemplate).when(entityTransferService1).extractTableTemplate(htmlTemplate);
-        doReturn(populatedTable).when(entityTransferService1).populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-        doReturn(replacedTags).when(entityTransferService1).replaceTagsValues(tagDetails, htmlTemplate);
-
-        // Act
-        String emailBody = entityTransferService1.generateEmailBody(tagDetails, shipmentDetailsList, htmlTemplate, new HashMap<>());
-
-        // Assert
-        String expectedEmailBody = "<html><body><p>Dear User,</p><p>Details:</p>" + populatedTable + "</body></html>";
-        assertEquals(expectedEmailBody, emailBody);
-    }
-
-    @Test
-    void testGenerateEmailBody_withEmptyShipmentDetails() {
-        // Arrange
-        EntityTransferService entityTransferService1 = Mockito.spy(new EntityTransferService());
-
-        Map<String, Object> tagDetails = new HashMap<>();
-        tagDetails.put("GS_ConsolidationBranch", "Branch001");
-
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-
-        String htmlTemplate = "<html><body><p>Dear User,</p><p>Details:</p><table><tr><td>Placeholder</td></tr></table></body></html>";
-
-        String tableTemplate = "<table><tr><td>Placeholder</td></tr></table>";
-        String populatedTable = "<table></table>"; // Assuming the table becomes empty if no shipment details are provided
-        String replacedTags = "<html><body><p>Dear User,</p><p>Details:</p>" + tableTemplate + "</body></html>";
-
-        doReturn(tableTemplate).when(entityTransferService1).extractTableTemplate(htmlTemplate);
-        doReturn(populatedTable).when(entityTransferService1).populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-        doReturn(replacedTags).when(entityTransferService1).replaceTagsValues(tagDetails, htmlTemplate);
-
-        // Act
-        String emailBody = entityTransferService1.generateEmailBody(tagDetails, shipmentDetailsList, htmlTemplate, new HashMap<>());
-
-        // Assert
-        String expectedEmailBody = "<html><body><p>Dear User,</p><p>Details:</p>" + populatedTable + "</body></html>";
-        assertEquals(expectedEmailBody, emailBody);
-    }
-
-    @Test
-    void testGenerateEmailBody_withEmptyHtmlTemplate() {
-        // Arrange
-        EntityTransferService yourClass = Mockito.spy(new EntityTransferService());
-
-        Map<String, Object> tagDetails = new HashMap<>();
-        tagDetails.put("GS_ConsolidationBranch", "Branch001");
-
-        ShipmentDetails sd = new ShipmentDetails();
-        sd.setShipmentId("SN001");
-        sd.setReceivingBranch(1L);
-        sd.setHouseBill("HB001");
-        sd.setMasterBill("MB001");
-        sd.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(
-                sd
-        );
-
-        String htmlTemplate = "";
-
-        String tableTemplate = "";
-        String populatedTable = "<table><tr><td>SN001</td><td>Branch001</td><td>HB001</td><td>MB001</td><td>2024-08-31T10:00:00</td></tr></table>";
-        String replacedTags = "";
-
-        doReturn(tableTemplate).when(yourClass).extractTableTemplate(htmlTemplate);
-        doReturn(populatedTable).when(yourClass).populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-        doReturn(replacedTags).when(yourClass).replaceTagsValues(tagDetails, htmlTemplate);
-
-        // Act
-        String emailBody = yourClass.generateEmailBody(tagDetails, shipmentDetailsList, htmlTemplate, new HashMap<>());
-
-        // Assert
-        String expectedEmailBody = populatedTable; // Expecting only the populated table since the template is empty
-        assertEquals(expectedEmailBody, emailBody);
-    }
-
-    @Test
-    void testGenerateSubject_withMultipleShipmentDetails() {
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-
-        ShipmentDetails sd2 = new ShipmentDetails();
-        sd2.setShipmentId("SN002");
-        sd2.setReceivingBranch(2L);
-        sd2.setHouseBill("HB002");
-        sd2.setMasterBill("MB002");
-        sd2.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T11:00:00"));
-        // Arrange
-        List<ShipmentDetails> shipmentDetailsList = List.of(sd1, sd2);
-        String consolidationBranch = "ConsolidationBranch001";
-
-        // Act
-        String subject = entityTransferService.generateSubject(shipmentDetailsList, consolidationBranch);
-
-        // Assert
-        String expectedSubject = "Shipment/s: SN001, SN002 created by consolidating branch – ConsolidationBranch001";
-        assertEquals(expectedSubject, subject);
-    }
-
-    @Test
-    void testGenerateSubject_withSingleShipmentDetail() {
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-        // Arrange
-        List<ShipmentDetails> shipmentDetailsList = List.of(sd1);
-        String consolidationBranch = "ConsolidationBranch001";
-
-        // Act
-        String subject = entityTransferService.generateSubject(shipmentDetailsList, consolidationBranch);
-
-        // Assert
-        String expectedSubject = "Shipment/s: SN001 created by consolidating branch – ConsolidationBranch001";
-        assertEquals(expectedSubject, subject);
-    }
-
-    @Test
-    void testGenerateSubject_withEmptyShipmentDetails() {
-        // Arrange
-        List<ShipmentDetails> shipmentDetailsList = List.of();
-        String consolidationBranch = "ConsolidationBranch001";
-
-        // Act
-        String subject = entityTransferService.generateSubject(shipmentDetailsList, consolidationBranch);
-
-        // Assert
-        String expectedSubject = "Shipment/s:  created by consolidating branch – ConsolidationBranch001";
-        assertEquals(expectedSubject, subject);
-    }
-
 
     @Test
     void testGetRoleListByRoleId_ValidResponse() {
@@ -1527,165 +1324,6 @@ class EntityTransferServiceTest {
         assertEquals("Received consolidation CON123 with 1 shipments from TenantName", template.getSubject());
     }
 
-//    @Test
-    void testPopulateTableWithData_SingleShipment() {
-        // Arrange
-        String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
-
-        ShipmentDetails sd = new ShipmentDetails();
-        sd.setShipmentId("SN001");
-        sd.setReceivingBranch(1L);
-        sd.setHouseBill("HB001");
-        sd.setMasterBill("MB001");
-        sd.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(sd);
-
-        // Act
-        String result = entityTransferService.populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-
-        // Assert
-        Document document = Jsoup.parse(result);
-        Element table = document.select("table").first();
-        Element row = table.select("tbody tr").get(1);
-
-        assertEquals("SN001", row.select("td").get(0).text());
-        assertEquals("1", row.select("td").get(1).text());
-        assertEquals("HB001", row.select("td").get(2).text());
-        assertEquals("MB001", row.select("td").get(3).text());
-        assertEquals("2024-08-31T10:00", row.select("td").get(4).text());
-
-        assertEquals("padding: 10px;", row.select("td").get(0).attr("style"));
-        assertEquals("padding: 10px;", row.select("td").get(1).attr("style"));
-        assertEquals("padding: 10px;", row.select("td").get(2).attr("style"));
-        assertEquals("padding: 10px;", row.select("td").get(3).attr("style"));
-        assertEquals("padding: 10px;", row.select("td").get(4).attr("style"));
-    }
-
-//    @Test
-    void testPopulateTableWithData_MultipleShipments() {
-        // Arrange
-        String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-
-        ShipmentDetails sd2 = new ShipmentDetails();
-        sd2.setShipmentId("SN002");
-        sd2.setReceivingBranch(2L);
-        sd2.setHouseBill("HB002");
-        sd2.setMasterBill("MB002");
-        sd2.setShipmentCreatedOn(LocalDateTime.parse("2024-09-01T10:00:00"));
-
-        List<ShipmentDetails> shipmentDetailsList = List.of(sd1, sd2);
-
-        // Act
-        String result = entityTransferService.populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-
-        // Assert
-        Document document = Jsoup.parse(result);
-        Element table = document.select("table").first();
-
-        Element row1 = table.select("tbody tr").get(1);
-        assertEquals("SN001", row1.select("td").get(0).text());
-        assertEquals("1", row1.select("td").get(1).text());
-        assertEquals("HB001", row1.select("td").get(2).text());
-        assertEquals("MB001", row1.select("td").get(3).text());
-        assertEquals("2024-08-31T10:00", row1.select("td").get(4).text());
-
-        Element row2 = table.select("tbody tr").get(2);
-        assertEquals("SN002", row2.select("td").get(0).text());
-        assertEquals("2", row2.select("td").get(1).text());
-        assertEquals("HB002", row2.select("td").get(2).text());
-        assertEquals("MB002", row2.select("td").get(3).text());
-        assertEquals("2024-09-01T10:00", row2.select("td").get(4).text());
-    }
-
-    @Test
-    void testPopulateTableWithData_EmptyList() {
-        // Arrange
-        String tableTemplate = "<table><tbody><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td>{ShipmentId}</td><td>{ReceivingBranch}</td><td>{HouseBill}</td><td>{MasterBill}</td><td>{ShipmentCreatedOn}</td></tr></tbody></table>";
-        List<ShipmentDetails> shipmentDetailsList = List.of();
-
-        // Act
-        String result = entityTransferService.populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-
-        // Assert
-        Document document = Jsoup.parse(result);
-        Element table = document.select("table").first();
-        int rowCount = table.select("tbody tr").size();
-
-        assertEquals(1, rowCount);
-    }
-
-
-
-//    @Test
-    void testPopulateTableWithData_BasicPopulation() {
-        // Given
-        String tableTemplate = "<html><body><table><tbody><tr><td>Header 1</td><td>Header 2</td><td>Header 3</td><td>Header 4</td><td>Header 5</td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></body></html>";
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setShipmentId("SN001");
-        shipment.setReceivingBranch(1L);
-        shipment.setHouseBill("HB001");
-        shipment.setMasterBill("MB001");
-        shipment.setShipmentCreatedOn(LocalDateTime.parse("2024-08-31T10:00:00"));
-        shipmentDetailsList.add(shipment);
-
-        // When
-        EntityTransferService service = new EntityTransferService();
-        String result = service.populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-
-        // Then
-        assertNotNull(result);
-        Document document = Jsoup.parse(result);
-        Element table = document.select("table").first();
-        assertNotNull(table);
-        Element rows = table.select("tbody tr").get(1);
-        assertNotNull(rows);
-        assertFalse(rows.text().contains("SN001"));
-    }
-
-    @Test
-    void testPopulateTableWithData_EmptyShipmentList() {
-        // Given
-        String tableTemplate = "<html><body><table><tbody><tr><td>Header 1</td><td>Header 2</td><td>Header 3</td><td>Header 4</td><td>Header 5</td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td></tr></tbody></table></body></html>";
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-
-        // When
-        EntityTransferService service = new EntityTransferService();
-        String result = service.populateTableWithData(tableTemplate, shipmentDetailsList, new HashMap<>());
-
-        // Then
-        assertNotNull(result);
-        Document document = Jsoup.parse(result);
-        Element table = document.select("table").first();
-        assertNotNull(table);
-        Element rows = table.select("tbody tr").get(0); // Verify that the original row remains
-        assertNotNull(rows);
-    }
-
-
-//    @Test
-    void testSendGroupedEmailForShipmentImport_EmptyShipmentGuids() {
-        // Given
-        ConsolidationDetailsResponse consolidationDetailsResponse = mock(ConsolidationDetailsResponse.class);
-        List<UUID> shipmentGuids = Collections.emptyList();
-
-        // Mocking
-        //when(commonUtils.getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap())).thenReturn(new HashMap<>());
-
-        // Call the method
-        entityTransferService.sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids);
-
-        // Verify
-        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
-    }
     @Test
     void testImportShipment_rejection() throws RunnerException {
         ImportShipmentRequest importShipmentRequest = ImportShipmentRequest.builder().taskId(1L).operation(TaskStatus.REJECTED.getDescription()).rejectRemarks("test rejected").build();
@@ -1892,6 +1530,101 @@ class EntityTransferServiceTest {
 
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
+    @Test
+    void testSendGroupedEmailForShipmentImport_Success() {
+        // Given
+        List<UUID> shipmentGuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        when(shipmentDetails.getTenantId()).thenReturn(100);
+        when(shipmentDetails.getSourceTenantId()).thenReturn(123L);
+        when(shipmentDetails.getShipmentId()).thenReturn("1");
+        when(shipmentDetails.getHouseBill()).thenReturn("hbn");
+        when(shipmentDetails.getMasterBill()).thenReturn("mbn");
+        when(shipmentDetails.getShipmentCreatedOn()).thenReturn(LocalDateTime.now());
+
+        List<ShipmentDetails> shipmentDetailsList = List.of(
+                shipmentDetails,
+                shipmentDetails
+        );
+
+        // Mocks
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class)))
+                .thenReturn(consolidationDetails);
+        when(shipmentDao.findShipmentsByGuids(anySet()))
+                .thenReturn(shipmentDetailsList);
+        doNothing().when(commonUtils).setInterBranchContextForHub();
+        doNothing().when(commonUtils).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
+        EmailTemplatesRequest emailTemplatesRequest = mock(EmailTemplatesRequest.class);
+        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        doAnswer(invocation -> {
+            Set<String> toEmailIds = invocation.getArgument(0);
+            toEmailIds.add("toEmail@example.com");
+            return null;
+        }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt(), anyBoolean());
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("12345");
+
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        mockV1Map.put(123, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(v1TenantResponse);
+        when(v1TenantResponse.getTenantName()).thenReturn("abcd");
+
+        // When
+        entityTransferService.sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids);
+
+        // Then
+        verify(jsonHelper, times(1)).convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
+        verify(commonUtils, times(1)).setInterBranchContextForHub();
+        verify(shipmentDao, times(1)).findShipmentsByGuids(anySet());
+        verify(commonUtils, times(1)).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
+    }
+
+
+    @Test
+    void testSendConsolidationEmailNotification_Success() {
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        mockV1Map.put(123, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
+        when(consolidationDetails.getShipmentsList()).thenReturn(List.of(shipmentDetails));
+        when(consolidationDetails.getTransportMode()).thenReturn("SEA");
+        when(consolidationDetails.getBol()).thenReturn("bol");
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+    @Test
+    void testSendShipmentEmailNotification_Success() {
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        mockV1Map.put(123, new Object());
+
+        when(shipmentDetails.getShipmentId()).thenReturn("1");
+        when(shipmentDetails.getHouseBill()).thenReturn("hbn");
+        when(shipmentDetails.getMasterBill()).thenReturn("mbn");
+        when(shipmentSettingsDao.getSettingsByTenantIds(destinationBranches)).thenReturn(List.of(shipmentSettingsDetails));
+        when(shipmentSettingsDetails.getShipmentConsoleImportApproverRole()).thenReturn("123");
+
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
+
+        verify(shipmentSettingsDao, times(1)).getSettingsByTenantIds(anyList());
+
     }
 
     private Runnable mockRunnable() {
