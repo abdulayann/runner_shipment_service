@@ -2214,7 +2214,7 @@ class CommonUtilsTest {
         when(jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class)).thenReturn(vesselsResponseList);
 
         commonUtils.getVesselsData(carrierDetails, vesselsResponse);
-        assertEquals(vesselsResponse.getName(), "Name");
+        assertEquals("Name", vesselsResponse.getName());
     }
 
     @Test
@@ -2230,6 +2230,6 @@ class CommonUtilsTest {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
         commonUtils.sendEmailResponseToDGRequester(emailTemplates,request,status, shipmentDetails);
-        assertEquals(request.getRequesterUserEmailId(), "ac");
+        assertEquals("ac", request.getRequesterUserEmailId());
     }
 }
