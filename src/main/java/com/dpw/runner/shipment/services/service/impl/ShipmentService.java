@@ -133,6 +133,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
@@ -5890,15 +5891,17 @@ public class ShipmentService implements IShipmentService {
         if (!UserContext.isOceanDgUser()) {
             sendEmailForApproval(shipmentDetails, remarks);
         }
-        OceanDGStatus dgStatus = OceanDGStatus.OCEAN_DG_REQUESTED;
+        OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
 
+        DBOperationType operationType = dgStatus == OceanDGStatus.OCEAN_DG_REQUESTED ? DBOperationType.DG_REQUEST : DBOperationType.COMMERCIAL_REQUEST;
         if(UserContext.isOceanDgUser()) {
             dgStatus = checkForClass1(shipmentDetails)
                 ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OceanDGStatus.OCEAN_DG_REQUESTED;
+            operationType = DG_APPROVE;
         }
         shipmentDetails.setOceanDGStatus(dgStatus);
 
-        DBOperationType operationType = dgStatus == OceanDGStatus.OCEAN_DG_REQUESTED ? DBOperationType.DG_REQUEST : DBOperationType.COMMERCIAL_REQUEST;
+
         try {
             auditLogService.addAuditLog(
                 AuditLogMetaData.builder()
@@ -5938,7 +5941,7 @@ public class ShipmentService implements IShipmentService {
         DBOperationType operationType = null;
         if(shipmentDetails.getOceanDGStatus() == OceanDGStatus.OCEAN_DG_REQUESTED){
              if(request.getStatus() == TaskStatus.APPROVED){
-                 operationType = DBOperationType.DG_APPROVE;
+                 operationType = DG_APPROVE;
              }else{
                  operationType = DBOperationType.DG_REJECT;
              }
