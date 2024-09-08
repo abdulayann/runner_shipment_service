@@ -357,6 +357,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -375,7 +376,6 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
@@ -1500,73 +1500,107 @@ public abstract class IReport {
         }
     }
 
-    @NotNull
     private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses) {
         List<BillChargesResponse> v1BillCharges = new ArrayList<>();
 
         for (BillChargesBaseResponse billingBillCharge : billChargesBaseResponses) {
+            if (billingBillCharge == null) {
+                continue; // Skip null objects
+            }
+
             BillChargesResponse v1BillCharge = new BillChargesResponse();
-            BillChargeRevenueDetailsResponse revenueDetails = billingBillCharge.getBillChargeRevenueDetails();
-            BillChargeCostDetailsResponse costDetails = billingBillCharge.getBillChargeCostDetails();
-            ChargeTypeBaseResponse chargeTypeDetails = billingBillCharge.getChargeTypeDetails();
+            // Use Optionals for null checks
+            Optional<BillChargeRevenueDetailsResponse> revenueDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeRevenueDetails());
+            Optional<BillChargeCostDetailsResponse> costDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeCostDetails());
+            Optional<ChargeTypeBaseResponse> chargeTypeDetailsOpt = Optional.ofNullable(billingBillCharge.getChargeTypeDetails());
 
             v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
             v1BillCharge.setBillingChargeTypeGuid(
-                    Optional.ofNullable(chargeTypeDetails)
-                            .map(ChargeTypeBaseResponse::getGuId).map(UUID::toString)
-                            .orElse(null));
-            v1BillCharge.setOverseasSellAmount(revenueDetails.getOverseasSellAmount());
-            v1BillCharge.setOverseasSellCurrency(revenueDetails.getOverseasSellCurrency());
-            v1BillCharge.setLocalSellAmount(revenueDetails.getLocalSellAmount());
-            v1BillCharge.setLocalSellCurrency(revenueDetails.getLocalSellCurrency());
-            v1BillCharge.setOverseasTax(revenueDetails.getOverseasTax());
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getGuId)
+                            .map(UUID::toString)
+                            .orElse(null)
+            );
+            v1BillCharge.setOverseasSellAmount(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellAmount).orElse(null)
+            );
+            v1BillCharge.setOverseasSellCurrency(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellCurrency).orElse(null)
+            );
+            v1BillCharge.setLocalSellAmount(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellAmount).orElse(null)
+            );
+            v1BillCharge.setLocalSellCurrency(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellCurrency).orElse(null)
+            );
+            v1BillCharge.setOverseasTax(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasTax).orElse(null)
+            );
             v1BillCharge.setSellExchange(
-                    revenueDetails.getCurrencyExchangeRateDetails().stream()
-                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType())).findFirst()
-                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getCurrencyExchangeRateDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType()))
+                            .findFirst()
+                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType1(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType2(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType3(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType4(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
-            v1BillCharge.setLocalTax(revenueDetails.getTaxAmount());
-            v1BillCharge.setMeasurementBasis(null); //TODO: SUBHAM check for cost/revenue MeasurementBasis
+            v1BillCharge.setLocalTax(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
+            );
+            v1BillCharge.setMeasurementBasis(null); // TODO: Check for cost/revenue MeasurementBasis
 
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
             v1BillCharge.setChargeTypeCode(
-                    Optional.ofNullable(chargeTypeDetails)
-                            .map(ChargeTypeBaseResponse::getChargeCode)
-                            .orElse(null)
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCode).orElse(null)
             );
             v1BillCharge.setChargeTypeDescription(
-                    Optional.ofNullable(chargeTypeDetails)
-                            .map(ChargeTypeBaseResponse::getChargeCodeDescription)
-                            .orElse(null)
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCodeDescription).orElse(null)
             );
-            v1BillCharge.setLocalCostCurrency(costDetails.getLocalCostCurrency());
+            v1BillCharge.setLocalCostCurrency(
+                    costDetailsOpt.map(BillChargeCostDetailsResponse::getLocalCostCurrency).orElse(null)
+            );
 
             v1BillCharges.add(v1BillCharge);
         }
 
         return v1BillCharges;
     }
-
 
     public List<ArObjectResponse> getArObjectData(UUID billGuid) {
         List<Object> criteria = new ArrayList<>();

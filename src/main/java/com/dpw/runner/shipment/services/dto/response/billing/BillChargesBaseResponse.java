@@ -163,6 +163,9 @@ public class BillChargesBaseResponse implements IRunnerResponse {
 
     @Getter
     @Setter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TaxDetailsResponse implements Serializable {
 
