@@ -5948,7 +5948,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApprovalRequest(dgStatus, isOceanDgUser, shipmentDetails);
-        DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
+        DBOperationType operationType = determineOperationType(updatedDgStatus, isOceanDgUser);
 
         try {
             auditLogService.addAuditLog(
