@@ -1464,7 +1464,7 @@ public class CommonUtils {
 
         for (AuditLogChanges change : changesMap.values()) {
             if(change.getFieldName().equalsIgnoreCase(TIME)){
-                dictionary.put(DG_APPROVER_NAME, change.getNewValue());
+                dictionary.put(DG_APPROVER_TIME, change.getNewValue());
             }else if(change.getFieldName().equalsIgnoreCase(USERNAME)){
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }

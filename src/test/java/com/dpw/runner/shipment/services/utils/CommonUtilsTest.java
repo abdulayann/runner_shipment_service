@@ -2188,17 +2188,6 @@ class CommonUtilsTest {
         assertNotNull(response);
     }
 
-    @Test
-    @Disabled
-    void testCreateTask_Failure() throws RunnerException {
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setId(1l);
-        RunnerException exception = new RunnerException("12");
-        when(iv1Service.createTask(any())).thenThrow(exception);
-
-        Integer roleId = 1;
-        assertThrows(RunnerException.class, () -> commonUtils.createTask(shipmentDetails, roleId));
-    }
 
     @Test
     void testGetVesselsData(){
