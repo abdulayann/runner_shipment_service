@@ -5890,8 +5890,12 @@ public class ShipmentService implements IShipmentService {
         if (!UserContext.isOceanDgUser()) {
             sendEmailForApproval(shipmentDetails, remarks);
         }
+        OceanDGStatus dgStatus = OceanDGStatus.OCEAN_DG_REQUESTED;
 
-        OceanDGStatus dgStatus = checkForClass1(shipmentDetails) ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OceanDGStatus.OCEAN_DG_REQUESTED;
+        if(UserContext.isOceanDgUser()) {
+            dgStatus = checkForClass1(shipmentDetails)
+                ? OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OceanDGStatus.OCEAN_DG_REQUESTED;
+        }
         shipmentDetails.setOceanDGStatus(dgStatus);
 
         DBOperationType operationType = dgStatus == OceanDGStatus.OCEAN_DG_REQUESTED ? DBOperationType.DG_REQUEST : DBOperationType.COMMERCIAL_REQUEST;
