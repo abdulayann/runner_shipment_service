@@ -443,7 +443,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         try {
             MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
             revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                case ContainerCount -> MeasurementBasis.ContainerCount.getBillingValue();
+                case ContainerCount, Container_Count -> MeasurementBasis.ContainerCount.getBillingValue();
                 case Weight -> MeasurementBasis.Weight.getBillingValue();
                 case Volume -> MeasurementBasis.Volume.getBillingValue();
                 case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
