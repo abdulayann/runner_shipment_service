@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -9,6 +10,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.RoutingsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
@@ -55,7 +57,8 @@ class RoutingsServiceTest extends CommonMocks {
     @Mock
     private ShipmentDao shipmentDao;
 
-    private Routings routings;
+    private Routings routings1;
+    private Routings routings2;
     private List<Routings> routingsList;
     private ShipmentDetails shipmentDetails;
     private Container container;
@@ -71,11 +74,19 @@ class RoutingsServiceTest extends CommonMocks {
 
     @BeforeEach
     void setUp() {
-        routings = new Routings();
-        routings.setPol("POL1");
-        routings.setPod("POD1");
-        routings.setShipmentId(123L);
-        routingsList = List.of(routings);
+        routings1 = new Routings();
+        routings1.setPol("POL1");
+        routings1.setPod("POD1");
+        routings1.setShipmentId(123L);
+        routings1.setLeg(1L);
+
+        routings2 = new Routings();
+        routings2.setPol("POL2");
+        routings2.setPod("POD2");
+        routings2.setShipmentId(234L);
+        routings2.setLeg(2L);
+
+        routingsList = List.of(routings1, routings2);
 
         shipmentDetails = new ShipmentDetails();
         shipmentDetails.setShipmentId("SH123");
@@ -238,6 +249,35 @@ class RoutingsServiceTest extends CommonMocks {
                 .thenThrow(new RuntimeException("Conversion failed"));
 
         assertThrows(RoutingException.class, () -> routingsService.updateRoutings(routingsUpdateRequest));
+    }
+
+    @Test
+    void testUpdateRoutings_sortingOrder() {
+        // Arrange
+        Routings secondRoutings = new Routings();
+        secondRoutings.setShipmentId(1L);
+        secondRoutings.setLeg(2L);
+
+        var x = new ArrayList<>(routingsList);
+
+        x.add(secondRoutings);
+        Mockito.when(commonUtils.convertToEntityList(routingsUpdateRequest.getRoutingsRequests(), Routings.class))
+                .thenReturn(routingsList);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = routingsService.updateRoutings(routingsUpdateRequest);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        // Assuming the IRunnerResponse body is a specific implementation that can be cast or adapted
+        List<RoutingsResponse> responseData = ((RunnerListResponse) response.getBody()).getData();
+
+        assertNotNull(responseData);
+        assertFalse(responseData.isEmpty());
+        assertEquals(1L, responseData.get(0).getLeg());
+        assertEquals(2L, responseData.get(1).getLeg());
     }
 
 
