@@ -8,6 +8,7 @@ import lombok.Getter;
 public enum MeasurementBasis {
 
     ContainerCount(1, "ContainerCount", "Container_Count"),
+    Container_Count(1, "ContainerCount", "Container_Count"),
     Weight(2, "Weight", "Weight"),
     Volume(3, "Volume", "Volume"),
     Chargeable(4, "Chargeable", "Chargeable"),
