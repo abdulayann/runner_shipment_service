@@ -8,5 +8,5 @@ import java.util.List;
 
 @Generated
 public interface IAuditLogRepository extends MultiTenancyRepository<AuditLog> {
-  List<AuditLog> findByOperationAndEntityId(String operation, Long entityId);
+  List<AuditLog> findByOperationAndParentId(String operation, Long parentId);
 }
