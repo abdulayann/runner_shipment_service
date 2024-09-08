@@ -1463,9 +1463,9 @@ public class CommonUtils {
     private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
 
         for (AuditLogChanges change : changesMap.values()) {
-            if(change.getFieldName().equals(TIME)){
+            if(change.getFieldName().equalsIgnoreCase(TIME)){
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
-            }else if(change.getFieldName().equals(USERNAME)){
+            }else if(change.getFieldName().equalsIgnoreCase(USERNAME)){
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }
         }
