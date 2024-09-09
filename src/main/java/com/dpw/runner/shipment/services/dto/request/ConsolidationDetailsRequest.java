@@ -136,4 +136,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean interBranchConsole;
     @ExcludeTimeZone
     private LocalDateTime latDate;
+    private String department;
 }
