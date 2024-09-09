@@ -4443,7 +4443,7 @@ public class ShipmentService implements IShipmentService {
             for (var ship: shipmentDetailsList) {
                 if(!Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL))
                     isFcl = false;
-                else if (!Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+                if (!Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
                     isLcl = false;
                 }
             }
