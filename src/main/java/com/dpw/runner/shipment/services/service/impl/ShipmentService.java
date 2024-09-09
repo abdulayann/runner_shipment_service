@@ -2331,7 +2331,7 @@ public class ShipmentService implements IShipmentService {
                             oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())) {
                 Boolean eventCreated = Boolean.FALSE;
                 for(String source: eventSources) {
-                    String key = generateKey(EventConstants.SEPU, Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    String key = generateKey(EventConstants.SEPU, source);
                     Events event = eventMap.get(key);
                     if (event != null) {
                         handleEventUpdate(event);
@@ -2349,7 +2349,7 @@ public class ShipmentService implements IShipmentService {
                             oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
                 Boolean eventCreated = Boolean.FALSE;
                 for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CAFS, Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    String key = generateKey(EventConstants.CAFS, source);
                     Events event = eventMap.get(key);
                     if (event != null) {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
