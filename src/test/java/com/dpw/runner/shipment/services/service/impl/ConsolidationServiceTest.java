@@ -1513,7 +1513,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1544,7 +1544,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
@@ -1578,7 +1578,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
@@ -1614,7 +1614,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
@@ -1659,7 +1659,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
@@ -1696,7 +1696,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
@@ -1760,7 +1760,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setTenantId(1);
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
-                .consolSplitBillCharge(true).build());
+                .EnableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
         when(billingServiceAdapter.fetchBillingBulkSummaryBranchWise(any())).thenReturn(List.of(createTestBillingSummary()));
