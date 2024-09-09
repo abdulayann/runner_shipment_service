@@ -589,7 +589,7 @@ class EventServiceTest extends CommonMocks {
         additionalDetails.setEmptyContainerReturned(false);
         shipment.setAdditionalDetails(additionalDetails);
 
-        Events mockEvent = getMockEvent(1L, EventConstants.EMCR, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -759,7 +759,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingNumber("5678-1234");
 
-        Events mockEvent = getMockEvent(1L, EventConstants.FCGI, EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_FULL,
+                EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -810,7 +811,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         shipment.setBookingNumber("938-1234");
 
-        Events mockEvent = getMockEvent(2L, EventConstants.VSDP, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
+        Events mockEvent = getMockEvent(2L, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER,
+                EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -853,7 +855,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingNumber("938-5284");
 
-        Events mockEvent = getMockEvent(6L, EventConstants.FUGO, EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
+        Events mockEvent = getMockEvent(6L, EventConstants.GATE_OUT_WITH_CONTAINER_FULL,
+                EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
