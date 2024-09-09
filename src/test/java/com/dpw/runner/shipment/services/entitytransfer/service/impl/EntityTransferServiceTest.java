@@ -1087,26 +1087,6 @@ class EntityTransferServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-//    @Test
-    void testSendConsolidationEmailNotification_EmptyEmailList() {
-        // Arrange
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        List<Integer> destinationBranches = List.of(1);
-
-        V1DataResponse v1DataResponse = mock(V1DataResponse.class);
-        when(iv1Service.getEmailTemplates(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class)))
-                .thenReturn(List.of(new EmailTemplatesRequest()));
-
-        when(entityTransferService.getRoleListByRoleId(1)).thenReturn(new ArrayList<>());
-
-        // Act
-        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, new HashMap<>());
-
-        // Assert
-        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
-    }
-
 
     @Test
     void testPopulateTagDetails() {
@@ -1262,71 +1242,6 @@ class EntityTransferServiceTest {
         assertEquals("user2@example.com", result.get(1));
     }
 
-//    @Test
-    void testCreateConsolidationImportEmailBody_ValidInputs() {
-        // Arrange
-        UserContext.getUser().setTenantDisplayName("TenantName");
-        UserContext.getUser().setDisplayName("UserName");
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDate.now().atStartOfDay());
-
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setConsolidationNumber("CON123");
-        consolidationDetails.setTransportMode("SEA");
-        consolidationDetails.setBol("BOL123");
-        consolidationDetails.setMawb("MAWB123");
-        consolidationDetails.setShipmentsList(Collections.singletonList(
-                sd1
-        ));
-
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        template.setSubject("Consolidation from {#SOURCE_BRANCH} - {#CONSOLIDATION_NUMBER}");
-        template.setBody("Shipments from {#SOURCE_BRANCH} by {#SENDER_USER_NAME} on {#SENT_DATE}. Number of shipments: {#NUMBER_OF_SHIPMENTS}. BL Numbers: {#BL_NUMBER}, MBL Number: {#MBL_NUMBER}. Consolidation Number: {#CONSOLIDATION_NUMBER}. Shipment Numbers: {#SHIPMENT_NUMBERS}");
-
-        // Act
-        entityTransferService.createConsolidationImportEmailBody(consolidationDetails, template, new HashMap<>(), 0, new HashMap<>(), new ArrayList<>());
-
-        // Assert
-        assertEquals("Consolidation from TenantName - CON123", template.getSubject());
-        assertEquals("Shipments from TenantName by UserName on " + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + ". Number of shipments: 1. BL Numbers: HB001, MBL Number: BOL123. Consolidation Number: CON123. Shipment Numbers: SN001", template.getBody());
-    }
-
-//    @Test
-    void testCreateConsolidationImportEmailBody_NullTemplate() {
-        // Arrange
-        UserContext.getUser().setTenantDisplayName("TenantName");
-        UserContext.getUser().setDisplayName("UserName");
-
-        ShipmentDetails sd1 = new ShipmentDetails();
-        sd1.setShipmentId("SN001");
-        sd1.setReceivingBranch(1L);
-        sd1.setHouseBill("HB001");
-        sd1.setMasterBill("MB001");
-        sd1.setShipmentCreatedOn(LocalDate.now().atStartOfDay());
-
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setConsolidationNumber("CON123");
-        consolidationDetails.setTransportMode("AIR");
-        consolidationDetails.setMawb("MAWB123");
-        consolidationDetails.setShipmentsList(Collections.singletonList(
-                sd1
-        ));
-
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        template.setSubject(null);
-        template.setBody(null);
-
-        // Act
-        entityTransferService.createConsolidationImportEmailBody(consolidationDetails, template, new HashMap<>(), 0, new HashMap<>(), new ArrayList<>());
-
-        // Assert
-        assertEquals("Received consolidation CON123 with 1 shipments from TenantName", template.getSubject());
-    }
 
     @Test
     void testImportShipment_rejection() throws RunnerException {
