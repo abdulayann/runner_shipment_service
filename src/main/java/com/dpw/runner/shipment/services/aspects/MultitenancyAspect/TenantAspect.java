@@ -40,7 +40,7 @@ public class TenantAspect {
 
         Class<?> clazz = joinPoint.getSignature().getDeclaringType();
 
-        long tenantId = CommonUtils.getCurrentWorkingTenantId();
+        long tenantId = TenantContext.getCurrentTenant();
 
         Map<String, Boolean> permissions = Optional.ofNullable(UserContext.getUser()).map(UsersDto::getPermissions).orElse(new HashMap<>());
         
