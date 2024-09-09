@@ -221,9 +221,10 @@ public class MasterDataUtils{
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
+                    shipmentListResponse.setTenantMasterData(new HashMap<>());
                     if (shipmentListResponse.getTenantId() != null)
-                        shipmentListResponse.setTenantMasterData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
-                    shipmentListResponse.setTenantMasterData(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
+                        shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
+                    shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
