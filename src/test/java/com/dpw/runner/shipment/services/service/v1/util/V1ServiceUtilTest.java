@@ -540,6 +540,8 @@ class V1ServiceUtilTest {
 
     @Test
     void testFetchCoLoadInfo2() {
+        var mockResponse = new V1DataResponse();
+        when(iV1Service.getCoLoadingStations(any())).thenReturn(mockResponse);
         var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(), "PARENT_TENANT_ID");
         assertTrue(response.isEmpty());
     }
