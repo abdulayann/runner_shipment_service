@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -64,6 +65,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -661,5 +663,74 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel1() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
+        ContainerModel containerModel = new ContainerModel();
+        containerModel.setHazardous(true);
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel2() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
+        ContainerModel containerModel = new ContainerModel();
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel3() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel4() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
     }
 }

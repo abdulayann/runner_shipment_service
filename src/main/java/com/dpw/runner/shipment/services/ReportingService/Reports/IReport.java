@@ -3266,7 +3266,7 @@ public abstract class IReport {
                 throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
             }
             boolean dgContainer = false;
-            if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
+            if(!listIsNullOrEmpty(shipmentModel.getContainersList())) {
                 for (ContainerModel containerModel: shipmentModel.getContainersList()) {
                     if(Boolean.TRUE.equals(containerModel.getHazardous())) {
                         dgContainer = true;
