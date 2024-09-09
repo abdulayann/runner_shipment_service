@@ -553,13 +553,20 @@ class EventServiceTest extends CommonMocks {
         TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
 //        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
 
+        Events mockEvent = Events.builder().build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
         when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -603,6 +610,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -781,6 +789,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L), Optional.of(12L));
 
@@ -822,6 +831,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -864,6 +874,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
