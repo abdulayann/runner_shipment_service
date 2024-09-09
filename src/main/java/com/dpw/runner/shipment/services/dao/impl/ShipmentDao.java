@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -401,7 +402,7 @@ public class ShipmentDao implements IShipmentDao {
 
         // BL# and Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
-            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), getCurrentWorkingTenantId());
+            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), TenantContext.getCurrentTenant());
             if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
                     errors.add("Canceled HBL is already available in the application. Please remove/ modify the HBL number to proceed further");
