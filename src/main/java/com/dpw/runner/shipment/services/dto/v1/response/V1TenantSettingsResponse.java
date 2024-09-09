@@ -47,7 +47,8 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean FetchRatesMandate;
     private Boolean CarrierChangeAllowed;
     private Boolean isModuleValidationEnabled;
-    private Boolean EnableConsolSplitBillCharge;
+    @JsonProperty("EnableConsolSplitBillCharge")
+    private Boolean enableConsolSplitBillCharge;
     @JsonProperty("ConsolidationAttachDefaultToMailId")
     private String consolidationAttachDefaultToMailId;
     @JsonProperty("ConsolidationAttachDefaultCCMailId")
