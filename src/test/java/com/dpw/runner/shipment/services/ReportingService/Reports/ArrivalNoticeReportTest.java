@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -362,6 +363,50 @@ class ArrivalNoticeReportTest extends CommonMocks {
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+
+        masterDataMock();
+        mockCarrier();
+        mockRakc(arrivalNoticeModel.shipmentDetails);
+        mockBill(false);
+        mockCommodity();
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
+    void populateDictionary_BillingIntegrationDisabled_haz_temp() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.getShipmentDetails().getPackingList().get(0).setHazardous(true);
+        arrivalNoticeModel.getShipmentDetails().getPackingList().get(0).setIsTemperatureControlled(true);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
 
         masterDataMock();
         mockCarrier();

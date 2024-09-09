@@ -1040,8 +1040,6 @@ public class ShipmentService implements IShipmentService {
                                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
                             if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
                                 totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
-                            if(Boolean.TRUE.equals(packing.getHazardous()))
-                                containers.setHazardous(true);
                         }
                         containers.setGrossWeight(totalWeight);
                         containers.setGrossVolume(totalVolume);
@@ -1123,8 +1121,11 @@ public class ShipmentService implements IShipmentService {
     private void changeShipmentDGValuesFromContainer(Set<Long> dgConts, AtomicBoolean dgApprovalReqd,
                                                      ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, AtomicBoolean dgClass1Exists,
                                                      Set<Long> newPackAttachedInConts, ContainerRequest container, Map<Long, Containers> oldContainersMap) throws RunnerException {
-        if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId()))
+        if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId())) {
             container.setHazardous(true);
+            if(IsStringNullOrEmpty(container.getDgClass()) || IsStringNullOrEmpty(container.getUnNumber()) || IsStringNullOrEmpty(container.getProperShippingName()))
+                throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
+        }
         if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
             dgApprovalReqd.set(true);
         if(Boolean.TRUE.equals(container.getHazardous())) {

@@ -36,6 +36,7 @@ public class CSDReport extends IReport{
         csdModel.setUsersDto(UserContext.getUser());
         if(isConsolidation){
             csdModel.setConsolidationModel(getConsolidation(id));
+            validateOceanDGCheckInConsole(csdModel.getConsolidationModel());
         }else{
             csdModel.setShipmentModel(getShipment(id));
         }

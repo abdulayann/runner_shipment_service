@@ -4968,7 +4968,12 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
-        when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(Arrays.asList(ContainerRequest.builder().id(1L).build()));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(Arrays.asList(ContainerRequest.builder()
+                .id(1L)
+                .dgClass("1.1")
+                .unNumber("unNum")
+                .properShippingName("psn")
+                .build()));
 
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());

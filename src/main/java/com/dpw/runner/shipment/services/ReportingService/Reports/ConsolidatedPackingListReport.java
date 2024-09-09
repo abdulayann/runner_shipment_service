@@ -49,6 +49,7 @@ public class ConsolidatedPackingListReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ConsolidatedPackingListModel cplData = new ConsolidatedPackingListModel();
         cplData.setConsolidationDetails(getConsolidation(id));
+        validateOceanDGCheckInConsole(cplData.getConsolidationDetails());
         cplData.setTenant(getTenant());
         return cplData;
     }
