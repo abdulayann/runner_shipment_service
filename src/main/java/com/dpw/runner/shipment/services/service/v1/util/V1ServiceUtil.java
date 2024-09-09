@@ -372,7 +372,9 @@ public class V1ServiceUtil {
     public Map<Integer, Set<Integer>> fetchCoLoadInfo(List<Integer> sendToBranch, String field) {
         List<Object> criteria = new ArrayList<>(List.of(List.of(field), "In", List.of(sendToBranch)));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
-        var coloadInfoList = jsonHelper.convertValueToList(v1Service.getCoLoadingStations(commonV1ListRequest), CoLoadingMAWBDetailsResponse.class);
+        V1DataResponse v1DataResponse = v1Service.getCoLoadingStations(commonV1ListRequest);
+        var coloadInfoList = Optional.ofNullable(jsonHelper.convertValueToList(v1DataResponse.getEntities(), CoLoadingMAWBDetailsResponse.class))
+                .orElse(Collections.emptyList());
 
         return coloadInfoList.stream()
                 .collect(Collectors.groupingBy(
