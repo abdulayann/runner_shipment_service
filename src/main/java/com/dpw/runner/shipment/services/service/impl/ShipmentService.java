@@ -43,6 +43,8 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -59,6 +61,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -5899,7 +5902,7 @@ public class ShipmentService implements IShipmentService {
             sendEmailForApproval(shipmentDetails, remarks);
         }
 
-        OceanDGStatus updatedDgStatus = determineDgStatusAfterApprovalRequest(dgStatus, isOceanDgUser, shipmentDetails);
+        OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
         DBOperationType operationType = determineOperationType(updatedDgStatus, isOceanDgUser);
 
         try {
@@ -5937,22 +5940,19 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
             .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
 
-        sendEmailResponseToDGRequester(request, shipmentDetails);
+       OceanDGStatus oldDgStatus = shipmentDetails.getOceanDGStatus();
+       OceanDGStatus updatedDgStatus = getDgStatusAfterApprovalResponse(oldDgStatus, request.getStatus());
 
-        DBOperationType operationType = null;
-        if(shipmentDetails.getOceanDGStatus() == OCEAN_DG_REQUESTED){
-             if(request.getStatus() == TaskStatus.APPROVED){
-                 operationType = DG_APPROVE;
-             }else{
-                 operationType = DBOperationType.DG_REJECT;
-             }
-        }else if(shipmentDetails.getOceanDGStatus() == OCEAN_DG_COMMERCIAL_REQUESTED){
-            if(request.getStatus() == TaskStatus.REJECTED){
-                operationType = DBOperationType.COMMERCIAL_APPROVE;
-            }else{
-                operationType = DBOperationType.COMMERCIAL_REJECT;
-            }
+        if(updatedDgStatus == null){
+            throw new RunnerException( String.format("Ocean DG status value %s is invalid", oldDgStatus));
         }
+
+        if(StringUtils.isEmpty(request.getTaskId())){
+            closeDGUserTask(request);
+        }
+
+        sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
+        DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
 
         try {
             auditLogService.addAuditLog(
@@ -5968,13 +5968,62 @@ public class ShipmentService implements IShipmentService {
                 .operation(operationType.name()).build()
             );
 
-        }catch (Exception ex){
+        } catch (Exception ex){
             log.error(ex.getMessage());
         }
+
+        if(updatedDgStatus == OceanDGStatus.OCEAN_DG_ACCEPTED && checkForClass1(shipmentDetails)){
+            updatedDgStatus = OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+        }
+        shipmentDetails.setOceanDGStatus(updatedDgStatus);
 
         shipmentDao.save(shipmentDetails, false);
 
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void closeDGUserTask(OceanDGRequest request) throws RunnerException {
+        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
+        log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
+
+        V1DataResponse v1Response;
+        try {
+            v1Response = v1Service.listTask(commonV1ListRequest);
+        }
+        catch (Exception ex) {
+            log.error("Check Task exist failed to check from V1: " + ex);
+            throw new RunnerException("Check Task exist failed to check from V1: " + ex);
+        }
+        List<TaskCreateRequest> taskCreateRequestList = jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class);
+        if(taskCreateRequestList.size() > 1){
+            throw new RunnerException("More than one task with type OceanDG exist for shipment : " + request.getShipmentId());
+        }
+        TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
+        request.setTaskId(taskCreateRequest.getId());
+        request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
+
+        TaskUpdateRequest taskUpdateRequest = TaskUpdateRequest.builder()
+            .id(taskCreateRequest.getId())
+            .status(request.getStatus().name())
+            .rejectionRemarks("Updated from shipment directly")
+            .build();
+
+      try {
+          v1Service.updateTask(taskUpdateRequest);
+      }
+      catch (Exception ex) {
+        log.error("task updatation is failed for taskId: " + taskUpdateRequest.getId());
+      }
+
+    }
+
+    private CommonV1ListRequest createCriteriaTaskListRequest(Object value1, Object value2) {
+        List<Object> criteria1 = new ArrayList<>(List.of(List.of("EntityId"), "=", value1));
+        List<Object> criteria2 = new ArrayList<>(List.of(List.of("EntityType"), "=", value2));
+        List<Object> criteria3 = new ArrayList<>(List.of(List.of("TaskType"), "=", 22));
+        List<Object> criteria4 = new ArrayList<>(List.of(List.of("Status"), "=", 0));
+
+        return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(List.of(criteria1, "and", criteria2), "and", criteria3), "and" , criteria4)).build();
     }
 
     private DBOperationType determineOperationType(OceanDGStatus dgStatus, boolean isOceanDgUser) {
@@ -5984,7 +6033,25 @@ public class ShipmentService implements IShipmentService {
             : COMMERCIAL_REQUEST;
     }
 
-    private OceanDGStatus determineDgStatusAfterApprovalRequest(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
+    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequest request){
+        DBOperationType operationType = null;
+        if(dgStatus == OCEAN_DG_REQUESTED){
+            if(request.getStatus() == TaskStatus.APPROVED){
+                operationType = DG_APPROVE;
+            }else{
+                operationType = DBOperationType.DG_REJECT;
+            }
+        }else if(dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED){
+            if(request.getStatus() == TaskStatus.REJECTED){
+                operationType = DBOperationType.COMMERCIAL_APPROVE;
+            }else{
+                operationType = DBOperationType.COMMERCIAL_REJECT;
+            }
+        }
+        return operationType;
+    }
+
+    private OceanDGStatus determineDgStatusAfterApproval(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
         if (dgStatus == OCEAN_DG_REQUESTED && isOceanDgUser) {
             return checkForClass1(shipmentDetails) ? OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OCEAN_DG_ACCEPTED;
         } else {
@@ -6009,13 +6076,7 @@ public class ShipmentService implements IShipmentService {
                         .orElse(false));
     }
 
-    private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
-        OceanDGStatus currentStatus = shipmentDetails.getOceanDGStatus();
-
-        OceanDGStatus newStatus = emailTemplateForDGResponse(currentStatus, request.getStatus());
-        if(newStatus == null){
-            throw new RunnerException( String.format("Ocean DG status value %s is invalid", newStatus));
-        }
+    private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
 
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new EnumMap<>(OceanDGStatus.class);
         CompletableFuture<Void> emailTemplateFuture = CompletableFuture.runAsync(
@@ -6024,16 +6085,14 @@ public class ShipmentService implements IShipmentService {
         );
         emailTemplateFuture.join();
 
+        EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(newStatus))
+            .orElseThrow(() -> new RunnerException("No template is present for status: " + newStatus));
+
         try {
-            commonUtils.sendEmailResponseToDGRequester(emailTemplates, request, newStatus, shipmentDetails);
+            commonUtils.sendEmailResponseToDGRequester(template, request, shipmentDetails);
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL, e);
         }
-        if(newStatus == OceanDGStatus.OCEAN_DG_ACCEPTED && checkForClass1(shipmentDetails)){
-            newStatus = OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-        }
-
-        shipmentDetails.setOceanDGStatus(newStatus);
     }
 
     private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks)
@@ -6083,7 +6142,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private OceanDGStatus emailTemplateForDGResponse(OceanDGStatus currentStatus, TaskStatus approvalStatus) {
+    private OceanDGStatus getDgStatusAfterApprovalResponse(OceanDGStatus currentStatus, TaskStatus approvalStatus) {
         if (currentStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
             return approvalStatus == TaskStatus.APPROVED ?
                 OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED :
@@ -6093,7 +6152,7 @@ public class ShipmentService implements IShipmentService {
                 OceanDGStatus.OCEAN_DG_ACCEPTED :
                 OceanDGStatus.OCEAN_DG_REJECTED;
         }
-        return null;  // return the current status if no change is needed
+        return null;
     }
 
     private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(PendingNotificationRequest request) {
@@ -6282,8 +6341,13 @@ public class ShipmentService implements IShipmentService {
         Element rowTemplate = table.select("tbody tr").get(1);
 
         rowTemplate.remove();
-        Map<Long, String> containerIdNumberMap=  shipmentDetails.getContainersList().stream()
+        Map<Long, String> containerIdNumberMap = Optional.ofNullable(shipmentDetails)
+            .map(ShipmentDetails::getContainersList)
+            .orElse(Collections.emptyList())
+            .stream()
+            .filter(container -> container.getId() != null && container.getContainerNumber() != null)
             .collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+
 
         for (Packing packing : shipmentDetails.getPackingList()) {
             if(!Boolean.TRUE.equals(packing.getHazardous())) continue;
