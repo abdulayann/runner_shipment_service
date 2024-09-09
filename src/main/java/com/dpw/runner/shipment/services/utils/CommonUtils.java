@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchTenantIdContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -527,12 +526,6 @@ public class CommonUtils {
 
     public void removeInterBranchContext() {
         InterBranchContext.removeContext();
-    }
-
-    public static Integer getCurrentWorkingTenantId() {
-        if(InterBranchTenantIdContext.getContext() != null)
-            return InterBranchTenantIdContext.getContext().getTenantId();
-        return UserContext.getUser().TenantId;
     }
 
     public void setInterBranchContextForHub() {
