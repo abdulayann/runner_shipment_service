@@ -482,7 +482,7 @@ public class EventService implements IEventService {
         String locationRole = trackingEvent.getLocationRole();
 
         if(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeString(trackingEventCode))
-                && (safeString(locationRole).startsWith("origin"))){
+                && (safeString(locationRole).startsWith(EventConstants.ORIGIN))){
             trackingEventCode = EventConstants.ECPK;
         }
         if(EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeString(trackingEventCode))){
@@ -498,7 +498,7 @@ public class EventService implements IEventService {
             trackingEventCode = EventConstants.FUGO;
         }
         if(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeString(trackingEventCode))
-                && (safeString(locationRole).startsWith("destination"))){
+                && (safeString(locationRole).startsWith(EventConstants.DESTINATION))){
             trackingEventCode = EventConstants.EMCR;
         }
         return trackingEventCode;
