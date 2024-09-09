@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -7018,14 +7019,14 @@ ShipmentServiceTest extends CommonMocks {
         shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
 
-        Events event  = Events.builder().build().setEventCode(EventConstants.EMCR).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        Events event = Events.builder().build().setEventCode(EventConstants.EMCR).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
 
         ShipmentDetails oldshipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
                 .containersList(Arrays.asList(Containers.builder().build()))
-                .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false,false))
+                .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false, false))
                 .eventsList(Collections.singletonList(event))
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.CARGO_TYPE_FCL)
@@ -7072,6 +7073,99 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
         assertEquals(false, oldshipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
         assertEquals(true, newShipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
-
     }
+
+    @Test
+    void testSendOceanDGApprovalEmail_NullObject(){
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.sendOceanDGApprovalEmail(null);
+        });
+    }
+
+    @Test
+    void testSendOceanDGApprovalEmail_shipmentNotFound(){
+        OceanDGApprovalRequest request = OceanDGApprovalRequest
+                .builder()
+                .shipmentId(1l)
+                .remarks("Shipment_Not_Found")
+                .build();
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.sendOceanDGApprovalEmail(request);
+        });
+    }
+
+    @Test
+    void testSendOceanDGApprovalEmail() throws RunnerException {
+        try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+                UserContext.class)) {
+            OceanDGApprovalRequest request = OceanDGApprovalRequest
+                    .builder()
+                    .shipmentId(1l)
+                    .remarks("Non_DG_USER")
+                    .build();
+
+            ShipmentDetails shipmentDetails = ShipmentDetails
+                    .builder()
+                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                    .build();
+
+            when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                    Optional.ofNullable(shipmentDetails));
+
+
+            UsersDto user = UsersDto.builder().build();
+            userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
+            userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(false);
+
+            when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+            Integer roleId = 1;
+            List<String> users = new ArrayList<>();
+            users.add("abc@email.com");
+            TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
+            when(commonUtils.getRoleId(any())).thenReturn(roleId);
+            when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
+            when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+
+            assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+        }
+    }
+
+
+    @Test
+    void testSendOceanDGApprovalEmail_Commercial() throws RunnerException {
+        try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+                UserContext.class)) {
+            OceanDGApprovalRequest request = OceanDGApprovalRequest
+                    .builder()
+                    .shipmentId(1l)
+                    .remarks("Non_DG_USER")
+                    .build();
+
+            ShipmentDetails shipmentDetails = ShipmentDetails
+                    .builder()
+                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                    .build();
+
+            when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                    Optional.ofNullable(shipmentDetails));
+
+
+            UsersDto user = UsersDto.builder().build();
+            userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
+            userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(false);
+
+            when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+            Integer roleId = 1;
+            List<String> users = new ArrayList<>();
+            users.add("abc@email.com");
+            TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
+            when(commonUtils.getRoleId(any())).thenReturn(roleId);
+            when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
+            when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
+
+            assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+        }
+    }
+
 }

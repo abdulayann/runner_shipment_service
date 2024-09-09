@@ -365,6 +365,9 @@ public class Constants {
     public static final String DG_APPROVER_NAME = "DG_APPROVER_NAME";
     public static final String DG_APPROVER_TIME = "DG_APPROVER_TIME";
 
+    public static final String TIME = "time";
+    public static final String USERNAME = "userName";
+
     public static final String IS_NULL = "ISNULL";
     public static final String CONTAINERS_LIST = "containersList";
     public static final String CONSOLIDATION_LIST = "consolidationList";

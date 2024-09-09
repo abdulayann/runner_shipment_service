@@ -711,6 +711,7 @@ public class CommonUtils {
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
             template.getSubject(), new ArrayList<>(recipientEmails), null);
     }
+
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -1424,12 +1425,16 @@ public class CommonUtils {
         dictionary.put(DG_CONTAINER_COUNT, dgContainerCount);
 
 
-        String dgPackageTypeAndCount = shipmentDetails.getPackingList().stream()
+        String dgPackageTypeAndCount = Optional.ofNullable(shipmentDetails.getPackingList())
+            .orElse(List.of())  // If the list is null, use an empty list
+            .stream()
             .filter(Packing::getHazardous)
             .map(packing -> packing.getPacks() + " " + packing.getPacksType())
             .collect(Collectors.joining(", "));
 
-        String packagesTypeAndCount = shipmentDetails.getPackingList().stream()
+        String packagesTypeAndCount = Optional.ofNullable(shipmentDetails.getPackingList())
+            .orElse(List.of())  // If the list is null, use an empty list
+            .stream()
             .map(packing -> packing.getPacks() + " " + packing.getPacksType())
             .collect(Collectors.joining(", "));
 
@@ -1458,9 +1463,9 @@ public class CommonUtils {
     private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
 
         for (AuditLogChanges change : changesMap.values()) {
-            if(change.getFieldName().equals("time")){
+            if(change.getFieldName().equals(TIME)){
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
-            }else if(change.getFieldName().equals("userName")){
+            }else if(change.getFieldName().equals(USERNAME)){
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }
         }
