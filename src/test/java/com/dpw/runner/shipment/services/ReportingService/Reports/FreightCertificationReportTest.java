@@ -47,6 +47,12 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -360,9 +366,19 @@ class FreightCertificationReportTest extends CommonMocks {
         billFromBilling.setBillId("BIL123");
         billFromBilling.setRemarks("");
 
+        BillChargesBaseResponse billChargesBaseResponse = new BillChargesBaseResponse();
+        billChargesBaseResponse.setBillChargeCostDetails(BillChargeCostDetailsResponse.builder().build());
+        billChargesBaseResponse.setBillChargeRevenueDetails(BillChargeRevenueDetailsResponse.builder()
+                .currencyExchangeRateDetails(List.of(CurrencyExchangeRateDetailsResponse.builder().build()))
+                .taxDetails(List.of(TaxDetailsResponse.builder().build())).build());
+        billChargesBaseResponse.setChargeTypeDetails(ChargeTypeBaseResponse.builder()
+                .guId(randomUUID).build());
+
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(billingServiceAdapter.fetchBill(any())).thenReturn(billFromBilling);
         when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
+        when(billingServiceAdapter.fetchBillCharges(any())).thenReturn(List.of(billChargesBaseResponse));
+
         mockTenantSettings();
         mockBill(true, false, true);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));

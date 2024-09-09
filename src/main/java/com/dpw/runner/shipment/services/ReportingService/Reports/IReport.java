@@ -89,6 +89,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXEMPTION_CARGO;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLASH_POINT_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
@@ -109,6 +110,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KNOWN_CONSIGNOR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOADED_DATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD_DESCRIPTION_REMARKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MARINE_POLLUTANT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP_UNIT;
@@ -120,7 +122,11 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY_LL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NO_OF_PACKAGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NetWeight_Unit_Description;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_DG_CLASS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_DG_PSN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_UN_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORDER_MANAGEMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_DATA_NOT_AVAILABLE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
@@ -129,6 +135,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_CODE_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_PORT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OVERSEAS_SELL_AMOUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKING_GROUP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_COMMODITY_GROUP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_DETAILS;
@@ -189,7 +196,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDDELIVERY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDPICKUP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_FLIGHT_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORDER_MANAGEMENT_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_INSTRUCTIONTYPE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISAIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISSEA;
@@ -230,8 +236,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.KG;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.POUNDS;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -241,7 +245,17 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
@@ -255,7 +269,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
@@ -271,12 +290,27 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.*;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeCostDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.BillChargeRevenueDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.CurrencyExchangeRateDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.ExchangeRateType;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse.TaxType;
 import com.dpw.runner.shipment.services.dto.response.billing.ChargeTypeBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -295,7 +329,13 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.request.ShipmentGuidRequest;
-import com.dpw.runner.shipment.services.masterdata.response.*;
+import com.dpw.runner.shipment.services.masterdata.response.ArObjectResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
+import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -308,15 +348,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.ObjectUtils;
-import org.jetbrains.annotations.NotNull;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -324,12 +355,31 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 @Slf4j
 @SuppressWarnings("unchecked")
@@ -1450,62 +1500,107 @@ public abstract class IReport {
         }
     }
 
-    @NotNull
     private List<BillChargesResponse> convertBillingBillChargeToRunnerBillCharge(List<BillChargesBaseResponse> billChargesBaseResponses) {
         List<BillChargesResponse> v1BillCharges = new ArrayList<>();
 
         for (BillChargesBaseResponse billingBillCharge : billChargesBaseResponses) {
+            if (billingBillCharge == null) {
+                continue; // Skip null objects
+            }
+
             BillChargesResponse v1BillCharge = new BillChargesResponse();
-            BillChargeRevenueDetailsResponse revenueDetails = billingBillCharge.getBillChargeRevenueDetails();
-            BillChargeCostDetailsResponse costDetails = billingBillCharge.getBillChargeCostDetails();
-            ChargeTypeBaseResponse chargeTypeDetails = billingBillCharge.getChargeTypeDetails();
+            // Use Optionals for null checks
+            Optional<BillChargeRevenueDetailsResponse> revenueDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeRevenueDetails());
+            Optional<BillChargeCostDetailsResponse> costDetailsOpt = Optional.ofNullable(billingBillCharge.getBillChargeCostDetails());
+            Optional<ChargeTypeBaseResponse> chargeTypeDetailsOpt = Optional.ofNullable(billingBillCharge.getChargeTypeDetails());
 
             v1BillCharge.setBillingChargeTypeId(billingBillCharge.getChargeTypeId());
-            v1BillCharge.setBillingChargeTypeGuid(chargeTypeDetails.getGuId().toString());
-            v1BillCharge.setOverseasSellAmount(revenueDetails.getOverseasSellAmount());
-            v1BillCharge.setOverseasSellCurrency(revenueDetails.getOverseasSellCurrency());
-            v1BillCharge.setLocalSellAmount(revenueDetails.getLocalSellAmount());
-            v1BillCharge.setLocalSellCurrency(revenueDetails.getLocalSellCurrency());
-            v1BillCharge.setOverseasTax(revenueDetails.getOverseasTax());
+            v1BillCharge.setBillingChargeTypeGuid(
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getGuId)
+                            .map(UUID::toString)
+                            .orElse(null)
+            );
+            v1BillCharge.setOverseasSellAmount(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellAmount).orElse(null)
+            );
+            v1BillCharge.setOverseasSellCurrency(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasSellCurrency).orElse(null)
+            );
+            v1BillCharge.setLocalSellAmount(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellAmount).orElse(null)
+            );
+            v1BillCharge.setLocalSellCurrency(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getLocalSellCurrency).orElse(null)
+            );
+            v1BillCharge.setOverseasTax(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getOverseasTax).orElse(null)
+            );
             v1BillCharge.setSellExchange(
-                    revenueDetails.getCurrencyExchangeRateDetails().stream()
-                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType())).findFirst()
-                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getCurrencyExchangeRateDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(currencyExRate -> ExchangeRateType.CUSTOMER.equals(currencyExRate.getType()))
+                            .findFirst()
+                            .map(CurrencyExchangeRateDetailsResponse::getExchangeRate)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType1(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.IGST.equals(tax.getTaxType()) || TaxType.VAT.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType2(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.SGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType3(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.CGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
             v1BillCharge.setTaxType4(
-                    revenueDetails.getTaxDetails().stream()
-                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType())).findFirst()
-                            .map(TaxDetailsResponse::getAmount).orElse(null)
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxDetails)
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .filter(tax -> TaxType.UGST.equals(tax.getTaxType()))
+                            .findFirst()
+                            .map(TaxDetailsResponse::getAmount)
+                            .orElse(null)
             );
-            v1BillCharge.setLocalTax(revenueDetails.getTaxAmount());
-            v1BillCharge.setMeasurementBasis(null); //TODO: SUBHAM check for cost/revenue MeasurementBasis
+            v1BillCharge.setLocalTax(
+                    revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
+            );
+            v1BillCharge.setMeasurementBasis(null); // TODO: Check for cost/revenue MeasurementBasis
 
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
-            v1BillCharge.setChargeTypeCode(chargeTypeDetails.getChargeCode());
-            v1BillCharge.setChargeTypeDescription(chargeTypeDetails.getChargeCodeDescription());
-            v1BillCharge.setLocalCostCurrency(costDetails.getLocalCostCurrency());
+            v1BillCharge.setChargeTypeCode(
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCode).orElse(null)
+            );
+            v1BillCharge.setChargeTypeDescription(
+                    chargeTypeDetailsOpt.map(ChargeTypeBaseResponse::getChargeCodeDescription).orElse(null)
+            );
+            v1BillCharge.setLocalCostCurrency(
+                    costDetailsOpt.map(BillChargeCostDetailsResponse::getLocalCostCurrency).orElse(null)
+            );
 
             v1BillCharges.add(v1BillCharge);
         }
 
         return v1BillCharges;
     }
-
 
     public List<ArObjectResponse> getArObjectData(UUID billGuid) {
         List<Object> criteria = new ArrayList<>();
