@@ -12,6 +12,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockitoAnnotations;
 import org.springframework.test.web.servlet.MockMvc;
@@ -1226,4 +1228,25 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testOceanDGSendForApproval() throws RunnerException {
+        OceanDGApprovalRequest request = OceanDGApprovalRequest.builder().build();
+        // Mock
+        when(shipmentService.sendOceanDGApprovalEmail(request)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.oceanDGSendForApproval(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testOceanDGApprovalResponse() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest.builder().build();
+        // Mock
+        when(shipmentService.dgApprovalResponse(request)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.oceanDGApprovalResponse(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }
