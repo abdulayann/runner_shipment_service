@@ -553,13 +553,20 @@ class EventServiceTest extends CommonMocks {
         TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
 //        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
 
+        Events mockEvent = Events.builder().build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
         when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -582,7 +589,7 @@ class EventServiceTest extends CommonMocks {
         additionalDetails.setEmptyContainerReturned(false);
         shipment.setAdditionalDetails(additionalDetails);
 
-        Events mockEvent = getMockEvent(1L, EventConstants.EMCR, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -603,6 +610,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -751,7 +759,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingNumber("5678-1234");
 
-        Events mockEvent = getMockEvent(1L, EventConstants.FCGI, EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_FULL,
+                EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -781,6 +790,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L), Optional.of(12L));
 
@@ -801,7 +811,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         shipment.setBookingNumber("938-1234");
 
-        Events mockEvent = getMockEvent(2L, EventConstants.VSDP, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
+        Events mockEvent = getMockEvent(2L, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER,
+                EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -822,6 +833,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
@@ -843,7 +855,8 @@ class EventServiceTest extends CommonMocks {
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingNumber("938-5284");
 
-        Events mockEvent = getMockEvent(6L, EventConstants.FUGO, EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
+        Events mockEvent = getMockEvent(6L, EventConstants.GATE_OUT_WITH_CONTAINER_FULL,
+                EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -864,6 +877,7 @@ class EventServiceTest extends CommonMocks {
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
         var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
 
