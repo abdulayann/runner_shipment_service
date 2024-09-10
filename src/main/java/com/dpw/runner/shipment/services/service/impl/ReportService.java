@@ -822,8 +822,11 @@ public class ReportService implements IReportService {
         for(int i = 1; i <=copies; i++) {
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
-                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null)
+                String packsOfTotal = packs + "/" + noOfPacks;
+                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
                     dataRetrived.put(ReportConstants.COUNT, packsCount);
+                    dataRetrived.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
+                }
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, pages.getMainPageId());
                 if (mainDocPage == null)
