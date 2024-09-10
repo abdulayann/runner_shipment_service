@@ -106,6 +106,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -6973,6 +6974,7 @@ ShipmentServiceTest extends CommonMocks {
                 .eventsList(Collections.singletonList(event))
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .dateType(DateBehaviorType.ESTIMATED)
                 .bookingNumber("1234-5678")
                 .shipmentGateInDate(LocalDateTime.now())
                 .build();
@@ -6988,6 +6990,7 @@ ShipmentServiceTest extends CommonMocks {
                 .eventsList(Collections.singletonList(event))
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .dateType(DateBehaviorType.ESTIMATED)
                 .bookingNumber("5678-1234")
                 .shipmentGateInDate(LocalDateTime.now().plusDays(1))
                 .build();
@@ -7084,7 +7087,46 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
         assertEquals(false, oldshipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
         assertEquals(true, newShipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
+    }
 
+    @Test
+    void createShipmentEvents() throws RunnerException {
+        UserContext.getUser().setPermissions(new HashMap<>());
+        ShipmentDetails mockShipment = shipmentDetails;
+        shipmentDetails.setReceivingBranch(0L);
+        shipmentDetails.setTriangulationPartner(0L);
+        shipmentDetails.setDocumentationPartner(0L);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.getCarrierDetails().setAtd(LocalDateTime.now());
+        shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setBookingNumber("BookingNUmber");
+        shipmentDetails.setDateType(DateBehaviorType.ACTUAL);
+
+        AdditionalDetails additionalDetails = getmockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(true).enableLclConsolidation(true).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
+        when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
     @Test
@@ -7309,8 +7351,16 @@ ShipmentServiceTest extends CommonMocks {
         VesselsResponse vesselsResponse = new VesselsResponse();
         OceanDGStatus templateStatus = OceanDGStatus.OCEAN_DG_REQUESTED;
 
-        Containers containers = Containers.builder().containerNumber("CC!2").build();
-        containers.setId(1l);
+        Containers containers1 = Containers.builder()
+            .containerNumber("CC!2").dgClass("1.2").unNumber("12")
+            .properShippingName("213").packingGroup("42")
+            .marinePollutant(true).minimumFlashPoint(BigDecimal.valueOf(12))
+            .hazardous(true)
+            .build();
+        containers1.setId(1l);
+
+        Containers containers2 = Containers.builder().build();
+        containers2.setId(2l);
 
         Packing packing1 = new Packing();
         packing1.setHazardous(true);
@@ -7327,7 +7377,7 @@ ShipmentServiceTest extends CommonMocks {
 
         TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-            .containersList(List.of(containers))
+            .containersList(List.of(containers1, containers2))
             .packingList(List.of(packing1, packing2))
             .build();
         String remarks = "Remarks";
