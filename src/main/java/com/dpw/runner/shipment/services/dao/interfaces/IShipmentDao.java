@@ -22,7 +22,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
     Optional<ShipmentDetails> findByGuid(UUID id);
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
-    List<ShipmentDetails> findByBookingReference(String Hbl);
+    List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
