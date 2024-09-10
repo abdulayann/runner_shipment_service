@@ -137,6 +137,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
     private LocalDateTime latDate;
+    private String department;
 
     private List<EntityTransferShipmentDetails> shipmentsList;
 
