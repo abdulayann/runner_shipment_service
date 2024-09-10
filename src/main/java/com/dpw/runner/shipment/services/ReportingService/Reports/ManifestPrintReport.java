@@ -38,8 +38,7 @@ public class ManifestPrintReport extends IReport {
         ConsolidationManifestPrintModel manifestPrintModel = new ConsolidationManifestPrintModel();
         ConsolidationModel consol = getConsolidation(id);
         manifestPrintModel.setConsol(consol);
-        if (consol != null)
-            manifestPrintModel.setShipments(consol.getShipmentsList());
+        manifestPrintModel.setShipments(consol.getShipmentsList());
         return manifestPrintModel;
     }
 
