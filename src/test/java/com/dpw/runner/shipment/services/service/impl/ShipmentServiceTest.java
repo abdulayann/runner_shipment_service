@@ -7236,8 +7236,16 @@ ShipmentServiceTest extends CommonMocks {
         VesselsResponse vesselsResponse = new VesselsResponse();
         OceanDGStatus templateStatus = OceanDGStatus.OCEAN_DG_REQUESTED;
 
-        Containers containers = Containers.builder().containerNumber("CC!2").build();
-        containers.setId(1l);
+        Containers containers1 = Containers.builder()
+            .containerNumber("CC!2").dgClass("1.2").unNumber("12")
+            .properShippingName("213").packingGroup("42")
+            .marinePollutant(true).minimumFlashPoint(BigDecimal.valueOf(12))
+            .hazardous(true)
+            .build();
+        containers1.setId(1l);
+
+        Containers containers2 = Containers.builder().build();
+        containers2.setId(2l);
 
         Packing packing1 = new Packing();
         packing1.setHazardous(true);
@@ -7254,7 +7262,7 @@ ShipmentServiceTest extends CommonMocks {
 
         TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-            .containersList(List.of(containers))
+            .containersList(List.of(containers1, containers2))
             .packingList(List.of(packing1, packing2))
             .build();
         String remarks = "Remarks";
