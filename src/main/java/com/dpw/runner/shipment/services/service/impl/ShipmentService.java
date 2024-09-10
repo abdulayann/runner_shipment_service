@@ -5906,7 +5906,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
-        DBOperationType operationType = determineOperationType(updatedDgStatus, isOceanDgUser);
+        DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
 
         try {
             auditLogService.addAuditLog(
@@ -5923,7 +5923,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         }catch (Exception ex){
-            log.error(ex.getMessage());
+            log.error("Audit failed for shipmentId: {} and operation: {}. Error: {}", shipmentDetails.getId(), operationType, ex.getMessage(), ex);
         }
 
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
@@ -5972,7 +5972,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         } catch (Exception ex){
-            log.error(ex.getMessage());
+            log.error("Audit failed for shipmentId: {} and operation: {}. Error: {}", shipmentDetails.getId(), operationType, ex.getMessage(), ex);
         }
 
         if(updatedDgStatus == OceanDGStatus.OCEAN_DG_ACCEPTED && checkForClass1(shipmentDetails)){
@@ -6321,7 +6321,7 @@ public class ShipmentService implements IShipmentService {
         VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
         TaskCreateResponse taskCreateResponse) throws RunnerException {
         EmailTemplatesRequest emailTemplate = Optional.ofNullable(emailTemplatesRequestMap.get(templateStatus))
-            .orElseThrow(() -> new RunnerException("No template is present"));
+            .orElseThrow(() -> new RunnerException("template is not present for : " + templateStatus));
 
         if (CollectionUtils.isEmpty(toEmailIds)) {
             throw new RunnerException("There are no DG certified users for your branch. Please contact admin");
