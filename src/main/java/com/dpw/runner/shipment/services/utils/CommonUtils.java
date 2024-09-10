@@ -691,10 +691,9 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
-    public void sendEmailResponseToDGRequester(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates,
-        OceanDGRequest request, OceanDGStatus status, ShipmentDetails shipmentDetails) throws RunnerException {
-        EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(status))
-            .orElseThrow(() -> new RunnerException("No template is present for status: " + status));
+    public void sendEmailResponseToDGRequester(EmailTemplatesRequest template,
+        OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
+
 
         Map<String, Object> dictionary = new HashMap<>();
         List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
@@ -1377,11 +1376,11 @@ public class CommonUtils {
             guid
         );
         CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
-        V1DataResponse vesselResponse = iv1Service.fetchVesselData(vesselRequest);
-        List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
+        V1DataResponse v1DataResponse = iv1Service.fetchVesselData(vesselRequest);
+        List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(v1DataResponse.entities, VesselsResponse.class);
 
         if(vesselsResponseList != null && !vesselsResponseList.isEmpty()) {
-          vesselsResponse.setName(vesselsResponseList.get(0).getName());
+            vesselsResponse.setName(vesselsResponseList.get(0).getName());
         }
 
     }

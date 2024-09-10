@@ -47,6 +47,9 @@ public class TaskCreateRequest implements IRunnerRequest {
     @JsonProperty("UserName")
     private String userName;
 
+    @JsonProperty("UserEmail")
+    private String userEmail;
+
     @JsonProperty("SendMail")
     private Boolean sendEmail;
 }

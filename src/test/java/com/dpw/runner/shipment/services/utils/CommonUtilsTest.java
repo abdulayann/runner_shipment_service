@@ -2215,10 +2215,9 @@ class CommonUtilsTest {
             .build();
         emailTemplates.put(OCEAN_DG_REQUESTED, emailTemplatesRequest);
         OceanDGRequest request = OceanDGRequest.builder().requesterUserEmailId("ac").build();
-        OceanDGStatus status = OCEAN_DG_REQUESTED;
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
-        commonUtils.sendEmailResponseToDGRequester(emailTemplates,request,status, shipmentDetails);
+        commonUtils.sendEmailResponseToDGRequester(emailTemplatesRequest,request, shipmentDetails);
         assertEquals("ac", request.getRequesterUserEmailId());
     }
 }
