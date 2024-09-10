@@ -525,6 +525,7 @@ public class EntityTransferService implements IEntityTransferService {
             for (var ship : entityTransferConsolidationDetails.getShipmentsList()) {
                 // Container will be created with consolidation
                 ship.setContainersList(List.of());
+                ship.setMasterBill(null);
 
                 // Replaced old packing guid with new
                 if (!CommonUtils.listIsNullOrEmpty(ship.getPackingList())) {
@@ -593,7 +594,6 @@ public class EntityTransferService implements IEntityTransferService {
         if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
             shipmentRequest.setGuid(null);
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
-            shipmentRequest.setMasterBill(null);
 
             shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest);
         } else {
@@ -607,7 +607,6 @@ public class EntityTransferService implements IEntityTransferService {
             shipmentRequest.setGuid(guid);
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
             shipmentRequest.setConsolidationList(List.of());
-            shipmentRequest.setMasterBill(null);
             oldShipmentDetailsList.get(0).setContainersList(List.of());
 
             shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
