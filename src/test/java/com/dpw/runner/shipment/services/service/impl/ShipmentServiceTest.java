@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -42,6 +43,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -53,6 +55,8 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
@@ -130,6 +134,8 @@ ShipmentServiceTest extends CommonMocks {
     private JsonHelper jsonHelper;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private INotificationService notificationService;
     @Mock
     private CarrierDetailsMapper carrierDetailsMapper;
     @Mock
@@ -7171,6 +7177,182 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
 
             assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+            verify(shipmentDao).findById(any());
         }
+    }
+
+    @Test
+    void testSendOceanDGApprovalEmail_DgUser() throws RunnerException {
+        try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+            UserContext.class)) {
+            OceanDGApprovalRequest request = OceanDGApprovalRequest
+                .builder()
+                .shipmentId(1l)
+                .remarks("Non_DG_USER")
+                .build();
+
+            Packing packing = new Packing();
+            packing.setHazardous(true);
+            packing.setDGClass("1.23");
+
+            ShipmentDetails shipmentDetails = ShipmentDetails
+                .builder()
+                .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .containersList(List.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
+                .packingList(List.of(packing))
+                .build();
+
+            when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                Optional.ofNullable(shipmentDetails));
+
+            UsersDto user = UsersDto.builder().build();
+            userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
+            userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(true);
+
+            shipmentService.sendOceanDGApprovalEmail(request);
+            verify(shipmentDao).findById(any());
+        }
+    }
+
+    @Test
+    void testDgApprovalResponse_NullRequest(){
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.dgApprovalResponse(null);
+        });
+    }
+
+    @Test
+    void testDgApprovalResponse_ShipmentNotFound(){
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).build();
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            shipmentService.dgApprovalResponse(request);
+        });
+    }
+
+    @Test
+    void testDgApprovalResponse_InvalidDGStatus(){
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+            Optional.ofNullable(shipmentDetails));
+
+        assertThrows(RunnerException.class, () -> {
+            shipmentService.dgApprovalResponse(request);
+        });
+        verify(shipmentDao).findById(any());
+    }
+
+    @Test
+    void testDgApprovalResponse_ValidDgApprove() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest.builder().shipmentId(1l).status(TaskStatus.APPROVED).build();
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        packing.setDGClass("1.23");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails
+            .builder()
+            .oceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED)
+            .containersList(List.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
+            .packingList(List.of(packing))
+            .build();
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+            Optional.ofNullable(shipmentDetails));
+
+
+        V1DataResponse v1Response = V1DataResponse.builder().build();
+        when(v1Service.listTask(any())).thenReturn(v1Response);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        List<TaskCreateRequest> taskCreateRequestList = new ArrayList<>();
+        taskCreateRequestList.add(TaskCreateRequest.builder().id("12").userEmail("hc@email.com").build());
+
+        when(jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class)).thenReturn(taskCreateRequestList);
+
+        shipmentService.dgApprovalResponse(request);
+        verify(v1Service).listTask(any());
+    }
+
+    @Test
+    void testSendEmailForApproval_DG() throws RunnerException {
+        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new HashMap<>();
+        String body = "<table border=\"1\" cellpadding=\"1\" cellspacing=\"1\" style=\"width:500px\">\n"
+            + "    <tbody>\n"
+            + "        <tr>\n"
+            + "            <td>&nbsp;No &amp; Type of Package&nbsp;</td>\n"
+            + "            <td>Container Number</td>\n"
+            + "            <td>&nbsp;DG Class</td>\n"
+            + "            <td>UN Number</td>\n"
+            + "            <td>Proper Shipping Name</td>\n"
+            + "            <td>Packing Group&nbsp;</td>\n"
+            + "            <td>Minimum Flash Point</td>\n"
+            + "            <td>Marine Pollutant</td>\n"
+            + "        </tr>\n"
+            + "        <tr>\n"
+            + "            <td>#PACKAGE_DETAILS}</td>\n"
+            + "            <td>{#CONTAINER_NUMBER}&nbsp;</td>\n"
+            + "            <td>{#DG_CLASS}</td>\n"
+            + "            <td>{#UN_NUMBER}</td>\n"
+            + "            <td>{#SHIPPING_NAME}</td>\n"
+            + "            <td>{#PACKING_GROUP}</td>\n"
+            + "            <td>{#FLASH_POINT}&nbsp;</td>\n"
+            + "            <td>{#MARINE_POLLUTANT}</td>\n"
+            + "        </tr>\n"
+            + "    </tbody>\n"
+            + "</table>";
+        EmailTemplatesRequest emailTemplatesRequest = EmailTemplatesRequest.builder().body(body).build();
+        emailTemplatesRequestMap.put(OceanDGStatus.OCEAN_DG_REQUESTED, emailTemplatesRequest);
+
+        List<String> toEmailIds = List.of("hc@gmail.com");
+        VesselsResponse vesselsResponse = new VesselsResponse();
+        OceanDGStatus templateStatus = OceanDGStatus.OCEAN_DG_REQUESTED;
+
+        Containers containers = Containers.builder().containerNumber("CC!2").build();
+        containers.setId(1l);
+
+        Packing packing1 = new Packing();
+        packing1.setHazardous(true);
+        packing1.setDGClass("1.2");
+        packing1.setContainerId(1l);
+        packing1.setUnNumber("12");
+        packing1.setProperShippingName("12");
+        packing1.setPackingGroup("12");
+        packing1.setMarinePollutant(true);
+        packing1.setMinimumFlashPoint(BigDecimal.valueOf(33.0));
+
+        Packing packing2 = new Packing();
+        packing2.setHazardous(true);
+
+        TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            .containersList(List.of(containers))
+            .packingList(List.of(packing1, packing2))
+            .build();
+        String remarks = "Remarks";
+
+        shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
+            remarks, taskCreateResponse);
+        assertEquals("Remarks", remarks);
+    }
+
+    @Test
+    void testSendEmailForApproval_Commercial() throws RunnerException {
+        Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new HashMap<>();
+        EmailTemplatesRequest emailTemplatesRequest = EmailTemplatesRequest.builder().body("<>").build();
+        emailTemplatesRequestMap.put(OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED, emailTemplatesRequest);
+
+        List<String> toEmailIds = List.of("hc@gmail.com");
+        VesselsResponse vesselsResponse = new VesselsResponse();
+        OceanDGStatus templateStatus = OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
+
+        TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        String remarks = "Remarks";
+
+        shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
+            remarks, taskCreateResponse);
+        assertEquals("Remarks", remarks);
     }
 }
