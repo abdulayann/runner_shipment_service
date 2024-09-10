@@ -7104,6 +7104,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
 
             assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+            verify(shipmentDao).findById(any());
         }
     }
 
@@ -7136,6 +7137,7 @@ ShipmentServiceTest extends CommonMocks {
             userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(true);
 
             shipmentService.sendOceanDGApprovalEmail(request);
+            verify(shipmentDao).findById(any());
         }
     }
 
@@ -7166,6 +7168,7 @@ ShipmentServiceTest extends CommonMocks {
         assertThrows(RunnerException.class, () -> {
             shipmentService.dgApprovalResponse(request);
         });
+        verify(shipmentDao).findById(any());
     }
 
     @Test
@@ -7196,6 +7199,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class)).thenReturn(taskCreateRequestList);
 
         shipmentService.dgApprovalResponse(request);
+        verify(v1Service).listTask(any());
     }
 
     @Test
@@ -7257,6 +7261,7 @@ ShipmentServiceTest extends CommonMocks {
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
             remarks, taskCreateResponse);
+        assertEquals("Remarks", remarks);
     }
 
     @Test
@@ -7275,5 +7280,6 @@ ShipmentServiceTest extends CommonMocks {
 
         shipmentService.sendEmailForApproval(emailTemplatesRequestMap, toEmailIds, vesselsResponse, templateStatus, shipmentDetails,
             remarks, taskCreateResponse);
+        assertEquals("Remarks", remarks);
     }
 }

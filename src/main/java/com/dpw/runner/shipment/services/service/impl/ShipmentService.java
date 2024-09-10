@@ -6071,16 +6071,15 @@ public class ShipmentService implements IShipmentService {
 
 
     private boolean checkForClass1(ShipmentDetails shipmentDetails) {
-        return shipmentDetails != null &&
-            shipmentDetails.getContainersList() != null &&
+        if(shipmentDetails == null) return false;
+        return shipmentDetails.getContainersList() != null &&
             shipmentDetails.getContainersList().stream()
                 .filter(Objects::nonNull)
                 .anyMatch(containers -> containers.getHazardous() &&
                     Optional.ofNullable(containers.getDgClass())
                         .map(dgClass -> dgClass.startsWith("1"))
                         .orElse(false))
-            ||
-            shipmentDetails.getPackingList() != null &&
+            || shipmentDetails.getPackingList() != null &&
                 shipmentDetails.getPackingList().stream()
                     .filter(Objects::nonNull)
                     .anyMatch(packing -> packing.getHazardous() &&
