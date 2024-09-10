@@ -135,6 +135,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstan
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
@@ -4393,7 +4394,7 @@ public class ShipmentService implements IShipmentService {
             response.setShipmentCreatedOn(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             response.setAutoUpdateWtVol(true);
-            response.setDateType(DateBehaviorType.ESTIMATED);
+            response.setDateType(ESTIMATED);
             //Generate HBL
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
