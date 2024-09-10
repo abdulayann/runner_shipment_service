@@ -2377,7 +2377,6 @@ public class ShipmentService implements IShipmentService {
                     }
                 }
             }
-
         }
 
         if (isFcl(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
