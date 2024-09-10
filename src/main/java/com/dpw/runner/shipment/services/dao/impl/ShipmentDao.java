@@ -266,8 +266,8 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findByHouseBill(hbl, tenantId);
     }
     @Override
-    public List<ShipmentDetails> findByBookingReference(String ref){
-        return shipmentRepository.findByBookingReference(ref);
+    public List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId){
+        return shipmentRepository.findByBookingReference(ref, tenantId);
     }
 
     @Override
@@ -430,7 +430,7 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         if(!IsStringNullOrEmpty(request.getBookingReference())) {
-            List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference());
+            List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference(), TenantContext.getCurrentTenant());
             if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Shipment with ReferenceNo " + request.getBookingReference() + " already exists.");
             }

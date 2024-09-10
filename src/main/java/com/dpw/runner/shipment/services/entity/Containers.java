@@ -349,6 +349,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "packing_group")
     @Size(max=31, message = "max size is 31 for packing_group")
+    @MasterData(type = MasterDataType.PACKING_GROUP)
     private String packingGroup;
 
     @Column(name = "minimum_flash_point")

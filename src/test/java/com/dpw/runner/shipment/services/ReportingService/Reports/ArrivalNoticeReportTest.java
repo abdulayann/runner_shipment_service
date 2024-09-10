@@ -26,6 +26,8 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -63,6 +65,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -374,6 +377,50 @@ class ArrivalNoticeReportTest extends CommonMocks {
     }
 
     @Test
+    void populateDictionary_BillingIntegrationDisabled_haz_temp() {
+        ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
+        arrivalNoticeModel.setUsersDto(UserContext.getUser());
+        populateModel(arrivalNoticeModel);
+        arrivalNoticeModel.getShipmentDetails().getPackingList().get(0).setHazardous(true);
+        arrivalNoticeModel.getShipmentDetails().getPackingList().get(0).setIsTemperatureControlled(true);
+        arrivalNoticeModel.setHbl(populateHbl());
+        arrivalNoticeModel.setArrivalNoticeBillCharges(Arrays.asList(new ArrivalNoticeModel.ArrivalNoticeBillCharges()));
+        mockVessel();
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(NET_WEIGHT, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+
+        Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
+        EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
+        entityTransferMasterLists.setValuenDesc("Test");
+        dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
+        dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
+        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
+        when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
+
+        masterDataMock();
+        mockCarrier();
+        mockRakc(arrivalNoticeModel.shipmentDetails);
+        mockBill(false);
+        mockCommodity();
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
+    }
+
+    @Test
     void populateDictionary_BillingIntegrationEnabled() {
         ArrivalNoticeModel arrivalNoticeModel = new ArrivalNoticeModel();
         arrivalNoticeModel.setUsersDto(UserContext.getUser());
@@ -616,5 +663,74 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel1() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
+        ContainerModel containerModel = new ContainerModel();
+        containerModel.setHazardous(true);
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel2() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
+        ContainerModel containerModel = new ContainerModel();
+        shipmentModel.setContainersList(Arrays.asList(containerModel));
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel3() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel4() {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        mockShipmentSettings();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(SEA);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        assertThrows(com.dpw.runner.shipment.services.exception.exceptions.ValidationException.class, () -> arrivalNoticeReport.getDocumentModel(123L));
     }
 }

@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -17,7 +16,11 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -49,7 +52,8 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -281,6 +285,169 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(TareWeight, BigDecimal.TEN);
         containerMap.put(VGMWeight, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+        mockTenantSettings();
+        assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
+    }
+
+    @Test
+    void populateDictionary_haz_temp() {
+        CargoManifestModel cargoManifestModel = new CargoManifestModel();
+
+        cargoManifestModel.tenantDetails =  new TenantModel();
+        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        cargoManifestModel.usersDto = UserContext.getUser();
+        cargoManifestModel.awb = new Awb();
+        AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
+        awbCargoInfo.setSci("test");
+        cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
+        cargoManifestModel.awb.setOriginalPrintedAt(LocalDateTime.now());
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+        shipmentModel.setSecurityStatus("Test");
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setPacksUnit("PKG");
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setOrgCode("Test");
+        partiesModel.setAddressCode("Test");
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        orgData.put(COMPANY_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setDestinationPort(UUID.randomUUID().toString());
+        carrierDetailModel.setShippingLine("MAERSK");
+
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        additionalDetailModel.setExportBroker(partiesModel);
+        additionalDetailModel.setImportBroker(partiesModel);
+        additionalDetailModel.setScreeningStatus(Arrays.asList(Constants.AOM));
+        additionalDetailModel.setExemptionCodes("Test");
+        additionalDetailModel.setAomFreeText("Test");
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+
+        List<ContainerModel> containerModelList = new ArrayList<>();
+        ContainerModel shipmentContainers = new ContainerModel();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setContainerNumber("CONT000283");
+        shipmentContainers.setGrossVolume(BigDecimal.TEN);
+        shipmentContainers.setGrossVolumeUnit("M3");
+        shipmentContainers.setGrossWeight(BigDecimal.TEN);
+        shipmentContainers.setGrossWeightUnit("KG");
+        shipmentContainers.setPacksType("PKG");
+        shipmentContainers.setPacks("100");
+        containerModelList.add(shipmentContainers);
+        shipmentModel.setContainersList(containerModelList);
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        cargoManifestModel.shipmentDetails = shipmentModel;
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setHazardous(true);
+        packingModel.setIsTemperatureControlled(true);
+        packingModel.setUnNumber("unNum");
+        packingModel.setProperShippingName("psn");
+        packingModel.setDGClass("1.1");
+        packingModel.setMinimumFlashPoint(BigDecimal.ONE);
+        packingModel.setMinimumFlashPointUnit("K");
+        packingModel.setPackingGroup("packingGrp");
+        packingModel.setMarinePollutant(true);
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setIataCode("Test");
+        unlocationsResponse.setName("Test");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setPortName("Test");
+        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        Parties parties = new Parties();
+        parties.setOrgCode("Test");
+        parties.setAddressCode("Test");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> addressDataMap = new HashMap<>();
+        addressDataMap.put(REGULATED_AGENT, true);
+        addressDataMap.put(KCRA_NUMBER, ONE);
+        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
+        addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
+
+        Parties parties2 = new Parties();
+        parties2.setOrgCode("Test2");
+        parties2.setAddressCode("Test2");
+        addressDataMap = new HashMap<>();
+        addressDataMap.put(KNOWN_CONSIGNOR, true);
+        addressDataMap.put(KCRA_NUMBER, TWO);
+        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
+        addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);
+
+        OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
+        orgAddressResponse.setAddresses(addressMap);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+        when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
+        when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
+        when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+        when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockTenantSettings();
         assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
     }

@@ -148,6 +148,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Integer pendingActionCount;
 
     private String sourceBranchTenantName;
+    private String department;
 
     private transient Map<String, Object> masterData;
     private Integer sendToBranch;

@@ -257,7 +257,7 @@ public class CargoManifestReport extends IReport{
         }
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
-        if(!Objects.isNull(cargoManifestModel.shipmentDetails.getPackingList()) && !cargoManifestModel.shipmentDetails.getPackingList().isEmpty()) {
+        if(!listIsNullOrEmpty(cargoManifestModel.shipmentDetails.getPackingList())) {
             getPackingDetails(cargoManifestModel.shipmentDetails, dictionary);
             dictionary.put(HAS_PACK_DETAILS, true);
             var hazardousCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());

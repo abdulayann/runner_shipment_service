@@ -534,6 +534,7 @@ public class Constants {
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE";
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE";
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE";
+    public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
 
     private Constants() {
     }

@@ -29,6 +29,7 @@ public class BookingOrderReport extends IReport {
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         BookingOrderModel model = new BookingOrderModel();
         model.setShipmentModel(getShipment(id));
+        validateAirAndOceanDGCheck(model.getShipmentModel());
         model.getShipmentModel().setDocument(ReportConstants.BOOKING_ORDER);
         model.setUser(UserContext.getUser());
         model.setTenantModel(getTenant());
