@@ -71,6 +71,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -5007,6 +5008,106 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void completeUpdateCalculateAutoContainerWeightAndVolume_dg() throws RunnerException {
+        shipmentDetails.setId(1L);
+        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainerAutoWeightVolumeUpdate(true);
+        shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
+
+        Packing packing = new Packing();
+        packing.setId(3L);
+        packing.setContainerId(1L);
+        packing.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        packing.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        packing.setHazardous(true);
+        packing.setDGClass("1.1");
+        shipmentDetails.setPackingList(Arrays.asList(packing));
+
+        Routings routings = new Routings();
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+        routings.setIsSelectedForDocument(true);
+        routings.setId(1L);
+        shipmentDetails.setRoutingsList(Arrays.asList(routings));
+
+        Events events = new Events();
+        events.setId(1L);
+        events.setContainerNumber("abcd-efgh-1234-ijkl");
+        events.setLocationRole("bcdfh");
+        shipmentDetails.setEventsList(List.of(events));
+        Containers containers_ = new Containers();
+        shipmentDetails.setContainersList(List.of(containers_));
+
+        ShipmentDetails mockShipment = shipmentDetails;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).shipConsolidationContainerEnabled(true).build());
+
+
+        RoutingsRequest routingsRequest = new RoutingsRequest();
+        routingsRequest.setMode(Constants.TRANSPORT_MODE_SEA);
+        routingsRequest.setIsSelectedForDocument(true);
+        routingsRequest.setId(1L);
+
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setContainerNumber("abcd-efgh-1234-ijkl");
+        eventsRequest.setLocationRole("bcdfh");
+        eventsRequest.setId(1L);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        mockShipmentRequest.setBookingCarriagesList(Arrays.asList(BookingCarriageRequest.builder().build()));
+        mockShipmentRequest.setTruckDriverDetails(Arrays.asList(TruckDriverDetailsRequest.builder().build()));
+        mockShipmentRequest.setReplaceConsoleRoute(true);
+        mockShipmentRequest.setConsolidationList(Arrays.asList(ConsolidationDetailsRequest.builder().build()));
+        mockShipmentRequest.setRoutingsList(Arrays.asList(routingsRequest));
+        mockShipmentRequest.setEventsList(List.of(eventsRequest));
+        mockShipmentRequest.setCreateMainLegRoute(true);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                shipmentDetails
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
+        when(jsonHelper.convertValueToList(any(), eq(ConsoleShipmentMapping.class))).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
+
+        Containers containers = new Containers();
+        containers.setGuid(UUID.randomUUID());
+
+        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(containers));
+//        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
+
+        Packing packing2 = new Packing();
+        packing2.setId(1L);
+        List<Packing> packingList = new ArrayList<>();
+        packingList.add(packing2);
+
+        PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing2));
+//        when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+        assertEquals(true, mockShipmentResponse.getRoutingsList().get(0).getIsSelectedForDocument());
+        assertEquals("bcdfh", mockShipmentResponse.getEventsList().get(0).getLocationRole());
+
+    }
+
+    @Test
     void createFromBookingCatch() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         assertThrows(ValidationException.class, () -> {
@@ -7405,4 +7506,187 @@ ShipmentServiceTest extends CommonMocks {
             remarks, taskCreateResponse);
         assertEquals("Remarks", remarks);
     }
+
+    @Test
+    void testOceanDGValidations_Error() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails1.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        consolidationDetails1.setHazardous(true);
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
+        assertThrows(RunnerException.class, () -> shipmentService.oceanDGValidations(shipmentDetails1, consolidationDetails1));
+    }
+
+    @Test
+    void testOceanDGValidations() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails1.setContainerCategory(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setContainsHazardous(true);
+        shipmentService.oceanDGValidations(shipmentDetails1, consolidationDetails1);
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testOceanDGValidations1() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails1.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        shipmentService.oceanDGValidations(shipmentDetails1, consolidationDetails1);
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testOceanDGValidations2() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails1.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
+        consolidationDetails1.setHazardous(true);
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(new ArrayList<>());
+        shipmentService.oceanDGValidations(shipmentDetails1, consolidationDetails1);
+        verify(consoleShipmentMappingDao, times(1)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testAirDGValidations() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setContainsHazardous(true);
+        assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, null, null, new MutableBoolean(true), null));
+    }
+
+    @Test
+    void testAirDGValidations1() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setContainsHazardous(true);
+        assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, null, List.of(1L), new MutableBoolean(false), null));
+    }
+
+    @Test
+    void testAirDGValidations3() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setContainsHazardous(true);
+        shipmentService.airDGValidations(shipmentDetails1, null, null, new MutableBoolean(false), null);
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testAirDGValidations4() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentService.airDGValidations(shipmentDetails1, null, null, null, null);
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testAirDGValidations5() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentService.airDGValidations(shipmentDetails1, null, List.of(2L), null, List.of(new ConsolidationDetailsRequest()));
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testAirDGValidations6() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetailsRequest consolidationDetailsRequest = new ConsolidationDetailsRequest();
+        consolidationDetailsRequest.setHazardous(true);
+        assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, new ShipmentDetails(), List.of(2L), null, List.of(consolidationDetailsRequest)));
+    }
+
+    @Test
+    void testAirDGValidations7() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setConsolidationList(List.of(new ConsolidationDetails()));
+        shipmentService.airDGValidations(shipmentDetails1, new ShipmentDetails(), List.of(2L), null, null);
+        verify(consoleShipmentMappingDao, times(0)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testAirDGValidations8() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setHazardous(true);
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+        assertThrows(RunnerException.class, () -> shipmentService.airDGValidations(shipmentDetails1, shipmentDetails1, List.of(2L), null, null));
+    }
+
+    @Test
+    void testMakeShipmentsDG() throws RunnerException {
+        shipmentService.makeShipmentsDG(null, ShipmentDetails.builder().containsHazardous(true).build());
+        verify(shipmentDao, times(0)).save(any(), anyBoolean());
+    }
+
+    @Test
+    void testMakeShipmentsDG2() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        doNothing().when(shipmentDao).entityDetach(any());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build()));
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        shipmentService.makeShipmentsDG(new HashMap<>() {{
+            put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
+        }}, shipmentDetails1);
+        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+    }
+
+    @Test
+    void testMakeShipmentsDG3() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        doNothing().when(shipmentDao).entityDetach(any());
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        shipmentService.makeShipmentsDG(new HashMap<>() {{
+            put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
+        }}, shipmentDetails1);
+        verify(shipmentDao, times(0)).save(any(), anyBoolean());
+    }
+
+    @Test
+    void testMakeShipmentsDG4() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(false);
+        doNothing().when(shipmentDao).entityDetach(any());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build()));
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        shipmentService.makeShipmentsDG(new HashMap<>() {{
+            put(1L, Containers.builder().hazardous(true).build());
+        }}, shipmentDetails1);
+        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+    }
+
+    @Test
+    void testMakeShipmentsDG5() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
+        doNothing().when(shipmentDao).entityDetach(any());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(shipmentDetails1);
+        shipmentService.makeShipmentsDG(new HashMap<>() {{
+            put(1L, Containers.builder().hazardous(true).dgClass("1.1").build());
+        }}, shipmentDetails1);
+        verify(shipmentDao, times(1)).save(any(), anyBoolean());
+    }
+
 }
