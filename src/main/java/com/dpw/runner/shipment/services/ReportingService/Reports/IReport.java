@@ -3287,38 +3287,6 @@ public abstract class IReport {
         }
     }
 
-    public void validateOceanDGCheckInConsole(ConsolidationModel consolidationModel) {
-        if(Constants.TRANSPORT_MODE_SEA.equals(consolidationModel.getTransportMode()) && Boolean.TRUE.equals(consolidationModel.getHazardous())) {
-            boolean allowPrint = checkDGContainerInConsole(consolidationModel.getContainersList());
-            if(!allowPrint)
-                allowPrint = checkDGShipmentInConsole(consolidationModel.getShipmentsList());
-            if(!allowPrint)
-                throw new ValidationException("The consolidation is marked as DG but does not contain any DG shipments or containers. Please add DG shipments or containers before printing.");
-        }
-    }
-
-    private boolean checkDGContainerInConsole(List<ContainerModel> containerModels) {
-        if(!listIsNullOrEmpty(containerModels)) {
-            for(ContainerModel containerModel: containerModels) {
-                if(Boolean.TRUE.equals(containerModel.getHazardous())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean checkDGShipmentInConsole(List<ShipmentModel> shipmentModels) {
-        if(!listIsNullOrEmpty(shipmentModels)) {
-            for(ShipmentModel shipmentModel: shipmentModels) {
-                if(Boolean.TRUE.equals(shipmentModel.getContainsHazardous())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private static boolean isAirDgUser() {
         return UserContext.isAirDgUser();
     }

@@ -39,7 +39,6 @@ public class ManifestConsolReport extends IReport {
     @Override
     IDocumentModel getDocumentModel(Long id) {
         ConsolidationModel consolidationDetails = getConsolidation(id);
-        validateOceanDGCheckInConsole(consolidationDetails);
         List<ContainerModel> containersList = new ArrayList<>();
         if(consolidationDetails.getShipmentsList() != null) {
             for (var shipment : consolidationDetails.getShipmentsList()) {

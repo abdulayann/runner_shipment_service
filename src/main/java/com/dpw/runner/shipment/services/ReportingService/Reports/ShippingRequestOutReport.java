@@ -45,7 +45,6 @@ public class ShippingRequestOutReport extends IReport {
         ShippingRequestOutModel model = new ShippingRequestOutModel();
         model.setTenant(getTenant());
         model.setConsolidation(getConsolidation(id));
-        validateOceanDGCheckInConsole(model.getConsolidation());
         model.setUser(UserContext.getUser());
 
         var shipments = model.getConsolidation() != null ? model.getConsolidation().getShipmentsList() : null;

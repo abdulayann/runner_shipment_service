@@ -83,7 +83,6 @@ public class AWBLabelReport extends IReport{
             awbLabelModel.setConsolidation(getConsolidation(id));
             awbLabelModel.setAwb(getMawb(id, true));
             awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
-            validateOceanDGCheckInConsole(awbLabelModel.getConsolidation());
         }
         else {
             awbLabelModel.shipment = getShipment(id);

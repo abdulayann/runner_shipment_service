@@ -18,9 +18,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -51,7 +52,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -554,116 +556,6 @@ class ShippingRequestOutReportTest extends CommonMocks {
     }
 
     @Test
-    void getDocumentModel_SEA() throws RunnerException {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().isShipmentLevelContainer(true).build()));
-        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
-    }
-
-    @Test
-    void getDocumentModel1() throws RunnerException {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        consolidationModel.setHazardous(true);
-        ContainerModel containerModel = new ContainerModel();
-        containerModel.setHazardous(true);
-        consolidationModel.setContainersList(Arrays.asList(containerModel));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setContainsHazardous(true);
-        shipmentModel.setAdditionalDetails(new AdditionalDetailModel());
-        consolidationModel.setShipmentsList(List.of(shipmentModel));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().isShipmentLevelContainer(true).build()));
-        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
-    }
-
-    @Test
-    void getDocumentModel2() throws RunnerException {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        consolidationModel.setHazardous(true);
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        assertThrows(ValidationException.class, () -> shippingRequestOutReport.getDocumentModel(123L));
-    }
-
-    @Test
-    void getDocumentModel3() throws RunnerException {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        consolidationModel.setHazardous(true);
-        ContainerModel containerModel = new ContainerModel();
-        consolidationModel.setContainersList(Arrays.asList(containerModel));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setAdditionalDetails(new AdditionalDetailModel());
-        consolidationModel.setShipmentsList(List.of(shipmentModel));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        assertThrows(ValidationException.class, () -> shippingRequestOutReport.getDocumentModel(123L));
-    }
-
-    @Test
-    void getDocumentModel4() throws RunnerException {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setId(123L);
-        consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
-        ConsolidationModel consolidationModel = new ConsolidationModel();
-        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        consolidationModel.setHazardous(true);
-        ContainerModel containerModel = new ContainerModel();
-        consolidationModel.setContainersList(Arrays.asList(containerModel));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setContainsHazardous(true);
-        shipmentModel.setAdditionalDetails(new AdditionalDetailModel());
-        consolidationModel.setShipmentsList(List.of(shipmentModel));
-        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(new TenantModel()).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
-        when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().isShipmentLevelContainer(true).build()));
-        assertNotNull(shippingRequestOutReport.getDocumentModel(123L));
-    }
-
-    @Test
     void getDocumentModelWithConsolNull() throws RunnerException {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(123L);
@@ -676,7 +568,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(new TenantModel());
 
         Long id = 123L;
-        assertThrows(NullPointerException.class, () -> {
+        assertThrows(RunnerException.class, () -> {
             shippingRequestOutReport.getDocumentModel(id);
         });
     }
