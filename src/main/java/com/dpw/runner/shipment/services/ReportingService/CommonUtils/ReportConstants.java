@@ -737,7 +737,7 @@ public class ReportConstants {
     public static final String HOUSE_BILL_TYPE = "HouseBillType";
     public static final String COUNT = "Count";
     public static final String PACKS_OF_TOTAL = "PacksOfTotal";
-    public static final String PACK = "Pack";
+    public static final String PACK_NUMBER = "PackNumber";
     public static final String HAWB_NUMBER = "HAWBNumber";
     public static final String PRINTING_FOR = "PrintingFor";
     public static final String LOGO = "Logo";
