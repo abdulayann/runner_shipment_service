@@ -2055,7 +2055,7 @@ public class ConsolidationService implements IConsolidationService {
                     e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
                 }
             });
-            shipmentDao.saveAll(shipmentDetails);
+            shipmentDetails = shipmentDao.saveAll(shipmentDetails);
             for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
                 try {
                     shipmentSync.sync(shipmentDetails1, null, null, StringUtility.convertToString(UUID.randomUUID()), false);
