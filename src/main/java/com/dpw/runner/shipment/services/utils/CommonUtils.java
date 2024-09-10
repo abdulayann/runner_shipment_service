@@ -1387,7 +1387,6 @@ public class CommonUtils {
         List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(v1DataResponse.entities, VesselsResponse.class);
 
         if(vesselsResponseList != null && !vesselsResponseList.isEmpty()) {
-            vesselsResponse = new VesselsResponse();
             vesselsResponse.setName(vesselsResponseList.get(0).getName());
         }
 

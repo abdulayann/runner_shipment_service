@@ -44,6 +44,8 @@ import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -140,6 +142,7 @@ import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COM
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
@@ -5995,24 +5998,30 @@ public class ShipmentService implements IShipmentService {
             throw new RunnerException("Check Task exist failed to check from V1: " + ex);
         }
         List<TaskCreateRequest> taskCreateRequestList = jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class);
+
+        if(taskCreateRequestList.isEmpty()) return;
+
         if(taskCreateRequestList.size() > 1){
-            throw new RunnerException("More than one task with type OceanDG exist for shipment : " + request.getShipmentId());
+            throw new RunnerException("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
         }
         TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
         request.setTaskId(taskCreateRequest.getId());
         request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
 
-        TaskUpdateRequest taskUpdateRequest = TaskUpdateRequest.builder()
-            .id(taskCreateRequest.getId())
-            .status(request.getStatus().name())
-            .rejectionRemarks("Updated from shipment directly")
+        TaskStatusUpdateRequest taskUpdateRequest = TaskStatusUpdateRequest.builder()
+            .entityId(taskCreateRequest.getId())
+            .entity(EntityDetails.builder()
+                .status(request.getStatus().getValue())
+                .rejectionRemarks(request.getStatus().getValue() == 2 ? "Rejected by DGUser from backend" : null )
+                .build())
             .build();
+
 
       try {
           v1Service.updateTask(taskUpdateRequest);
       }
       catch (Exception ex) {
-        log.error("task updatation is failed for taskId: " + taskUpdateRequest.getId());
+        log.error("task updatation is failed for taskId: " + taskUpdateRequest.getEntityId());
       }
 
     }
@@ -6052,7 +6061,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private OceanDGStatus determineDgStatusAfterApproval(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
-        if (dgStatus == OCEAN_DG_REQUESTED && isOceanDgUser) {
+        if (dgStatus == OCEAN_DG_APPROVAL_REQUIRED && isOceanDgUser) {
             return checkForClass1(shipmentDetails) ? OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OCEAN_DG_ACCEPTED;
         } else {
             return (dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) ? OCEAN_DG_COMMERCIAL_REQUESTED : OCEAN_DG_REQUESTED;
@@ -6061,19 +6070,23 @@ public class ShipmentService implements IShipmentService {
 
 
     private boolean checkForClass1(ShipmentDetails shipmentDetails) {
-        return shipmentDetails.getContainersList().stream()
-            .filter(Objects::nonNull)
-            .anyMatch(containers -> containers.getHazardous() &&
-                Optional.ofNullable(containers.getDgClass())
-                    .map(dgClass -> dgClass.startsWith("1"))
-                    .orElse(false))
-            ||
-            shipmentDetails.getPackingList().stream()
+        return shipmentDetails != null &&
+            shipmentDetails.getContainersList() != null &&
+            shipmentDetails.getContainersList().stream()
                 .filter(Objects::nonNull)
-                .anyMatch(packing -> packing.getHazardous() &&
-                    Optional.ofNullable(packing.getDGClass())
+                .anyMatch(containers -> containers.getHazardous() &&
+                    Optional.ofNullable(containers.getDgClass())
                         .map(dgClass -> dgClass.startsWith("1"))
-                        .orElse(false));
+                        .orElse(false))
+            ||
+            shipmentDetails.getPackingList() != null &&
+                shipmentDetails.getPackingList().stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(packing -> packing.getHazardous() &&
+                        Optional.ofNullable(packing.getDGClass())
+                            .map(dgClass -> dgClass.startsWith("1"))
+                            .orElse(false));
+
     }
 
     private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
@@ -6085,10 +6098,9 @@ public class ShipmentService implements IShipmentService {
         );
         emailTemplateFuture.join();
 
-        EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(newStatus))
-            .orElseThrow(() -> new RunnerException("No template is present for status: " + newStatus));
-
         try {
+            EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(newStatus))
+                .orElseThrow(() -> new RunnerException("No template is present for status: " + newStatus));
             commonUtils.sendEmailResponseToDGRequester(template, request, shipmentDetails);
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL, e);
@@ -6104,7 +6116,7 @@ public class ShipmentService implements IShipmentService {
             throw new RunnerException( String.format("User cannot send email in %s DGStatus", oceanDGStatus));
         }
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap = new EnumMap<>(OceanDGStatus.class);
-        VesselsResponse vesselsResponse = null;
+        VesselsResponse vesselsResponse = new VesselsResponse();
         // making v1 calls for master data
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
         var vesselResponseFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getVesselsData(shipmentDetails.getCarrierDetails(), vesselsResponse)), executorService);
@@ -6334,6 +6346,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
+        if(tableTemplate.isEmpty()) return "";
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
