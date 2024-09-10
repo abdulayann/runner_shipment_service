@@ -1265,7 +1265,7 @@ public class CommonUtils {
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
             DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
-        if(auditLogList != null){
+        if(auditLogList != null && auditLogList.size()!=0){
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
             populateDGSenderDetailsFromAudit(changesMap, dictionary);
         }
