@@ -7032,6 +7032,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentType(Constants.CARGO_TYPE_FCL)
                 .bookingNumber("1234-5678")
                 .shipmentGateInDate(LocalDateTime.now())
+                .dateType(DateBehaviorType.ACTUAL)
                 .build();
         LocalDateTime mockDateTimeNew = LocalDateTime.now().plusDays(2);
         AdditionalDetails additionalDetailsNew = getmockAdditionalDetails(mockDateTimeNew, true, true, true);
@@ -7047,6 +7048,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentType(Constants.CARGO_TYPE_FCL)
                 .bookingNumber("5678-1234")
                 .shipmentGateInDate(LocalDateTime.now().plusDays(1))
+                .dateType(DateBehaviorType.ACTUAL)
                 .build();
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldshipmentDetails);
