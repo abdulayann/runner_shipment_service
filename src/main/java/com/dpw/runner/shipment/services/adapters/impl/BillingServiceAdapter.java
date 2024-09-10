@@ -513,12 +513,12 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
                     Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
                             .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && x.getDefaultAddress()).findFirst().orElse(null))
+                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst().orElse(null))
                     : null;
 
             EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
                     .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && x.getDefaultAddress())
+                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && Boolean.TRUE.equals(x.getDefaultAddress()))
                             .findFirst().orElse(null));
 
             if (creditorAddressDetails == null && clientAddressDetails != null) {
