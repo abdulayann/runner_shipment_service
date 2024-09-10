@@ -275,25 +275,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class
@@ -7423,7 +7404,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.getCarrierDetails().setAtd(LocalDateTime.now());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
-        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setBookingNumber("BookingNUmber");
         shipmentDetails.setDateType(DateBehaviorType.ACTUAL);
 
