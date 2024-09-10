@@ -6008,11 +6008,12 @@ public class ShipmentService implements IShipmentService {
         request.setTaskId(taskCreateRequest.getId());
         request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
 
+        String remarks = request.getRemarks() == null ? "Task Rejected directly from shipment screen by DG user" :  request.getRemarks();
         TaskStatusUpdateRequest taskUpdateRequest = TaskStatusUpdateRequest.builder()
             .entityId(taskCreateRequest.getId())
             .entity(EntityDetails.builder()
                 .status(request.getStatus().getValue())
-                .rejectionRemarks(request.getStatus().getValue() == 2 ? "Rejected by DGUser from backend" : null )
+                .rejectionRemarks(request.getStatus().getValue() == 2 ? remarks : null )
                 .build())
             .build();
 
