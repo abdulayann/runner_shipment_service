@@ -7088,7 +7088,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
-        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.getCarrierDetails().setAtd(LocalDateTime.now());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
@@ -7099,7 +7099,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(additionalDetails);
 
         mockShipment.setShipmentId("AIR-CAN-00001");
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).enableLclConsolidation(true).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(true).enableLclConsolidation(true).build());
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
