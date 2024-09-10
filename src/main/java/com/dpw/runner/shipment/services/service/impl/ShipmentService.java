@@ -2210,7 +2210,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventUpdate(event);
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2227,7 +2227,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE,
+                                shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2244,7 +2245,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getPickupDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO,
+                                shipmentDetails.getAdditionalDetails().getPickupDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2261,7 +2263,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE,
+                                shipmentDetails.getAdditionalDetails().getCustomReleaseDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2277,7 +2280,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventUpdate(event);
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2293,7 +2296,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE,
+                                shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2309,7 +2313,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventUpdate(event);
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2328,7 +2332,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS,
+                                shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2343,7 +2348,8 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, shipmentDetails.getShipmentGateInDate());
                         eventExists = Boolean.TRUE;
                     } else if (Boolean.FALSE.equals(eventExists)) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW,
+                                shipmentDetails.getShipmentGateInDate()));
                         eventExists = Boolean.TRUE;
                     }
                 }
@@ -2362,7 +2368,7 @@ public class ShipmentService implements IShipmentService {
                     handleEventUpdate(event);
                     eventExists = Boolean.TRUE;
                 } else if (Boolean.FALSE.equals(eventExists)) {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now()));
                     eventExists = Boolean.TRUE;
                 }
             }
@@ -2405,43 +2411,43 @@ public class ShipmentService implements IShipmentService {
     private void createTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails) {
 
         if (shipmentDetails.getBookingNumber() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getPickupDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO, shipmentDetails.getAdditionalDetails().getPickupDate()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE, shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()));
         }
 
         if (shipmentDetails.getShipmentGateInDate() != null && isLclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW, shipmentDetails.getShipmentGateInDate()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE, shipmentDetails.getAdditionalDetails().getCustomReleaseDate()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS, shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR));
+            events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now()));
         }
 
     }
@@ -4892,10 +4898,10 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getStatus() != null) {
             if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
                 if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCNFRM);
+                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCNFRM, LocalDateTime.now());
                 }
                 if (shipmentDetails.getStatus().equals(ShipmentStatus.Completed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCMPLT);
+                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCMPLT, LocalDateTime.now());
                 }
             }
             if(response != null) {
@@ -4908,7 +4914,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR);
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now());
 
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
@@ -4916,10 +4922,11 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.getEventsList().add(response);
     }
 
-    private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode) {
+    private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode,
+                                         LocalDateTime actualDateTime) {
         Events events = new Events();
         // Set event fields from shipment
-        events.setActual(LocalDateTime.now());
+        events.setActual(actualDateTime);
         events.setEstimated(LocalDateTime.now());
         events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         events.setIsPublicTrackingEvent(true);
