@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.dto.request.notification.PendingNotifica
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -106,6 +107,13 @@ public class ShipmentController {
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
 
+    private static class HblCheckResponseClass extends RunnerResponse<HblCheckResponse> {}
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = HblCheckResponseClass.class, message = ShipmentConstants.HBL_NUMBER_CHECK_SUCCESSFUL)})
+    @GetMapping("/hbl-check")
+    public ResponseEntity<IRunnerResponse> hblCheck(@ApiParam(value = ShipmentConstants.HBL_NUMBER, required = true) @RequestParam String hblNumber) {
+        return shipmentService.hblCheck(hblNumber);
+    }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
     @PostMapping(value = "/list-shipment")

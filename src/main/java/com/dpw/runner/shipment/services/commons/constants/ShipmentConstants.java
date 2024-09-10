@@ -28,6 +28,9 @@ public class ShipmentConstants {
     private ShipmentConstants(){}
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
+    public static final String HBL_NUMBER_CHECK_SUCCESSFUL = "HBL Number check successful";
+    public static final String HBL_NUMBER = "HBL Number";
+
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
 
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Data Update";

@@ -3,8 +3,14 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,12 +18,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 
 @Repository @Generated
@@ -75,4 +75,11 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "on s.id = csm.shipmentId " +
             "where csm.isAttachmentDone = false and csm.requestedType = ?1")
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+
+    @Query(value = "SELECT "
+            + " tenant_id as tenantId, "
+            + " house_bill as hblNumber, "
+            + " shipment_id as shipmentId "
+            + " FROM shipment_details WHERE house_bill = ?1", nativeQuery = true)
+    List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
 }
