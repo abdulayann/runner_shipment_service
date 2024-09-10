@@ -399,7 +399,7 @@ class ConsolidationDaoTest extends CommonMocks {
     @Test
     void testFindByBol_Success() {
         ConsolidationDetails consolidationDetails = testConsol;
-        when(consolidationRepository.findByBol(anyString())).thenReturn(List.of(consolidationDetails));
+        when(consolidationRepository.findByBol(anyString(), any())).thenReturn(List.of(consolidationDetails));
         List<ConsolidationDetails> responseEntity = consolidationsDao.findByBol(consolidationDetails.getBol());
         assertEquals(List.of(consolidationDetails), responseEntity);
     }
@@ -407,7 +407,7 @@ class ConsolidationDaoTest extends CommonMocks {
     @Test
     void testFindByReferenceNumber_Success() {
         ConsolidationDetails consolidationDetails = testConsol;
-        when(consolidationRepository.findByReferenceNumber(anyString())).thenReturn(List.of(consolidationDetails));
+        when(consolidationRepository.findByReferenceNumber(anyString(), any())).thenReturn(List.of(consolidationDetails));
         List<ConsolidationDetails> responseEntity = consolidationsDao.findByReferenceNumber(consolidationDetails.getReferenceNumber());
         assertEquals(List.of(consolidationDetails), responseEntity);
     }

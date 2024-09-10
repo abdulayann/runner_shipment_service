@@ -220,12 +220,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     public List<ConsolidationDetails> findByBol (String bol) {
-        return consolidationRepository.findByBol(bol);
+        return consolidationRepository.findByBol(bol, TenantContext.getCurrentTenant());
     }
 
     @Override
     public List<ConsolidationDetails> findByReferenceNumber(String ref) {
-        return consolidationRepository.findByReferenceNumber(ref);
+        return consolidationRepository.findByReferenceNumber(ref, TenantContext.getCurrentTenant());
     }
 
     @Override
