@@ -6346,7 +6346,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
-        if(tableTemplate.isEmpty()) return "";
+        if(tableTemplate.isEmpty()) return tableTemplate;
+
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
