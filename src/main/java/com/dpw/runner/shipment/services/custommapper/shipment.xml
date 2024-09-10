@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rsm:Root xmlns:rsm="iata:waybill:1" xmlns:ram="iata:datamodel:3">
+<rsm:Shipments>
+    <ram:Shipment>
+        <ram:ID>123</ram:ID>
+        <ram:Name>Sample Shipment 1</ram:Name>
+        <ram:Date>2024-09-08</ram:Date>
+    </ram:Shipment>
+    <ram:Shipment>
+        <ram:ID>123</ram:ID>
+        <ram:Name>Sample Shipment 2</ram:Name>
+        <ram:Date>2024-09-08</ram:Date>
+    </ram:Shipment>
+    <ram:Shipment>
+        <ram:ID>123</ram:ID>
+        <ram:Name>Sample Shipment 3</ram:Name>
+        <ram:Date>2024-09-08</ram:Date>
+    </ram:Shipment>
+</rsm:Shipments>
+<rsm:Consolidation>
+    <ram:Name>Sample consol 1</ram:Name>
+    <ram:Date>2024-09-08</ram:Date>
+</rsm:Consolidation>
+</rsm:Root>
