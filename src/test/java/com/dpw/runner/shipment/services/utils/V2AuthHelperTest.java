@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +42,7 @@ class V2AuthHelperTest {
         HttpHeaders headers = v2AuthHelper.getInvoiceServiceXApiKeyHeader();
         assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
         assertEquals("Shipment", headers.getFirst("SourceServiceType"));
-        assertEquals("sampleXApiKey", headers.getFirst("x-api-key"));
+        assertEquals("sampleXApiKey", headers.getFirst(ApiConstants.X_ACCESS_TOKEN));
     }
 
     @Test

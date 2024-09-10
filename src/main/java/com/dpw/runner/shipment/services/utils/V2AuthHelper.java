@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,7 +19,7 @@ public class V2AuthHelper {
     public HttpHeaders getInvoiceServiceXApiKeyHeader() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.add("x-api-key", billingServiceUrlConfig.getXApiKey());
+        headers.add(ApiConstants.X_ACCESS_TOKEN, billingServiceUrlConfig.getXApiKey());
         headers.add(SOURCE_SERVICE_TYPE, SHIPMENT);
         return headers;
     }

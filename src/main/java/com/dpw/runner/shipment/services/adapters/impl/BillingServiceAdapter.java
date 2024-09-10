@@ -237,8 +237,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 return Collections.emptyList();
             }
         } catch (Exception e) {
-            log.error("Error occurred while fetching billing summary", e);
-            throw new BillingException("Error occurred while fetching billing summary", e);
+            throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
         }
     }
 
