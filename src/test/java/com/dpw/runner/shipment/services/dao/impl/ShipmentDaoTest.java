@@ -887,8 +887,8 @@ class ShipmentDaoTest extends CommonMocks {
     void findByBookingReference() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         List<ShipmentDetails> shipmentDetailsList = Arrays.asList(shipmentDetails);
-        when(shipmentRepository.findByBookingReference(any())).thenReturn(shipmentDetailsList);
-        assertEquals(shipmentDetailsList, shipmentDao.findByBookingReference("ref"));
+        when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(shipmentDetailsList);
+        assertEquals(shipmentDetailsList, shipmentDao.findByBookingReference("ref", 1));
     }
 
     @Test
@@ -974,7 +974,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
-        when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
@@ -1021,7 +1021,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
-        when(shipmentRepository.findByBookingReference(any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
 
         when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
         mockShipmentSettings();
