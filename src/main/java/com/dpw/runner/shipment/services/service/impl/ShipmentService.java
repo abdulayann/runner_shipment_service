@@ -6006,7 +6006,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
-        DBOperationType operationType = determineOperationType(updatedDgStatus, isOceanDgUser);
+        DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
 
         try {
             auditLogService.addAuditLog(
@@ -6023,7 +6023,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         }catch (Exception ex){
-            log.error(ex.getMessage());
+            log.error("Audit failed for shipmentId: {} and operation: {}. Error: {}", shipmentDetails.getId(), operationType, ex.getMessage(), ex);
         }
 
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
@@ -6072,7 +6072,7 @@ public class ShipmentService implements IShipmentService {
             );
 
         } catch (Exception ex){
-            log.error(ex.getMessage());
+            log.error("Audit failed for shipmentId: {} and operation: {}. Error: {}", shipmentDetails.getId(), operationType, ex.getMessage(), ex);
         }
 
         if(updatedDgStatus == OceanDGStatus.OCEAN_DG_ACCEPTED && checkForClass1(shipmentDetails)){
@@ -6421,7 +6421,7 @@ public class ShipmentService implements IShipmentService {
         VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
         TaskCreateResponse taskCreateResponse) throws RunnerException {
         EmailTemplatesRequest emailTemplate = Optional.ofNullable(emailTemplatesRequestMap.get(templateStatus))
-            .orElseThrow(() -> new RunnerException("No template is present"));
+            .orElseThrow(() -> new RunnerException("template is not present for : " + templateStatus));
 
         if (CollectionUtils.isEmpty(toEmailIds)) {
             throw new RunnerException("There are no DG certified users for your branch. Please contact admin");
@@ -6446,7 +6446,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String populateTableWithData(String tableTemplate, ShipmentDetails shipmentDetails) {
-        if(tableTemplate.isEmpty()) return "";
+        if(tableTemplate.isEmpty()) return tableTemplate;
+
         Document document = Jsoup.parse(tableTemplate);
         Element table = document.select("table").first();
 
@@ -6501,6 +6502,49 @@ public class ShipmentService implements IShipmentService {
 
             newRow.select("td").get(7).text(
                 Boolean.TRUE.equals(packing.getMarinePollutant()) ? "Yes" : "No"
+            ).attr(STYLE, PADDING_10_PX);
+
+
+            table.select("tbody").first().appendChild(newRow);
+        }
+
+        for (Containers containers : shipmentDetails.getContainersList()) {
+            if(!Boolean.TRUE.equals(containers.getHazardous())) continue;
+
+            Element newRow = rowTemplate.clone();
+            newRow.select("td").get(0).text(
+                (containers.getPacks() != null ? containers.getPacks() : "") +
+                    " " +
+                    (containers.getPacksType() != null ? containers.getPacksType() : "")
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(1).text(
+                (containers.getContainerNumber() != null ? containers.getContainerNumber() : "")
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(2).text(
+                containers.getDgClass() != null ?  containers.getDgClass() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(3).text(
+                containers.getUnNumber() != null ? containers.getUnNumber() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(4).text(
+                containers.getProperShippingName() != null ? containers.getProperShippingName() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(5).text(
+                containers.getPackingGroup() != null ? containers.getPackingGroup() : ""
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(6).text(
+                (containers.getMinimumFlashPoint() != null ? containers.getMinimumFlashPoint() : "") +
+                    (containers.getMinimumFlashPointUnit() != null ? containers.getMinimumFlashPointUnit() : "")
+            ).attr(STYLE, PADDING_10_PX);
+
+            newRow.select("td").get(7).text(
+                Boolean.TRUE.equals(containers.getMarinePollutant()) ? "Yes" : "No"
             ).attr(STYLE, PADDING_10_PX);
 
 
