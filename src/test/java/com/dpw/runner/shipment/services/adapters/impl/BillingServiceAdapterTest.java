@@ -497,7 +497,7 @@ class BillingServiceAdapterTest {
         EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
-        entityTransferOrganization.setPayables(Boolean.FALSE);
+        entityTransferOrganization.setPayables(Boolean.TRUE);
 
         List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
 
@@ -506,7 +506,7 @@ class BillingServiceAdapterTest {
 
         EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
         entityTransferAddress.setId(1L);
-        entityTransferAddress.setAddressShortCode("AddressShortCode");
+        entityTransferAddress.setAddressShortCode("AddressShortCode1");
         entityTransferAddress.setOrgId(1L);
         entityTransferAddress.setDefaultAddress(null);
 
