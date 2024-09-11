@@ -21,12 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -46,7 +41,6 @@ import com.itextpdf.text.pdf.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -2219,5 +2213,35 @@ class CommonUtilsTest {
 
         commonUtils.sendEmailResponseToDGRequester(emailTemplatesRequest,request, shipmentDetails);
         assertEquals("ac", request.getRequesterUserEmailId());
+    }
+
+    @Test
+    void testCompareBigDecimals() {
+        boolean response = commonUtils.compareBigDecimals(null, null);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCompareBigDecimals1() {
+        boolean response = commonUtils.compareBigDecimals(BigDecimal.TEN, null);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCompareBigDecimals2() {
+        boolean response = commonUtils.compareBigDecimals(null, BigDecimal.TEN);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCompareBigDecimals3() {
+        boolean response = commonUtils.compareBigDecimals(BigDecimal.TEN, new BigDecimal("10.00"));
+        assertTrue(response);
+    }
+
+    @Test
+    void testCompareBigDecimals4() {
+        boolean response = commonUtils.compareBigDecimals(BigDecimal.ZERO, BigDecimal.TEN);
+        assertFalse(response);
     }
 }
