@@ -1,16 +1,14 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,9 +90,20 @@ class TasksServiceTest {
     }
 
     @Test
-    void testRetrieveTask() {
+    void testRetrieveTask_Console() {
         var mockInput = CommonGetRequest.builder().id(11L).build();
+        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.Consolidations).build();
         when(iv1Service.retrieveTask(any())).thenReturn(V1RetrieveResponse.builder().build());
+        when(jsonHelper.convertValue(any(), eq(TaskResponse.class))).thenReturn(taskResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveTask(CommonRequestModel.buildRequest(mockInput));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+    @Test
+    void testRetrieveTask_Shipment() {
+        var mockInput = CommonGetRequest.builder().id(11L).build();
+        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.Shipments).build();
+        when(iv1Service.retrieveTask(any())).thenReturn(V1RetrieveResponse.builder().build());
+        when(jsonHelper.convertValue(any(), eq(TaskResponse.class))).thenReturn(taskResponse);
         ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveTask(CommonRequestModel.buildRequest(mockInput));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
