@@ -67,6 +67,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -379,7 +380,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 .filter(code -> !code.trim().isEmpty()).flatMap(code -> addressList.stream()
                         .filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
                 .or(() -> addressList.stream()
-                        .filter(x -> x.getOrgId().equals(clientId) && x.getDefaultAddress()).findFirst()).orElse(null);
+                        .filter(x -> x.getOrgId().equals(clientId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst()).orElse(null);
 
         processExternalBillChargeRequest(entity, tenantModel, externalBillChargeRequests,
                 organizationList, addressList, clientId, clientAddressDetails);
@@ -512,12 +513,12 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
                     Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
                             .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && x.getDefaultAddress()).findFirst().orElse(null))
+                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst().orElse(null))
                     : null;
 
             EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
                     .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && x.getDefaultAddress())
+                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && Boolean.TRUE.equals(x.getDefaultAddress()))
                             .findFirst().orElse(null));
 
             if (creditorAddressDetails == null && clientAddressDetails != null) {
@@ -551,7 +552,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                             .rateSource("PROCURED")
                             .billChargeCostDetails(BillChargeCostDetailsRequest.builder()
                                     .creditorId(creditorId > 0 ? creditorId.toString() : "")
-                                    .creditorAddressId(creditorId > 0 ? creditorAddressDetails.toString() : "")
+                                    .creditorAddressId(creditorId > 0
+                                            ? Optional.ofNullable(creditorAddressDetails)
+                                            .map(Object::toString)
+                                            .orElse("") : StringUtils.EMPTY)
                                     .measurementBasis(measurementBasisRecord.revenueMeasurementBasisV2())
                                     .measurementBasisUnit(measurementBasisRecord.measurementBasisUnit())
                                     .measurementBasisQuantity(measurementBasisQuantity)
