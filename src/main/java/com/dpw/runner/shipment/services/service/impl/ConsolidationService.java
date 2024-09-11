@@ -898,7 +898,7 @@ public class ConsolidationService implements IConsolidationService {
                 shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
                 if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails1.getTransportMode()) && Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous()) &&
                         (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails1.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails1.getOceanDGStatus())))
-                    throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + "is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
+                    throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + " is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
             }
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
