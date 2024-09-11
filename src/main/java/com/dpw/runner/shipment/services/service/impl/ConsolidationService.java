@@ -1159,6 +1159,7 @@ public class ConsolidationService implements IConsolidationService {
             pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+            response.setPackSummary(packingService.calculatePackSummary(entity.getPackingList(), entity.getTransportMode(), entity.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
             return ResponseHelper.buildSuccessResponse(response);
 
         } catch (Exception e){
