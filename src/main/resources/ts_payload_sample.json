@@ -355,7 +355,7 @@
           "descriptionFromSource": "Gate Out",
           "status": "projected",
           "location": 2,
-          "locationRole": "originPort",
+          "locationRole": "destinationPort",
           "projectedEventTime": {
             "dateTime": "2024-10-18T05:31:00",
             "sources": [
@@ -406,7 +406,7 @@
         {
           "id": 8,
           "eventCategory": "departure",
-          "eventType": "gateInWithContainerEmpty_DUP",
+          "eventType": "gateInWithContainerEmpty",
           "description": "Full Container Gate Out",
           "descriptionFromSource": "Gate Out",
           "status": "projected",
