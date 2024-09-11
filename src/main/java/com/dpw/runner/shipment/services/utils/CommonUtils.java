@@ -1168,11 +1168,24 @@ public class CommonUtils {
             return true;
         if(!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
             return true;
-        if(!Objects.equals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
+        if(!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
             return true;
         if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
             return true;
         return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+    }
+
+    public boolean compareBigDecimals(BigDecimal bd1, BigDecimal bd2) {
+        // Check if both are null, they are considered equal
+        if (Objects.equals(bd1, bd2)) {
+            return true;
+        }
+        // If one is null and the other is not, they are not equal
+        if (bd1 == null || bd2 == null) {
+            return false;
+        }
+        // Use compareTo to ignore scale differences (0.00 vs 0.0)
+        return bd1.compareTo(bd2) == 0;
     }
 
     public boolean checkIfDGFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
@@ -1186,7 +1199,7 @@ public class CommonUtils {
             return true;
         if(!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
             return true;
-        if(!Objects.equals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
+        if(!compareBigDecimals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
             return true;
         if(!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
             return true;
