@@ -701,7 +701,7 @@ public class CommonUtils {
         populateDGReceiverDictionary(dictionary, shipmentDetails);
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-            template.getSubject(), new ArrayList<>(recipientEmails), null);
+            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
