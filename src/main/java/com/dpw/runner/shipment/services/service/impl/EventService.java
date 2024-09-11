@@ -62,6 +62,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -479,7 +480,8 @@ public class EventService implements IEventService {
                 .orElse(locationRoleIdentifier2);
     }
 
-    private String convertTrackingEventCodeToShortCode(String locationRole, String eventCode) {
+    @Override
+    public String convertTrackingEventCodeToShortCode(String locationRole, String eventCode) {
 
         if(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeString(eventCode))
                 && (safeString(locationRole).startsWith(EventConstants.ORIGIN))){
@@ -577,6 +579,7 @@ public class EventService implements IEventService {
 
     @NotNull
     private String createKeyCodeContainerNumberSource(String eventCode, String containerNumber, String source) {
+        containerNumber = StringUtils.defaultString(containerNumber, "");
         return eventCode + "-" + containerNumber + "-" + source;
     }
 

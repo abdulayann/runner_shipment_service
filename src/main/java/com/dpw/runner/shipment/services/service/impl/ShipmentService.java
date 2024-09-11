@@ -2279,8 +2279,8 @@ public class ShipmentService implements IShipmentService {
         }
         if (eventsRequestList != null) {
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
-            eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             updateActualFromTracking(eventsList, shipmentDetails);
+            eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
@@ -2381,38 +2381,54 @@ public class ShipmentService implements IShipmentService {
         return newUpdatedEvents;
     }
 
-    private Map<String, Events> createEventMap(List<Events> events) {
-        Map<String, Events> eventMap = new HashMap<>();
+    private void removeDuplicateTrackingEvents(List<Events> events) {
+        Set<String> uniqueKeys = new HashSet<>();
+        if (events == null) {
+            return;
+        }
+
+        events.removeIf(event -> {
+            String uniqueKey = getTrackingEventsUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource());
+            return !uniqueKeys.add(uniqueKey);
+        });
+    }
+
+    private String getTrackingEventsUniqueKey(String eventCode, String containerNumber, String source) {
+        containerNumber = StringUtils.defaultString(containerNumber, "");
+        return eventCode + "-" + containerNumber + "-" + source;
+    }
+
+    private Map<String, List<Events>> getTrackingEventMap(List<Events> events) {
+        Map<String, List<Events>> eventMap = new HashMap<>();
+
         for (Events event : events) {
-            String key = generateKey(event.getEventCode(), event.getSource());
-            eventMap.put(key, event);
+            String key = event.getEventCode();
+            if (eventMap.containsKey(key)) {
+                // Append the event to the existing list
+                eventMap.get(key).add(event);
+            } else {
+                // Create a new list and add the event
+                List<Events> eventList = new ArrayList<>();
+                eventList.add(event);
+                eventMap.put(key, eventList);
+            }
         }
         return eventMap;
     }
 
-    private String generateKey(String eventCode, String source) {
-        return eventCode + "|" + source;
-    }
-
     private void updateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events) {
-        Map<String, Events> eventMap = createEventMap(events);
-        List<String> eventSources = Arrays.asList(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER,
-                Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING,
-                Constants.MASTER_DATA_SOURCE_CARGOES_USER);
+        removeDuplicateTrackingEvents(events);
+        Map<String, List<Events>> dbeventMap = getTrackingEventMap(events);
 
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources){
-                    String key = generateKey(EventConstants.BOCO, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BOCO))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.BOCO);
+                    for (Events event : dbEvents) {
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getEstimated());
-                        eventExists = Boolean.TRUE;
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO,
                             LocalDateTime.now(), LocalDateTime.now()));
                 }
@@ -2420,112 +2436,92 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
-                    oldEntity.getAdditionalDetails().getCargoDeliveredDate())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CADE, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
-                        handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
-                                event.getEstimated());
-                        eventExists = Boolean.TRUE;
+                            oldEntity.getAdditionalDetails().getCargoDeliveredDate())) {
+
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CADE))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.CADE);
+                    for (Events event : dbEvents) {
+                        handleEventDateTimeUpdate(event,
+                                shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), event.getEstimated());
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
-                            LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), LocalDateTime.now()));
                 }
             }
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                             oldEntity.getAdditionalDetails().getPickupDate())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CACO, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
-                        handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getPickupDate(), event.getEstimated());
-                        eventExists = Boolean.TRUE;
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CACO))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.CACO);
+                    for (Events event : dbEvents) {
+                        handleEventDateTimeUpdate(event,
+                                shipmentDetails.getAdditionalDetails().getPickupDate(), event.getEstimated());
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                            shipmentDetails.getAdditionalDetails().getPickupDate(),
-                            LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getPickupDate(), LocalDateTime.now()));
                 }
             }
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
                             oldEntity.getAdditionalDetails().getCustomReleaseDate())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CURE, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
-                        handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), event.getEstimated());
-                        eventExists = Boolean.TRUE;
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CURE))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.CURE);
+                    for (Events event : dbEvents) {
+                        handleEventDateTimeUpdate(event,
+                                shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), event.getEstimated());
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                } else {
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                            LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), LocalDateTime.now()));
                 }
             }
+
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
                             oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.DOTP, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
+
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.DOTP))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.DOTP);
+                    for (Events event : dbEvents) {
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getEstimated());
-                        eventExists = Boolean.TRUE;
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now(),
-                            LocalDateTime.now()));
+                } else {
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP,
+                            LocalDateTime.now(), LocalDateTime.now()));
                 }
             }
+
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
                             oldEntity.getAdditionalDetails().getProofOfDeliveryDate())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.PRDE, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
-                        handleEventDateTimeUpdate(event, shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
-                                event.getEstimated());
-                        eventExists = Boolean.TRUE;
+                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.PRDE))) {
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.PRDE);
+                    for (Events event : dbEvents) {
+                        handleEventDateTimeUpdate(event,
+                                shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), event.getEstimated());
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE,
-                            shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
-                            LocalDateTime.now()));
+                } else {
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE,
+                        shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
                 }
             }
+
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
                             oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.SEPU, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
+
+                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.SEPU))){
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.SEPU);
+                    for(Events event: dbEvents){
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getEstimated());
-                        eventExists = Boolean.TRUE;
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now(),
-                            LocalDateTime.now()));
+                }else{
+                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU,
+                            LocalDateTime.now(), LocalDateTime.now()));
                 }
             }
         }
@@ -2534,48 +2530,37 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
                             oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CAFS, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
+                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAFS))){
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAFS);
+                    for(Events event: dbEvents){
                         handleEventDateTimeUpdate(event,
-                                shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
-                                event.getEstimated());
-                        eventExists = Boolean.TRUE;
+                                shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), event.getEstimated());
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                }else{
                     events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
-                            LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
                 }
             }
 
             if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate()) &&
                     shipmentDetails.getDateType()!=null) {
-                Boolean eventExists = Boolean.FALSE;
-                for(String source: eventSources) {
-                    String key = generateKey(EventConstants.CAAW, source);
-                    Events event = eventMap.get(key);
-                    if (event != null) {
+                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAAW))){
+                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAAW);
+                    for(Events event: dbEvents){
                         if(ACTUAL.equals(shipmentDetails.getDateType())) {
                             handleEventDateTimeUpdate(event, shipmentDetails.getShipmentGateInDate(), event.getEstimated());
-                        } else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
+                        }else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
                             handleEventDateTimeUpdate(event, event.getActual(), shipmentDetails.getShipmentGateInDate());
                         }
-                        eventExists = Boolean.TRUE;
                     }
-                }
-                if (Boolean.FALSE.equals(eventExists)) {
+                }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
                         events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW,
                                 shipmentDetails.getShipmentGateInDate(), LocalDateTime.now()));
                     } else if (shipmentDetails.getDateType() == ESTIMATED) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW,
-                                LocalDateTime.now(), shipmentDetails.getShipmentGateInDate()));
+                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
+                                shipmentDetails.getShipmentGateInDate()));
                     }
-                    eventExists = Boolean.TRUE;
                 }
             }
         }
@@ -2583,19 +2568,15 @@ public class ShipmentService implements IShipmentService {
         if (isFcl(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                         oldEntity.getAdditionalDetails().getEmptyContainerReturned())) {
-            Boolean eventExists = Boolean.FALSE;
-            for (String source : eventSources) {
-                String key = generateKey(EventConstants.EMCR, source);
-                Events event = eventMap.get(key);
-                if (event != null) {
+
+            if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.EMCR))){
+                List<Events> dbEvents = dbeventMap.get(EventConstants.EMCR);
+                for(Events event: dbEvents){
                     handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getEstimated());
-                    eventExists = Boolean.TRUE;
                 }
-            }
-            if (Boolean.FALSE.equals(eventExists)) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(),
-                        LocalDateTime.now()));
-                eventExists = Boolean.TRUE;
+            }else{
+                events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR,
+                        LocalDateTime.now(), LocalDateTime.now()));
             }
         }
     }
@@ -2707,14 +2688,19 @@ public class ShipmentService implements IShipmentService {
                 .filter(container -> container.getEvents() != null)
                 .flatMap(container -> container.getEvents().stream()
                         .map(event -> new AbstractMap.SimpleEntry<>(
-                                container.getContainerNumber() + "-" + event.getEventType(), // Key format: containerNumber-eventType
+                                getTrackingEventsUniqueKey(
+                                        eventService.convertTrackingEventCodeToShortCode(
+                                                event.getLocationRole(), event.getEventType()),
+                                        container.getContainerNumber(),
+                                        Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING), // Key format: containerNumber-eventType
                                 event)))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         shipmentEvents.forEach(shipmentEvent -> {
             if (Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
                 EventsResponse shipmentEventsResponse = jsonHelper.convertValue(shipmentEvent, EventsResponse.class);
-                String key = shipmentEventsResponse.getContainerNumber() + "-" + shipmentEventsResponse.getEventCode();
+                String key = getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
+                        shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getSource());
                 Event eventFromTracking = containerEventMapFromTracking.get(key);
 
                 if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
@@ -3702,8 +3688,8 @@ public class ShipmentService implements IShipmentService {
             }
             if (eventsRequestList != null) {
                 List<Events> eventsList = jsonHelper.convertValueToList(eventsRequestList, Events.class);
-                eventsList = createOrUpdateTrackingEvents(newShipmentDetails, oldEntity, eventsList, false);
                 updateActualFromTracking(eventsList, newShipmentDetails);
+                eventsList = createOrUpdateTrackingEvents(newShipmentDetails, oldEntity, eventsList, false);
                 if (eventsList != null) {
                     List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                     newShipmentDetails.setEventsList(updatedEvents);
