@@ -6294,8 +6294,9 @@ public class ShipmentService implements IShipmentService {
         if(taskCreateRequestList.isEmpty()) return;
 
         if(taskCreateRequestList.size() > 1){
-            throw new RunnerException("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
+            log.error("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
         }
+
         TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
         request.setTaskId(taskCreateRequest.getId());
         request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
