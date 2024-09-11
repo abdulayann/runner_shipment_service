@@ -6243,12 +6243,13 @@ public class ShipmentService implements IShipmentService {
         }
 
         if(StringUtils.isEmpty(request.getTaskId())){
-            closeDGUserTask(request);
+            fetchDgUserTask(request);
         }
 
         sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
         DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
 
+        closeOceanDgTask(request);
         try {
             auditLogService.addAuditLog(
                 AuditLogMetaData.builder()
@@ -6277,7 +6278,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private void closeDGUserTask(OceanDGRequest request) throws RunnerException {
+    private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
 
@@ -6301,9 +6302,12 @@ public class ShipmentService implements IShipmentService {
         request.setTaskId(taskCreateRequest.getId());
         request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
 
-        String remarks = request.getRemarks() == null ? "Task Rejected directly from shipment screen by DG user" :  request.getRemarks();
+    }
+
+    private void closeOceanDgTask(OceanDGRequest request){
+        String remarks = request.getRemarks() == null ? "Task Rejected by DG user" :  request.getRemarks();
         TaskStatusUpdateRequest taskUpdateRequest = TaskStatusUpdateRequest.builder()
-            .entityId(taskCreateRequest.getId())
+            .entityId(request.getTaskId())
             .entity(EntityDetails.builder()
                 .status(request.getStatus().getValue())
                 .rejectionRemarks(request.getStatus().getValue() == 2 ? remarks : null )
@@ -6311,13 +6315,12 @@ public class ShipmentService implements IShipmentService {
             .build();
 
 
-      try {
-          v1Service.updateTask(taskUpdateRequest);
-      }
-      catch (Exception ex) {
-        log.error("task updatation is failed for taskId: " + taskUpdateRequest.getEntityId());
-      }
-
+        try {
+            v1Service.updateTask(taskUpdateRequest);
+        }
+        catch (Exception ex) {
+            log.error("task updatation is failed for taskId from V1: " + taskUpdateRequest.getEntityId());
+        }
     }
 
     private CommonV1ListRequest createCriteriaTaskListRequest(Object value1, Object value2) {
