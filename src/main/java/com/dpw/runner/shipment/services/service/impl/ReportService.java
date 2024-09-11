@@ -818,7 +818,15 @@ public class ReportService implements IReportService {
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
-        int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
+        Integer noOfPacks = 0;
+        if(reportRequest.isFromConsolidation() && dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS) != null) {
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
+        } else if (dataRetrived.get(ReportConstants.TOTAL_PACKS) != null) {
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
+        }
+        if(noOfPacks == null || noOfPacks == 0) {
+            throw new ValidationException("no of pack is less than 1");
+        }
         for(int i = 1; i <=copies; i++) {
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
