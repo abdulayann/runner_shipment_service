@@ -43,24 +43,22 @@ public class TenantEntityListener {
 
     @PreUpdate
     public void preUpdate(Object object) throws AuthenticationException {
-        if(object instanceof MultiTenancy) {
-            Integer tenantId = ((MultiTenancy) object).getTenantId();
+        if(object instanceof MultiTenancy multiTenancy) {
+            Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId))
-                ((MultiTenancy) object).setTenantId(tenantId);
+                multiTenancy.setTenantId(tenantId);
             else if (!isValidTenantId(tenantId))
-                ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
+                multiTenancy.setTenantId(TenantContext.getCurrentTenant());
 
             if(!isValidTenantId(tenantId))
                 tenantId = TenantContext.getCurrentTenant();
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
-                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
-                    throw new AuthenticationException(AUTH_DENIED);
-                }
+            if (!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId) && ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
+                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId)))) {
+                throw new AuthenticationException(AUTH_DENIED);
             }
             else if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new AuthenticationException(AUTH_DENIED);
@@ -71,21 +69,19 @@ public class TenantEntityListener {
 
     @PreRemove
     public void preRemove(Object object) throws AuthenticationException {
-        if(object instanceof MultiTenancy) {
-            Integer tenantId = ((MultiTenancy) object).getTenantId();
+        if(object instanceof MultiTenancy multiTenancy) {
+            Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId))
-                ((MultiTenancy) object).setTenantId(tenantId);
+                multiTenancy.setTenantId(tenantId);
             else if (Objects.isNull(tenantId))
-                ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
+                multiTenancy.setTenantId(TenantContext.getCurrentTenant());
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            if(!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
-                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
-                    throw new AuthenticationException(AUTH_DENIED);
-                }
+            if (!Objects.isNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId) && ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
+                    || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId)))) {
+                throw new AuthenticationException(AUTH_DENIED);
             }
 
             else if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
