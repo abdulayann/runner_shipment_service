@@ -1292,6 +1292,7 @@ public class MasterDataUtils{
         }
     }
 
+    //TODO- Server to server api we need to remove this
     private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
             return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);

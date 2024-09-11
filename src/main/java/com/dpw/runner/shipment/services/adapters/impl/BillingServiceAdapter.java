@@ -285,6 +285,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return modelMapper.map(billingListResponse.getData(), listType);
     }
 
+    /*
+    Please don't use this api going it retrieve shipment data internally
+     */
     @Override
     public BillBaseResponse fetchBill(BillRetrieveRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getGetBillByEntity();

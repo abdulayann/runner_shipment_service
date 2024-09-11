@@ -1466,6 +1466,9 @@ public abstract class IReport {
     public List<BillChargesResponse> getBillChargesData(BillingResponse billingResponse) {
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
 
+            if(StringUtility.isEmpty(billingResponse.getBillId())) {
+                return null;
+            }
             List<String> billIds = List.of(billingResponse.getBillId());
 
             BillChargesFilterRequest request = new BillChargesFilterRequest();
