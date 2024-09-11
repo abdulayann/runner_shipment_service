@@ -17,7 +17,7 @@ import java.util.Objects;
 @Generated
 public class TenantEntityListener {
 
-    public final static String AUTH_DENIED = "Authorization has been denied for this request, tenantId mismatch";
+    public static final String AUTH_DENIED = "Authorization has been denied for this request, tenantId mismatch";
 
     @PrePersist
     public void prePersist(Object object) {
@@ -26,11 +26,11 @@ public class TenantEntityListener {
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
 
-            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && isValidTenantId(tenantId))
                 multiTenancy.setTenantId(tenantId);
             else if (!Objects.isNull(interBranchData)
                     && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
-                    && !Objects.isNull(tenantId))
+                    && isValidTenantId(tenantId))
                 multiTenancy.setTenantId(tenantId);
             else
                 multiTenancy.setTenantId(TenantContext.getCurrentTenant());
@@ -47,12 +47,12 @@ public class TenantEntityListener {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && !Objects.isNull(tenantId))
+            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
-            else if (Objects.isNull(tenantId))
+            else if (!isValidTenantId(tenantId))
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
 
-            if(tenantId == null)
+            if(!isValidTenantId(tenantId))
                 tenantId = TenantContext.getCurrentTenant();
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
@@ -75,7 +75,7 @@ public class TenantEntityListener {
             Integer tenantId = ((MultiTenancy) object).getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.isNull(tenantId))
+            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId))
                 ((MultiTenancy) object).setTenantId(tenantId);
             else if (Objects.isNull(tenantId))
                 ((MultiTenancy) object).setTenantId(TenantContext.getCurrentTenant());
@@ -91,6 +91,10 @@ public class TenantEntityListener {
             else if(! permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId))
                 throw new EntityNotFoundException();
         }
+    }
+
+    private boolean isValidTenantId(Integer tenantId) {
+        return (!Objects.isNull(tenantId) && tenantId > 0);
     }
 }
 
