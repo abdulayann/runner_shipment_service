@@ -4363,6 +4363,117 @@ import static org.mockito.Mockito.*;
         verify(consolidationSync).sync(any(), any(), anyBoolean());
     }
 
+    @Test
+    void testDGShipment() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        assertThrows(ValidationException.class, () -> {
+            consolidationService.getDGShipment(requestModel);
+        });
+    }
+
+    @Test
+    void testDGShipment2() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        assertThrows(ValidationException.class, () -> {
+            consolidationService.getDGShipment(requestModel);
+        });
+    }
+
+    @Test
+    void testDGShipment3() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        ConsolidationDetails consolDetails = new ConsolidationDetails();
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolDetails));
+        var httpResponse = consolidationService.getDGShipment(requestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testDGShipment4() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        ConsolidationDetails consolDetails = new ConsolidationDetails();
+        consolDetails.setShipmentsList(new ArrayList<>());
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolDetails));
+        var httpResponse = consolidationService.getDGShipment(requestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testDGShipment5() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        ConsolidationDetails consolDetails = new ConsolidationDetails();
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setContainsHazardous(false);
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setContainsHazardous(true);
+        consolDetails.setShipmentsList(Arrays.asList(shipment1, shipment2));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolDetails));
+        var httpResponse = consolidationService.getDGShipment(requestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testCheckContainerEditingRequiredForOceanDg() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testCheckContainerEditingRequiredForOceanDg2() throws RunnerException {
+        var response = consolidationService.checkContainerEditingRequiredForOceanDg(CommonRequestModel.builder().build());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testCheckContainerEditingRequiredForOceanDg3() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testCheckContainerEditingRequiredForOceanDg4() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testCheckContainerEditingRequiredForOceanDg5() throws RunnerException {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
+        ConsolidationDetails console = new ConsolidationDetails();
+        Containers container = new Containers();
+        container.setId(1L);
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setContainsHazardous(true);
+        shipment2.setOceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED);
+        ShipmentDetails shipment3 = new ShipmentDetails();
+        shipment3.setContainsHazardous(true);
+        shipment3.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED);
+        ShipmentDetails shipment4 = new ShipmentDetails();
+        shipment4.setContainsHazardous(true);
+        shipment4.setOceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED);
+        container2.setShipmentsList(Arrays.asList(shipment1, shipment2, shipment3, shipment4));
+        console.setContainersList(Arrays.asList(container, container2));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(console));
+        var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
     private Runnable mockRunnable() {
         return null;
     }
