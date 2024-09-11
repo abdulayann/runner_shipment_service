@@ -4216,9 +4216,11 @@ public class ConsolidationService implements IConsolidationService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Request is null");
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Id is null");
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
@@ -4227,16 +4229,22 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
             Map<Long, Boolean> containerIdDgAllowedMap = new HashMap<>();
-            for(Containers containers: consolidationDetails.get().getContainersList()) {
-                boolean allowEdit = true;
-                for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
-                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) &&
-                            (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus()))) {
-                        allowEdit = false;
-                        break;
+            if(consolidationDetails.get().getContainersList() != null)
+            {
+                for(Containers containers: consolidationDetails.get().getContainersList()) {
+                    boolean allowEdit = true;
+                    if(containers.getShipmentsList() != null)
+                    {
+                        for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
+                            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) &&
+                                    (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus()))) {
+                                allowEdit = false;
+                                break;
+                            }
+                        }
                     }
+                    containerIdDgAllowedMap.put(containers.getId(), allowEdit);
                 }
-                containerIdDgAllowedMap.put(containers.getId(), allowEdit);
             }
             return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {
