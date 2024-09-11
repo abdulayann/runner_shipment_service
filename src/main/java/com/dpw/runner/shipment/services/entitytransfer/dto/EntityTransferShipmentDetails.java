@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.io.Serializable;
@@ -55,7 +57,9 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadyDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
@@ -81,8 +85,10 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     @JsonProperty("isShipmentReadOnly")
     private boolean isShipmentReadOnly;
     private String shipmentCompletedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime financeClosedOn;
     private EntityTransferParties client;
     private EntityTransferParties consigner;
@@ -102,6 +108,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String goodsValueCurrency;
     private BigDecimal insuranceValue;
     private String insuranceValueCurrency;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<EntityTransferParties> shipmentAddresses;
@@ -143,12 +150,12 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String destinationContractId;
     private String destinationContractType;
     private DateBehaviorType dateType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;
 
     private String sourceBranchTenantName;
-    private String department;
 
     private transient Map<String, Object> masterData;
     private Integer sendToBranch;
