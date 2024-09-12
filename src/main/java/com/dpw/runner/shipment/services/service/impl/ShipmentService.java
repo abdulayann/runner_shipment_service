@@ -170,7 +170,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
@@ -281,7 +285,7 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2687,14 +2691,19 @@ public class ShipmentService implements IShipmentService {
         Map<String, Event> containerEventMapFromTracking = trackingServiceApiResponse.getContainers().stream()
                 .filter(container -> container.getEvents() != null)
                 .flatMap(container -> container.getEvents().stream()
-                        .map(event -> new AbstractMap.SimpleEntry<>(
+                        .map(event -> new SimpleEntry<>(
                                 getTrackingEventsUniqueKey(
                                         eventService.convertTrackingEventCodeToShortCode(
                                                 event.getLocationRole(), event.getEventType()),
                                         container.getContainerNumber(),
-                                        Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING), // Key format: containerNumber-eventType
+                                        Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING),
                                 event)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        // Merge function to keep the event with the highest Id
+                        (existing, newEvent) -> existing.getId() > newEvent.getId() ? existing : newEvent
+                ));
 
         shipmentEvents.forEach(shipmentEvent -> {
             if (Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
