@@ -294,6 +294,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     private void interBranchValidation(ConsolidationDetails consol, SendConsolidationRequest sendConsolidationRequest) {
         if(Boolean.TRUE.equals(consol.getInterBranchConsole())) {
+            var shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
             commonUtils.setInterBranchContextForHub();
             Set<Integer> uniqueTenants = new HashSet<>(sendConsolidationRequest.getSendToBranch());
             var tenantSettingsMap = v1ServiceUtil.getTenantSettingsMap(uniqueTenants.stream().toList());
@@ -306,8 +307,8 @@ public class EntityTransferService implements IEntityTransferService {
                 if (Objects.isNull(tenantSettings)) {
                     errorTenants.add(consoleReceivingBranch);
                 }
-                else {
-                    for (var set : sendConsolidationRequest.getShipmentGuidSendToBranch().entrySet()) {
+                else if (shipmentGuidSendToBranch != null) {
+                    for (var set : shipmentGuidSendToBranch.entrySet()) {
                         var list = set.getValue();
 
                         if (!Objects.equals(consoleReceivingBranch, list.get(i)) &&

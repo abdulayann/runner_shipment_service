@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -43,6 +44,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -114,6 +117,15 @@ class CargoManifestReportTest extends CommonMocks {
 
     @Mock
     private V1TenantSettingsResponse v1TenantSettingsResponse;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private CustomKeyGenerator keyGenerator;
 
     @BeforeAll
     static void init() throws IOException {
@@ -449,6 +461,8 @@ class CargoManifestReportTest extends CommonMocks {
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
         assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
     }
 

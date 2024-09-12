@@ -490,7 +490,6 @@ class ArrivalNoticeReportTest extends CommonMocks {
         entityTransferMasterLists.setValuenDesc("Test");
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
-        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
 
@@ -533,7 +532,6 @@ class ArrivalNoticeReportTest extends CommonMocks {
         entityTransferMasterLists.setValuenDesc("Test");
         dataMap.put(MasterDataType.COUNTRIES.getDescription(), new EntityTransferMasterLists());
         dataMap.put(DG_CLASS_VALUE + '#' + MasterDataType.masterData(MasterDataType.DG_CLASS.getId()).name(), new EntityTransferMasterLists());
-        when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(dataMap);
         when(cache.get(any())).thenReturn(valueWrapper);
         when(valueWrapper.get()).thenReturn(entityTransferMasterLists);
 
