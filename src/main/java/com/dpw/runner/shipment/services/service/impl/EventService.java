@@ -456,7 +456,13 @@ public class EventService implements IEventService {
             }
         }
 
-        return ResponseHelper.buildSuccessResponse(res);
+        // Bring all Events saved from DB
+        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
+        Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
+        List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+        List<EventsResponse> allEventResponses = jsonHelper.convertValueToList(allEvents, EventsResponse.class);
+
+        return ResponseHelper.buildSuccessResponse(allEventResponses);
     }
 
     @NotNull
