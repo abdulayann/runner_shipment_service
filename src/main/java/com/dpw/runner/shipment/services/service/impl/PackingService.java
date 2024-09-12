@@ -1154,7 +1154,7 @@ public class PackingService implements IPackingService {
     public void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest) {
         try {
             Optional<ConsolidationDetails> optional = consolidationDao.findById(calculatePackUtilizationRequest.getConsolidationId());
-            if(optional.isPresent()) {
+            if(optional.isPresent() && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(optional.get().getTransportMode())) {
                 var consol = optional.get();
                 calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
                 commonUtils.updateConsolOpenForAttachment(consol);

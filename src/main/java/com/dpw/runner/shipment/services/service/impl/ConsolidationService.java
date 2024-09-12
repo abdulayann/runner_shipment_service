@@ -766,8 +766,9 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
             List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+            int existingShipments = consolidationDetails.getShipmentsList() != null ? consolidationDetails.getShipmentsList().size() : 0;
             if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && consolidationDetails.getShipmentsList().size() + shipmentIds.size() > 1) {
+            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&  existingShipments + shipmentIds.size() > 1) {
                 throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
             }
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
