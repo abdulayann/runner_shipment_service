@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -21,9 +23,13 @@ public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private String pod;
     @JsonProperty("domestic")
     private boolean isDomestic;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eta;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime etd;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime ata;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime atd;
     private Boolean isLinked;
     private String voyage;

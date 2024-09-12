@@ -893,7 +893,13 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(removedShipmentIds));
-            Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream().collect(Collectors.toMap(e -> e.getId(), r -> r));
+            Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+            for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
+                shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+                if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails1.getTransportMode()) && Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous()) &&
+                        (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails1.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails1.getOceanDGStatus())))
+                    throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + " is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
+            }
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
@@ -1159,6 +1165,7 @@ public class ConsolidationService implements IConsolidationService {
             pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+            response.setPackSummary(packingService.calculatePackSummary(entity.getPackingList(), entity.getTransportMode(), entity.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
             return ResponseHelper.buildSuccessResponse(response);
 
         } catch (Exception e){

@@ -108,6 +108,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -7259,9 +7260,13 @@ ShipmentServiceTest extends CommonMocks {
                 .remarks("Non_DG_USER")
                 .build();
 
+            Packing packing = new Packing();
+            packing.setHazardous(true);
+            packing.setDGClass("1.2");
             ShipmentDetails shipmentDetails = ShipmentDetails
                 .builder()
                 .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .packingList(List.of(packing))
                 .build();
 
             when(shipmentDao.findById(request.getShipmentId())).thenReturn(
@@ -7281,7 +7286,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
 
-            assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+            assertThrows(RunnerException.class,() ->shipmentService.sendOceanDGApprovalEmail(request));
         }
     }
 
@@ -7299,6 +7304,7 @@ ShipmentServiceTest extends CommonMocks {
             ShipmentDetails shipmentDetails = ShipmentDetails
                 .builder()
                 .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .containersList(List.of(Containers.builder().hazardous(true).dgClass("1.2").build()))
                 .build();
 
             when(shipmentDao.findById(request.getShipmentId())).thenReturn(
@@ -7318,7 +7324,7 @@ ShipmentServiceTest extends CommonMocks {
             when(commonUtils.getUserEmailsByRoleId(roleId)).thenReturn(users);
             when(commonUtils.createTask(shipmentDetails, roleId)).thenReturn(taskCreateResponse);
 
-            assertThrows(RunnerException.class, () -> shipmentService.sendOceanDGApprovalEmail(request));
+            assertThrows(RunnerException.class,()-> shipmentService.sendOceanDGApprovalEmail(request));
             verify(shipmentDao).findById(any());
         }
     }
@@ -7351,7 +7357,7 @@ ShipmentServiceTest extends CommonMocks {
             userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
             userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(true);
 
-            shipmentService.sendOceanDGApprovalEmail(request);
+           shipmentService.sendOceanDGApprovalEmail(request);
             verify(shipmentDao).findById(any());
         }
     }
@@ -7688,4 +7694,45 @@ ShipmentServiceTest extends CommonMocks {
         verify(shipmentDao, times(1)).save(any(), anyBoolean());
     }
 
+    @Test
+    void testIsOceanDG() throws RunnerException {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            .containersList(List.of(Containers.builder().build()))
+            .packingList(List.of(new Packing()))
+            .build();
+
+        OceanDGApprovalRequest request = OceanDGApprovalRequest
+            .builder()
+            .shipmentId(1l)
+            .remarks("Non_DG_USER")
+            .build();
+
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+            Optional.ofNullable(shipmentDetails));
+
+        shipmentService.sendOceanDGApprovalEmail(request);
+        verify(shipmentDao).findById(any());
+    }
+
+
+    @Test
+    void testIsOceanDG_False() throws RunnerException {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            .containersList(List.of(Containers.builder().hazardous(true).dgClass("2.3").build()))
+            .packingList(List.of(new Packing()))
+            .oceanDGStatus(OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED)
+            .build();
+
+        OceanDGApprovalRequest request = OceanDGApprovalRequest
+            .builder()
+            .shipmentId(1l)
+            .remarks("Non_DG_USER")
+            .build();
+
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+            Optional.ofNullable(shipmentDetails));
+
+        shipmentService.sendOceanDGApprovalEmail(request);
+        verify(shipmentDao).findById(any());
+    }
 }

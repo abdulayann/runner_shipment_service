@@ -19,6 +19,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstan
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
@@ -169,11 +170,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
@@ -338,6 +335,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
+
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @SuppressWarnings("ALL")
 @Service
@@ -1260,12 +1260,12 @@ public class ShipmentService implements IShipmentService {
                                                 Map<Long, Packing> oldPacksMap, ShipmentDetails oldEntity, Set<Long> newPackAttachedInConts) throws RunnerException {
         boolean dgClass1Exists = false;
         Packing oldPacking = null;
+        if(oldPacksMap.containsKey(pack.getId()))
+            oldPacking = oldPacksMap.get(pack.getId());
         if(Boolean.TRUE.equals(pack.getHazardous())) {
             dgConts.add(pack.getContainerId());
             if(commonUtils.checkIfAnyDGClass(pack.getDGClass()))
                 dgApprovalReqd.set(true);
-            if(oldPacksMap.containsKey(pack.getId()))
-                oldPacking = oldPacksMap.get(pack.getId());
             callChangeShipmentDGStatusFromPack(shipmentDetails, oldEntity, pack, oldPacksMap, oldPacking);
             if(commonUtils.checkIfDGClass1(pack.getDGClass())) {
                 dgClass1Exists = true;
@@ -1806,7 +1806,8 @@ public class ShipmentService implements IShipmentService {
             tempConsolIds = Objects.isNull(oldEntity) ? new ArrayList<>() : oldEntity.getConsolidationList().stream().map(e -> e.getId()).toList();
         }
 
-        airDGValidations(shipmentDetails, oldEntity, removedConsolIds, isNewConsolAttached, consolidationDetailsRequests);
+        if(Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()))
+            airDGValidations(shipmentDetails, oldEntity, removedConsolIds, isNewConsolAttached, consolidationDetailsRequests);
 
         List<PackingRequest> packingRequest = shipmentRequest.getPackingList();
         List<ContainerRequest> containerRequest = shipmentRequest.getContainersList();
@@ -6184,12 +6185,26 @@ public class ShipmentService implements IShipmentService {
 
         boolean isOceanDgUser = UserContext.isOceanDgUser();
         OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
-        if (!isOceanDgUser || dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) {
-            sendEmailForApproval(shipmentDetails, remarks);
-        }
-
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
+
+        boolean isShipmentdg = isOceanDG(shipmentDetails);
+        String warning = null;
+        if(!isShipmentdg){
+            warning = "Shipment does not have any DG container or package";
+            updatedDgStatus = null;
+            operationType = DG_REQUEST;
+        }
+
+        if(dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED && !checkForClass1(shipmentDetails) && warning == null){
+            warning = "Shipment does not have any class1 DG container or package";
+            updatedDgStatus = OCEAN_DG_ACCEPTED;
+            operationType = COMMERCIAL_REQUEST;
+        }
+
+        if ((!isOceanDgUser || dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) && warning == null) {
+            sendEmailForApproval(shipmentDetails, remarks);
+        }
 
         try {
             auditLogService.addAuditLog(
@@ -6212,7 +6227,7 @@ public class ShipmentService implements IShipmentService {
         shipmentDetails.setOceanDGStatus(updatedDgStatus);
         shipmentDao.save(shipmentDetails, false);
 
-        return ResponseHelper.buildSuccessResponse();
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     @Override
@@ -6230,14 +6245,14 @@ public class ShipmentService implements IShipmentService {
        OceanDGStatus updatedDgStatus = getDgStatusAfterApprovalResponse(oldDgStatus, request.getStatus());
 
         if(updatedDgStatus == null){
-            throw new RunnerException( String.format("Ocean DG status value %s is invalid", oldDgStatus));
+            throw new RunnerException(String.format("Ocean DG status value %s is invalid", oldDgStatus));
         }
 
         if(StringUtils.isEmpty(request.getTaskId())){
             fetchDgUserTask(request);
         }
 
-        sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
+        String warning = sendEmailResponseToDGRequester(request, shipmentDetails, updatedDgStatus);
         DBOperationType operationType = determineOperationTypeAfterApproval(oldDgStatus, request);
 
         closeOceanDgTask(request);
@@ -6254,7 +6269,6 @@ public class ShipmentService implements IShipmentService {
                 .entityType(OceanDGRequestLog.class.getSimpleName())
                 .operation(operationType.name()).build()
             );
-
         } catch (Exception ex){
             log.error("Audit failed for shipmentId: {} and operation: {}. Error: {}", shipmentDetails.getId(), operationType, ex.getMessage(), ex);
         }
@@ -6266,7 +6280,7 @@ public class ShipmentService implements IShipmentService {
 
         shipmentDao.save(shipmentDetails, false);
 
-        return ResponseHelper.buildSuccessResponse();
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
@@ -6376,8 +6390,29 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private void sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
+    private boolean isOceanDG(ShipmentDetails shipmentDetails) {
+        if (shipmentDetails == null) return false;
 
+        boolean containerHasDGClass = shipmentDetails.getContainersList() != null &&
+            shipmentDetails.getContainersList().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(container -> container.getDgClass() != null);
+
+
+        boolean packingHasDGClass = shipmentDetails.getPackingList() != null &&
+            shipmentDetails.getPackingList().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(packing -> packing.getDGClass() != null);
+
+
+        return containerHasDGClass || packingHasDGClass;
+    }
+
+
+
+    private String sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
+
+        String warningMessage = null;
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new EnumMap<>(OceanDGStatus.class);
         CompletableFuture<Void> emailTemplateFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplates)),
@@ -6386,12 +6421,18 @@ public class ShipmentService implements IShipmentService {
         emailTemplateFuture.join();
 
         try {
-            EmailTemplatesRequest template = Optional.ofNullable(emailTemplates.get(newStatus))
-                .orElseThrow(() -> new RunnerException("No template is present for status: " + newStatus));
+            EmailTemplatesRequest template = emailTemplates.get(newStatus);
+            if(template == null){
+                warningMessage = "No template is present for status: " + newStatus;
+                return warningMessage;
+            }
+
             commonUtils.sendEmailResponseToDGRequester(template, request, shipmentDetails);
         } catch (Exception e) {
-            log.error(ERROR_WHILE_SENDING_EMAIL, e);
+            log.error(ERROR_WHILE_SENDING_EMAIL, e.getMessage());
+            warningMessage = ERROR_WHILE_SENDING_EMAIL + e.getMessage();
         }
+        return warningMessage;
     }
 
     private void sendEmailForApproval(ShipmentDetails shipmentDetails, String remarks)
