@@ -1302,7 +1302,7 @@ public class ContainerService implements IContainerService {
             if(response.getSummary() == null)
                 response.setSummary("");
             try {
-                response.setSummary(calculateContainerSummary(containersList));
+                response.setSummary(calculateContainerSummary(jsonHelper.convertValueToList(containersList, Containers.class)));
             }
             catch (Exception e) {
                 log.error("Error calculating summary");
@@ -1345,7 +1345,7 @@ public class ContainerService implements IContainerService {
                         for (j = i + 1; j < response.size(); j++) {
                             Containers nextContainer = response.get(j);
                             if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
-                                if (!nextContainer.getIsPart()) {
+                                if (nextContainer.getIsPart() ==null || !nextContainer.getIsPart()) {
                                     containerCount = containerCount + nextContainer.getContainerCount();
                                 }
                             } else {
@@ -1365,13 +1365,13 @@ public class ContainerService implements IContainerService {
 
                 for (int i = 0; i < response.size(); i++) {
                     Containers container = response.get(i);
-                    if (container.getIsPart()) {
+                    if (container.getIsPart() !=null && container.getIsPart()) {
                         Long containerCount = container.getContainerCount();
                         int j;
                         for (j = i + 1; j < response.size(); j++) {
                             Containers nextContainer = response.get(j);
                             if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
-                                if (nextContainer.getIsPart()) {
+                                if (nextContainer.getIsPart() !=null && nextContainer.getIsPart()) {
                                     containerCount = containerCount + nextContainer.getContainerCount();
                                 }
                             } else {
