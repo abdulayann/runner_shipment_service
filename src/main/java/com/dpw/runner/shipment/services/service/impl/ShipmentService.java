@@ -2396,19 +2396,21 @@ public class ShipmentService implements IShipmentService {
         return eventCode + "-" + containerNumber + "-" + source;
     }
 
-    private Map<String, List<Events>> getTrackingEventMap(List<Events> events) {
+    private Map<String, List<Events>> getCargoesRunnerTrackingEventMap(List<Events> events) {
         Map<String, List<Events>> eventMap = new HashMap<>();
 
         for (Events event : events) {
             String key = event.getEventCode();
-            if (eventMap.containsKey(key)) {
-                // Append the event to the existing list
-                eventMap.get(key).add(event);
-            } else {
-                // Create a new list and add the event
-                List<Events> eventList = new ArrayList<>();
-                eventList.add(event);
-                eventMap.put(key, eventList);
+            if(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equalsIgnoreCase(event.getSource())){
+                if (eventMap.containsKey(key)) {
+                    // Append the event to the existing list
+                    eventMap.get(key).add(event);
+                } else {
+                    // Create a new list and add the event
+                    List<Events> eventList = new ArrayList<>();
+                    eventList.add(event);
+                    eventMap.put(key, eventList);
+                }
             }
         }
         return eventMap;
@@ -2416,7 +2418,7 @@ public class ShipmentService implements IShipmentService {
 
     private void updateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events) {
         removeDuplicateTrackingEvents(events);
-        Map<String, List<Events>> dbeventMap = getTrackingEventMap(events);
+        Map<String, List<Events>> dbeventMap = getCargoesRunnerTrackingEventMap(events);
 
         if (isLclOrFclOrAir(shipmentDetails)) {
 
