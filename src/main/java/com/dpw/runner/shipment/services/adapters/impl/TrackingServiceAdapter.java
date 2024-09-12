@@ -480,6 +480,57 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
+    // WILL REMOVE AFTER EVENTS TESTING
+    // IGNORE THE COMMENTED SECTION
+
+//    @Override
+//    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
+//        // Toggle this flag to switch between remote call and reading from file
+//        boolean useLocalJson = true; // Set this to true to use JSON file A
+//
+//        if (useLocalJson) {
+//            return fetchFromJsonFile("src/main/resources/ts_payload_sample.json");
+//        }
+//
+//        // Existing code for remote call
+//        var headers = new HttpHeaders();
+//        headers.add(ApiConstants.X_API_KEY, trackingServiceApiKey);
+//        headers.setContentType(MediaType.APPLICATION_JSON);
+//        var httpEntity = new HttpEntity<>(List.of(
+//                TrackingServiceApiRequest.builder()
+//                        .shipmentReference(request.getReferenceNumber())
+//                        .build()), headers);
+//
+//        try {
+//            log.info("Entered tracking call");
+//            var response = restTemplate.postForEntity(
+//                    trackingServiceNewFlowEndpoint,
+//                    httpEntity,
+//                    TrackingServiceApiResponse.class);
+//            var responseBody = response.getBody();
+//            log.info("Received response from tracking {}", responseBody);
+//            return responseBody;
+//        } catch (Exception e) {
+//            log.error("Error while calling tracking endpoint ", e);
+//            throw new RunnerException(e.getMessage());
+//        }
+//    }
+//
+//    // Method to read the JSON file and convert it into TrackingServiceApiResponse
+//    private TrackingServiceApiResponse fetchFromJsonFile(String filePath) throws RunnerException {
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//            objectMapper.registerModule(new JavaTimeModule());
+//            // Assuming the JSON file is on the classpath, adjust if needed
+//
+//            return objectMapper.readValue(new File(filePath), TrackingServiceApiResponse.class);
+//        } catch (IOException e) {
+//            log.error("Error reading JSON file", e);
+//            throw new RunnerException("Error reading JSON file: " + e.getMessage());
+//        }
+//    }
+
     @Override
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {

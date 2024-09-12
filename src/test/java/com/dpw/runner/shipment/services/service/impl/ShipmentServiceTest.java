@@ -7055,77 +7055,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void completeUpdateTestAdditionalDetailsNotNull() throws RunnerException {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        EventsRequest eventsRequest = new EventsRequest();
-        eventsRequest.setEventCode(EventConstants.CURE);
-        eventsRequest.setActual(LocalDateTime.now());
-        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
-        shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
-
-        Events event  = Events.builder().build().setEventCode(EventConstants.CURE).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-
-        ShipmentDetails oldshipmentDetails = ShipmentDetails.builder()
-                .shipmentId("AIR-CAN-00001")
-                .shipmentCreatedOn(LocalDateTime.now())
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
-                .containersList(Arrays.asList(Containers.builder().build()))
-                .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false,false))
-                .eventsList(Collections.singletonList(event))
-                .transportMode(Constants.TRANSPORT_MODE_SEA)
-                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
-                .dateType(DateBehaviorType.ESTIMATED)
-                .bookingNumber("1234-5678")
-                .shipmentGateInDate(LocalDateTime.now())
-                .build();
-        LocalDateTime mockDateTimeNew = LocalDateTime.now().plusDays(2);
-        AdditionalDetails additionalDetailsNew = getmockAdditionalDetails(mockDateTimeNew, true, true, true);
-
-        ShipmentDetails newShipmentDetails = ShipmentDetails.builder()
-                .shipmentId("AIR-CAN-00001")
-                .shipmentCreatedOn(LocalDateTime.now())
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
-                .containersList(Arrays.asList(Containers.builder().build()))
-                .additionalDetails(additionalDetailsNew)
-                .eventsList(Collections.singletonList(event))
-                .transportMode(Constants.TRANSPORT_MODE_SEA)
-                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
-                .dateType(DateBehaviorType.ESTIMATED)
-                .bookingNumber("5678-1234")
-                .shipmentGateInDate(LocalDateTime.now().plusDays(1))
-                .build();
-
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldshipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(AdditionalDetails.class))).thenReturn(additionalDetailsNew);
-        when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetailsNew);
-
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(newShipmentDetails));
-        doNothing().when(shipmentDetailsMapper).update(any(), any());
-        when(shipmentDao.update(any(), eq(false))).thenReturn(newShipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(event);
-        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(Arrays.asList(event));
-        mockTenantSettings();
-        List<Events> eventsList = Arrays.asList(
-                Events.builder().build().setEventCode(EventConstants.CURE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.CACO).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.CADE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.DOTP).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.PRDE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.SEPU).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER),
-                Events.builder().build().setEventCode(EventConstants.CAFS).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER)
-        );
-        when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(eventsList);
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
-        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
-        assertEquals(false, oldshipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
-        assertEquals(true, newShipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
-
-    }
-
-    @Test
-    void partialUpdateTestEmcrFCLEvent() throws RunnerException {
+    void partialTrackEventCreateEventsTest() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setEventCode(EventConstants.EMCR);
@@ -7206,7 +7136,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setBookingNumber("BookingNUmber");
-        shipmentDetails.setDateType(DateBehaviorType.ACTUAL);
+        shipmentDetails.setDateType(DateBehaviorType.ESTIMATED);
 
         AdditionalDetails additionalDetails = getmockAdditionalDetails(LocalDateTime.now(), true, true, true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
@@ -7229,6 +7159,75 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void partialTrackEventUpdateEventsTest() throws RunnerException {
+        List<Events> eventsList = Arrays.asList(
+                Events.builder().build().setEventCode(EventConstants.CURE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.CACO).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.CADE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.DOTP).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.PRDE).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.SEPU).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.CAFS).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.BOCO).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.CAFS).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now()),
+                Events.builder().build().setEventCode(EventConstants.CAAW).setEntityType("SHIPMENT").setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).setActual(LocalDateTime.now()).setEstimated(LocalDateTime.now())
+        );
+        for (Events event : eventsList) {
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+            EventsRequest eventsRequest = EventsRequest.builder().build();
+            ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
+            shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
+            CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+            ShipmentDetails oldshipmentDetails = ShipmentDetails.builder()
+                    .shipmentId("AIR-CAN-00001")
+                    .shipmentCreatedOn(LocalDateTime.now())
+                    .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                    .containersList(Arrays.asList(Containers.builder().build()))
+                    .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false, false))
+                    .eventsList(Collections.singletonList(event))
+                    .transportMode(Constants.TRANSPORT_MODE_SEA)
+                    .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                    .bookingNumber("1234-5678")
+                    .shipmentGateInDate(LocalDateTime.now())
+                    .dateType(DateBehaviorType.ACTUAL)
+                    .build();
+            LocalDateTime mockDateTimeNew = LocalDateTime.now().plusDays(2);
+            AdditionalDetails additionalDetailsNew = getmockAdditionalDetails(mockDateTimeNew, true, true, true);
+
+            ShipmentDetails newShipmentDetails = ShipmentDetails.builder()
+                    .shipmentId("AIR-CAN-00001")
+                    .shipmentCreatedOn(LocalDateTime.now())
+                    .consolidationList(Arrays.asList(ConsolidationDetails.builder().build()))
+                    .containersList(Arrays.asList(Containers.builder().build()))
+                    .additionalDetails(additionalDetailsNew)
+                    .eventsList(Collections.singletonList(event))
+                    .transportMode(Constants.TRANSPORT_MODE_SEA)
+                    .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                    .bookingNumber("5678-1234")
+                    .shipmentGateInDate(LocalDateTime.now().plusDays(1))
+                    .dateType(DateBehaviorType.ACTUAL)
+                    .build();
+
+            when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldshipmentDetails);
+            when(jsonHelper.convertValue(any(), eq(AdditionalDetails.class))).thenReturn(additionalDetailsNew);
+            when(additionalDetailDao.updateEntityFromShipment(any())).thenReturn(additionalDetailsNew);
+
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(newShipmentDetails));
+            doNothing().when(shipmentDetailsMapper).update(any(), any());
+            when(shipmentDao.update(any(), eq(false))).thenReturn(newShipmentDetails);
+            when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(event);
+            when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(Arrays.asList(event));
+            mockTenantSettings();
+            when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(eventsList);
+            ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
+            assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+            assertEquals(false, oldshipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
+            assertEquals(true, newShipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer());
+        }
     }
 
     @Test
