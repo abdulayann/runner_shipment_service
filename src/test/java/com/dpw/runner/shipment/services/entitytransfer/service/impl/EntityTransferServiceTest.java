@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -1509,7 +1510,8 @@ class EntityTransferServiceTest {
 
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
-        mockV1Map.put(123, new Object());
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
@@ -1532,8 +1534,11 @@ class EntityTransferServiceTest {
 
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
-        mockV1Map.put(123, new Object());
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
 
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(shipmentDetails.getShipmentId()).thenReturn("1");
         when(shipmentDetails.getHouseBill()).thenReturn("hbn");
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
