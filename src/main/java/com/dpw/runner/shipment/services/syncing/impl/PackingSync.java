@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -41,6 +42,8 @@ public class PackingSync implements IPackingSync {
     @Override
     @Async("asyncExecutor")
     public void sync(List<Packing> packings, Long consolidationId, Long shipmentId) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return;
         List<PackingRequestV2> requestV2List = null;
         List<Containers> containersList = new ArrayList<>();
         if(shipmentId != null) {
