@@ -1804,7 +1804,7 @@ class CommonUtilsTest {
     void testChangeShipmentDGStatusToReqd1() {
         UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
         boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(), true);
-        assertFalse(response);
+        assertTrue(response);
     }
 
     @Test
