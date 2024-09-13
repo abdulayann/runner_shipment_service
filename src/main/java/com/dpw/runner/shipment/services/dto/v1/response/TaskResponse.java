@@ -56,6 +56,9 @@ public class TaskResponse implements IRunnerResponse {
     @JsonProperty("UserName")
     private String userName;
 
+    @JsonProperty("UserEmail")
+    private String userEmail;
+
     @JsonProperty("SendMail")
     private Boolean sendEmail;
 
