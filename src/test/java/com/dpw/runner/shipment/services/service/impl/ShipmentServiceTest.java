@@ -7635,7 +7635,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testMakeShipmentsDG() throws RunnerException {
-        shipmentService.makeShipmentsDG(null, ShipmentDetails.builder().containsHazardous(true).build());
+        shipmentService.makeShipmentsDG(new HashMap<>(), ShipmentDetails.builder().containsHazardous(true).build());
         verify(shipmentDao, times(0)).save(any(), anyBoolean());
     }
 
