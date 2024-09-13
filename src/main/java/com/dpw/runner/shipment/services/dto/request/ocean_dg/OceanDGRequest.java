@@ -16,5 +16,5 @@ public class OceanDGRequest implements IRunnerRequest {
   private TaskStatus status;
   private String remarks;
   private String taskId;
-  private String requesterUserEmailId;
+  private String userEmail;
 }
