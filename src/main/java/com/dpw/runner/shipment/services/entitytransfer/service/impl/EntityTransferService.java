@@ -280,8 +280,13 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> tenantName = getTenantName(successTenantIds);
         String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
+            // Set TenantId Context for inter branch shipment for Event creation
+            if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
+                TenantContext.setCurrentTenant(shipment.getTenantId());
             this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
             createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
+            TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
+
             if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
@@ -1462,6 +1467,7 @@ public class EntityTransferService implements IEntityTransferService {
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
         for (var keySet : shipmentGuidSendToBranch.entrySet())
             shipDestinationBranchIds.addAll(keySet.getValue());
+        shipDestinationBranchIds.add(TenantContext.getCurrentTenant());
         var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(shipDestinationBranchIds));
 
         for (int i = 0; i < destinationBranches.size(); i++) {
@@ -1491,16 +1497,17 @@ public class EntityTransferService implements IEntityTransferService {
     public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
         UsersDto user = UserContext.getUser();
 
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
         subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
-        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(user.getTenantDisplayName()));
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
         body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
         body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
@@ -1531,21 +1538,21 @@ public class EntityTransferService implements IEntityTransferService {
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
-        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
+        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
         subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
-        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
-        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
-        body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? StringUtility.convertToString(consolidationDetails.getBol()) : StringUtility.convertToString(consolidationDetails.getMawb()));
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
-        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, shipmentNumbers);
+        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
+        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, StringUtility.convertToString(shipmentNumbers));
 
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
 
