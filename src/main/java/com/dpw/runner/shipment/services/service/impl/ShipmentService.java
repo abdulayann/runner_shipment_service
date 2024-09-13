@@ -6157,7 +6157,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequest request){
-        DBOperationType operationType = null;
+        DBOperationType operationType = DG_REQUEST;
         if(dgStatus == OCEAN_DG_REQUESTED){
             if(request.getStatus() == TaskStatus.APPROVED){
                 operationType = DG_APPROVE;
@@ -6175,10 +6175,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private OceanDGStatus determineDgStatusAfterApproval(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
-        if (dgStatus == OCEAN_DG_APPROVAL_REQUIRED && isOceanDgUser) {
+        if ((dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_REJECTED) && isOceanDgUser) {
             return checkForClass1(shipmentDetails) ? OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OCEAN_DG_ACCEPTED;
         } else {
-            return (dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED) ? OCEAN_DG_COMMERCIAL_REQUESTED : OCEAN_DG_REQUESTED;
+            return ((dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_COMMERCIAL_REJECTED)) ? OCEAN_DG_COMMERCIAL_REQUESTED : OCEAN_DG_REQUESTED;
         }
     }
 
