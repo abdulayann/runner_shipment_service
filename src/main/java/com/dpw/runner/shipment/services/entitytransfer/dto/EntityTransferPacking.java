@@ -79,6 +79,12 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoGateInDate;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
 
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;
