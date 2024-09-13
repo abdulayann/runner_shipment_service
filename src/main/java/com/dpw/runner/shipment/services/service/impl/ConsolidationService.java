@@ -2058,10 +2058,7 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             shipmentDetails.forEach(e -> {
                 e.setContainsHazardous(true);
-                commonUtils.changeShipmentDGStatusToReqd(e);
-                if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(e.getOceanDGStatus())) {
-                    e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-                }
+                commonUtils.changeShipmentDGStatusToReqd(e, commonUtils.checkIfDGClass1(container.getDgClass()));
             });
             shipmentDetails = shipmentDao.saveAll(shipmentDetails);
             for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
@@ -3335,11 +3332,7 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDetails1.setContainsHazardous(true);
         }
         if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
-            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
-        if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
-            shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-            valueChanged = true;
-        }
+            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1, commonUtils.checkIfDGClass1(container.getDgClass()));
         if(valueChanged)
             dgStatusChangeInShipments.put(shipmentDetails1.getId(), shipmentDetails1);
     }
@@ -3349,7 +3342,7 @@ public class ConsolidationService implements IConsolidationService {
         Containers oldContainer = null;
         if(container.getId() != null && oldContainersMap.containsKey(container.getId())) {
             oldContainer = oldContainersMap.get(container.getId());
-            if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
+            if(commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
                     && !listIsNullOrEmpty(oldContainer.getShipmentsList())) {
                 for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
                     changeDgShipmentMapValues(shipmentDetails, dgStatusChangeInShipments, container);
