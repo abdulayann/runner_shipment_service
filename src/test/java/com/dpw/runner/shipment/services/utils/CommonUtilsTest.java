@@ -2208,11 +2208,11 @@ class CommonUtilsTest {
             .subject("subject")
             .build();
         emailTemplates.put(OCEAN_DG_REQUESTED, emailTemplatesRequest);
-        OceanDGRequest request = OceanDGRequest.builder().requesterUserEmailId("ac").build();
+        OceanDGRequest request = OceanDGRequest.builder().userEmail("ac").build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
         commonUtils.sendEmailResponseToDGRequester(emailTemplatesRequest,request, shipmentDetails);
-        assertEquals("ac", request.getRequesterUserEmailId());
+        assertEquals("ac", request.getUserEmail());
     }
 
     @Test

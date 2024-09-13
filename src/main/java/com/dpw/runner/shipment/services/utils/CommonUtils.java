@@ -696,7 +696,7 @@ public class CommonUtils {
 
 
         Map<String, Object> dictionary = new HashMap<>();
-        List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
+        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
 
         populateDGReceiverDictionary(dictionary, shipmentDetails);
 

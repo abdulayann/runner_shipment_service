@@ -6087,7 +6087,7 @@ public class ShipmentService implements IShipmentService {
 
         TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
         request.setTaskId(taskCreateRequest.getId());
-        request.setRequesterUserEmailId(taskCreateRequest.getUserEmail());
+        request.setUserEmail(taskCreateRequest.getUserEmail());
 
     }
 
