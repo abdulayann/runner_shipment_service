@@ -766,8 +766,9 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
             List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+            int existingShipments = consolidationDetails.getShipmentsList() != null ? consolidationDetails.getShipmentsList().size() : 0;
             if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && consolidationDetails.getShipmentsList().size() + shipmentIds.size() > 1) {
+            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&  existingShipments + shipmentIds.size() > 1) {
                 throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
             }
             if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
@@ -893,7 +894,13 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(removedShipmentIds));
-            Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream().collect(Collectors.toMap(e -> e.getId(), r -> r));
+            Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+            for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
+                shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+                if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails1.getTransportMode()) && Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous()) &&
+                        (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails1.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails1.getOceanDGStatus())))
+                    throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + " is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
+            }
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
@@ -1159,6 +1166,7 @@ public class ConsolidationService implements IConsolidationService {
             pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+            response.setPackSummary(packingService.calculatePackSummary(entity.getPackingList(), entity.getTransportMode(), entity.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
             return ResponseHelper.buildSuccessResponse(response);
 
         } catch (Exception e){
@@ -4216,9 +4224,11 @@ public class ConsolidationService implements IConsolidationService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Request is null");
             }
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Id is null");
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
@@ -4227,16 +4237,22 @@ public class ConsolidationService implements IConsolidationService {
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
             Map<Long, Boolean> containerIdDgAllowedMap = new HashMap<>();
-            for(Containers containers: consolidationDetails.get().getContainersList()) {
-                boolean allowEdit = true;
-                for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
-                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) &&
-                            (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus()))) {
-                        allowEdit = false;
-                        break;
+            if(consolidationDetails.get().getContainersList() != null)
+            {
+                for(Containers containers: consolidationDetails.get().getContainersList()) {
+                    boolean allowEdit = true;
+                    if(containers.getShipmentsList() != null)
+                    {
+                        for(ShipmentDetails shipmentDetails: containers.getShipmentsList()) {
+                            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) &&
+                                    (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails.getOceanDGStatus()))) {
+                                allowEdit = false;
+                                break;
+                            }
+                        }
                     }
+                    containerIdDgAllowedMap.put(containers.getId(), allowEdit);
                 }
-                containerIdDgAllowedMap.put(containers.getId(), allowEdit);
             }
             return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {

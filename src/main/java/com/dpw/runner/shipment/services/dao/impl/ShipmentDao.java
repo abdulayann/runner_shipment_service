@@ -370,11 +370,9 @@ public class ShipmentDao implements IShipmentDao {
 
         // Shipment must be attached to consolidation with same master bill
         if (!IsStringNullOrEmpty(request.getMasterBill())) {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("bol", request.getMasterBill(), "=");
-            Pair<Specification<ConsolidationDetails>, Pageable> consolidationPage = fetchData(listCommonRequest, ConsolidationDetails.class);
-            Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(consolidationPage.getLeft(), consolidationPage.getRight());
-            if (!consolidationDetailsPage.isEmpty()) {
-                ConsolidationDetails console = consolidationDetailsPage.get().toList().get(0);
+            var consoleList = consolidationDetailsDao.findByBol(request.getMasterBill());
+            if (!consoleList.isEmpty()) {
+                ConsolidationDetails console = consoleList.get(0);
 
                 if ((request.getConsolidationList() != null && !request.getConsolidationList().stream().map(ConsolidationDetails::getId).toList().contains(console.getId())) ||
                         (request.getConsolidationList() == null &&

@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganiz
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -67,6 +68,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
@@ -114,6 +116,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
     private static final String RESPONSE_CONTAINS_ERROR = "Response contains errors: ";
     private static final String BILLING_SUMMARY = "billingSummary";
+    public static final String LOG_TIME_CONSUMED = "Request ID: {} | BILLING_API_CALL | API {} | Time taken: {} ms";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -140,9 +143,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         invoiceSummaryRequest.setModuleGuid(request.getGuid());
 
         String url = billingBaseUrl + getInvoiceData;
-
+        double start = System.currentTimeMillis();
         HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
         var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
+        log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
         BillingSummary billingSummary = new BillingSummary();
         if (Objects.nonNull(response)) {
             billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
@@ -170,7 +174,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         // Create an HttpEntity object with the payload and authentication headers
         HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, V1AuthHelper.getHeaders());
         log.debug(REQUEST_PAYLOAD, externalBillPayloadRequest);
-
+        double start = System.currentTimeMillis();
         try {
             // Send a POST request to the specified URL with the HttpEntity and expect a BillingEntityResponse
             log.info(EXECUTING_POST_REQUEST);
@@ -180,6 +184,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             // Log the response status and body
             log.info("Received response with status: {}", responseEntity.getStatusCode());
             log.debug("Response body: {}", billingEntityResponse);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
 
             // Check if the response is not null and contains errors
             if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
@@ -209,10 +214,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
-
+        double start = System.currentTimeMillis();
         try {
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
 
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
 
@@ -237,20 +243,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 return Collections.emptyList();
             }
         } catch (Exception e) {
-            log.error("Error occurred while fetching billing summary", e);
-            throw new BillingException("Error occurred while fetching billing summary", e);
+            throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
         }
     }
 
     private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
-
+        double start = System.currentTimeMillis();
         try {
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<R> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
             R response = responseEntity.getBody();
-
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
             log.info("Received response with status: {}", responseEntity.getStatusCode());
             log.debug("Response body: {}", response);
 
@@ -285,6 +290,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return modelMapper.map(billingListResponse.getData(), listType);
     }
 
+    /*
+    Please don't use this api going it retrieve shipment data internally
+     */
     @Override
     public BillBaseResponse fetchBill(BillRetrieveRequest request) {
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getGetBillByEntity();
@@ -380,7 +388,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 .filter(code -> !code.trim().isEmpty()).flatMap(code -> addressList.stream()
                         .filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
                 .or(() -> addressList.stream()
-                        .filter(x -> x.getOrgId().equals(clientId) && x.getDefaultAddress()).findFirst()).orElse(null);
+                        .filter(x -> x.getOrgId().equals(clientId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst()).orElse(null);
 
         processExternalBillChargeRequest(entity, tenantModel, externalBillChargeRequests,
                 organizationList, addressList, clientId, clientAddressDetails);
@@ -513,12 +521,12 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
                     Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
                             .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && x.getDefaultAddress()).findFirst().orElse(null))
+                            .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst().orElse(null))
                     : null;
 
             EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
                     .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
-                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && x.getDefaultAddress())
+                    .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && Boolean.TRUE.equals(x.getDefaultAddress()))
                             .findFirst().orElse(null));
 
             if (creditorAddressDetails == null && clientAddressDetails != null) {
@@ -552,7 +560,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                             .rateSource("PROCURED")
                             .billChargeCostDetails(BillChargeCostDetailsRequest.builder()
                                     .creditorId(creditorId > 0 ? creditorId.toString() : "")
-                                    .creditorAddressId(creditorId > 0 ? creditorAddressDetails.toString() : "")
+                                    .creditorAddressId(creditorId > 0
+                                            ? Optional.ofNullable(creditorAddressDetails)
+                                            .map(Object::toString)
+                                            .orElse("") : StringUtils.EMPTY)
                                     .measurementBasis(measurementBasisRecord.revenueMeasurementBasisV2())
                                     .measurementBasisUnit(measurementBasisRecord.measurementBasisUnit())
                                     .measurementBasisQuantity(measurementBasisQuantity)

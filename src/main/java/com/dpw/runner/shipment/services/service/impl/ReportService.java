@@ -103,6 +103,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -167,6 +168,7 @@ public class ReportService implements IReportService {
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
     @Override
+    @Transactional
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
@@ -818,12 +820,24 @@ public class ReportService implements IReportService {
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
-        int noOfPacks = reportRequest.isFromConsolidation() ? (int) dataRetrived.getOrDefault(ReportConstants.TOTAL_CONSOL_PACKS, 0) : (Integer) dataRetrived.getOrDefault(ReportConstants.TOTAL_PACKS, 0);
+        Integer noOfPacks = 0;
+        if(reportRequest.isFromConsolidation() && dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS) != null) {
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
+        } else if (dataRetrived.get(ReportConstants.TOTAL_PACKS) != null) {
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
+        }
+        if(noOfPacks == null || noOfPacks == 0) {
+            throw new ValidationException("no of pack is less than 1");
+        }
         for(int i = 1; i <=copies; i++) {
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
-                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null)
+                String packsOfTotal = packs + "/" + noOfPacks;
+                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
                     dataRetrived.put(ReportConstants.COUNT, packsCount);
+                    dataRetrived.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
+                    dataRetrived.put(ReportConstants.PACK_NUMBER, packs);
+                }
                 else dataRetrived.put(ReportConstants.COUNT, null);
                 byte[] mainDocPage = GetFromDocumentService(dataRetrived, pages.getMainPageId());
                 if (mainDocPage == null)

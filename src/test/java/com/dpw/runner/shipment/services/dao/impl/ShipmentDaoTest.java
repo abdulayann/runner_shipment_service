@@ -244,8 +244,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
@@ -285,8 +284,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
@@ -332,8 +330,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
@@ -379,8 +376,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
@@ -478,8 +474,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
             shipmentDao.update(shipmentDetails, false);
@@ -594,8 +589,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).build();
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
@@ -647,8 +641,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -722,8 +715,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -800,8 +792,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -851,8 +842,7 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -1072,11 +1062,10 @@ class ShipmentDaoTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails2);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
         when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
         when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
 
-        when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));

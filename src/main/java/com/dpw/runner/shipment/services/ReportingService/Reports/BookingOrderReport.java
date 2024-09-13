@@ -75,6 +75,24 @@ public class BookingOrderReport extends IReport {
         String containerSummary = StringUtility.convertToString(dictionary.get(ReportConstants.CONTAINER_SUMMARY));
         dictionary.put(ReportConstants.CONTAINER_SUMMARY, getStringBetweenParenthesis(containerSummary));
 
+        if(!Objects.isNull(bookingOrderModel.getShipmentModel().getPackingList()) && !bookingOrderModel.getShipmentModel().getPackingList().isEmpty()) {
+            getPackingDetails(bookingOrderModel.getShipmentModel(), dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = bookingOrderModel.getShipmentModel().getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = bookingOrderModel.getShipmentModel().getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            if (hazardousCheck)
+                dictionary.put(HAS_DANGEROUS_GOODS, true);
+            else
+                dictionary.put(HAS_DANGEROUS_GOODS, false);
+            if (temperatureCheck)
+                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
+            else
+                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
+
         return dictionary;
     }
 

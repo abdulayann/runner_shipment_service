@@ -39,7 +39,12 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.util.Pair;
+import java.io.File;
+import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,7 +58,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -480,6 +484,57 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
+    // WILL REMOVE AFTER EVENTS TESTING
+    // IGNORE THE COMMENTED SECTION
+
+//    @Override
+//    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
+//        // Toggle this flag to switch between remote call and reading from file
+//        boolean useLocalJson = true; // Set this to true to use JSON file A
+//
+//        if (useLocalJson) {
+//            return fetchFromJsonFile("src/main/resources/ts_payload_sample.json");
+//        }
+//
+//        // Existing code for remote call
+//        var headers = new HttpHeaders();
+//        headers.add(ApiConstants.X_API_KEY, trackingServiceApiKey);
+//        headers.setContentType(MediaType.APPLICATION_JSON);
+//        var httpEntity = new HttpEntity<>(List.of(
+//                TrackingServiceApiRequest.builder()
+//                        .shipmentReference(request.getReferenceNumber())
+//                        .build()), headers);
+//
+//        try {
+//            log.info("Entered tracking call");
+//            var response = restTemplate.postForEntity(
+//                    trackingServiceNewFlowEndpoint,
+//                    httpEntity,
+//                    TrackingServiceApiResponse.class);
+//            var responseBody = response.getBody();
+//            log.info("Received response from tracking {}", responseBody);
+//            return responseBody;
+//        } catch (Exception e) {
+//            log.error("Error while calling tracking endpoint ", e);
+//            throw new RunnerException(e.getMessage());
+//        }
+//    }
+//
+//    // Method to read the JSON file and convert it into TrackingServiceApiResponse
+//    private TrackingServiceApiResponse fetchFromJsonFile(String filePath) throws RunnerException {
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//            objectMapper.registerModule(new JavaTimeModule());
+//            // Assuming the JSON file is on the classpath, adjust if needed
+//
+//            return objectMapper.readValue(new File(filePath), TrackingServiceApiResponse.class);
+//        } catch (IOException e) {
+//            log.error("Error reading JSON file", e);
+//            throw new RunnerException("Error reading JSON file: " + e.getMessage());
+//        }
+//    }
+
     @Override
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {
@@ -489,47 +544,43 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             ForkJoinPool customThreadPool = new ForkJoinPool(4);
 
             try {
-                if(res.getContainers() != null && !res.getContainers().isEmpty()) {
+                if (res.getContainers() != null && !res.getContainers().isEmpty()) {
                     customThreadPool.submit(() ->
-                        res.getContainers().parallelStream().forEach(container -> {
-                            if (container == null || container.getEvents() == null || container.getPlaces() == null) return;
+                            res.getContainers().parallelStream().forEach(container -> {
+                                if (container == null || container.getEvents() == null || container.getPlaces() == null) {
+                                    return;
+                                }
 
-                            List<Events> rows = container.getEvents().stream()
-                                .filter(Objects::nonNull)
-                                .flatMap(event -> container.getPlaces().stream()
-                                    .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
-                                    .flatMap(place -> {
-                                        List<TrackingServiceApiResponse.Source> sources = new ArrayList<>();
-                                        sources.addAll(Optional.ofNullable(event.getActualEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
-                                        sources.addAll(Optional.ofNullable(event.getProjectedEventTime()).map(i -> getDefaultListValue(i.getSources())).orElse(Collections.emptyList()));
-                                        if (sources == null) return Stream.empty();
-                                        return sources.stream()
-                                            .filter(Objects::nonNull)
-                                            .map(src -> Events.builder()
-                                                .latitude(place.getLatitude())
-                                                .longitude(place.getLongitude())
-                                                .placeDescription(place.getFormattedDescription())
-                                                .placeName(place.getName())
-                                                .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
-                                                .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
-                                                .source(src.getSource())
-                                                .eventCode(event.getEventType())
-                                                .description(event.getDescriptionFromSource())
-                                                .containerNumber(container.getContainerNumber())
-                                                .locationRole(event.getLocationRole())
-                                                .build()
-                                            );
-                                    })
-                                ).toList();
+                                // Mapping container events to Events list without processing sources
+                                List<Events> rows = container.getEvents().stream()
+                                        .filter(Objects::nonNull)
+                                        .flatMap(event -> container.getPlaces().stream()
+                                                .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
+                                                .map(place -> Events.builder()
+                                                        .latitude(place.getLatitude())
+                                                        .longitude(place.getLongitude())
+                                                        .placeDescription(place.getFormattedDescription())
+                                                        .placeName(place.getName())
+                                                        .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
+                                                        .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
+                                                        .eventCode(event.getEventType())
+                                                        .description(event.getDescriptionFromSource())
+                                                        .containerNumber(container.getContainerNumber())
+                                                        .locationRole(event.getLocationRole()).build()
+                                                )
+                                        ).toList();
 
-                            eventsRows.addAll(rows);
-                        })
+                                eventsRows.addAll(rows);
+                            })
                     ).join();
-                    // set ata and atd date
+
+                    // Set ATA and ATD date based on container journey details
                     var container = res.getContainers().get(0);
-                    if(container.getJourney() != null) {
-                        trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta()).map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
-                        trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfArrivalAta()).map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                    if (container.getJourney() != null) {
+                        trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
+                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                        trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
+                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
                     }
                 }
             } finally {

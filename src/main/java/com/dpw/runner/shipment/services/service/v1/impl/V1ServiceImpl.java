@@ -2285,7 +2285,7 @@ public class V1ServiceImpl implements IV1Service {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             } else {
-                throw new V1ServiceException(var6.getMessage());
+                throw new V1ServiceException(jsonHelper.readFromJson(var6.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
             }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
