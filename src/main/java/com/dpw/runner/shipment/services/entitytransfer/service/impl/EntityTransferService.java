@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -52,6 +53,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -71,6 +74,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 
 
@@ -120,9 +124,11 @@ public class EntityTransferService implements IEntityTransferService {
     private INotificationService notificationService;
     private ExecutorService executorService;
     private DocumentManagerRestClient documentManagerRestClient;
+    private ConsolidationSync consolidationSync;
+    private ShipmentSync shipmentSync;
 
     @Autowired
-    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao) {
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -148,6 +154,8 @@ public class EntityTransferService implements IEntityTransferService {
         this.executorService = executorService;
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.documentManagerRestClient = documentManagerRestClient;
+        this.consolidationSync = consolidationSync;
+        this.shipmentSync = shipmentSync;
     }
 
     @Transactional
@@ -411,6 +419,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) throws RunnerException {
+        SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
         Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
         Map<UUID, UUID> oldPackVsOldContGuidMap = entityTransferConsolidationDetails.getPackingVsContainerGuid();
@@ -480,6 +489,9 @@ public class EntityTransferService implements IEntityTransferService {
 
             // Call document service api for copy docs
             this.sendCopyDocumentRequest(copyDocumentsRequest);
+
+            // Syncing Imported Shipment & Console to V1
+            this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
         }
 
         // Send consolidated shipments email
@@ -1716,6 +1728,27 @@ public class EntityTransferService implements IEntityTransferService {
             response.put(entry.getKey(), modelMapper.map(entry.getValue(), TenantModel.class));
 
         return response;
+    }
+
+    private void syncToV1(Long id, List<Long> shipmentIds) {
+        try {
+            SyncingContext.setContext(Boolean.TRUE);
+            var consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
+            consolidationDetailsDao.entityDetach(Arrays.asList(consolidation));
+            consolidationSync.sync(consolidation, StringUtility.convertToString(consolidation.getGuid()), false);
+
+            if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+                var shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                shipmentDao.entityDetach(shipments);
+
+                for (var shipment : shipments)
+                    shipmentSync.sync(shipment, null, null, StringUtility.convertToString(shipment.getGuid()), false);
+
+            }
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
+        }
+
     }
 
 }

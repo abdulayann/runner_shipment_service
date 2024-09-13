@@ -62,6 +62,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+
 @Repository
 @Slf4j
 public class ConsolidationDao implements IConsolidationDetailsDao {
@@ -95,6 +97,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private CommonUtils commonUtils;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private EntityManager entityManager;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -592,5 +596,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public List<ConsolidationDetails> findBySourceGuid(UUID guid) {
         return consolidationRepository.findBySourceGuid(guid);
+    }
+
+    @Override
+    @Transactional
+    public void entityDetach(List<ConsolidationDetails> consolidationDetails) {
+        for(ConsolidationDetails consolidationDetail : consolidationDetails) {
+            entityManager.detach(consolidationDetail);
+        }
     }
 }

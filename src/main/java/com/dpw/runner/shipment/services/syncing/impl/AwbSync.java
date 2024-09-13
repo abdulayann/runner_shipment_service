@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -82,6 +83,9 @@ public class AwbSync implements IAwbSync {
 
     @Override
     public ResponseEntity<?> sync(Awb awb, SaveStatus saveStatus) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         boolean isMawb = awb.getAwbShipmentInfo().getEntityType().equalsIgnoreCase("mawb");
         AwbRequestV2 awbRequest = generateAwbSyncRequest(awb);
         awbRequest.setSaveStatus(saveStatus);

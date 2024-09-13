@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -33,6 +34,8 @@ public class EventsSync implements IEventsSync {
 
     @Override
     public ResponseEntity<?> sync(List<Events> eventsList) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
         List<EventsRequestV2> eventsRequestV2List;
         if(eventsList != null && eventsList.size() > 0) {
             eventsRequestV2List = syncEntityConversionService.eventsV2ToV1(eventsList);

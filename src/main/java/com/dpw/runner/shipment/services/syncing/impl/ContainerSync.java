@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -35,6 +36,8 @@ public class ContainerSync implements IContainerSync {
     @Override
     @Async("asyncExecutor")
     public void sync(List<Containers> containers, Long consolidationId, Long shipmentId) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return;
         List<ContainerRequestV2> requestV2List = syncEntityConversionService.containersV2ToV1(containers);
         BulkContainerRequestV2 containerRequestV2 = BulkContainerRequestV2.builder()
                 .bulkContainers(requestV2List).ConsolidationId(consolidationId).ShipmentId(shipmentId).build();
