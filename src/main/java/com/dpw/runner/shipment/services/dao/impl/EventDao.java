@@ -372,12 +372,7 @@ public class EventDao implements IEventDao {
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
                 log.error(e.getMessage());
             }
-            eventsRow = eventRepository.save(eventsRow);
-            try {
-                eventsSync.sync(List.of(eventsRow));
-            } catch (Exception e) {
-                log.error("Error performing sync on event entity, {}", e);
-            }
+            eventRepository.save(eventsRow);
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }
