@@ -3,15 +3,15 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException;
@@ -35,4 +35,6 @@ public interface IShipmentDao {
     void entityDetach(List<ShipmentDetails> shipmentDetails);
     List<ShipmentDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+
+    List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
 }

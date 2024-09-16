@@ -116,6 +116,16 @@ class ShipmentControllerTest {
     }
 
     @Test
+    void hblCheck() {
+        // Mock
+        when(shipmentService.hblCheck(anyString())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.hblCheck("DBA-12-111");
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void createTest2() {
         // Mock
         when(shipmentService.create(any())).thenThrow(new RuntimeException());

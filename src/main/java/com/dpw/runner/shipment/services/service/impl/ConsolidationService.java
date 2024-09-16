@@ -4415,7 +4415,7 @@ public class ConsolidationService implements IConsolidationService {
         if (ObjectUtils.isNotEmpty(consolidationDetails)) {
             String message = "The MBL provided already exists for " +
                     consolidationDetails.stream()
-                            .map(cd -> "Consolidation No. " + cd.getConsolidationNumber() + " in branch " + cd.getTenantId())
+                            .map(cd -> "Consolidation No. " + cd.getConsolidationNumber() + " in branch " + getTenantId(cd))
                             .collect(Collectors.joining(", ")) +
                     ". Request to either consolidation transfer or attachment to the existing consolidation";
 
@@ -4423,6 +4423,15 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         return ResponseHelper.buildSuccessResponse(MblCheckResponse.builder().build());
+    }
+
+    private String getTenantId(ConsolidationDetailsProjection sd) {
+        Integer tenantId = sd.getTenantId();
+        try {
+            return v1Service.getTenantName(List.of(tenantId)).stream().findFirst().orElse(tenantId.toString());
+        } catch (Exception e) {
+            return tenantId.toString();
+        }
     }
 
     private void calculateContainersAndTeu(MeasurementBasisResponse response, List<Containers> containersList) {
