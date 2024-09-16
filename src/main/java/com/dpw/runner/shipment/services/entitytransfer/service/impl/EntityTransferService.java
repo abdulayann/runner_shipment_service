@@ -507,8 +507,7 @@ public class EntityTransferService implements IEntityTransferService {
         // Send consolidated shipments email
         if(!shipmentGuids.isEmpty()) {
             try {
-                var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())));
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentGuids, entityTransferConsolidationDetails.getSourceBranchTenantName())));
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
@@ -1588,11 +1587,12 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    public void sendGroupedEmailForShipmentImport(List<ShipmentDetails> shipmentDetailsList, String consoleSourceBranchTenantName) {
+    public void sendGroupedEmailForShipmentImport(List<UUID> shipmentGuids, String consoleSourceBranchTenantName) {
         commonUtils.setInterBranchContextForHub();
         Set<Integer> tenantIds = new HashSet<>();
         Set<Integer> sourceTenantIds = new HashSet<>();
         Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
+        var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
 
         for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
             tenantShipmentMapping.computeIfAbsent(shipmentDetails.getTenantId(), shipmentDetail -> new ArrayList<>()).add(shipmentDetails);
