@@ -18,6 +18,7 @@ public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment);
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
+    ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
