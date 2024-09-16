@@ -4469,6 +4469,9 @@ public class ShipmentService implements IShipmentService {
                 .customerCategory(CustomerCategoryRates.CATEGORY_5)
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolRef(consolidation.getConsolidationNumber())
+                .receivingBranch(consolidation.getReceivingBranch())
+                .documentationPartner(consolidation.getDocumentationPartner())
+                .triangulationPartner(consolidation.getTriangulationPartner())
                 .build();
 
         if (consolidation.getConsolidationAddresses() != null) {
