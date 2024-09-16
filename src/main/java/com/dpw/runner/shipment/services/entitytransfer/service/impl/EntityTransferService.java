@@ -497,7 +497,7 @@ public class EntityTransferService implements IEntityTransferService {
         // Send consolidated shipments email
         if(!shipmentGuids.isEmpty()) {
             try {
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids)));
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentGuids, entityTransferConsolidationDetails.getSourceBranchTenantName())));
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
@@ -1567,8 +1567,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    public void sendGroupedEmailForShipmentImport(ConsolidationDetailsResponse consolidationDetailsResponse, List<UUID> shipmentGuids) {
-        ConsolidationDetails consolidationDetails = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
+    public void sendGroupedEmailForShipmentImport(List<UUID> shipmentGuids, String consoleSourceBranchTenantName) {
         commonUtils.setInterBranchContextForHub();
         Set<Integer> tenantIds = new HashSet<>();
         Set<Integer> sourceTenantIds = new HashSet<>();
@@ -1601,7 +1600,7 @@ public class EntityTransferService implements IEntityTransferService {
             List<String> ccEmailIdsList = new ArrayList<>(ccEmailIds);
 
             if (!importerEmailIds.isEmpty()) {
-                var template = createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails, tenantMap);
+                var template = createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, tenantMap, consoleSourceBranchTenantName);
                 sendEmailNotification(template, importerEmailIds, ccEmailIdsList);
             }
 
@@ -1609,7 +1608,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
-    public EmailTemplatesRequest createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails, Map<Integer, V1TenantResponse> tenantMap) {
+    public EmailTemplatesRequest createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, Map<Integer, V1TenantResponse> tenantMap, String consoleSourceBranchTenantName) {
         var emailTemplate = EmailTemplatesRequest.builder().build();
         // Body
         String body = (template.getBody() == null) ?
@@ -1617,9 +1616,9 @@ public class EntityTransferService implements IEntityTransferService {
 
         Map<String, Object> tagDetails = new HashMap<>();
 
-        emailTemplate.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));
+        emailTemplate.setSubject(generateSubject(shipmentDetailsForTenant, consoleSourceBranchTenantName));
 
-        populateTagDetails(tagDetails, consolidationDetails.getConsolidationNumber());
+        populateTagDetails(tagDetails, consoleSourceBranchTenantName);
 
         emailTemplate.setBody(generateEmailBody(tagDetails, shipmentDetailsForTenant, body, tenantMap));
         return emailTemplate;
