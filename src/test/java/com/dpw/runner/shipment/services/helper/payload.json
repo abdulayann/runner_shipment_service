@@ -11684,6 +11684,7 @@
       }
     ],
     "referenceNumbersList": [],
+    "notesList": [],
     "packingList": [
       {
         "guid": "9955d12d-d606-46b3-8d6b-30b4015df6c6",
@@ -13172,6 +13173,7 @@
           }
         ],
         "referenceNumbersList": [],
+        "notesList": [],
         "packingList": [
           {
             "guid": "f1fe380d-8a1c-4973-bdce-69e87481de2d",
