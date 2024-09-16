@@ -4061,6 +4061,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setAutoUpdateWtVol(false);
             cloneShipmentDetails.setFileStatus(null);
             cloneShipmentDetails.setOceanDGStatus(null);
+            cloneShipmentDetails.setCreatedBy(null);
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 

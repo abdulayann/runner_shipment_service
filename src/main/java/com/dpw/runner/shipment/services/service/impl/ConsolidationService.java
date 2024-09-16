@@ -827,7 +827,7 @@ public class ConsolidationService implements IConsolidationService {
                 {
                     throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
                 }
-                consolidationDetailsDao.update(consolidationDetails, false);
+                consolidationDetailsDao.update(consolidationDetails, false, true);
             }
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
