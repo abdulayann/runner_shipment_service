@@ -284,13 +284,11 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
         when(eventRepository.save(testData)).thenReturn(testData);
-        when(eventsSync.sync(anyList())).thenReturn(ResponseEntity.ok(null));
 
         eventDao.autoGenerateEvents(request);
 
-        verify(eventsSync, times(1)).sync(anyList());
+        verify(eventsSync, times(0)).sync(anyList());
     }
     @Test
     void autoGenerateEventsWhenEventsRowExistForEntityTypeAndEntityId() {

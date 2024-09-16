@@ -105,5 +105,11 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
 
 }

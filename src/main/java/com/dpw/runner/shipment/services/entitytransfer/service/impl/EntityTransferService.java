@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -13,19 +14,17 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -52,6 +51,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -73,7 +74,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-
 import javax.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -85,7 +85,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
@@ -120,9 +119,11 @@ public class EntityTransferService implements IEntityTransferService {
     private INotificationService notificationService;
     private ExecutorService executorService;
     private DocumentManagerRestClient documentManagerRestClient;
+    private ConsolidationSync consolidationSync;
+    private ShipmentSync shipmentSync;
 
     @Autowired
-    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao) {
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -148,6 +149,8 @@ public class EntityTransferService implements IEntityTransferService {
         this.executorService = executorService;
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.documentManagerRestClient = documentManagerRestClient;
+        this.consolidationSync = consolidationSync;
+        this.shipmentSync = shipmentSync;
     }
 
     @Transactional
@@ -272,8 +275,13 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> tenantName = getTenantName(successTenantIds);
         String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
+            // Set TenantId Context for inter branch shipment for Event creation
+            if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
+                TenantContext.setCurrentTenant(shipment.getTenantId());
             this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
             createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
+            TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
+
             if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
@@ -411,6 +419,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) throws RunnerException {
+        SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
         Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
         Map<UUID, UUID> oldPackVsOldContGuidMap = entityTransferConsolidationDetails.getPackingVsContainerGuid();
@@ -480,6 +489,9 @@ public class EntityTransferService implements IEntityTransferService {
 
             // Call document service api for copy docs
             this.sendCopyDocumentRequest(copyDocumentsRequest);
+
+            // Syncing Imported Shipment & Console to V1
+            this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
         }
 
         // Send consolidated shipments email
@@ -1450,6 +1462,7 @@ public class EntityTransferService implements IEntityTransferService {
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
         for (var keySet : shipmentGuidSendToBranch.entrySet())
             shipDestinationBranchIds.addAll(keySet.getValue());
+        shipDestinationBranchIds.add(TenantContext.getCurrentTenant());
         var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(shipDestinationBranchIds));
 
         for (int i = 0; i < destinationBranches.size(); i++) {
@@ -1479,16 +1492,17 @@ public class EntityTransferService implements IEntityTransferService {
     public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
         UsersDto user = UserContext.getUser();
 
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
         subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
-        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(user.getTenantDisplayName()));
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
         body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
         body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
@@ -1519,21 +1533,21 @@ public class EntityTransferService implements IEntityTransferService {
         // Subject
         String subject = (template.getSubject() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT : template.getSubject();
-        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
-        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
+        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
+        subject = subject.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
         subject = subject.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
 
         // Body
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
-        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, user.getTenantDisplayName());
-        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
-        body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? consolidationDetails.getBol() : consolidationDetails.getMawb());
+        body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? StringUtility.convertToString(consolidationDetails.getBol()) : StringUtility.convertToString(consolidationDetails.getMawb()));
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, consolidationDetails.getConsolidationNumber());
-        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, shipmentNumbers);
+        body = body.replace(CONSOLIDATION_NUMBER_PLACEHOLDER, StringUtility.convertToString(consolidationDetails.getConsolidationNumber()));
+        body = body.replace(SHIPMENT_NUMBERS_PLACEHOLDER, StringUtility.convertToString(shipmentNumbers));
 
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
 
@@ -1716,6 +1730,28 @@ public class EntityTransferService implements IEntityTransferService {
             response.put(entry.getKey(), modelMapper.map(entry.getValue(), TenantModel.class));
 
         return response;
+    }
+
+    private void syncToV1(Long id, List<Long> shipmentIds) {
+        try {
+            SyncingContext.setContext(Boolean.TRUE);
+            List<ShipmentDetails> shipments;
+            ConsolidationDetails consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
+            consolidationDetailsDao.entityDetach(List.of(consolidation));
+            if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+                shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                shipmentDao.entityDetach(shipments);
+                shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                for (var shipment : shipments)
+                    shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
+            }
+            consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
+            consolidationSync.sync(consolidation, StringUtility.convertToString(consolidation.getGuid()), false);
+
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
+        }
+
     }
 
 }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -41,6 +42,9 @@ public class HblSync implements IHblSync {
 
     @Override
     public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
         HblRequestV2 hblRequest = convertEntityToDto(hbl);
         hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());

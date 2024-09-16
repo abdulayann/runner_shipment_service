@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
@@ -65,6 +66,9 @@ public class ShipmentSync implements IShipmentSync {
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
 
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());

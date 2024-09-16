@@ -696,7 +696,7 @@ public class CommonUtils {
 
 
         Map<String, Object> dictionary = new HashMap<>();
-        List<String> recipientEmails = Collections.singletonList(request.getRequesterUserEmailId());
+        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
 
         populateDGReceiverDictionary(dictionary, shipmentDetails);
 
@@ -1124,22 +1124,19 @@ public class CommonUtils {
     }
 
     // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed
-    public boolean changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails) {
+    public boolean changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails, boolean isDGClass1) {
         OceanDGStatus oldOceanDGStatus = shipmentDetails.getOceanDGStatus();
-        if(OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
+
+        if(Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
+                (!UserContext.isOceanDgUser() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
+                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
             shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
-            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus())) {
-            if(!UserContext.isOceanDgCommercialUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-            if(!UserContext.isOceanDgUser())
-                shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-        }
-        if(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgUser()) {
-            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
+
+        if((OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgCommercialUser()) ||
+                (isDGClass1 && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))) {
+            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
         }
         return !Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus());
     }
