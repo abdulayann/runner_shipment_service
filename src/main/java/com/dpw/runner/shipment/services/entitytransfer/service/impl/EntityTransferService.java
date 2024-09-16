@@ -653,6 +653,7 @@ public class EntityTransferService implements IEntityTransferService {
         shipmentRequest.getBookingCarriagesList().clear();
         shipmentRequest.getServicesList().clear();
         shipmentRequest.getShipmentAddresses().clear();
+        shipmentRequest.getNotesList().clear();
     }
 
     private void cleanAllListEntitiesForConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest){
