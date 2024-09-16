@@ -87,6 +87,7 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 
 @Service
 @Slf4j
@@ -1735,23 +1736,30 @@ public class EntityTransferService implements IEntityTransferService {
     private void syncToV1(Long id, List<Long> shipmentIds) {
         try {
             SyncingContext.setContext(Boolean.TRUE);
-            List<ShipmentDetails> shipments;
+            List<ShipmentDetails> shipments = new ArrayList<>();
             ConsolidationDetails consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
             consolidationDetailsDao.entityDetach(List.of(consolidation));
             if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
                 shipmentDao.entityDetach(shipments);
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-                for (var shipment : shipments)
-                    shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
             }
             consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
+            Set<Long> containerIds = new HashSet<>();
+            for(ShipmentDetails shipment : shipments) {
+                if(!listIsNullOrEmpty(shipment.getContainersList()))
+                    containerIds.addAll(shipment.getContainersList().stream().map(BaseEntity::getId).toList());
+            }
+            if(!listIsNullOrEmpty(consolidation.getContainersList())) {
+                consolidation.getContainersList().removeIf(e -> containerIds.contains(e.getId()));
+            }
+            consolidation.setPackingList(null);
             consolidationSync.sync(consolidation, StringUtility.convertToString(consolidation.getGuid()), false);
-
+            for (ShipmentDetails shipment : shipments)
+                shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
         }
-
     }
 
 }
