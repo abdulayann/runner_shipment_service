@@ -100,6 +100,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private List<EntityTransferPacking> packingList;
     private List<EntityTransferBookingCarriage> bookingCarriagesList;
     private List<EntityTransferContainers> containersList;
+    private List<EntityTransferNotes> notesList;
 
     private List<EntityTransferServiceDetails> servicesList;
 

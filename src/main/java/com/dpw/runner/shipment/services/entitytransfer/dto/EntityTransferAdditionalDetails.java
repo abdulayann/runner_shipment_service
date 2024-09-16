@@ -121,6 +121,9 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private EntityTransferParties borrowedFrom;
     private EntityTransferParties sendingAgent;
     private EntityTransferParties receivingAgent;
+    private String agentReference;
+    private String sci;
+    private Boolean emptyContainerReturned;
     private Map<String, EntityTransferMasterLists> masterData;
     private Map<String, EntityTransferUnLocations> unlocationData;
 }
