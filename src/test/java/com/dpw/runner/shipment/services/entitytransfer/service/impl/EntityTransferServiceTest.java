@@ -1463,7 +1463,6 @@ class EntityTransferServiceTest {
     @Test
     void testSendGroupedEmailForShipmentImport_Success() {
         // Given
-        List<UUID> shipmentGuids = List.of(UUID.randomUUID(), UUID.randomUUID());
         String consoleSourceBranchTenantName = "consoleBranch";
         when(shipmentDetails.getTenantId()).thenReturn(100);
         when(shipmentDetails.getSourceTenantId()).thenReturn(123L);
@@ -1478,8 +1477,6 @@ class EntityTransferServiceTest {
         );
 
         // Mocks
-        when(shipmentDao.findShipmentsByGuids(anySet()))
-                .thenReturn(shipmentDetailsList);
         doNothing().when(commonUtils).setInterBranchContextForHub();
         doNothing().when(commonUtils).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
         EmailTemplatesRequest emailTemplatesRequest = mock(EmailTemplatesRequest.class);
@@ -1499,11 +1496,10 @@ class EntityTransferServiceTest {
         when(v1TenantResponse.getTenantName()).thenReturn("abcd");
 
         // When
-        entityTransferService.sendGroupedEmailForShipmentImport(shipmentGuids, consoleSourceBranchTenantName);
+        entityTransferService.sendGroupedEmailForShipmentImport(shipmentDetailsList, consoleSourceBranchTenantName);
 
         // Then
         verify(commonUtils, times(1)).setInterBranchContextForHub();
-        verify(shipmentDao, times(1)).findShipmentsByGuids(anySet());
         verify(commonUtils, times(1)).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
     }
 
