@@ -1155,4 +1155,18 @@ class ShipmentDaoTest extends CommonMocks {
 
         assertEquals(shipmentIdPage, response);
     }
+
+    @Test
+    void findAllWithoutTenantCheckTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
+
+        when(shipmentRepository.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        assertEquals(shipmentDetailsPage, shipmentDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()));
+    }
 }

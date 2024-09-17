@@ -37,4 +37,6 @@ public interface IShipmentDao {
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
     List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
+
+    Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
 }

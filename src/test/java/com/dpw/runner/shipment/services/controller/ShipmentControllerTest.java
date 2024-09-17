@@ -1259,4 +1259,12 @@ class ShipmentControllerTest {
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+
+    @Test
+    void testListWithoutTenantFilter() throws RunnerException {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
+        when(shipmentService.listWithoutTenantCheck(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.listWithoutTenantFilter(listCommonRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

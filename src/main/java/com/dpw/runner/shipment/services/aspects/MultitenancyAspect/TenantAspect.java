@@ -5,17 +5,20 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import java.lang.reflect.Method;
 import java.util.*;
 
 @Aspect
@@ -31,6 +34,12 @@ public class TenantAspect {
     @Before("execution(* com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository+.*(..))")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint) {
 
+        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+        Method method = methodSignature.getMethod();
+
+        if (method.isAnnotationPresent(ExcludeTenantFilter.class)) {
+            return;
+        }
         try {
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.TENANT_FILTER_NAME);
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME);

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import java.time.LocalDateTime;
@@ -83,4 +84,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " shipment_id as shipmentId "
             + " FROM shipment_details WHERE house_bill = ?1", nativeQuery = true)
     List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
+
+    @ExcludeTenantFilter
+    default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {
+        return findAll(spec, pageable);
+    }
 }

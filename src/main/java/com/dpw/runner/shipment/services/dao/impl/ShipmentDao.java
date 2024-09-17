@@ -689,4 +689,9 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findHblNumberInAllBranches(hblNumber);
     }
 
+    @Override
+    public Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {
+        return shipmentRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
 }
