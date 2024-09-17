@@ -466,6 +466,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(consolidationDetailsResponse != null) {
             // Attach consolidation and shipment
             if(!interBranchShipment.isEmpty()) {
+                commonUtils.setInterBranchContextForHub();
                 createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
                 consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds);
             } else {
@@ -654,23 +655,23 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void cleanAllListEntitiesForShipment(ShipmentRequest shipmentRequest){
-        shipmentRequest.getPackingList().clear();
-        shipmentRequest.getContainersList().clear();
-        shipmentRequest.getRoutingsList().clear();
-        shipmentRequest.getReferenceNumbersList().clear();
-        shipmentRequest.getBookingCarriagesList().clear();
-        shipmentRequest.getServicesList().clear();
-        shipmentRequest.getShipmentAddresses().clear();
-        shipmentRequest.getNotesList().clear();
+        if(shipmentRequest.getPackingList() != null) shipmentRequest.getPackingList().clear();
+        if(shipmentRequest.getContainersList() != null) shipmentRequest.getContainersList().clear();
+        if(shipmentRequest.getRoutingsList() != null) shipmentRequest.getRoutingsList().clear();
+        if(shipmentRequest.getReferenceNumbersList() != null) shipmentRequest.getReferenceNumbersList().clear();
+        if(shipmentRequest.getBookingCarriagesList() != null) shipmentRequest.getBookingCarriagesList().clear();
+        if(shipmentRequest.getServicesList() != null) shipmentRequest.getServicesList().clear();
+        if(shipmentRequest.getShipmentAddresses() != null) shipmentRequest.getShipmentAddresses().clear();
+        if(shipmentRequest.getNotesList() != null) shipmentRequest.getNotesList().clear();
     }
 
     private void cleanAllListEntitiesForConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest){
-        consolidationDetailsRequest.getPackingList().clear();
-        consolidationDetailsRequest.getContainersList().clear();
-        consolidationDetailsRequest.getRoutingsList().clear();
-        consolidationDetailsRequest.getReferenceNumbersList().clear();
-        consolidationDetailsRequest.getConsolidationAddresses().clear();
-        consolidationDetailsRequest.getShipmentsList().clear();
+        if(consolidationDetailsRequest.getPackingList() != null) consolidationDetailsRequest.getPackingList().clear();
+        if(consolidationDetailsRequest.getContainersList() != null) consolidationDetailsRequest.getContainersList().clear();
+        if(consolidationDetailsRequest.getRoutingsList() != null) consolidationDetailsRequest.getRoutingsList().clear();
+        if(consolidationDetailsRequest.getReferenceNumbersList() != null) consolidationDetailsRequest.getReferenceNumbersList().clear();
+        if(consolidationDetailsRequest.getConsolidationAddresses() != null) consolidationDetailsRequest.getConsolidationAddresses().clear();
+        if(consolidationDetailsRequest.getShipmentsList() != null) consolidationDetailsRequest.getShipmentsList().clear();
     }
 
     private void updateTaskStatus(Long taskId, TaskStatus status, String rejectionRemarks) {
