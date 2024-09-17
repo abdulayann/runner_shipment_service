@@ -673,7 +673,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         //ExecutorService executorService = Executors.newFixedThreadPool(100);
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
-
+        this.setColoadingStation(request);
         ShipmentDetailsResponse shipmentDetailsResponse = this.createShipment(request, false);
 
         return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
@@ -683,7 +683,6 @@ public class ShipmentService implements IShipmentService {
         if (request == null) {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        this.setColoadingStation(request);
 
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
