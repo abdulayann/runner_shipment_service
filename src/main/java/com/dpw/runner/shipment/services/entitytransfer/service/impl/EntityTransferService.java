@@ -772,9 +772,12 @@ public class EntityTransferService implements IEntityTransferService {
             LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
             String polId = consolidationDetails.get().getCarrierDetails().getOriginPort();
             String podId = consolidationDetails.get().getCarrierDetails().getDestinationPort();
+            Long receivingBranch = consolidationDetails.get().getReceivingBranch();
+            Long triangulationBranch = consolidationDetails.get().getTriangulationPartner();
             List<String> missingField = new ArrayList<>();
+            boolean entityTransferDetails = Objects.isNull(receivingBranch) && Objects.isNull(triangulationBranch);
             if(Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
-                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId)) {
+                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) || entityTransferDetails) {
                 if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("Mawb Number");
                 if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
@@ -795,6 +798,9 @@ public class EntityTransferService implements IEntityTransferService {
                     missingField.add("Origin Port");
                 if(Strings.isNullOrEmpty(podId))
                     missingField.add("Destination Port");
+                if(entityTransferDetails) {
+                    missingField.add("Please select one of the branches in the entity transfer details");
+                }
                 String joinMissingField = String.join(",", missingField);
                 throw new ValidationException("Please validate these fields before sending consolidation: " + joinMissingField);
             }
@@ -804,7 +810,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<String> shipmentIds = new ArrayList<>();
                 for (var shipment: consolidationDetails.get().getShipmentsList()) {
                     boolean isShipmentError = false;
-                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()))
+                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()) && !Objects.isNull(receivingBranch))
                     {
                         sendConsolidationError = true;
                         isShipmentError = true;
@@ -862,7 +868,7 @@ public class EntityTransferService implements IEntityTransferService {
 
                 if(sendConsolidationError){
                     String interBranch = "";
-                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && !Objects.isNull(receivingBranch))
                         interBranch = "Receiving Branch, ";
                     if(hblGenerationError){
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
