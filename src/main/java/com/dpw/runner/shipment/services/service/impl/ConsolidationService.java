@@ -2451,7 +2451,15 @@ public class ConsolidationService implements IConsolidationService {
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
-            ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+
+            ConsolidationDetails consol = consolidationDetails.get();
+            // Collect shipment events and consol events
+            List<Events> aggregatedEvents = new ArrayList<>();
+            aggregatedEvents.addAll(consol.getEventsList());
+            aggregatedEvents.addAll(consol.getShipmentsList().stream().flatMap(i -> i.getEventsList().stream()).toList());
+            consol.setEventsList(aggregatedEvents);
+
+            ConsolidationDetailsResponse response = jsonHelper.convertValue(consol, ConsolidationDetailsResponse.class);
             id = consolidationDetails.get().getId();
             var notificationMap = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(List.of(id)).build());
             response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));

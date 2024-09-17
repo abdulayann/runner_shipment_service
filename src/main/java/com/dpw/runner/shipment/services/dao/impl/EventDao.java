@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -199,8 +200,10 @@ public class EventDao implements IEventDao {
                 String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
                 oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
-            req.setEntityId(entityId);
-            req.setEntityType(entityType);
+            if(req.getEntityId() == null)
+                req.setEntityId(entityId);
+            if(StringUtility.isEmpty(req.getEntityType()))
+                req.setEntityType(entityType);
             res.add(req);
         }
         res = saveAll(res);

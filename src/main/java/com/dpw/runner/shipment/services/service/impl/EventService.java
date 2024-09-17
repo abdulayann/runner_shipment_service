@@ -458,8 +458,15 @@ public class EventService implements IEventService {
 
         // Bring all Events saved from DB
         var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
+        List<Events> shipmentEvents = new ArrayList<>();
+        if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION) && optionalConsolidationDetails.get().getShipmentsList() != null) {
+             shipmentEvents.addAll(optionalConsolidationDetails.get().getShipmentsList().stream().flatMap(
+                    i -> i.getEventsList().stream()).toList()
+             );
+        }
         Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
         List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+        allEvents.addAll(shipmentEvents);
         List<EventsResponse> allEventResponses = jsonHelper.convertValueToList(allEvents, EventsResponse.class);
 
         return ResponseHelper.buildSuccessResponse(allEventResponses);
