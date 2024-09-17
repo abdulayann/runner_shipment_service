@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Method;
@@ -99,10 +98,6 @@ class PermissionsAspectTest {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        MethodSignature mockSignature = Mockito.mock(MethodSignature.class);
-        Method mockMethod = Mockito.mock(Method.class);  // Mocking the Method class
-        when(joinPoint.getSignature()).thenReturn(mockSignature);
-        when(mockSignature.getMethod()).thenReturn(mockMethod);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
         permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel);
@@ -132,7 +127,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        assertThrows(NullPointerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel));
     }
 
     @Test
@@ -143,10 +138,6 @@ class PermissionsAspectTest {
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:List:Air Shipment:ImportAirShipmentList", "Shipments:List:Air Shipment:ExportAirShipmentList")));
-        MethodSignature mockSignature = mock(MethodSignature.class);
-        Method mockMethod = mock(Method.class);  // Mocking the Method class
-        when(joinPoint.getSignature()).thenReturn(mockSignature);
-        when(mockSignature.getMethod()).thenReturn(mockMethod);
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());

@@ -17,6 +17,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_LIST_PERMISSION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_LIST_PERMISSION;
@@ -30,13 +31,17 @@ public class PermissionsAspect {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Method method = methodSignature.getMethod();
-
-        // Check if the method is the one you want to exclude
-        if (method.isAnnotationPresent(ExcludePermissions.class)) {
-            return; // Exclude this method from processing
+        if(joinPoint != null)
+        {
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            if(!Objects.isNull(methodSignature)) {
+                Method method = methodSignature.getMethod();
+                if (!Objects.isNull(method) && method.isAnnotationPresent(ExcludePermissions.class)) {
+                    return;
+                }
+            }
         }
+
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         if(permissionList == null || permissionList.size() == 0)

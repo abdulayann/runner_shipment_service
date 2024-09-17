@@ -34,12 +34,16 @@ public class TenantAspect {
     @Before("execution(* com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository+.*(..))")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint) {
 
-        MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-        Method method = methodSignature.getMethod();
-
-        if (method.isAnnotationPresent(ExcludeTenantFilter.class)) {
-            return;
+        if(joinPoint != null) {
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            if(!Objects.isNull(methodSignature)) {
+                Method method = methodSignature.getMethod();
+                if (!Objects.isNull(method) && method.isAnnotationPresent(ExcludeTenantFilter.class)) {
+                    return;
+                }
+            }
         }
+
         try {
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.TENANT_FILTER_NAME);
             entityManager.unwrap(Session.class).disableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME);
