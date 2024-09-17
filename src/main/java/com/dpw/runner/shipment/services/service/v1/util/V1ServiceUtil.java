@@ -384,4 +384,12 @@ public class V1ServiceUtil {
                                 list -> list.stream().map(CoLoadingMAWBDetailsResponse::getChildTenantId).collect(Collectors.toSet())
                         )));
     }
+
+    public CommonV1ListRequest addTakeInV1Request(Object object){
+        CommonV1ListRequest commonV1ListRequest = modelMapper.map(object, CommonV1ListRequest.class);
+        if(commonV1ListRequest.getTake() == 0){
+            commonV1ListRequest.setTake(200);
+        }
+        return commonV1ListRequest;
+    }
 }

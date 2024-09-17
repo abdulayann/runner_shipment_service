@@ -397,10 +397,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -448,10 +448,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchCarrierMasterData(Object request, boolean isListOnly) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            CarrierListObject req = jsonHelper.convertValue(request, CarrierListObject.class);
+            CarrierListObject req = jsonHelper.convertValue(v1Request, CarrierListObject.class);
             Object requestCriteria = req.getListObject();
             HttpEntity<V1DataResponse> entity = new HttpEntity(requestCriteria, V1AuthHelper.getHeaders());
             if (isListOnly ||
@@ -507,10 +507,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchContainerTypeData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CONTAINER_TYPE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getContainerTypeMasterData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -558,10 +558,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchVesselData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             double _timeTaken = System.currentTimeMillis() - time;
             log.info("Token time taken in getVesselData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
@@ -610,10 +610,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchRoutingMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ROUTING_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getRoutingMasterData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -661,10 +661,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchCurrenciesData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CURRENCIES_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCurrenciesData() function {} with Request ID: {}", (System.currentTimeMillis() - time), LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -712,10 +712,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchDangerousGoodData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.DANGEROUS_GOOD_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getDangerousGoodData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -763,10 +763,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchWarehouseData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.WAREHOUSE_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getWarehouseData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -814,10 +814,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchPortsData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.PORTS_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getPortsData() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -865,10 +865,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchCommodityData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.COMMODITY_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in getCommodityData() function {} with Request ID: {}", (System.currentTimeMillis() - time), LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -916,7 +916,7 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchSalesAgentData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -984,7 +984,7 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchOrganization(Object request) {
         ResponseEntity orgResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1035,7 +1035,7 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchUnlocation(Object request) {
         ResponseEntity locationResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1069,10 +1069,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchMultipleMasterData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.MULTIPLE_MASTER_DATA_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchMultipleMasterData() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1086,7 +1086,6 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchUsersData(Object request) {
         ResponseEntity masterDataResponse = null;
-
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1103,7 +1102,7 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchGridColorCodeData(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1120,7 +1119,6 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse createGridColorCodeData(Object request) {
         ResponseEntity masterDataResponse = null;
-
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1154,7 +1152,7 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse listCousinBranches(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1171,10 +1169,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse listCousinBranchesWithoutCurrent(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_WITHOUT_CURRENT_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listCousinBranchesWithoutCurrent() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1341,10 +1339,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse listSailingSchedule(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_SAILING_SCHEDULE, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in listSailingSchedule() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1358,10 +1356,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse addressList(Object request) {
         ResponseEntity masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1444,10 +1442,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchListUnlocationTransportModeBased(Object request) {
         ResponseEntity<V1DataResponse> masterDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_UNLOCATION_TRANSPORT_MODE_BASED_URL, entity, V1DataResponse.class);
             log.info("Token time taken in fetchListUnlocationTransportModeBased() function " + (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -1563,10 +1561,11 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchCarrierFilterList(Object request) {
         ResponseEntity masterDataResponse = null;
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
 
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.CARRIER_FILTER_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchCarrierFilterList() function " + (System.currentTimeMillis() - time));
             return (V1DataResponse) masterDataResponse.getBody();
@@ -1746,10 +1745,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchRolesList(Object request) {
         ResponseEntity tiDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             tiDataResponse = this.restTemplate.postForEntity(this.ROLES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_ROLES_LIST_FUNCTION_MSG, (System.currentTimeMillis() - time));
             return (V1DataResponse) tiDataResponse.getBody();
@@ -1767,7 +1766,6 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchBillingList(Object request) {
         ResponseEntity billingDataResponse = null;
-
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
@@ -1788,10 +1786,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchBillChargesList(Object request) {
         ResponseEntity billChargesDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             billChargesDataResponse = this.restTemplate.postForEntity(this.BILL_CHARGES_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_ROLES_LIST_FUNCTION_MSG, (System.currentTimeMillis() - time));
             return (V1DataResponse) billChargesDataResponse.getBody();
@@ -1809,10 +1807,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse fetchArObjectList(Object request) {
         ResponseEntity arObjectDataResponse = null;
-
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
+            HttpEntity<V1DataResponse> entity = new HttpEntity(v1Request, V1AuthHelper.getHeaders());
             arObjectDataResponse = this.restTemplate.postForEntity(this.AR_OBJECT_LIST, entity, V1DataResponse.class, new Object[0]);
             log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_ROLES_LIST_FUNCTION_MSG, (System.currentTimeMillis() - time));
             return (V1DataResponse) arObjectDataResponse.getBody();
@@ -2100,9 +2098,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse getMasterDetails(Object request) {
         ResponseEntity<V1DataResponse> masterDataResponse = null;
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(v1Request), V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.getMasterDetails, entity, V1DataResponse.class, V1DataResponse.class);
             log.info("Token time taken in getMasterDetails() function {} ms", (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -2116,9 +2115,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse getUserDetails(Object request) {
         ResponseEntity<V1DataResponse> masterDataResponse = null;
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(v1Request), V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.getUserDetails, entity, V1DataResponse.class, V1DataResponse.class);
             log.info("Token time taken in getUserDetails() function {} ms", (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
@@ -2179,9 +2179,10 @@ public class V1ServiceImpl implements IV1Service {
     @Override
     public V1DataResponse listTask(Object request) {
         ResponseEntity<V1DataResponse> response;
+        var v1Request = v1ServiceUtil.addTakeInV1Request(request);
         try {
             long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(v1Request), V1AuthHelper.getHeaders());
             response = this.restTemplate.postForEntity(this.listTaskUrl, entity, V1DataResponse.class);
             log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
