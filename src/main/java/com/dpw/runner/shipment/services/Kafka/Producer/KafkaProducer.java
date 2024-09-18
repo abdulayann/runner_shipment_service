@@ -8,8 +8,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -36,6 +40,30 @@ public class KafkaProducer {
             // todo;: add entry in FO table
             log.info("Data produced to Kafka successfully");
         } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public <T> void produceToKafka(T payload, String transactionId, Map<String, String> headerMap, String topic) {
+        log.info("Processing result to kafka queue - " + topic + " with transactionId " + transactionId);
+        try {
+            log.info("request payload to kafka: " + objectMapper.writeValueAsString(payload) + " with transactionId "+ transactionId);
+        } catch (JsonProcessingException e) {
+            log.error("Error while posting to shipment, unable to convert object to json due to: "+ e.getMessage() + " with transactionId "+ transactionId);
+        }
+        try {
+            Message<?> message = MessageBuilder
+                    .withPayload(this.objectMapper.writeValueAsString(payload))
+                    .setHeader("kafka_topic", topic)
+                    .setHeader("kafka_messageKey", transactionId)
+                    .copyHeaders(headerMap)
+                    .build();
+            kafkaTemplate.send(message);
+            // todo;: do this in your service, let this be generic
+            // todo;: add entry in FO table
+            log.info("Data produced to Kafka successfully with transactionId "+ transactionId);
+        } catch (Exception e) {
+            log.error(e.getMessage());
             throw new RuntimeException(e);
         }
     }

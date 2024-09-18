@@ -183,4 +183,13 @@ public class JsonHelper {
         return createMapper.convertValue(object, clazz);
     }
 
+    public Map<String , Object> serialize(Object eManifestDTO) {
+        try {
+            String json = mapper.writeValueAsString(eManifestDTO);
+            return mapper.readValue(json, Map.class);
+        } catch (Exception er) {
+            log.error(" serialize() failed ", er);
+            throw new RuntimeException(er);
+        }
+    }
 }

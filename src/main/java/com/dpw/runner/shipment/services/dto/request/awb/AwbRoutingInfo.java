@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.entity.AirlineInfoMeta;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
@@ -31,4 +32,7 @@ public class AwbRoutingInfo implements Serializable {
     @UnlocationData
     private String originPortName;
     private Boolean isShipmentCreated;
+    public String originPortUnlocName;
+    public String destinationPortUnlocName;
+    public AirlineInfoMeta airlineInfo;
 }
