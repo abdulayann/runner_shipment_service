@@ -103,4 +103,10 @@ public class Events extends MultiTenancy {
     @Column(name = "location_role")
     @MasterData(type = MasterDataType.LOCATION_ROLE)
     private String locationRole;
+
+    @Column(name = "consolidation_id")
+    private Long consolidationId;
+
+    @Column(name = "shipment_number")
+    private String shipmentNumber;
 }
