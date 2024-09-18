@@ -8086,4 +8086,19 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listWithoutTenantCheck(commonRequestModel);
         assertEquals(expectedResponse, httpResponse);
     }
+
+    @Test
+    void listWithoutTenantCheckPartial() {
+        Criteria criteria = Criteria.builder().fieldName("shipmentId").value("1").build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).includeColumns(Arrays.asList("shipmentId")).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listWithoutTenantCheck(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
 }

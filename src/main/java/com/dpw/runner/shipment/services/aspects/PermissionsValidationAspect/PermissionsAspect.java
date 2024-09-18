@@ -28,18 +28,8 @@ public class PermissionsAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
-        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class) || checkExcludePermissionsFilter(joinPoint)) {
             return;
-        }
-        if(joinPoint != null)
-        {
-            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            if(!Objects.isNull(methodSignature)) {
-                Method method = methodSignature.getMethod();
-                if (!Objects.isNull(method) && method.isAnnotationPresent(ExcludePermissions.class)) {
-                    return;
-                }
-            }
         }
 
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
@@ -99,4 +89,16 @@ public class PermissionsAspect {
         }
     }
 
+    private boolean checkExcludePermissionsFilter(JoinPoint joinPoint) {
+        if(joinPoint != null)
+        {
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            if(!Objects.isNull(methodSignature))
+            {
+                Method method = methodSignature.getMethod();
+                return method.isAnnotationPresent(ExcludePermissions.class);
+            }
+        }
+        return false;
+    }
 }
