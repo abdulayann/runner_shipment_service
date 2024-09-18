@@ -842,6 +842,32 @@ public class CommonUtils {
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
 
+    public void sendEmailShipmentDetach(SendEmailDto sendEmailDto) {
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        if(!sendEmailDto.getEmailTemplatesRequestMap().containsKey(SHIPMENT_DETACH)) {
+            sendEmailDto.getShipmentRequestedTypes().add(SHIPMENT_DETACH);
+            return;
+        }
+        EmailTemplatesRequest emailTemplatesRequest = sendEmailDto.getEmailTemplatesRequestMap().get(SHIPMENT_DETACH);
+        Map<String, Object> dictionary = new HashMap<>();
+        populateDictionaryForShipmentDetach(dictionary, sendEmailDto.getShipmentDetails(), sendEmailDto.getConsolidationDetails(), sendEmailDto.getRejectRemarks());
+
+        if(!IsStringNullOrEmpty(sendEmailDto.getShipmentDetails().getAssignedTo()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getShipmentDetails().getAssignedTo()))
+            toEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getShipmentDetails().getAssignedTo()));
+        if(!IsStringNullOrEmpty(sendEmailDto.getShipmentDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getShipmentDetails().getCreatedBy()))
+            toEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getShipmentDetails().getCreatedBy()));
+        if(!IsStringNullOrEmpty(sendEmailDto.getConsolidationDetails().getCreatedBy()) && sendEmailDto.getUsernameEmailsMap().containsKey(sendEmailDto.getConsolidationDetails().getCreatedBy()))
+            ccEmailIds.add(sendEmailDto.getUsernameEmailsMap().get(sendEmailDto.getConsolidationDetails().getCreatedBy()));
+        if(!IsStringNullOrEmpty(UserContext.getUser().getEmail()))
+            ccEmailIds.add(UserContext.getUser().getEmail());
+        // fetching to and cc from master lists
+        getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, sendEmailDto.getV1TenantSettingsMap(), sendEmailDto.getShipmentDetails().getTenantId(), true);
+
+        notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
+                replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
+    }
+
     public void sendEmailForPullPushRequestStatus(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, ShipmentRequestedType type, String rejectRemarks,
                                                   Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequestMap, Set<ShipmentRequestedType> shipmentRequestedTypes, Map<String, UnlocationsResponse> unLocMap,
                                                   Map<String, CarrierMasterData> carrierMasterDataMap, Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap , String requestedUser) throws Exception{
@@ -869,6 +895,7 @@ public class CommonUtils {
             case SHIPMENT_PUSH_REQUESTED -> sendEmailShipmentPushRequest(sendEmailDto);
             case SHIPMENT_PUSH_ACCEPTED -> sendEmailShipmentPushAccept(sendEmailDto);
             case SHIPMENT_PUSH_REJECTED -> sendEmailShipmentPushReject(sendEmailDto);
+            case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
         }
     }
 
@@ -942,6 +969,17 @@ public class CommonUtils {
         dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
         dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
         dictionary.put(REQUESTED_USER_NAME, requestUser);
+    }
+
+    public void populateDictionaryForShipmentDetach(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String detachRemarks) {
+        dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
+        dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
+        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(Constants.REJECT_REMARKS, detachRemarks);
+        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(REQUESTED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForEmailFromShipment(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
@@ -1083,6 +1121,8 @@ public class CommonUtils {
                         response.put(SHIPMENT_PUSH_ACCEPTED, emailTemplatesRequest);
                     if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_REJECTED_EMAIL_TYPE))
                         response.put(SHIPMENT_PUSH_REJECTED, emailTemplatesRequest);
+                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_DETACH_EMAIL_TYPE))
+                        response.put(SHIPMENT_DETACH, emailTemplatesRequest);
                 }
             }
         }
