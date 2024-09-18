@@ -723,4 +723,15 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_WITHOUT_FILTER)
+    public ResponseEntity<IRunnerResponse> listWithoutTenantFilter(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.listWithoutTenantCheck(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
 }

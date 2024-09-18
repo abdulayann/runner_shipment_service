@@ -6350,6 +6350,18 @@ ShipmentServiceTest extends CommonMocks {
 
         return responseList;
     }
+
+    private List<IRunnerResponse> convertEntityToDtoListSimplified(List<ShipmentDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(shipmentDetails -> {
+            ShipmentListResponse response = modelMapper.map(shipmentDetails, ShipmentListResponse.class);
+            if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)
+                response.setShipmentStatus(ShipmentStatus.values()[shipmentDetails.getStatus()].toString());
+            responseList.add(response);
+        });
+        return responseList;
+    }
+
     private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
         Long container20Count = 0L;
         Long container40Count = 0L;
@@ -8038,5 +8050,55 @@ ShipmentServiceTest extends CommonMocks {
 
         shipmentService.sendOceanDGApprovalEmail(request);
         verify(shipmentDao).findById(any());
+    }
+
+    @Test
+    void listWithoutTenantCheckCatch() {
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.listWithoutTenantCheck(CommonRequestModel.builder().build());
+        assertNotNull(responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listRequestWithoutTenantCheckNull() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentService.listWithoutTenantCheck(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listWithoutTenantCheck() {
+        Criteria criteria = Criteria.builder().fieldName("shipmentId").value("1").build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityToDtoListSimplified(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listWithoutTenantCheck(commonRequestModel);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void listWithoutTenantCheckPartial() {
+        Criteria criteria = Criteria.builder().fieldName("shipmentId").value("1").build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).includeColumns(Arrays.asList("shipmentId")).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(new ShipmentDetails());
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listWithoutTenantCheck(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 }
