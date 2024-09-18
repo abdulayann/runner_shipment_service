@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -116,11 +117,11 @@ public class EventsController {
             @ApiResponse(code = 200, message = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, response = MyListResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @GetMapping(EventConstants.TRACK_EVENT_DETAILS)
-    public ResponseEntity<IRunnerResponse> trackEventDetails(@RequestParam(name = "shipmentId") Optional<Long> id, @RequestParam(name = "consolidationId") Optional<Long> consolidationId) {
+    @PostMapping(EventConstants.TRACK_EVENT_DETAILS)
+    public ResponseEntity<IRunnerResponse> trackEventDetails(@RequestBody @Valid TrackingEventsRequest request) {
         String responseMsg;
         try {
-            return eventService.trackEvents(id, consolidationId);
+            return eventService.trackEvents(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error fetching Events";

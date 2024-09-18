@@ -216,6 +216,9 @@ public class CommonUtils {
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
 
+        if(request.getFilterCriteria() == null)
+            request.setFilterCriteria(new ArrayList<>());
+
         List<FilterCriteria> criterias = request.getFilterCriteria();
         if(criterias.isEmpty()) {
             criterias.add(FilterCriteria.builder().innerFilter(new ArrayList<>()).build());

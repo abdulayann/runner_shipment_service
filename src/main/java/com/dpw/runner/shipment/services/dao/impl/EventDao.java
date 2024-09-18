@@ -199,8 +199,10 @@ public class EventDao implements IEventDao {
                 String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
                 oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
-            req.setEntityId(entityId);
-            req.setEntityType(entityType);
+            if(req.getEntityId() == null)
+                req.setEntityId(entityId);
+            if(req.getEntityType() == null)
+                req.setEntityType(entityType);
             res.add(req);
         }
         res = saveAll(res);
