@@ -932,12 +932,6 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
         }
 
-        ListCommonRequest listCommonRequest = andCriteria(Constants.CONSOLIDATION_ID, consolidationId, "=", null);
-        listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipmentIds, "IN", listCommonRequest);
-        Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-        Page<ConsoleShipmentMapping> consoleShipmentMappingPage = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
-        List<ConsoleShipmentMapping> consoleShipmentMappings = jsonHelper.convertValueToList(consoleShipmentMappingPage.getContent(), ConsoleShipmentMapping.class);
-
         List<Packing> packingList = null;
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
