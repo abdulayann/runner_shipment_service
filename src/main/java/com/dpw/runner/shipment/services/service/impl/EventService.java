@@ -486,65 +486,6 @@ public class EventService implements IEventService {
                 .orElse(locationRoleIdentifier2);
     }
 
-    /**
-     * Converts a tracking event code to a short code based on the location role.
-     *
-     * This method translates specific tracking event codes to their corresponding short codes
-     * based on the location role. The conversion is based on predefined constants and specific
-     * conditions.
-     *
-     * @param locationRole the role of the location associated with the event
-     * @param eventCode the original event code to be converted
-     * @return the corresponding short code if a match is found, otherwise returns the original event code
-     */
-    @Override
-    public String convertTrackingEventCodeToShortCode(String locationRole, String eventCode) {
-
-        String safeEventCode = safeString(eventCode);
-        String safeLocationRole = safeString(locationRole);
-
-        log.debug("Converting event code '{}' with location role '{}'", safeEventCode, safeLocationRole);
-
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
-                && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
-            return EventConstants.ECPK;
-        }
-
-        if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
-                && "originPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
-            return EventConstants.FCGI;
-        }
-
-        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
-                && "originPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched VESSEL_DEPARTURE_WITH_CONTAINER and originPort. Returning short code: {}", EventConstants.VSDP);
-            return EventConstants.VSDP;
-        }
-
-        if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
-                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
-            return EventConstants.ARDP;
-        }
-
-        if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
-                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
-            return EventConstants.FUGO;
-        }
-
-        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
-                && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
-            return EventConstants.EMCR;
-        }
-
-        log.debug("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
-        return eventCode;
-    }
-
     @NotNull
     private Map<String, EntityTransferMasterLists> getIdentifier2ToLocationRoleMap() {
         try {
@@ -585,34 +526,30 @@ public class EventService implements IEventService {
      * and updates or creates new events based on custom logic. It logs relevant information at various stages
      * of processing for debugging and tracking purposes.
      *
-     * @param originalTrackingEvents the list of original tracking events to process
+     * @param trackingEvents the list of original tracking events to process
      * @param entityId the ID of the entity associated with the events
      * @param entityType the type of the entity associated with the events
      * @param shipmentDetails the shipment details used for filtering and processing events
      * @param identifier2ToLocationRoleMap a map of identifiers to location roles used for mapping
      * @return a list of saved events
      */
-    private List<Events> saveTrackingEventsToEvents(List<Events> originalTrackingEvents, Long entityId, String entityType,
+    private List<Events> saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType,
             ShipmentDetails shipmentDetails, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap) {
 
-        if (ObjectUtils.isEmpty(originalTrackingEvents) || shipmentDetails == null) {
+        if (ObjectUtils.isEmpty(trackingEvents) || shipmentDetails == null) {
             log.warn("Original tracking events or shipment details are null or empty. Returning the original tracking events.");
-            return originalTrackingEvents;
+            return trackingEvents;
         }
-
-        log.info("Converting original tracking events to list of Events.");
-        List<Events> trackingEvents = jsonHelper.convertValueToList(originalTrackingEvents, Events.class);
-
         // Construct list criteria and fetch existing events based on entity
         var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
         Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
         log.info("Fetching existing events from the database using criteria: {}", listCriteria);
-        List<Events> existingEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+        List<Events> eventsFromDb = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
 
         // Create a map of existing events by their event code
-        Map<String, Events> existingEventsMap = existingEvents.stream()
+        Map<String, Events> existingEventsMap = eventsFromDb.stream()
                 .collect(Collectors.toMap(
-                        event -> createKeyCodeContainerNumberSource(event.getEventCode(), event.getContainerNumber(), event.getSource()),
+                        event -> createEventUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource(), event.getPlaceName()),
                         Function.identity(),
                         (existingEvent, newEvent) -> {
                             log.debug("Duplicate key detected. Replacing existing event with new event: {}", newEvent);
@@ -623,15 +560,6 @@ public class EventService implements IEventService {
         log.info("Mapping and filtering tracking events.");
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
-                .map(trackingEvent -> {
-                    String locationRole = trackingEvent.getLocationRole();
-                    String eventCode = trackingEvent.getEventCode();
-                    trackingEvent.setEventCode(
-                            convertTrackingEventCodeToShortCode(locationRole, eventCode)
-                    );
-                    log.debug("Updated event code for tracking event: {}", trackingEvent);
-                    return trackingEvent;
-                })
                 .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails))
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap))
                 .toList();
@@ -641,9 +569,8 @@ public class EventService implements IEventService {
     }
 
     @NotNull
-    private String createKeyCodeContainerNumberSource(String eventCode, String containerNumber, String source) {
-        containerNumber = StringUtils.defaultString(containerNumber, "");
-        return eventCode + "-" + containerNumber + "-" + source;
+    private String createEventUniqueKey(String eventCode, String containerNumber, String source, String placeName) {
+        return eventCode + "-" + StringUtils.defaultString(containerNumber) + "-" + source + "-" + StringUtils.defaultString(placeName);
     }
 
     /**
@@ -737,6 +664,27 @@ public class EventService implements IEventService {
                 trackingEvent.getContainerNumber(), trackingEvent.getEventCode());
 
         // Map the tracking event to a new Events object
+        Events event = populateEventDetails(trackingEvent, entityId, entityType, identifier2ToLocationRoleMap);
+
+        // Check if the event already exists
+        Events existingEvent = existingEventsMap.get(
+                createEventUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource(), event.getPlaceName()));
+
+        if (existingEvent != null) {
+            // Update ID and GUID if the event already exists
+            event.setId(existingEvent.getId());
+            event.setGuid(existingEvent.getGuid());
+            log.info("Event already exists. Updated ID and GUID from existing event.");
+        } else {
+            log.info("Event is new. No existing event found.");
+        }
+
+        // Return the updated event
+        return event;
+    }
+
+    @NotNull
+    private Events populateEventDetails(Events trackingEvent, Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap) {
         Events event = modelMapper.map(trackingEvent, Events.class);
 
         // Convert and set the location role
@@ -749,20 +697,6 @@ public class EventService implements IEventService {
         event.setEntityType(entityType);
         event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
         log.info("Set entityId: {}, entityType: {}, source: {}", entityId, entityType, Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
-
-        // Check if the event already exists
-        Events existingEvent = existingEventsMap.get(createKeyCodeContainerNumberSource(event.getEventCode(), event.getContainerNumber(), event.getSource()));
-
-        if (existingEvent != null) {
-            // Update ID and GUID if the event already exists
-            event.setId(existingEvent.getId());
-            event.setGuid(existingEvent.getGuid());
-            log.info("Event already exists. Updated ID and GUID from existing event.");
-        } else {
-            log.info("Event is new. No existing event found.");
-        }
-
-        // Return the updated event
         return event;
     }
 
