@@ -3409,9 +3409,4 @@ public abstract class IReport {
         return commonUtils.getCurrentTenantSettings();
     }
 
-    public static void main(String[] args) {
-        CommonV1ListRequest c1 = new CommonV1ListRequest();
-        CommonV1ListRequest c2 = CommonV1ListRequest.builder().build();
-        System.out.println(c2.take);
-    }
 }

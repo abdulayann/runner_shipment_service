@@ -368,7 +368,7 @@ public class MasterDataUtils{
                 List<MasterListRequest> batch = masterListRequests.stream()
                     .skip((long) i * batchSize)
                     .limit(batchSize)
-                    .collect(Collectors.toList());
+                    .toList();
 
                 MasterListRequestV2 batchRequest = new MasterListRequestV2();
                 batchRequest.setMasterListRequests(batch);

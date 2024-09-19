@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.masterdata.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javax.annotation.PostConstruct;
 import lombok.*;
 
 import java.util.List;
