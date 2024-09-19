@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.masterdata.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import javax.annotation.PostConstruct;
 import lombok.*;
 
 import java.util.List;
@@ -12,7 +13,8 @@ import java.util.List;
 @NoArgsConstructor
 public class CommonV1ListRequest {
     @JsonProperty("Take")
-    public int take;
+    @Builder.Default
+    public int take = 500;
     @JsonProperty("Skip")
     public int skip;
     @JsonProperty("Sort")
@@ -23,4 +25,12 @@ public class CommonV1ListRequest {
     private int columnSelection;
     @JsonProperty("IncludeColumns")
     private List<String> includeColumns = null;
+
+
+    @PostConstruct
+    private void validate() {
+        if (take > 500) {
+            take = 500;
+        }
+    }
 }
