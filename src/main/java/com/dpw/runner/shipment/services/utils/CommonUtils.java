@@ -1389,7 +1389,7 @@ public class CommonUtils {
             "=",
             guid
         );
-        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(vesselCriteria).build();
         V1DataResponse v1DataResponse = iv1Service.fetchVesselData(vesselRequest);
         List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(v1DataResponse.entities, VesselsResponse.class);
 

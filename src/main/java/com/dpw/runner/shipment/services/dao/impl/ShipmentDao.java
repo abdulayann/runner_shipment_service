@@ -408,7 +408,7 @@ public class ShipmentDao implements IShipmentDao {
 //                    "=",
 //                    oldEntity.getLockedBy()
 //            );
-//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
 //            V1DataResponse v1DataResponse = v1Service.fetchUsersData(commonV1ListRequest);
 //            List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
 //            String username = "";

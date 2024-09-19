@@ -2566,7 +2566,7 @@ public class AwbService implements IAwbService {
                 "in",
                 Arrays.asList(itemTypeList)
         );
-        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(masterDataCriteria).build();
+        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(masterDataCriteria).build();
         V1DataResponse masterDataResponse = v1Service.fetchMasterData(masterDataRequest);
         if(masterDataResponse.getEntities() != null) {
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
@@ -3190,7 +3190,7 @@ public class AwbService implements IAwbService {
                 "in",
                 List.of(locationReferenceGuids)
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
@@ -3216,7 +3216,7 @@ public class AwbService implements IAwbService {
                 "=",
                 masterDataType.getId()
         );
-        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchMasterData(listRequest);
         List<EntityTransferMasterLists> entityTransferMasterList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class);
         if(entityTransferMasterList != null && entityTransferMasterList.size() > 0) {
@@ -3234,7 +3234,7 @@ public class AwbService implements IAwbService {
                 Operators.IN.getValue(),
                 List.of(diarcties)
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
 
         V1DataResponse v1DataResponse;
         try {

@@ -3846,7 +3846,7 @@ public class ConsolidationService implements IConsolidationService {
                 "in",
                 Arrays.asList(itemTypeList)
         );
-        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(masterDataCriteria).build();
+        CommonV1ListRequest masterDataRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(masterDataCriteria).build();
         V1DataResponse masterDataResponse = v1Service.fetchMasterData(masterDataRequest);
         List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(masterDataResponse.entities, EntityTransferMasterLists.class);
 

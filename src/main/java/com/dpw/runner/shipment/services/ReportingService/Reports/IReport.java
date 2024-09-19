@@ -1225,7 +1225,7 @@ public abstract class IReport {
             criteria.add(Arrays.asList(List.of("BillId"), "=", billingResponse.getGuid()));
             criteria.add("and");
             criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchBillChargesList(commonV1ListRequest);
             return jsonHelper.convertValueToList(dependentServiceResponse.getData(), BillChargesResponse.class);
         }
@@ -1338,7 +1338,7 @@ public abstract class IReport {
         criteria.add(Arrays.asList(List.of("BillId"), "=", billGuid));
         criteria.add("and");
         criteria.add(Arrays.asList(List.of("IsActive"), "=", 1));
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchArObjectList(commonV1ListRequest);
         return jsonHelper.convertValueToList(dependentServiceResponse.getData(), ArObjectResponse.class);
     }
@@ -1364,7 +1364,7 @@ public abstract class IReport {
                     "=",
                     billChargesResponse.getChargeTypeId()
             );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().fetchChargeType(commonV1ListRequest);
             List<ChargeTypesResponse> chargeTypesResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ChargeTypesResponse.class);
             if (CollectionUtils.isNotEmpty(chargeTypesResponses)) {
@@ -1383,7 +1383,7 @@ public abstract class IReport {
                 "=",
                 guid
         );
-        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(vesselCriteria).build();
         V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
         List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
         if(vesselsResponse != null && !vesselsResponse.isEmpty())
@@ -1418,7 +1418,7 @@ public abstract class IReport {
                     "=",
                     arrivalDetails.getLastForeignPort()
             );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
             if(unlocationsResponse.size() > 0)
@@ -1789,7 +1789,7 @@ public abstract class IReport {
                 "=",
                 carrier
         );
-        CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(carrierCriteria).build();
+        CommonV1ListRequest carrierRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(carrierCriteria).build();
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(carrierRequest);
         carrierListObject.setIsList(true);
@@ -2245,7 +2245,7 @@ public abstract class IReport {
                 "=",
                 commodityCode
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         Object commodity = masterDataFactory.getMasterDataService().fetchCommodityData(commonV1ListRequest).getData();
         List<CommodityResponse> commodityResponses = jsonHelper.convertValueToList(commodity, CommodityResponse.class);
         if(commodityResponses.size() > 0)
@@ -3407,5 +3407,11 @@ public abstract class IReport {
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return commonUtils.getCurrentTenantSettings();
+    }
+
+    public static void main(String[] args) {
+        CommonV1ListRequest c1 = new CommonV1ListRequest();
+        CommonV1ListRequest c2 = CommonV1ListRequest.builder().build();
+        System.out.println(c2.take);
     }
 }
