@@ -80,7 +80,6 @@ public class EventService implements IEventService {
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
-    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -438,7 +437,6 @@ public class EventService implements IEventService {
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
             entityId = consolidationId;
             entityType = Constants.CONSOLIDATION;
         } else {

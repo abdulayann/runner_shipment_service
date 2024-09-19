@@ -1484,16 +1484,14 @@ public class CommonUtils {
         }
 
         events.removeIf(event -> {
-            String uniqueKey = getTrackingEventsUniqueKey(event);
+            String uniqueKey = getTrackingEventsUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getShipmentNumber(), event.getSource());
             return !uniqueKeys.add(uniqueKey);
         });
     }
 
-    public String getTrackingEventsUniqueKey(Events event) {
-        String eventCode = event.getEventCode();
-        String containerNumber = StringUtils.defaultString(event.getContainerNumber(), "");
-        String shipmentNumber = StringUtils.defaultString(event.getShipmentNumber(), "");
-        String source = event.getSource();
+    public String getTrackingEventsUniqueKey(String eventCode, String containerNumber,String shipmentNumber, String source) {
+        containerNumber = StringUtils.defaultString(containerNumber, "");
+        shipmentNumber = StringUtils.defaultString(shipmentNumber, "");
         return eventCode + "-" + containerNumber + "-"  + shipmentNumber + "-" + source;
     }
 
