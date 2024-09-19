@@ -40,4 +40,6 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime scheduledDate;
     private String containerNumber;
     private String locationRole;
+    private Long consolidationId;
+    private String shipmentNumber;
 }

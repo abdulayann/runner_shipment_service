@@ -1224,6 +1224,16 @@ public class ShipmentService implements IShipmentService {
         return packingRequests;
     }
 
+    private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ShipmentDetails shipmentDetails, Long consolidationId) {
+        if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
+            for (EventsRequest req : eventsRequestList) {
+                    req.setShipmentNumber(shipmentDetails.getShipmentId());
+                    req.setConsolidationId(consolidationId);
+                }
+            }
+        return eventsRequestList;
+    }
+
     private List<ContainerRequest> calculateAutoContainerWeightAndVolume(List<ContainerRequest> containersList, List<PackingRequest> packingList) throws RunnerException {
         if(containersList != null && containersList.size() > 0) {
             for (ContainerRequest containers : containersList) {
@@ -2258,6 +2268,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setElDetailsList(updatedELDetails);
         }
         if (eventsRequestList != null) {
+            eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             updateActualFromTracking(eventsList, shipmentDetails);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
@@ -2361,23 +2372,6 @@ public class ShipmentService implements IShipmentService {
         return newUpdatedEvents;
     }
 
-    private void removeDuplicateTrackingEvents(List<Events> events) {
-        Set<String> uniqueKeys = new HashSet<>();
-        if (events == null) {
-            return;
-        }
-
-        events.removeIf(event -> {
-            String uniqueKey = getTrackingEventsUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource());
-            return !uniqueKeys.add(uniqueKey);
-        });
-    }
-
-    private String getTrackingEventsUniqueKey(String eventCode, String containerNumber, String source) {
-        containerNumber = StringUtils.defaultString(containerNumber, "");
-        return eventCode + "-" + containerNumber + "-" + source;
-    }
-
     private Map<String, List<Events>> getCargoesRunnerTrackingEventMap(List<Events> events) {
         Map<String, List<Events>> eventMap = new HashMap<>();
 
@@ -2399,7 +2393,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void updateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events) {
-        removeDuplicateTrackingEvents(events);
+        commonUtils.removeDuplicateTrackingEvents(events);
         Map<String, List<Events>> dbeventMap = getCargoesRunnerTrackingEventMap(events);
 
         if (isLclOrFclOrAir(shipmentDetails)) {
@@ -2670,10 +2664,11 @@ public class ShipmentService implements IShipmentService {
                 .filter(container -> container.getEvents() != null)
                 .flatMap(container -> container.getEvents().stream()
                         .map(event -> new SimpleEntry<>(
-                                getTrackingEventsUniqueKey(
+                                commonUtils.getTrackingEventsUniqueKey(
                                         eventService.convertTrackingEventCodeToShortCode(
                                                 event.getLocationRole(), event.getEventType()),
                                         container.getContainerNumber(),
+                                        shipmentDetails.getShipmentId(),
                                         Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING),
                                 event)))
                 .collect(Collectors.toMap(
@@ -2686,8 +2681,9 @@ public class ShipmentService implements IShipmentService {
         shipmentEvents.forEach(shipmentEvent -> {
             if (Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
                 EventsResponse shipmentEventsResponse = jsonHelper.convertValue(shipmentEvent, EventsResponse.class);
-                String key = getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
-                        shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getSource());
+                String key = commonUtils.getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
+                        shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getShipmentNumber(),
+                        shipmentEventsResponse.getSource());
                 Event eventFromTracking = containerEventMapFromTracking.get(key);
 
                 if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
@@ -5154,6 +5150,11 @@ public class ShipmentService implements IShipmentService {
         events.setEntityId(shipmentDetails.getId());
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
+        events.setShipmentNumber(shipmentDetails.getShipmentId());
+        // Attach to console as well
+        if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
+            events.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+        }
         // Persist the event
         eventDao.save(events);
         return events;

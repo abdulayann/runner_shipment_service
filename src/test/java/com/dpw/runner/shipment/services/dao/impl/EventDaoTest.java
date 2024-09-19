@@ -4,10 +4,15 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -27,6 +32,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -76,6 +82,12 @@ class EventDaoTest {
 
     @Mock
     private EntityManager entityManager;
+
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private IShipmentDao shipmentDao;
 
     private static ObjectMapper objectMapper;
 
@@ -280,13 +292,15 @@ class EventDaoTest {
         request.placeName = "test";
         request.placeDesc = "test";
 
+        var spyBean = Mockito.spy(eventDao);
 
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
 
         when(eventRepository.save(testData)).thenReturn(testData);
+        doNothing().when(spyBean).updateEventDetails(any());
 
-        eventDao.autoGenerateEvents(request);
+        spyBean.autoGenerateEvents(request);
 
         verify(eventsSync, times(0)).sync(anyList());
     }
@@ -369,5 +383,36 @@ class EventDaoTest {
         when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
         assertEquals(List.of(savedEvent), eventDao.getTheDataFromEntity("SHIPMENTS", 1, false));
+    }
+
+    @Test
+    void updateEventDetailsForShipmentEvent() {
+        Events events = new Events();
+        events.setEntityId(1L);
+        events.setEntityType(Constants.SHIPMENT);
+
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
+
+        List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipment);
+
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(consoleShipmentMappings);
+        when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(shipmentDetailsList);
+
+        eventDao.updateEventDetails(events);
+
+        assertEquals(1L, events.getConsolidationId());
+        assertEquals(shipment.getShipmentId(), events.getShipmentNumber());
+    }
+
+    @Test
+    void updateEventDetailsForConsolidationEvent() {
+        Events events = new Events();
+        events.setEntityId(1L);
+        events.setEntityType(Constants.CONSOLIDATION);
+
+        eventDao.updateEventDetails(events);
+
+        assertEquals(1L, events.getConsolidationId());
     }
 }

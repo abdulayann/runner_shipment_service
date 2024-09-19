@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -131,7 +132,7 @@ class EventsControllerTest {
     @Test
     void trackEventDetails() throws RunnerException {
         // Mock
-        when(eventService.trackEvents(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(eventService.trackEvents(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
         // Assert
@@ -141,7 +142,7 @@ class EventsControllerTest {
     @Test
     void trackEventDetails2() throws RunnerException {
         // Mock
-        when(eventService.trackEvents(any(), any())).thenThrow(new RuntimeException());
+        when(eventService.trackEvents(any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
         // Assert
@@ -151,9 +152,45 @@ class EventsControllerTest {
     @Test
     void trackEventDetails3() throws RunnerException {
         // Mock
-        when(eventService.trackEvents(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(eventService.trackEvents(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void trackEventDetailsV2() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.trackEvents(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = eventsController.trackEventDetailsV2(request);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void trackEventDetailsV2ReturnBadRequest() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.trackEvents(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = eventsController.trackEventDetailsV2(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void trackEventDetailsV2ReturnBadRequestWithErrorMessage() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.trackEvents(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = eventsController.trackEventDetailsV2(request);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

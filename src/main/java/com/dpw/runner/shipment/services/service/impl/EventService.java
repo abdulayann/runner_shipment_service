@@ -10,26 +10,16 @@ import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConst
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -49,14 +39,7 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -128,6 +111,7 @@ public class EventService implements IEventService {
         }
         Events event = convertRequestToEntity(request);
         try {
+            eventDao.updateEventDetails(event);
             event = eventDao.save(event);
 
             // audit logs
@@ -177,6 +161,7 @@ public class EventService implements IEventService {
         }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            eventDao.updateEventDetails(events);
             events = eventDao.save(events);
 
             // audit logs
@@ -378,14 +363,16 @@ public class EventService implements IEventService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException {
+        var shipmentId = request.getShipmentId();
+        var consolidationId = request.getConsolidationId();
         Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
         Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
         String referenceNumber = null;
         Long entityId = null;
         String entityType = null;
-        if (shipmentId.isPresent()) {
-            optionalShipmentDetails = shipmentDao.findById(shipmentId.get());
+        if (shipmentId != null) {
+            optionalShipmentDetails = shipmentDao.findById(shipmentId);
             if (optionalShipmentDetails.isEmpty()) {
                 log.debug(
                     "No Shipment present for the current Event ",
@@ -393,74 +380,89 @@ public class EventService implements IEventService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             referenceNumber = optionalShipmentDetails.get().getShipmentId();
-            entityId = shipmentId.get();
+            entityId = shipmentId;
             entityType = Constants.SHIPMENT;
-        } else if (consolidationId.isPresent()) {
-            optionalConsolidationDetails = consolidationDao.findById(consolidationId.get());
+
+            Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+
+            TrackingEventsResponse trackingEventsResponse = null;
+
+            try {
+                trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
+            } catch (Exception ex) {
+                throw new RunnerException(ex.getMessage());
+            }
+            List<EventsResponse> res = new ArrayList<>();
+            boolean isEmptyContainerReturnedEvent = false;
+
+            if (trackingEventsResponse != null) {
+                if (trackingEventsResponse.getEventsList() != null) {
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
+                    for (var trackingEvent : trackingEventsResponse.getEventsList()) {
+                        EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
+                        res.add(eventsResponse);
+                    }
+                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                    List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap);
+                    res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
+                }
+
+                for (EventsResponse eventsResponse : res) {
+                    if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
+                        isEmptyContainerReturnedEvent = true;
+                        break;
+                    }
+                }
+
+                if (optionalShipmentDetails.isPresent()) {
+                    ShipmentDetails shipment = optionalShipmentDetails.get();
+                    boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
+
+                    if (isShipmentUpdateRequired) {
+                        shipmentDao.save(shipment, false);
+                        try {
+                            shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                        } catch (Exception e) {
+                            log.error("Error performing sync on shipment entity, {}", e);
+                        }
+                    }
+                }
+            }
+
+        } else if (consolidationId != null) {
+            optionalConsolidationDetails = consolidationDao.findById(consolidationId);
             if (optionalConsolidationDetails.isEmpty()) {
                 log.debug(
                     "No Consolidation present for the current Event",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            referenceNumber = optionalConsolidationDetails.get().getConsolidationNumber();
-            entityId = consolidationId.get();
+            entityId = consolidationId;
             entityType = Constants.CONSOLIDATION;
         } else {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
 
-        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
-
-        TrackingEventsResponse trackingEventsResponse = null;
-
-        try {
-            trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
-        } catch (Exception ex) {
-            throw new RunnerException(ex.getMessage());
-        }
-        List<EventsResponse> res = new ArrayList<>();
-        boolean isEmptyContainerReturnedEvent = false;
-
-        if (trackingEventsResponse != null) {
-            if (trackingEventsResponse.getEventsList() != null) {
-                ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
-                for (var trackingEvent : trackingEventsResponse.getEventsList()) {
-                    EventsResponse eventsResponse = getEventsResponse(shipmentId, trackingEvent);
-                    res.add(eventsResponse);
-                }
-                saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
-                List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap);
-                res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
-            }
-
-            for (EventsResponse eventsResponse : res) {
-                if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
-                    isEmptyContainerReturnedEvent = true;
-                    break;
-                }
-            }
-
-            if (optionalShipmentDetails.isPresent()) {
-                ShipmentDetails shipment = optionalShipmentDetails.get();
-                boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
-
-                if (isShipmentUpdateRequired) {
-                    shipmentDao.save(shipment, false);
-                    try {
-                        shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
-                    } catch (Exception e) {
-                        log.error("Error performing sync on shipment entity, {}", e);
-                    }
-                }
-            }
-        }
 
         // Bring all Events saved from DB
-        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
-        Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
-        List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
-        List<EventsResponse> allEventResponses = jsonHelper.convertValueToList(allEvents, EventsResponse.class);
+        List<EventsResponse> allEventResponses;
+        ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
+
+        if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
+            listRequest = CommonUtils.andCriteria("entityId", entityId, "=", listRequest);
+            listRequest = CommonUtils.andCriteria("entityType", entityType, "=", listRequest);
+            Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
+            List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+            allEventResponses = jsonHelper.convertValueToList(allEvents, EventsResponse.class);
+        }
+        else {
+            log.info("Creating criteria for fetching consolidation events");
+            listRequest = CommonUtils.andCriteria("consolidationId", consolidationId, "=", listRequest);
+            Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
+            Page<Events> consolEventsPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+            log.info("Received {} events for consolidation with id {}", consolEventsPage.getTotalElements(), consolidationId);
+            allEventResponses = jsonHelper.convertValueToList(consolEventsPage.getContent(), EventsResponse.class);
+        }
 
         return ResponseHelper.buildSuccessResponse(allEventResponses);
     }

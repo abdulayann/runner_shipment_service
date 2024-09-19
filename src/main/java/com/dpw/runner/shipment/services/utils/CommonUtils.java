@@ -51,6 +51,7 @@ import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.StringUtils;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
@@ -215,6 +216,9 @@ public class CommonUtils {
             request.setPageSize(Integer.MAX_VALUE);
             request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
         }
+
+        if(request.getFilterCriteria() == null)
+            request.setFilterCriteria(new ArrayList<>());
 
         List<FilterCriteria> criterias = request.getFilterCriteria();
         if(criterias.isEmpty()) {
@@ -1471,6 +1475,24 @@ public class CommonUtils {
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }
         }
+    }
+
+    public void removeDuplicateTrackingEvents(List<Events> events) {
+        Set<String> uniqueKeys = new HashSet<>();
+        if (events == null) {
+            return;
+        }
+
+        events.removeIf(event -> {
+            String uniqueKey = getTrackingEventsUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getShipmentNumber(), event.getSource());
+            return !uniqueKeys.add(uniqueKey);
+        });
+    }
+
+    public String getTrackingEventsUniqueKey(String eventCode, String containerNumber,String shipmentNumber, String source) {
+        containerNumber = StringUtils.defaultString(containerNumber, "");
+        shipmentNumber = StringUtils.defaultString(shipmentNumber, "");
+        return eventCode + "-" + containerNumber + "-"  + shipmentNumber + "-" + source;
     }
 
 }

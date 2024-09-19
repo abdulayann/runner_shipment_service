@@ -29,10 +29,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
@@ -511,20 +508,25 @@ class EventServiceTest extends CommonMocks {
 
     @Test
     void trackEventsForInputShipmentThrowsErrorWhenShipmentNotPresent() throws RunnerException {
-        Optional<Long> shipmentId = Optional.of(1L);
+        Long shipmentId = 1L;
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
 
         var exception = assertThrows(DataRetrievalFailureException.class,
-                () -> eventService.trackEvents(shipmentId, null));
+                () -> eventService.trackEvents(trackingEventsRequest));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
     }
 
     @Test
     void trackEventsForInputConsolidationThrowsErrorWhenConsolidationNotPresent() throws RunnerException {
-        Optional<Long> consolidationId = Optional.of(1L);
+        Long consolidationId = 1L;
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidationId);
 
         var exception = assertThrows(DataRetrievalFailureException.class,
-                () -> eventService.trackEvents(Optional.empty(), consolidationId));
+                () -> eventService.trackEvents(trackingEventsRequest));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
     }
@@ -532,17 +534,21 @@ class EventServiceTest extends CommonMocks {
     @Test
     void trackEventsForEmptyRequest() throws RunnerException {
         var exception = assertThrows(RunnerException.class,
-                () -> eventService.trackEvents(Optional.empty(), Optional.empty()));
+                () -> eventService.trackEvents(new TrackingEventsRequest()));
 
         assertEquals("Both shipmentId and consolidationId are empty !", exception.getMessage());
     }
 
     @Test
     void trackEventsForInputShipment() throws RunnerException {
+        Long shipmentId = 1L;
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -568,7 +574,7 @@ class EventServiceTest extends CommonMocks {
         eventsResponseList.add(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
@@ -579,7 +585,8 @@ class EventServiceTest extends CommonMocks {
     @Test
     void trackEventsForInputShipmentSavesUpstreamEvents() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
         shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -590,6 +597,9 @@ class EventServiceTest extends CommonMocks {
         shipment.setAdditionalDetails(additionalDetails);
 
         Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -612,7 +622,7 @@ class EventServiceTest extends CommonMocks {
         eventsResponseList.add(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
@@ -624,9 +634,13 @@ class EventServiceTest extends CommonMocks {
     @Test
     void trackEventsForInputShipmentThrowsException() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -647,7 +661,7 @@ class EventServiceTest extends CommonMocks {
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
 
-        var e = assertThrows(RunnerException.class, () -> eventService.trackEvents(Optional.of(12L) , Optional.of(12L)));
+        var e = assertThrows(RunnerException.class, () -> eventService.trackEvents(trackingEventsRequest));
 
         assertNotNull(e);
     }
@@ -752,7 +766,8 @@ class EventServiceTest extends CommonMocks {
     @Test
     void TestGateInWithContainerFullTrackEvent() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP02";
         shipment.setShipmentId(referenceNumber);
         shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -761,6 +776,9 @@ class EventServiceTest extends CommonMocks {
 
         Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_FULL,
                 EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -792,7 +810,7 @@ class EventServiceTest extends CommonMocks {
         eventsResponseList.add(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L), Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
@@ -804,7 +822,8 @@ class EventServiceTest extends CommonMocks {
     @Test
     void TestVesselDepartureWithContainerTrackEvent() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP03";
         shipment.setShipmentId(referenceNumber);
         shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -813,6 +832,9 @@ class EventServiceTest extends CommonMocks {
 
         Events mockEvent = getMockEvent(2L, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER,
                 EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -835,7 +857,7 @@ class EventServiceTest extends CommonMocks {
         eventsResponseList.add(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
@@ -848,7 +870,8 @@ class EventServiceTest extends CommonMocks {
     @Test
     void TestGateOutWithContainerFullTrackEvent() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP04";
         shipment.setShipmentId(referenceNumber);
         shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -857,6 +880,9 @@ class EventServiceTest extends CommonMocks {
 
         Events mockEvent = getMockEvent(6L, EventConstants.GATE_OUT_WITH_CONTAINER_FULL,
                 EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -879,7 +905,7 @@ class EventServiceTest extends CommonMocks {
         eventsResponseList.add(eventsResponse);
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 

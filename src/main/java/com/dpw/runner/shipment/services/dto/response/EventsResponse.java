@@ -23,6 +23,8 @@ public class EventsResponse implements IRunnerResponse {
     private String entityType;
     private String eventCode;
     private Long shipmentId;
+    private String shipmentNumber;
+    private Long consolidationId;
     private String description;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime estimated;

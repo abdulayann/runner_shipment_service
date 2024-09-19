@@ -351,8 +351,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Jobs> jobsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'CONSOLIDATION'")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
     private List<Events> eventsList;
 

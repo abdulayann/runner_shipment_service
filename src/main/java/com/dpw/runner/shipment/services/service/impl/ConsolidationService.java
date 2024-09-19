@@ -803,6 +803,13 @@ public class ConsolidationService implements IConsolidationService {
                         }
                         packingList = packingDao.saveAll(packingList);
                     }
+                    if(shipmentDetails.getEventsList() != null) {
+                        List<Events> eventsList = shipmentDetails.getEventsList();
+                        for(Events event : eventsList) {
+                            event.setConsolidationId(consolidationId);
+                        }
+                        eventDao.saveAll(eventsList);
+                    }
                     this.createLogHistoryForShipment(shipmentDetails);
                 }
             }
@@ -917,6 +924,13 @@ public class ConsolidationService implements IConsolidationService {
                         packing.setConsolidationId(null);
                     }
                     packingList = packingDao.saveAll(packingList);
+                }
+                if(shipmentDetail.getEventsList() != null) {
+                    var eventsList = shipmentDetail.getEventsList();
+                    for(Events event : eventsList) {
+                        event.setConsolidationId(null);
+                    }
+                    eventDao.saveAll(eventsList);
                 }
                 shipmentDetail.setConsolRef(null);
                 shipmentDetail.setMasterBill(null);
@@ -3574,8 +3588,11 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setPackingList(updatedPackings);
         }
         if (eventsRequestList != null) {
-            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(eventsRequestList, Events.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION);
-            consolidationDetails.setEventsList(updatedEvents);
+            eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
+            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isFromBooking ? false : isCreate);
+            commonUtils.removeDuplicateTrackingEvents(eventsList);
+            eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.CONSOLIDATION);
+            consolidationDetails.setEventsList(eventsList);
         }
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
@@ -3607,6 +3624,15 @@ public class ConsolidationService implements IConsolidationService {
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
         }
+    }
+
+    private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ConsolidationDetails consolidationDetails) {
+        if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
+            for (EventsRequest req : eventsRequestList) {
+                req.setConsolidationId(consolidationDetails.getId());
+            }
+        }
+        return eventsRequestList;
     }
 
     private boolean checkForAwbUpdate(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
@@ -4313,6 +4339,7 @@ public class ConsolidationService implements IConsolidationService {
         events.setEntityId(consolidationDetails.getId());
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
+        events.setConsolidationId(consolidationDetails.getId());
         // Persist the event
         eventDao.save(events);
         return events;
