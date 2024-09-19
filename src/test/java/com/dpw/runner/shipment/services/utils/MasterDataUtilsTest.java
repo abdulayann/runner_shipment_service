@@ -68,6 +68,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -115,11 +116,12 @@ class MasterDataUtilsTest {
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
     @InjectMocks
-    private MasterDataUtils masterDataUtils;
+    private  MasterDataUtils masterDataUtils;
 
 
     @BeforeAll
-    static void init() throws IOException {
+    static void init() throws IOException, NoSuchFieldException, IllegalAccessException {
+
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
@@ -129,10 +131,14 @@ class MasterDataUtilsTest {
     }
 
     @BeforeEach
-    void setup() {
+    void setup() throws NoSuchFieldException, IllegalAccessException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
         customerBooking = jsonTestUtility.getCustomerBooking();
+
+        Field takeField = MasterDataUtils.class.getDeclaredField("take");
+        takeField.setAccessible(true);
+        takeField.set(masterDataUtils, 500);
     }
 
 
@@ -140,6 +146,8 @@ class MasterDataUtilsTest {
      * Method under test:
      * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String)}
      */
+
+
 
     @Test
     void testCreateInBulkContainerTypeRequest() {
