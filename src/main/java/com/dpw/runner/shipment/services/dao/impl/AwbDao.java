@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.TO.impl.CommonAdapterService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -52,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
@@ -85,10 +87,19 @@ public class AwbDao implements IAwbDao {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
-    private IEventDao eventDao;
+    private CommonAdapterService commonAdapterService;
 
     @Autowired
-    private EntityManager entityManager;
+    private IEventDao eventDao;
+
+   // @Autowired
+    private final EntityManager entityManager;
+
+    @Autowired
+    public AwbDao(@Qualifier("primaryEntityManagerFactory") EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
     private V1ServiceUtil v1ServiceUtil;
     private ModelMapper modelMapper;
 
@@ -136,8 +147,10 @@ public class AwbDao implements IAwbDao {
                 return;
             }
 
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(awbResponse, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+            //todo: call internal method
+//            KafkaResponse kafkaResponse = producer.getKafkaResponse(awbResponse, isCreate);
+//            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+            commonAdapterService.process(jsonHelper.convertToJson(awbResponse));
         }
         catch (Exception e)
         {
@@ -299,9 +312,12 @@ public class AwbDao implements IAwbDao {
             return;
         }
         awbUtility.overrideInfoForCoLoadShipment(awbResponse, overrideData);
-        KafkaResponse kafkaResponse = getKafkaResponseForAirMessaging(awbResponse);
-        log.info("RequestId: {} || Event: {} || message: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.AIR_MESSAGING_EVENT_PUSH_TO_KAFKA, jsonHelper.convertToJson(kafkaResponse));
-        producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+//        KafkaResponse kafkaResponse = getKafkaResponseForAirMessaging(awbResponse);
+      //  log.info("RequestId: {} || Event: {} || message: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.AIR_MESSAGING_EVENT_PUSH_TO_KAFKA, jsonHelper.convertToJson(kafkaResponse));
+//        producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
+
+        //todo: call internal method
+        commonAdapterService.process(jsonHelper.convertToJson(awbResponse));
     }
 
     public Awb getHawb(Long id) {

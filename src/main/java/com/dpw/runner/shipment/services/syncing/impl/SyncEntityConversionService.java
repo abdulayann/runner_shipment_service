@@ -35,6 +35,7 @@ public class SyncEntityConversionService {
     private ModelMapper modelMapper;
 
     @Autowired
+//    @Qualifier("primaryDataSource")
     private IShipmentDao shipmentDao;
 
     @Autowired

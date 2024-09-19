@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.TO.impl;
 
-import com.dpw.runner.shipment.services.service.TO.config.EmailConfig;
+import com.dpw.runner.shipment.services.service.TO.config.TOEmailConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,16 +22,16 @@ import java.util.List;
 public class EmailService {
 
     @Autowired
-    private EmailConfig emailConfig;
+    private TOEmailConfig TOEmailConfig;
 
-    @Value("${aws.from}")
+    @Value("${aws_from}")
     private String from;
 
     @Async
     @Retryable(maxAttempts = 3)
     public void sendEmail(String body, String subject, List<String> emailIds, File file, String fileName)  {
         try {
-            Session session = this.emailConfig.getSession();
+            Session session = this.TOEmailConfig.getSession();
             MimeMessage msg = new MimeMessage(session);
             msg.setFrom(new InternetAddress(from));
             msg.setRecipients(Message.RecipientType.TO, convertAddress(emailIds));
@@ -47,7 +47,7 @@ public class EmailService {
             }
 
             msg.setContent(multipart);
-            Transport transport = this.emailConfig.getTransport(session);
+            Transport transport = this.TOEmailConfig.getTransport(session);
             transport.sendMessage(msg, msg.getAllRecipients());
             transport.close();
         }

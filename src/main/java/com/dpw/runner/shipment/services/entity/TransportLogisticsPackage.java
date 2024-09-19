@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
-import com.dpw.runner.shipment.services.entity.fwb.LinearSpatialDimension;
+import com.dpw.runner.shipment.services.dto.TO.fwb.LinearSpatialDimension;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 

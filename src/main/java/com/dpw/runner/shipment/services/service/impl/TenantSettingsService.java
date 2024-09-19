@@ -20,7 +20,7 @@ public class TenantSettingsService {
     @Autowired
     private IV1Service v1Service;
 
-    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
+   // @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
     public V1TenantSettingsResponse getV1TenantSettings(Integer tenantId)
     {
         log.info("Request: {} getV1TenantSettings --- for tenant: {}", LoggerHelper.getRequestIdFromMDC(), tenantId);

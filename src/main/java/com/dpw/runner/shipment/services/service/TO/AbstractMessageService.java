@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.service.TO;
 
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducerHelper;
 import com.dpw.runner.shipment.services.commons.EAWBConstants;
-import com.dpw.runner.shipment.services.entity.IntegrationEntity;
-import com.dpw.runner.shipment.services.entity.ResponseEntity;
+import com.dpw.runner.shipment.services.entityTO.IntegrationEntity;
+import com.dpw.runner.shipment.services.entityTO.ResponseEntity;
 import com.dpw.runner.shipment.services.entity.ShipmentStatusPayload;
 import com.dpw.runner.shipment.services.entity.enums.MessageType;
 import com.dpw.runner.shipment.services.entity.enums.ResponseMessageType;

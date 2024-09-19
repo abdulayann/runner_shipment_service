@@ -1,20 +1,19 @@
 package com.dpw.runner.shipment.services.service.TO.impl;
 
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducerHelper;
 import com.dpw.runner.shipment.services.commons.EAWBConstants;
-import com.dpw.runner.shipment.services.entity.IntegrationEntity;
+import com.dpw.runner.shipment.services.dto.TO.fsu.*;
+import com.dpw.runner.shipment.services.entityTO.IntegrationEntity;
 import com.dpw.runner.shipment.services.entity.ShipmentEventUpdatePayload;
 import com.dpw.runner.shipment.services.entity.ShipmentStatusPayload;
 import com.dpw.runner.shipment.services.entity.enums.DescarteStatusCodeEnum;
 import com.dpw.runner.shipment.services.entity.enums.ResponseMessageType;
 import com.dpw.runner.shipment.services.entity.enums.StatusType;
-import com.dpw.runner.shipment.services.entity.fnm.FNMPayload;
-import com.dpw.runner.shipment.services.entity.fsu.*;
+import com.dpw.runner.shipment.services.dto.TO.fnm.FNMPayload;
 import com.dpw.runner.shipment.services.exception.exceptions.DescartesEventUpdateException;
 import com.dpw.runner.shipment.services.exception.exceptions.DescartesStatusUpdateException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.IntegrationRepository;
+import com.dpw.runner.shipment.services.repositoryTO.IntegrationRepository;
 import com.dpw.runner.shipment.services.service.TO.IDescartesAdapter;
 import com.dpw.runner.shipment.services.service.TO.request.DescartesRequest;
 import com.dpw.runner.shipment.services.service.TO.response.DescartesBaseResponse;
@@ -27,6 +26,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -75,6 +75,7 @@ public class DescartesAdapterImpl implements IDescartesAdapter {
     private JsonHelper jsonHelperr;
 
     @Autowired
+    @Qualifier("secondaryEntityManagerFactory")
     private IntegrationRepository integrationRepository;
 
     @Value("${eawb.kafka.producer.queue}")
@@ -142,7 +143,7 @@ public class DescartesAdapterImpl implements IDescartesAdapter {
             }
 
             ShipmentEventUpdatePayload shipmentEventUpdatePayload = getShipmentEventUpdatePayload(payload, xmlBase64, entity.get(0));
-            dbService.saveIntegrationResponse(com.dpw.runner.shipment.services.entity.ResponseEntity.builder()
+            dbService.saveIntegrationResponse(com.dpw.runner.shipment.services.entityTO.ResponseEntity.builder()
                     .integrationEntityId(entity.get(0))
                     .messageTypeKey(ResponseMessageType.XFSU)
                     .messageTypeValue(payload.getMasterConsignment().getReportedStatus().get(0).getReasonCode())
@@ -213,7 +214,7 @@ public class DescartesAdapterImpl implements IDescartesAdapter {
             dbService.saveIntegration(entity);
 
             ShipmentStatusPayload shipmentStatusPayload = getShipmentStatusPayload(entity, xmlBase64);
-            dbService.saveIntegrationResponse(com.dpw.runner.shipment.services.entity.ResponseEntity.builder()
+            dbService.saveIntegrationResponse(com.dpw.runner.shipment.services.entityTO.ResponseEntity.builder()
                     .integrationEntityId(entity)
                     .messageTypeKey(ResponseMessageType.XFNM)
                     .messageTypeValue(entity.getStatus().name())

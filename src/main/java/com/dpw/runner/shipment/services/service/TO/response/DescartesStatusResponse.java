@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.TO.response;
 
-import com.dpw.runner.shipment.services.entity.ResponseEntity;
+import com.dpw.runner.shipment.services.entityTO.ResponseEntity;
 import lombok.Getter;
 import lombok.Setter;
 
