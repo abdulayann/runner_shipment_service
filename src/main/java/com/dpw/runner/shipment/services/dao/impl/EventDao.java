@@ -8,8 +8,11 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -68,6 +71,12 @@ public class EventDao implements IEventDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -355,6 +364,9 @@ public class EventDao implements IEventDao {
             if (isEstimatedRequired) {
                 eventsRow.setEstimated(LocalDate.now().atStartOfDay());
             }
+
+            updateEventDetails(eventsRow);
+
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             eventsRow.setIsPublicTrackingEvent(true);
             eventsRow.setEntityType(entityType);
@@ -432,5 +444,26 @@ public class EventDao implements IEventDao {
         query.executeUpdate();
 
 //        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
+    }
+
+    @Override
+    public void updateEventDetails(Events event) {
+        Long entityId = event.getEntityId();
+        String entityType = event.getEntityType();
+        if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
+            // set linked consolidationId
+            // set shipmentId
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(entityId);
+            if(!consoleShipmentMappings.isEmpty()) {
+                event.setConsolidationId(consoleShipmentMappings.get(0).getConsolidationId());
+            }
+            List<ShipmentDetails> shipmentDetails = shipmentDao.getShipmentNumberFromId(List.of(entityId));
+            if(!shipmentDetails.isEmpty()) {
+                event.setShipmentNumber(shipmentDetails.get(0).getShipmentId());
+            }
+        }
+        else if(entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+            event.setConsolidationId(entityId);
+        }
     }
 }

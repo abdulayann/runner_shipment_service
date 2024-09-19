@@ -5163,6 +5163,7 @@ public class ShipmentService implements IShipmentService {
         events.setEntityId(shipmentDetails.getId());
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
+        events.setShipmentNumber(shipmentDetails.getShipmentId());
         // Attach to console as well
         if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
             events.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());

@@ -13,21 +13,13 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.EventsDump;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -88,6 +80,7 @@ public class EventService implements IEventService {
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -119,6 +112,7 @@ public class EventService implements IEventService {
         }
         Events event = convertRequestToEntity(request);
         try {
+            eventDao.updateEventDetails(event);
             event = eventDao.save(event);
 
             // audit logs
@@ -168,6 +162,7 @@ public class EventService implements IEventService {
         }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            eventDao.updateEventDetails(events);
             events = eventDao.save(events);
 
             // audit logs
@@ -388,6 +383,53 @@ public class EventService implements IEventService {
             referenceNumber = optionalShipmentDetails.get().getShipmentId();
             entityId = shipmentId;
             entityType = Constants.SHIPMENT;
+
+            Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+
+            TrackingEventsResponse trackingEventsResponse = null;
+
+            try {
+                trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
+            } catch (Exception ex) {
+                throw new RunnerException(ex.getMessage());
+            }
+            List<EventsResponse> res = new ArrayList<>();
+            boolean isEmptyContainerReturnedEvent = false;
+
+            if (trackingEventsResponse != null) {
+                if (trackingEventsResponse.getEventsList() != null) {
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
+                    for (var trackingEvent : trackingEventsResponse.getEventsList()) {
+                        EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
+                        res.add(eventsResponse);
+                    }
+                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                    List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap);
+                    res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
+                }
+
+                for (EventsResponse eventsResponse : res) {
+                    if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
+                        isEmptyContainerReturnedEvent = true;
+                        break;
+                    }
+                }
+
+                if (optionalShipmentDetails.isPresent()) {
+                    ShipmentDetails shipment = optionalShipmentDetails.get();
+                    boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
+
+                    if (isShipmentUpdateRequired) {
+                        shipmentDao.save(shipment, false);
+                        try {
+                            shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                        } catch (Exception e) {
+                            log.error("Error performing sync on shipment entity, {}", e);
+                        }
+                    }
+                }
+            }
+
         } else if (consolidationId != null) {
             optionalConsolidationDetails = consolidationDao.findById(consolidationId);
             if (optionalConsolidationDetails.isEmpty()) {
@@ -403,51 +445,6 @@ public class EventService implements IEventService {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
 
-        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
-
-        TrackingEventsResponse trackingEventsResponse = null;
-
-        try {
-            trackingEventsResponse = trackingServiceAdapter.getTrackingEventsResponse(referenceNumber);
-        } catch (Exception ex) {
-            throw new RunnerException(ex.getMessage());
-        }
-        List<EventsResponse> res = new ArrayList<>();
-        boolean isEmptyContainerReturnedEvent = false;
-
-        if (trackingEventsResponse != null) {
-            if (trackingEventsResponse.getEventsList() != null) {
-                ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
-                for (var trackingEvent : trackingEventsResponse.getEventsList()) {
-                    EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
-                    res.add(eventsResponse);
-                }
-                saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
-                List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap);
-                res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
-            }
-
-            for (EventsResponse eventsResponse : res) {
-                if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
-                    isEmptyContainerReturnedEvent = true;
-                    break;
-                }
-            }
-
-            if (optionalShipmentDetails.isPresent()) {
-                ShipmentDetails shipment = optionalShipmentDetails.get();
-                boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
-
-                if (isShipmentUpdateRequired) {
-                    shipmentDao.save(shipment, false);
-                    try {
-                        shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
-                    } catch (Exception e) {
-                        log.error("Error performing sync on shipment entity, {}", e);
-                    }
-                }
-            }
-        }
 
         // Bring all Events saved from DB
         List<EventsResponse> allEventResponses;

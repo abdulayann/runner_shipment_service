@@ -51,6 +51,7 @@ import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
+import org.apache.commons.lang3.StringUtils;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
@@ -1474,6 +1475,26 @@ public class CommonUtils {
                 dictionary.put(DG_APPROVER_NAME, change.getNewValue());
             }
         }
+    }
+
+    public void removeDuplicateTrackingEvents(List<Events> events) {
+        Set<String> uniqueKeys = new HashSet<>();
+        if (events == null) {
+            return;
+        }
+
+        events.removeIf(event -> {
+            String uniqueKey = getTrackingEventsUniqueKey(event);
+            return !uniqueKeys.add(uniqueKey);
+        });
+    }
+
+    public String getTrackingEventsUniqueKey(Events event) {
+        String eventCode = event.getEventCode();
+        String containerNumber = StringUtils.defaultString(event.getContainerNumber(), "");
+        String shipmentNumber = StringUtils.defaultString(event.getShipmentNumber(), "");
+        String source = event.getSource();
+        return eventCode + "-" + containerNumber + "-"  + shipmentNumber + "-" + source;
     }
 
 }
