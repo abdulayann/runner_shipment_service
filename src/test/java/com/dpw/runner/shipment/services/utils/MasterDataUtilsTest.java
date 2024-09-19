@@ -31,12 +31,7 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -2106,6 +2101,26 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(TenantModel::new);
 
         masterDataUtils.fetchTenantIdForList(List.of(ShipmentListResponse.builder().tenantId(1).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Console2() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(ConsolidationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Console() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(ConsolidationListResponse.builder().tenantId(1).build()));
 
         assertTrue(isSuccess);
     }

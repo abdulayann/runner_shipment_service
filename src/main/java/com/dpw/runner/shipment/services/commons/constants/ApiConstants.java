@@ -121,5 +121,6 @@ public class ApiConstants {
 
     public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
+    public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
 
 }

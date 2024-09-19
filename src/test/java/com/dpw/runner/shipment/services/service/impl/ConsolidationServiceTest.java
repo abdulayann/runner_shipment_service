@@ -177,6 +177,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -3164,11 +3166,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3182,13 +3180,24 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @NotNull
+    private static AutoAttachConsolidationRequest getAutoAttachConsolidationRequest() {
+        AutoAttachConsolidationRequest request = new AutoAttachConsolidationRequest();
+        request.setMasterBill(testConsol.getBol());
+        request.setTransportMode(testConsol.getTransportMode());
+        request.setVessel(testConsol.getCarrierDetails().getVessel());
+        request.setVoyageNumber(testConsol.getCarrierDetails().getVoyage());
+        request.setEta(testConsol.getCarrierDetails().getEta());
+        request.setEtd(testConsol.getCarrierDetails().getEtd());
+        request.setPol(testConsol.getCarrierDetails().getOriginPort());
+        request.setPod(testConsol.getCarrierDetails().getDestinationPort());
+        return request;
+    }
+
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setMasterBill(null);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3204,11 +3213,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3233,11 +3239,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_emptyHubTenantIds() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3262,11 +3265,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_CoLoadFlag_False() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3285,11 +3285,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_IMP() {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(testConsol.getBol())
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_IMP).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_IMP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
@@ -3313,11 +3310,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.CARGO_TYPE_FCL);
+
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
@@ -3334,11 +3331,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck1() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.CARGO_TYPE_FCL);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -3367,11 +3363,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_LCL() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.SHIPMENT_TYPE_LCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -3397,11 +3392,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_BLK() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.SHIPMENT_TYPE_LCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -3431,11 +3425,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_WithoutPartiesCheck_FCL() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.CARGO_TYPE_FCL);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(false);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -3465,11 +3458,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithoutMasterBill_PartiesCheck_LCL_FCL() {
-        AutoAttachConsolidationRequest request = AutoAttachConsolidationRequest.builder().masterBill(null)
-                .transportMode(testConsol.getTransportMode()).vessel(testConsol.getCarrierDetails().getVessel())
-                .voyageNumber(testConsol.getCarrierDetails().getVoyage()).eta(testConsol.getCarrierDetails().getEta())
-                .etd(testConsol.getCarrierDetails().getEtd()).pol(testConsol.getCarrierDetails().getOriginPort())
-                .pod(testConsol.getCarrierDetails().getDestinationPort()).direction(Constants.DIRECTION_EXP).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setDirection(Constants.DIRECTION_EXP);
+        request.setMasterBill(null);
+        request.setShipmentType(Constants.CARGO_TYPE_FCL);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnablePartyCheckForConsolidation(true);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -4674,6 +4666,64 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     private Runnable mockRunnable() {
         return null;
+    }
+
+    @Test
+    void testListRequestedConsolidationForShipment() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder().id(2L).build();
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        mockTenantSettings();
+        var spyService = Mockito.spy(consolidationService);
+        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
+        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
+                List.of(consolidationListResponse),
+                1, 1));
+
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testListRequestedConsolidationForShipment_EmptyMapping() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        mockTenantSettings();
+        var spyService = Mockito.spy(consolidationService);
+        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testListRequestedConsolidationForShipment_Error1() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        mockTenantSettings();
+        var spyService = Mockito.spy(consolidationService);
+        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
+        when(spyService.list(any())).thenReturn(ResponseEntity.of(Optional.empty()));
+
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+    }
+
+    @Test
+    void testListRequestedConsolidationForShipment_Error2() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        mockTenantSettings();
+        var spyService = Mockito.spy(consolidationService);
+        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
+        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
+                List.of(),
+                1, 1));
+
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }
