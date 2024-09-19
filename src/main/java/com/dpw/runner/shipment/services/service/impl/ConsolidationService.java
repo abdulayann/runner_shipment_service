@@ -4648,7 +4648,7 @@ public class ConsolidationService implements IConsolidationService {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long shipId = commonGetRequest.getId();
         var consoleShipMappingList = consoleShipmentMappingDao.findByShipmentIdAll(shipId);
-        if (commonUtils.listIsNullOrEmpty(consoleShipMappingList)) {
+        if (CommonUtils.listIsNullOrEmpty(consoleShipMappingList)) {
             return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
         }
         List<Long> consoleIds = consoleShipMappingList.stream().filter(x -> (Boolean.FALSE.equals(x.getIsAttachmentDone()) &&

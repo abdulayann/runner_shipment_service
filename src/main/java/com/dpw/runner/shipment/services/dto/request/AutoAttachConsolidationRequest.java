@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
