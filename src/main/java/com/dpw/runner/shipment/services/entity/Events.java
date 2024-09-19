@@ -3,15 +3,21 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
-import lombok.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
-import javax.persistence.*;
-import javax.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Setter
@@ -110,4 +116,10 @@ public class Events extends MultiTenancy {
 
     @Column(name = "shipment_number")
     private String shipmentNumber;
+
+    @Column(name = "flight_number")
+    private String flightNumber;
+
+    @Column(name = "flight_name")
+    private String flightName;
 }
