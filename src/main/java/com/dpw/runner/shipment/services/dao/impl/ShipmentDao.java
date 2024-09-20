@@ -40,6 +40,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
@@ -110,7 +111,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -157,7 +159,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
