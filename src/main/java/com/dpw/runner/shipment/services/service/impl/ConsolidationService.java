@@ -122,6 +122,7 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -729,6 +730,40 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public void sendEmailForDetachShipments(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetails,
+                                            Set<ShipmentRequestedType> shipmentRequestedTypes, String remarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> usernamesList = new HashSet<>();
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        List<Long> interbranchShipIds = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
+            usernamesList.add(shipmentDetails1.getCreatedBy());
+            usernamesList.add(shipmentDetails1.getAssignedTo());
+            tenantIds.add(shipmentDetails1.getTenantId());
+            if(!Objects.equals(shipmentDetails1.getTenantId(), consolidationDetails.getTenantId()))
+                interbranchShipIds.add(shipmentDetails1.getId());
+        }
+        usernamesList.add(consolidationDetails.getCreatedBy());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+
+        for(Long shipmentId : interbranchShipIds) {
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), consolidationDetails, SHIPMENT_DETACH, remarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null);
+            } catch (Exception e) {
+                log.error("Error while sending email");
+            }
+        }
+    }
+
     @Transactional
     public ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds) throws RunnerException {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
@@ -880,6 +915,11 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+        return detachShipments(consolidationId, shipmentIds, null);
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds, String remarks) throws RunnerException {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
 
         List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
@@ -888,16 +928,10 @@ public class ConsolidationService implements IConsolidationService {
 
         validateShipmentDetachment(shipmentDetails);
 
-        Map<Long, ShipmentDetails> idToShipmentDetailsMap = shipmentDetails.stream().filter(ObjectUtils::isNotEmpty)
-                .collect(Collectors.toMap(
-                        ShipmentDetails::getId,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
-
         if (consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
         }
+
         List<Packing> packingList = null;
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
@@ -947,6 +981,9 @@ public class ConsolidationService implements IConsolidationService {
         }
         if(consol.isPresent() && Objects.equals(consol.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             this.checkSciForDetachConsole(consolidationId);
+        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
+        if(remarks != null)
+            sendEmailForDetachShipments(consol.get(), shipmentDetails, shipmentRequestedTypes, remarks);
         String transactionId = consol.get().getGuid().toString();
         if(packingList != null) {
             try {
@@ -961,7 +998,11 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Error Syncing Consol");
         }
         syncShipmentsList(shipmentDetailsToSave, transactionId);
-        return new ResponseEntity<>(HttpStatus.OK);
+        String warning = null;
+        if(!shipmentRequestedTypes.isEmpty()) {
+            warning = "Mail Template not found, please inform the region users individually";
+        }
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
