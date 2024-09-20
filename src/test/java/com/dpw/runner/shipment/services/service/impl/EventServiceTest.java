@@ -583,6 +583,36 @@ class EventServiceTest extends CommonMocks {
     }
 
     @Test
+    void trackEventsForInputConsolidation() throws RunnerException {
+        Long consolidationId = 1L;
+        var mockConsolidation = jsonTestUtility.getTestConsolidation();
+        mockConsolidation.setId(consolidationId);
+        String referenceNumber = mockConsolidation.getReferenceNumber() != null ? mockConsolidation.getReferenceNumber() : "CON01";
+        mockConsolidation.setReferenceNumber(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidationId);
+
+        EventsResponse eventsResponse = new EventsResponse();
+
+        Events mockEvent = Events.builder().build();
+
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(mockConsolidation));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
     void trackEventsForInputShipmentSavesUpstreamEvents() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
         Long shipmentId = 1L;

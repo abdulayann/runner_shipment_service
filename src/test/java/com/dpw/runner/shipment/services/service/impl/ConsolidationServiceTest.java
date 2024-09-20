@@ -37,6 +37,17 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1492,6 +1503,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails.setEventsList(List.of(new Events()));
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1566,6 +1578,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         shipmentDetails.setTenantId(1);
+        shipmentDetails.setEventsList(List.of(new Events()));
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
                 .enableConsolSplitBillCharge(true).build());
