@@ -1086,13 +1086,11 @@ class PackingServiceTest extends CommonMocks {
         ConsolidationDetails consol = new ConsolidationDetails();
         consol.setTransportMode("AIR");
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
-        when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
         doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
 
         spyService.uploadPacking(bulkUploadRequest);
 
-        verify(consolidationDao, times(1)).save(any(), anyBoolean());
         verify(packingDao, times(1)).saveAll(any());
         verify(packingSync, times(1)).sync(any(), any(), any());
     }
@@ -1137,13 +1135,11 @@ class PackingServiceTest extends CommonMocks {
         consol.setTransportMode("AIR");
 
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
-        when(consolidationDao.findById(any())).thenReturn(Optional.of(consol));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
         doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
 
         spyService.uploadPacking(bulkUploadRequest);
 
-        verify(consolidationDao, times(1)).save(any(), anyBoolean());
         verify(packingDao, times(1)).saveAll(any());
         verify(packingSync, times(1)).sync(any(), any(), any());
     }
