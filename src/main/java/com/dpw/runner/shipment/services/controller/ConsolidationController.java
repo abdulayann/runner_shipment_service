@@ -540,4 +540,16 @@ public class ConsolidationController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.LIST_SHIPMENT_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(@RequestParam Long shipId) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(shipId).build();
+            return consolidationService.listRequestedConsolidationForShipment(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }

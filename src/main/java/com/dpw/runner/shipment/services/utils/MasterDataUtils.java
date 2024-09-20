@@ -214,6 +214,9 @@ public class MasterDataUtils{
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
                 }
+                if (response instanceof ConsolidationListResponse consolidationListResponse && (consolidationListResponse.getTenantId() != null)) {
+                        tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()));
+                }
             }
 
             Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList.stream().toList());
@@ -228,6 +231,11 @@ public class MasterDataUtils{
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
+                }
+                if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                    consolidationListResponse.setTenantMasterData(new HashMap<>());
+                    if (consolidationListResponse.getTenantId() != null)
+                        consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS));
                 }
             }
         } catch (Exception ex) {

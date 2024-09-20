@@ -85,4 +85,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> mblCheck(String mblNumber);
     ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getDGShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(CommonRequestModel commonRequestModel);
 }

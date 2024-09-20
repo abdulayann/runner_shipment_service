@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -377,7 +378,8 @@ public class ConsolidationService implements IConsolidationService {
             var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
             var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-            CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture).join();
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+            CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -3859,107 +3861,112 @@ public class ConsolidationService implements IConsolidationService {
 
         boolean isConditionSatisfied = false;
         boolean isMasterBillPresent = false;
-        ListCommonRequest consolListRequest = null;
+        ListCommonRequest consolListRequest = request.getFilterCriteria() != null ? request : null;
 
-        if(!Strings.isNullOrEmpty(request.getTransportMode()) && applicableTransportModesList != null &&
-                applicableTransportModesList.contains(request.getTransportMode().toUpperCase())) {
+        if(!Strings.isNullOrEmpty(request.getTransportMode()) && ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) || (applicableTransportModesList != null &&
+                applicableTransportModesList.contains(request.getTransportMode().toUpperCase())))) {
 
             consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
             consolListRequest = CommonUtils.andCriteria(Constants.OPEN_FOR_ATTACHMENT, true, "=", consolListRequest);
             if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
-                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) && InterBranchContext.getContext().getHubTenantIds() != null
-                    && !InterBranchContext.getContext().getHubTenantIds().isEmpty()) {
-                List<FilterCriteria> criterias = consolListRequest.getFilterCriteria();
-                List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
-                Criteria criteria = Criteria.builder().fieldName(Constants.INTER_BRANCH_CONSOLE).operator("=").value(true).build();
-                FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-                List<FilterCriteria> innerFilers1 = new ArrayList<>();
-                innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("IN").value(InterBranchContext.getContext().getHubTenantIds()).build();
-                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("and").build();
-                innerFilers1.add(filterCriteria);
-                FilterCriteria filterCriteria1 = FilterCriteria.builder().innerFilter(innerFilers1).build();
-                List<FilterCriteria> innerFilers2 = new ArrayList<>();
-                innerFilers2.add(filterCriteria1);
+                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
 
-                criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("=").value(UserContext.getUser().TenantId).build();
-                filterCriteria1 = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-                innerFilers2.add(filterCriteria1);
+                if (InterBranchContext.getContext().getHubTenantIds() != null
+                        && !InterBranchContext.getContext().getHubTenantIds().isEmpty()) {
+                    List<FilterCriteria> criterias = consolListRequest.getFilterCriteria();
+                    List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
+                    Criteria criteria = Criteria.builder().fieldName(Constants.INTER_BRANCH_CONSOLE).operator("=").value(true).build();
+                    FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
+                    List<FilterCriteria> innerFilers1 = new ArrayList<>();
+                    innerFilers1.add(filterCriteria);
+                    criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("IN").value(InterBranchContext.getContext().getHubTenantIds()).build();
+                    filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("and").build();
+                    innerFilers1.add(filterCriteria);
+                    FilterCriteria filterCriteria1 = FilterCriteria.builder().innerFilter(innerFilers1).build();
+                    List<FilterCriteria> innerFilers2 = new ArrayList<>();
+                    innerFilers2.add(filterCriteria1);
 
-                FilterCriteria filterCriteria2 = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers2).build();
-                innerFilters.add(filterCriteria2);
+                    criteria = Criteria.builder().fieldName(Constants.TENANT_ID).operator("=").value(UserContext.getUser().TenantId).build();
+                    filterCriteria1 = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
+                    innerFilers2.add(filterCriteria1);
+
+                    FilterCriteria filterCriteria2 = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers2).build();
+                    innerFilters.add(filterCriteria2);
+                }
 
                 List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentIdAll(request.getShipId());
                 List<Long> excludeConsolidation = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
                 if(excludeConsolidation != null && !excludeConsolidation.isEmpty())
                     consolListRequest = CommonUtils.andCriteria("id", excludeConsolidation, "NOTIN", consolListRequest);
-            }
-            if(!Strings.isNullOrEmpty(request.getMasterBill())){
-                consolListRequest = CommonUtils.andCriteria("bol", request.getMasterBill(), "=", consolListRequest);
                 isConditionSatisfied = true;
-                isMasterBillPresent = true;
-                response.setFilteredDetailName("Master Bill");
-            } else if(request.getEta() != null && request.getEtd() != null){
-                var thresholdDetails = masterLists.stream()
-                        .filter(x -> x.getItemType() == (int)MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId())
-                        .map(EntityTransferMasterLists::getItemDescription)
-                        .findFirst();
-                Long thresholdLimit = 0L;
-                if(thresholdDetails.isPresent()){
-                    thresholdLimit = Long.parseLong(thresholdDetails.get());
-                }
-                Long negativeThresholdLimit = thresholdLimit * -1;
-                LocalDateTime eta = request.getEta();
-                LocalDateTime etd = request.getEtd();
-
-                var thresholdETAFrom = eta.plusDays(negativeThresholdLimit);
-                var thresholdETATo = eta.plusDays(thresholdLimit + 1).plusSeconds(-1);
-                var thresholdETDFrom = etd.plusDays(negativeThresholdLimit);
-                var thresholdETDTo = etd.plusDays(thresholdLimit + 1).plusSeconds(-1);
-
-                var etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", consolListRequest);
-                etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETATo, "<=", etaAndETDCriteria);
-                etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", etaAndETDCriteria);
-                etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", etaAndETDCriteria);
-
-                var priorityList = masterLists.stream()
-                        .filter(x -> x.getItemType() == (int)MasterDataType.CONSOLIDATION_CHECK_ORDER.getId())
-                        .sorted((y1, y2) -> {
-                            int itd1 = Integer.parseInt(y1.getItemDescription());
-                            int itd2 = Integer.parseInt(y2.getItemDescription());
-                            return Integer.compare(itd1, itd2);
-                        })
-                        .map(EntityTransferMasterLists::getItemValue)
-                        .toList();
-                for (var item : priorityList){
-                    switch (item.toUpperCase()){
-                        case "VOYAGE NUMBER":
-                            if(StringUtility.isNotEmpty(request.getVoyageNumber())){
-                                consolListRequest = CommonUtils.andCriteria("voyage", request.getVoyageNumber(), "=", etaAndETDCriteria);
-                                isConditionSatisfied = true;
-                                response.setFilteredDetailName("Voyage Number");
-                            }
-                            break;
-                        case "VESSEL NAME":
-                            if(StringUtility.isNotEmpty(request.getVessel())){
-                                consolListRequest = CommonUtils.andCriteria("vessel", request.getVessel(), "=", etaAndETDCriteria);
-                                isConditionSatisfied = true;
-                                response.setFilteredDetailName("Vessel Name");
-                            }
-                            break;
-                        case "ORIGIN PORT/ DESTINATION PORT":
-                            if(StringUtility.isNotEmpty(request.getPol()) && StringUtility.isNotEmpty(request.getPod())){
-                                if (!Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) || !Objects.equals(Constants.TRANSPORT_MODE_AIR, request.getTransportMode()))
-                                    consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
-                                consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
-                                isConditionSatisfied = true;
-                                response.setFilteredDetailName("Origin Port/ Destination Port");
-                            }
-                            break;
-                        default:
+            } else {
+                if (!Strings.isNullOrEmpty(request.getMasterBill())) {
+                    consolListRequest = CommonUtils.andCriteria("bol", request.getMasterBill(), "=", consolListRequest);
+                    isConditionSatisfied = true;
+                    isMasterBillPresent = true;
+                    response.setFilteredDetailName("Master Bill");
+                } else if (request.getEta() != null && request.getEtd() != null) {
+                    var thresholdDetails = masterLists.stream()
+                            .filter(x -> x.getItemType() == (int) MasterDataType.CONSOL_CHECK_ETD_ETD_THRESHOLD.getId())
+                            .map(EntityTransferMasterLists::getItemDescription)
+                            .findFirst();
+                    Long thresholdLimit = 0L;
+                    if (thresholdDetails.isPresent()) {
+                        thresholdLimit = Long.parseLong(thresholdDetails.get());
                     }
-                    if (isConditionSatisfied)
-                        break;
+                    Long negativeThresholdLimit = thresholdLimit * -1;
+                    LocalDateTime eta = request.getEta();
+                    LocalDateTime etd = request.getEtd();
+
+                    var thresholdETAFrom = eta.plusDays(negativeThresholdLimit);
+                    var thresholdETATo = eta.plusDays(thresholdLimit + 1).plusSeconds(-1);
+                    var thresholdETDFrom = etd.plusDays(negativeThresholdLimit);
+                    var thresholdETDTo = etd.plusDays(thresholdLimit + 1).plusSeconds(-1);
+
+                    var etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", consolListRequest);
+                    etaAndETDCriteria = CommonUtils.andCriteria("eta", thresholdETATo, "<=", etaAndETDCriteria);
+                    etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", etaAndETDCriteria);
+                    etaAndETDCriteria = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", etaAndETDCriteria);
+
+                    var priorityList = masterLists.stream()
+                            .filter(x -> x.getItemType() == (int) MasterDataType.CONSOLIDATION_CHECK_ORDER.getId())
+                            .sorted((y1, y2) -> {
+                                int itd1 = Integer.parseInt(y1.getItemDescription());
+                                int itd2 = Integer.parseInt(y2.getItemDescription());
+                                return Integer.compare(itd1, itd2);
+                            })
+                            .map(EntityTransferMasterLists::getItemValue)
+                            .toList();
+                    for (var item : priorityList) {
+                        switch (item.toUpperCase()) {
+                            case "VOYAGE NUMBER":
+                                if (StringUtility.isNotEmpty(request.getVoyageNumber())) {
+                                    consolListRequest = CommonUtils.andCriteria("voyage", request.getVoyageNumber(), "=", etaAndETDCriteria);
+                                    isConditionSatisfied = true;
+                                    response.setFilteredDetailName("Voyage Number");
+                                }
+                                break;
+                            case "VESSEL NAME":
+                                if (StringUtility.isNotEmpty(request.getVessel())) {
+                                    consolListRequest = CommonUtils.andCriteria("vessel", request.getVessel(), "=", etaAndETDCriteria);
+                                    isConditionSatisfied = true;
+                                    response.setFilteredDetailName("Vessel Name");
+                                }
+                                break;
+                            case "ORIGIN PORT/ DESTINATION PORT":
+                                if (StringUtility.isNotEmpty(request.getPol()) && StringUtility.isNotEmpty(request.getPod())) {
+                                    if (!Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled()) || !Objects.equals(Constants.TRANSPORT_MODE_AIR, request.getTransportMode()))
+                                        consolListRequest = CommonUtils.andCriteria("originPort", request.getPol(), "=", etaAndETDCriteria);
+                                    consolListRequest = CommonUtils.andCriteria("destinationPort", request.getPod(), "=", consolListRequest);
+                                    isConditionSatisfied = true;
+                                    response.setFilteredDetailName("Origin Port/ Destination Port");
+                                }
+                                break;
+                            default:
+                        }
+                        if (isConditionSatisfied)
+                            break;
+                    }
                 }
             }
             if (isConditionSatisfied){
@@ -4657,6 +4664,39 @@ public class ConsolidationService implements IConsolidationService {
         }
         var dgShipmentResponse = CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
         return ResponseHelper.buildSuccessResponse(dgShipmentResponse);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(CommonRequestModel commonRequestModel) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if(Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        Long shipId = commonGetRequest.getId();
+        var consoleShipMappingList = consoleShipmentMappingDao.findByShipmentIdAll(shipId);
+        if (CommonUtils.listIsNullOrEmpty(consoleShipMappingList)) {
+            return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
+        }
+        List<Long> consoleIds = consoleShipMappingList.stream().filter(x -> (Boolean.TRUE.equals(x.getIsAttachmentDone()) ||
+                Objects.equals(x.getRequestedType(), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED))).map(ConsoleShipmentMapping::getConsolidationId).toList();
+        var requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getConsolidationId, Function.identity(), (existingValue, newValue) -> existingValue));
+
+        ListCommonRequest request = CommonUtils.constructListCommonRequest("id", consoleIds, "IN");
+        var response = list(CommonRequestModel.buildRequest(request));
+
+        if (response.getBody() instanceof RunnerListResponse<?> responseList) {
+            for (var resp : responseList.getData()) {
+                if (resp instanceof ConsolidationListResponse consolidationListResponse
+                        && requestedTypeMap.containsKey(consolidationListResponse.getId())
+                        && !Objects.isNull(requestedTypeMap.get(consolidationListResponse.getId()).getRequestedType())) {
+                    consolidationListResponse.setRequestedType(requestedTypeMap.get(consolidationListResponse.getId()).getRequestedType().getDescription());
+                    consolidationListResponse.setRequestedBy(requestedTypeMap.get(consolidationListResponse.getId()).getCreatedBy());
+                    consolidationListResponse.setRequestedOn(requestedTypeMap.get(consolidationListResponse.getId()).getCreatedAt());
+                }
+            }
+        }
+        return response;
     }
 
 }
