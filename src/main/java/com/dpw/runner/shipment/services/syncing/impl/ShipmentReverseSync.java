@@ -131,7 +131,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             p.setGuid(key);
             req.add(p);
         });
-        response.setConsolidationList(req);
+        response.setConsolidationList(new HashSet<>(req));
     }
 
     private void mapTruckDriverDetailReverse(CustomShipmentSyncRequest cs, ShipmentDetails sd) {

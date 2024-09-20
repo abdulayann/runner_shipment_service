@@ -1088,7 +1088,10 @@ public class EntityTransferService implements IEntityTransferService {
 
         Map<UUID, ConsolidationDetails> consolidationDetailsMap;
         if (!shipmentDetailsList.isEmpty()){
-            Set<UUID> consoleGuids = shipmentDetailsList.stream().filter(x-> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty())).map(x->x.getConsolidationList().get(0).getGuid()).collect(Collectors.toCollection(LinkedHashSet::new));
+            Set<UUID> consoleGuids = shipmentDetailsList.stream()
+                    .filter(x-> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty()))
+                    .map(x-> CommonUtils.getFirstConsole(x.getConsolidationList()).getGuid())
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
 
             List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
             consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
@@ -1105,8 +1108,8 @@ public class EntityTransferService implements IEntityTransferService {
                 }
                 else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
                     ConsolidationDetails consolidationDetails;
-                    if(consolidationDetailsMap.containsKey(shipmentDetails.getConsolidationList().get(0).getGuid())) {
-                        consolidationDetails = consolidationDetailsMap.get(shipmentDetails.getConsolidationList().get(0).getGuid());
+                    if(consolidationDetailsMap.containsKey(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid())) {
+                        consolidationDetails = consolidationDetailsMap.get(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid());
 
                         var receivingAgent = consolidationDetails.getReceivingBranch();
                         var triangulationPartner = consolidationDetails.getTriangulationPartner();
@@ -1132,7 +1135,10 @@ public class EntityTransferService implements IEntityTransferService {
             Map<UUID, ConsolidationDetails> originConsoleMap = new HashMap<>();
             if(originShipments != null && !originShipments.isEmpty()) {
                 shipmentGuids.addAll(originShipments.stream().map(ShipmentDetails::getGuid).collect(Collectors.toSet()));
-                Set<UUID> originConsoleGuids = originShipments.stream().filter(x-> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty())).map(x->x.getConsolidationList().get(0).getGuid()).collect(Collectors.toSet());
+                Set<UUID> originConsoleGuids = originShipments.stream()
+                        .filter(x-> (x.getConsolidationList() != null && !x.getConsolidationList().isEmpty()))
+                        .map(x-> CommonUtils.getFirstConsole(x.getConsolidationList()).getGuid())
+                        .collect(Collectors.toSet());
                 List<ConsolidationDetails> originConsolidationDetails = findConsolidationFromLogsHistory(originConsoleGuids.stream().toList(), request.getTimestamp());
                 originConsoleMap = originConsolidationDetails.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
             }
@@ -1164,8 +1170,8 @@ public class EntityTransferService implements IEntityTransferService {
                         ShipmentDetails originShipment = originShipmentsMap.get(shipmentDetails.getSourceGuid());
                         ConsolidationDetails consolidationDetails;
                         if(originShipment.getConsolidationList() != null && !originShipment.getConsolidationList().isEmpty() &&
-                                originConsoleMap.containsKey(originShipment.getConsolidationList().get(0).getGuid())){
-                            consolidationDetails = originConsoleMap.get(originShipment.getConsolidationList().get(0).getGuid());
+                                originConsoleMap.containsKey(CommonUtils.getFirstConsole(originShipment.getConsolidationList()).getGuid())){
+                            consolidationDetails = originConsoleMap.get(CommonUtils.getFirstConsole(originShipment.getConsolidationList()).getGuid());
                             var receivingAgent = consolidationDetails.getReceivingBranch();
                             var triangulationPartner = consolidationDetails.getTriangulationPartner();
                             ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(originShipment);
@@ -1209,8 +1215,8 @@ public class EntityTransferService implements IEntityTransferService {
                 }
                 else if (shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
                     ConsolidationDetails consolidationDetails;
-                    if (consolidationDetailsMap.containsKey(shipmentDetails.getConsolidationList().get(0).getGuid())) {
-                        consolidationDetails = consolidationDetailsMap.get(shipmentDetails.getConsolidationList().get(0).getGuid());
+                    if (consolidationDetailsMap.containsKey(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid())) {
+                        consolidationDetails = consolidationDetailsMap.get(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid());
                         var receivingAgent = consolidationDetails.getReceivingBranch();
                         var triangulationPartner = consolidationDetails.getTriangulationPartner();
                         if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {

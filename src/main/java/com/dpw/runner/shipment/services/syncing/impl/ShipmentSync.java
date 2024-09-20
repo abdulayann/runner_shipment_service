@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -192,7 +193,7 @@ public class ShipmentSync implements IShipmentSync {
         HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
-            var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
+            var console = consolidationDetailsDao.findById(CommonUtils.getFirstConsole(sd.getConsolidationList()).getId());
             if (console.isPresent()) {
                 CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console.get());
                 String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());

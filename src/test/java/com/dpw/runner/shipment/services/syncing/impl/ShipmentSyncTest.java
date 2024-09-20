@@ -289,7 +289,7 @@ class ShipmentSyncTest {
         inputShipment.setId(1L);
         inputShipment.setGuid(guid);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setConsolidationList(List.of(new ConsolidationDetails()));
+        inputShipment.setConsolidationList(Set.of(new ConsolidationDetails()));
         // Mock
         var mockCustomShipmentSyncRequest = new CustomShipmentSyncRequest();
         mockCustomShipmentSyncRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
