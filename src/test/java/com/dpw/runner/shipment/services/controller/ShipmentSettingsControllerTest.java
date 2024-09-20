@@ -373,4 +373,34 @@ class ShipmentSettingsControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void listHubTenantIds() {
+        // Mock
+        when(shipmentSettingsService.listHubTenantIds()).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentSettingsController.listHubTenantIds();
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listHubTenantIds2() {
+        // Mock
+        when(shipmentSettingsService.listHubTenantIds()).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentSettingsController.listHubTenantIds();
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listHubTenantIds3() {
+        // Mock
+        when(shipmentSettingsService.listHubTenantIds()).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentSettingsController.listHubTenantIds();
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

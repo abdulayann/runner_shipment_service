@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -529,6 +530,39 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         mockTenantSettings();
         when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testListHubTenantIds_WithMawbColoadingEnabled() {
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+        TenantModel tenantModel1 = new TenantModel();
+        tenantModel1.tenantId = 1L;
+        tenantModel1.tenantName = "ABC";
+        TenantModel tenantModel2 = new TenantModel();
+        tenantModel2.tenantId = 2L;
+        tenantModel2.tenantName = "XYZ";
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
+        tenantModelMap.put(StringUtility.convertToString(2), tenantModel2);
+        List<CoLoadingMAWBDetailsResponse> coLoadingMAWBDetailsResponses = new ArrayList<>(Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(2).build()));
+        mockTenantSettings();
+        when(commonUtils.fetchColoadingDetails()).thenReturn(coLoadingMAWBDetailsResponses);
+        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        var response = shipmentSettingsService.listHubTenantIds();
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testListHubTenantIds_WithoutMawbColoadingEnabled() {
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(false);
+        TenantModel tenantModel1 = new TenantModel();
+        tenantModel1.tenantId = 1L;
+        Map<String, TenantModel> tenantModelMap = new HashMap<>();
+        tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
+        mockTenantSettings();
+        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

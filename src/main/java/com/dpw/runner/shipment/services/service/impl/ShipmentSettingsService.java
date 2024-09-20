@@ -619,4 +619,17 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
         return ResponseHelper.buildSuccessResponse(listOfColoadStations);
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listHubTenantIds() {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        List<String> tenantIds = new ArrayList<>();
+        tenantIds.add(StringUtility.convertToString(UserContext.getUser().TenantId));
+        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            tenantIds.addAll(commonUtils.fetchColoadingDetails().stream().map(x -> x.getParentTenantId().toString()).toList());
+        }
+        Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
+        List<TenantModel> listOfHubStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
+        return ResponseHelper.buildSuccessResponse(listOfHubStations);
+    }
 }
