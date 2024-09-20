@@ -1,6 +1,6 @@
-package com.dpw.runner.shipment.services.Kafka.Consumer;
+package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.DocumentDto;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -18,13 +18,18 @@ import java.util.Objects;
 @Slf4j
 @Generated
 public class DocumentMasterConsumer {
-    @Autowired
+
     private ObjectMapper objectMapper;
-    @Autowired
     private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Value("${document.master.integration}")
     private boolean documentMasterEnabled;
+
+    @Autowired
+    DocumentMasterConsumer(ObjectMapper objectMapper, BookingIntegrationsUtility bookingIntegrationsUtility) {
+        this.objectMapper = objectMapper;
+        this.bookingIntegrationsUtility = bookingIntegrationsUtility;
+    }
 
     @KafkaListener(topics = {"#{'${document.master.kafka.event}'}"}, groupId = "#{'${document.master.kafka.subs}'}")
     public void consume(String message)

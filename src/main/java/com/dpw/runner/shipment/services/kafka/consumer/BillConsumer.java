@@ -1,6 +1,6 @@
-package com.dpw.runner.shipment.services.Kafka.Consumer;
+package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.BillDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;

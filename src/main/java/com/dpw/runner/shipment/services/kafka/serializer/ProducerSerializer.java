@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.Kafka.Serializer;
+package com.dpw.runner.shipment.services.kafka.serializer;
 
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.commons.lang.SerializationException;

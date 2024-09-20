@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.DocumentDto;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -40,7 +39,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -94,6 +92,8 @@ public class BookingIntegrationsUtility {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -125,8 +125,6 @@ public class BookingIntegrationsUtility {
             Map.entry(BookingStatus.PENDING_FOR_KYC, "BOOKED"),
             Map.entry(BookingStatus.PENDING_FOR_CREDIT_LIMIT, "BOOKED")
     );
-    @Autowired
-    private IShipmentDao shipmentDao;
 
     public void createBookingInPlatform(CustomerBooking customerBooking) {
         var request = createPlatformCreateRequest(customerBooking);
