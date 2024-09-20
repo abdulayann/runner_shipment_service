@@ -136,4 +136,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
     private String department;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoDeliveryDate;
 }
