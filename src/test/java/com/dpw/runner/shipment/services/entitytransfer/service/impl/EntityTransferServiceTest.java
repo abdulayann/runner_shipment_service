@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -67,9 +66,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -552,6 +549,8 @@ class EntityTransferServiceTest {
         consolidationDetails.getCarrierDetails().setEtd(null);
         consolidationDetails.getCarrierDetails().setOriginPort(null);
         consolidationDetails.getCarrierDetails().setDestinationPort(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartner(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -687,27 +686,31 @@ class EntityTransferServiceTest {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
     }
-
     @Test
-    void testSendConsolidationValidation_ThrowsException_MissingReceivingBranch() {
+    void testSendConsolidationValidation_Failure_Air_ShipmentFieldsException_InterBranch() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-        consolidationDetails.setReceivingBranch(null);
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.getCarrierDetails().setFlightNumber("A123");
         consolidationDetails.getCarrierDetails().setShippingLine("Air India");
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setReceivingBranch(12L);
         ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentDetails.getCarrierDetails().setFlightNumber("A123");
-        shipmentDetails.getCarrierDetails().setShippingLine("Air India");
+        shipmentDetails.setReceivingBranch(null);
+        shipmentDetails.getCarrierDetails().setFlightNumber(null);
+        shipmentDetails.getCarrierDetails().setShippingLine(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
 
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
+        when(awbDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of());
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
     }
 
     @Test
@@ -752,6 +755,8 @@ class EntityTransferServiceTest {
         shipmentDetails.getCarrierDetails().setEtd(null);
         shipmentDetails.getCarrierDetails().setOriginPort(null);
         shipmentDetails.getCarrierDetails().setDestinationPort(null);
+        shipmentDetails.setReceivingBranch(null);
+        shipmentDetails.setTriangulationPartner(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -828,22 +833,6 @@ class EntityTransferServiceTest {
         when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
-    }
-
-    @Test
-    void testSendShipmentValidation_ThrowsException_WhenReceivingBranchIsNull() {
-        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
-        shipmentDetails.setReceivingBranch(null);
-        shipmentDetails.setHouseBill("QWERT324");
-        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
-        TenantModel tenantModel = new TenantModel();
-        tenantModel.IATAAgent = true;
-
-        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
-
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
-        assertEquals(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION, e.getMessage());
     }
 
     @Test
@@ -1463,7 +1452,7 @@ class EntityTransferServiceTest {
     @Test
     void testSendGroupedEmailForShipmentImport_Success() {
         // Given
-        List<UUID> shipmentGuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        String consoleSourceBranchTenantName = "consoleBranch";
         when(shipmentDetails.getTenantId()).thenReturn(100);
         when(shipmentDetails.getSourceTenantId()).thenReturn(123L);
         when(shipmentDetails.getShipmentId()).thenReturn("1");
@@ -1477,10 +1466,6 @@ class EntityTransferServiceTest {
         );
 
         // Mocks
-        when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class)))
-                .thenReturn(consolidationDetails);
-        when(shipmentDao.findShipmentsByGuids(anySet()))
-                .thenReturn(shipmentDetailsList);
         doNothing().when(commonUtils).setInterBranchContextForHub();
         doNothing().when(commonUtils).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
         EmailTemplatesRequest emailTemplatesRequest = mock(EmailTemplatesRequest.class);
@@ -1491,7 +1476,6 @@ class EntityTransferServiceTest {
             toEmailIds.add("toEmail@example.com");
             return null;
         }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt(), anyBoolean());
-        when(consolidationDetails.getConsolidationNumber()).thenReturn("12345");
 
         Map<Integer, Object> mockV1Map = new HashMap<>();
         mockV1Map.put(123, new Object());
@@ -1501,12 +1485,10 @@ class EntityTransferServiceTest {
         when(v1TenantResponse.getTenantName()).thenReturn("abcd");
 
         // When
-        entityTransferService.sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids);
+        entityTransferService.sendGroupedEmailForShipmentImport(shipmentDetailsList, consoleSourceBranchTenantName);
 
         // Then
-        verify(jsonHelper, times(1)).convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
         verify(commonUtils, times(1)).setInterBranchContextForHub();
-        verify(shipmentDao, times(1)).findShipmentsByGuids(anySet());
         verify(commonUtils, times(1)).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
     }
 

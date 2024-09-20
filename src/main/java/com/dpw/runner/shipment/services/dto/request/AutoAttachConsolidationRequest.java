@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -8,9 +8,10 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
 @ToString
-public class AutoAttachConsolidationRequest implements IRunnerRequest {
+public class AutoAttachConsolidationRequest extends ListCommonRequest {
     private String masterBill;
     private String transportMode;
     private String voyageNumber;

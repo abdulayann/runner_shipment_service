@@ -38,4 +38,6 @@ public interface IEventDao {
     void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt);
 
     void createEventForAirMessagingEvent(Events events);
+
+    void updateEventDetails(Events event);
 }

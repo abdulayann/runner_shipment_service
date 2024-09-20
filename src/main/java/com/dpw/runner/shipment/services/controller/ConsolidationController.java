@@ -233,7 +233,7 @@ public class ConsolidationController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL)})
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws RunnerException {
-        return consolidationService.detachShipments(request.getId(), request.getShipmentIds());
+        return consolidationService.detachShipments(request.getId(), request.getShipmentIds(), request.getRemarks());
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
@@ -536,6 +536,18 @@ public class ConsolidationController {
             CommonGetRequest request = CommonGetRequest.builder().id(id).build();
             return consolidationService.getDGShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.LIST_SHIPMENT_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(@RequestParam Long shipId) {
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(shipId).build();
+            return consolidationService.listRequestedConsolidationForShipment(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }

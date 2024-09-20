@@ -87,6 +87,7 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 
 @Service
 @Slf4j
@@ -465,6 +466,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(consolidationDetailsResponse != null) {
             // Attach consolidation and shipment
             if(!interBranchShipment.isEmpty()) {
+                commonUtils.setInterBranchContextForHub();
                 createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
                 consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds);
             } else {
@@ -497,7 +499,8 @@ public class EntityTransferService implements IEntityTransferService {
         // Send consolidated shipments email
         if(!shipmentGuids.isEmpty()) {
             try {
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids)));
+                var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())));
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
@@ -653,23 +656,23 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void cleanAllListEntitiesForShipment(ShipmentRequest shipmentRequest){
-        shipmentRequest.getPackingList().clear();
-        shipmentRequest.getContainersList().clear();
-        shipmentRequest.getRoutingsList().clear();
-        shipmentRequest.getReferenceNumbersList().clear();
-        shipmentRequest.getBookingCarriagesList().clear();
-        shipmentRequest.getServicesList().clear();
-        shipmentRequest.getShipmentAddresses().clear();
-        shipmentRequest.getNotesList().clear();
+        if(shipmentRequest.getPackingList() != null) shipmentRequest.getPackingList().clear();
+        if(shipmentRequest.getContainersList() != null) shipmentRequest.getContainersList().clear();
+        if(shipmentRequest.getRoutingsList() != null) shipmentRequest.getRoutingsList().clear();
+        if(shipmentRequest.getReferenceNumbersList() != null) shipmentRequest.getReferenceNumbersList().clear();
+        if(shipmentRequest.getBookingCarriagesList() != null) shipmentRequest.getBookingCarriagesList().clear();
+        if(shipmentRequest.getServicesList() != null) shipmentRequest.getServicesList().clear();
+        if(shipmentRequest.getShipmentAddresses() != null) shipmentRequest.getShipmentAddresses().clear();
+        if(shipmentRequest.getNotesList() != null) shipmentRequest.getNotesList().clear();
     }
 
     private void cleanAllListEntitiesForConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest){
-        consolidationDetailsRequest.getPackingList().clear();
-        consolidationDetailsRequest.getContainersList().clear();
-        consolidationDetailsRequest.getRoutingsList().clear();
-        consolidationDetailsRequest.getReferenceNumbersList().clear();
-        consolidationDetailsRequest.getConsolidationAddresses().clear();
-        consolidationDetailsRequest.getShipmentsList().clear();
+        if(consolidationDetailsRequest.getPackingList() != null) consolidationDetailsRequest.getPackingList().clear();
+        if(consolidationDetailsRequest.getContainersList() != null) consolidationDetailsRequest.getContainersList().clear();
+        if(consolidationDetailsRequest.getRoutingsList() != null) consolidationDetailsRequest.getRoutingsList().clear();
+        if(consolidationDetailsRequest.getReferenceNumbersList() != null) consolidationDetailsRequest.getReferenceNumbersList().clear();
+        if(consolidationDetailsRequest.getConsolidationAddresses() != null) consolidationDetailsRequest.getConsolidationAddresses().clear();
+        if(consolidationDetailsRequest.getShipmentsList() != null) consolidationDetailsRequest.getShipmentsList().clear();
     }
 
     private void updateTaskStatus(Long taskId, TaskStatus status, String rejectionRemarks) {
@@ -747,9 +750,6 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        if(consolidationDetails.get().getReceivingBranch() == null) {
-            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
-        }
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
 
@@ -772,9 +772,12 @@ public class EntityTransferService implements IEntityTransferService {
             LocalDateTime etd = consolidationDetails.get().getCarrierDetails().getEtd();
             String polId = consolidationDetails.get().getCarrierDetails().getOriginPort();
             String podId = consolidationDetails.get().getCarrierDetails().getDestinationPort();
+            Long receivingBranch = consolidationDetails.get().getReceivingBranch();
+            Long triangulationBranch = consolidationDetails.get().getTriangulationPartner();
             List<String> missingField = new ArrayList<>();
+            boolean entityTransferDetails = Objects.isNull(receivingBranch) && Objects.isNull(triangulationBranch);
             if(Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
-                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId)) {
+                    eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) || entityTransferDetails) {
                 if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("Mawb Number");
                 if(Strings.isNullOrEmpty(bol) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
@@ -795,6 +798,9 @@ public class EntityTransferService implements IEntityTransferService {
                     missingField.add("Origin Port");
                 if(Strings.isNullOrEmpty(podId))
                     missingField.add("Destination Port");
+                if(entityTransferDetails) {
+                    missingField.add("Please select one of the branches in the entity transfer details section");
+                }
                 String joinMissingField = String.join(",", missingField);
                 throw new ValidationException("Please validate these fields before sending consolidation: " + joinMissingField);
             }
@@ -804,7 +810,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<String> shipmentIds = new ArrayList<>();
                 for (var shipment: consolidationDetails.get().getShipmentsList()) {
                     boolean isShipmentError = false;
-                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()))
+                    if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && Objects.isNull(shipment.getReceivingBranch()) && !Objects.isNull(receivingBranch))
                     {
                         sendConsolidationError = true;
                         isShipmentError = true;
@@ -862,7 +868,7 @@ public class EntityTransferService implements IEntityTransferService {
 
                 if(sendConsolidationError){
                     String interBranch = "";
-                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
+                    if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()) && !Objects.isNull(receivingBranch))
                         interBranch = "Receiving Branch, ";
                     if(hblGenerationError){
                         if(consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
@@ -892,9 +898,6 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getShipId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        if(shipmentDetails.get().getReceivingBranch() == null) {
-            throw new ValidationException(EntityTransferConstants.MISSING_RECEIVING_BRANCH_VALIDATION);
-        }
 
         if(shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
                 shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
@@ -912,11 +915,14 @@ public class EntityTransferService implements IEntityTransferService {
             LocalDateTime etd = shipmentDetails.get().getCarrierDetails().getEtd();
             String polId = shipmentDetails.get().getCarrierDetails().getOriginPort();
             String podId = shipmentDetails.get().getCarrierDetails().getDestinationPort();
+            Long receivingBranch = shipmentDetails.get().getReceivingBranch();
+            Long triangulationBranch = shipmentDetails.get().getTriangulationPartner();
+            boolean entityTransferDetails = Objects.isNull(receivingBranch) && Objects.isNull(triangulationBranch);
             List<String> missingField = new ArrayList<>();
             if(Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
                     eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) ||
                     Strings.isNullOrEmpty(shipmentDetails.get().getHouseBill()) ||
-                    Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill())) {
+                    Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) || entityTransferDetails) {
                 if(Strings.isNullOrEmpty(voyage) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                     missingField.add("Flight Carrier");
                 if(Strings.isNullOrEmpty(flightNumber) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
@@ -945,6 +951,9 @@ public class EntityTransferService implements IEntityTransferService {
                     missingField.add("House Bill");
                 if(Strings.isNullOrEmpty(shipmentDetails.get().getMasterBill()) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
                     missingField.add("Master Bill");
+                if(entityTransferDetails) {
+                    missingField.add("Please select one of the branches in the entity transfer details section");
+                }
                 String joinMissingField = String.join(",", missingField);
                 if(StringUtility.isNotEmpty(joinMissingField))
                     throw new ValidationException("Please validate these fields before sending shipment: " + joinMissingField);
@@ -1567,13 +1576,11 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    public void sendGroupedEmailForShipmentImport(ConsolidationDetailsResponse consolidationDetailsResponse, List<UUID> shipmentGuids) {
-        ConsolidationDetails consolidationDetails = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
+    public void sendGroupedEmailForShipmentImport(List<ShipmentDetails> shipmentDetailsList, String consoleSourceBranchTenantName) {
         commonUtils.setInterBranchContextForHub();
         Set<Integer> tenantIds = new HashSet<>();
         Set<Integer> sourceTenantIds = new HashSet<>();
         Map<Integer, List<ShipmentDetails>> tenantShipmentMapping = new HashMap<>();
-        var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
 
         for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
             tenantShipmentMapping.computeIfAbsent(shipmentDetails.getTenantId(), shipmentDetail -> new ArrayList<>()).add(shipmentDetails);
@@ -1601,7 +1608,7 @@ public class EntityTransferService implements IEntityTransferService {
             List<String> ccEmailIdsList = new ArrayList<>(ccEmailIds);
 
             if (!importerEmailIds.isEmpty()) {
-                var template = createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, consolidationDetails, tenantMap);
+                var template = createGroupedShipmentImportEmailBody(shipmentDetailsForTenant, emailTemplateModel, tenantMap, consoleSourceBranchTenantName);
                 sendEmailNotification(template, importerEmailIds, ccEmailIdsList);
             }
 
@@ -1609,7 +1616,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
-    public EmailTemplatesRequest createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, ConsolidationDetails consolidationDetails, Map<Integer, V1TenantResponse> tenantMap) {
+    public EmailTemplatesRequest createGroupedShipmentImportEmailBody(List<ShipmentDetails> shipmentDetailsForTenant, EmailTemplatesRequest template, Map<Integer, V1TenantResponse> tenantMap, String consoleSourceBranchTenantName) {
         var emailTemplate = EmailTemplatesRequest.builder().build();
         // Body
         String body = (template.getBody() == null) ?
@@ -1617,9 +1624,9 @@ public class EntityTransferService implements IEntityTransferService {
 
         Map<String, Object> tagDetails = new HashMap<>();
 
-        emailTemplate.setSubject(generateSubject(shipmentDetailsForTenant, consolidationDetails.getConsolidationNumber()));
+        emailTemplate.setSubject(generateSubject(shipmentDetailsForTenant, consoleSourceBranchTenantName));
 
-        populateTagDetails(tagDetails, consolidationDetails.getConsolidationNumber());
+        populateTagDetails(tagDetails, consoleSourceBranchTenantName);
 
         emailTemplate.setBody(generateEmailBody(tagDetails, shipmentDetailsForTenant, body, tenantMap));
         return emailTemplate;
@@ -1736,23 +1743,30 @@ public class EntityTransferService implements IEntityTransferService {
     private void syncToV1(Long id, List<Long> shipmentIds) {
         try {
             SyncingContext.setContext(Boolean.TRUE);
-            List<ShipmentDetails> shipments;
+            List<ShipmentDetails> shipments = new ArrayList<>();
             ConsolidationDetails consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
             consolidationDetailsDao.entityDetach(List.of(consolidation));
             if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
                 shipmentDao.entityDetach(shipments);
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-                for (var shipment : shipments)
-                    shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
             }
             consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
+            Set<Long> containerIds = new HashSet<>();
+            for(ShipmentDetails shipment : shipments) {
+                if(!listIsNullOrEmpty(shipment.getContainersList()))
+                    containerIds.addAll(shipment.getContainersList().stream().map(BaseEntity::getId).toList());
+            }
+            if(!listIsNullOrEmpty(consolidation.getContainersList())) {
+                consolidation.getContainersList().removeIf(e -> containerIds.contains(e.getId()));
+            }
+            consolidation.setPackingList(null);
             consolidationSync.sync(consolidation, StringUtility.convertToString(consolidation.getGuid()), false);
-
+            for (ShipmentDetails shipment : shipments)
+                shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
         }
-
     }
 
 }

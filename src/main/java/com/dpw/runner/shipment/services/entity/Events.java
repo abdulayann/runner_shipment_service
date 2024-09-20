@@ -115,4 +115,10 @@ public class Events extends MultiTenancy {
 
     @Column(name = "flight_name")
     private String flightName;
+
+    @Column(name = "consolidation_id")
+    private Long consolidationId;
+
+    @Column(name = "shipment_number")
+    private String shipmentNumber;
 }

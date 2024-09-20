@@ -25,6 +25,7 @@ public class EventConstants {
     public static final String SR_SENT_OR_NOT = "SHPRSC";
     public static final String TRACK_EVENTS_FETCH_SUCCESSFUL = "Track Events fetched Successfully";
     public static final String TRACK_EVENT_DETAILS = "/trackEvents";
+    public static final String TRACK_EVENT_DETAILS_V2 = "/trackEventsV2";
     public static final String EVENT_RETRIEVE_BY_ID_ERROR = "Event is null for Id {} with Request Id {}";
 
     public static final String EMPTY_REQUEST_ERROR = "Request can't be empty!";

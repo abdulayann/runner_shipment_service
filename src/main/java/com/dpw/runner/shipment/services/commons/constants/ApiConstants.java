@@ -65,6 +65,7 @@ public class ApiConstants {
     public static final String API_LIST_PACKS_TO_DETACH = "/list/packs/detach";
     public static final String API_RETRIEVE_BY_TENANT_ID = "/retrieve/tenantId";
     public static final String API_LIST_COLOAD_STATION_ID = "/list-coload-stations";
+    public static final String API_LIST_HUBS_STATION_ID = "/list-hub-stations";
     public static final String API_ASSIGN_SHIPMENT_CONTAINERS = "/assign/containers";
     public static final String API_ASSIGN_ALL_CONTAINERS = "/assign/all/containers";
     public static final String API_RETRIEVE_BY_ORDER_ID = "retrieve/orderId";
@@ -122,5 +123,6 @@ public class ApiConstants {
 
     public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
+    public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
 
 }
