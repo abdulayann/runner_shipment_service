@@ -1,0 +1,52 @@
+package com.dpw.runner.shipment.services.entitytransfer.dto.response;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class ArValidationResponse implements IRunnerResponse {
+    private UUID shipmentGuid;
+    private String consolidationType;
+    private Long receivingAgent;
+    private Long triangulationPartner;
+    private Integer sourceBranch;
+    private Integer origin;
+    private String salesBranch;
+    private String destinationCountry;
+    private Boolean transferToReceivingAgent;
+    private Boolean transferToTriangulationPartner;
+    private ProfitShareShipmentData originShipment;
+    private ProfitShareShipmentData receivingShipment;
+    private ProfitShareShipmentData triangulationShipment;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProfitShareShipmentData implements Serializable {
+        private String shipmentType;
+        private String transportMode;
+        private UUID shipmentGuid;
+        private String createdBy;
+        private String hbl;
+        private String mbl;
+        private String shipmentId;
+        private LocalDateTime createdAt;
+        private String bookingType;
+        private String bookingReference;
+        private String status;
+        private String jobType;
+        private Long orderNumber;
+    }
+}
+

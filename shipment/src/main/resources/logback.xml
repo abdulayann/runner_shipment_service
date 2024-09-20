@@ -1,0 +1,24 @@
+<configuration>
+    <property name="LOGS_PATH" value="logs" />
+    <property resource = "application.properties" />
+    <property resource = "application-${props_profile:-dev}.properties" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%green(%d{dd-MM-yyyy HH:mm:ss.SSS}) [%magenta(${spring.application.name})]: %highlight(%X{request_id}) %blue([%thread]) %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="STDOUT" />
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <maxFlushTime>1000</maxFlushTime>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <root level="info">
+<!--        <appender-ref ref="SYSLOG-TCP" />-->
+        <appender-ref ref="ASYNC_CONSOLE" />
+    </root>
+</configuration>

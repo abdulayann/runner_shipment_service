@@ -1,0 +1,136 @@
+package com.dpw.runner.shipment.services.dto.response;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class ConsolidationListResponse implements IRunnerResponse {
+    private Long id;
+    private UUID guid;
+    private Integer tenantId;
+    private String consolidationNumber;
+    private String consolidationType;
+    private String transportMode;
+    private String containerCategory;
+    private Boolean isDomestic;
+    private String mawb;
+    private String serviceLevel;
+    private String payment;
+    private String firstLoad;
+    private String lastDischarge;
+    private String bookingType;
+    private String declarationType;
+    private String deliveryMode;
+    private Boolean isLinked;
+    private Boolean isCharter;
+    private String referenceNumber;
+    private String packageType;
+    private String agentReference;
+    private String coLoadMBL;
+    private String coLoadBookingReference;
+    private String manifestPrint;
+    private String printOtherDocs;
+    private String awbDims;
+    private String releaseType;
+    private LocalDateTime masterBillIssueDate;
+    private String dgClass;
+    private String dgSubstance;
+    private Boolean override;
+    private LocalDateTime estimatedTerminalCutoff;
+    private LocalDateTime terminalCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
+    private LocalDateTime reeferCutoff;
+    private LocalDateTime bookingCutoff;
+    private LocalDateTime shipInstructionCutoff;
+    private LocalDateTime hazardousBookingCutoff;
+    private String volumeUtilization;
+    private String weightUtilization;
+    private String shipmentType;
+    private String bol;
+    private Boolean isCargoOnly;
+    private Boolean isLocked;
+    private String lockedBy;
+    private String specialInstructions;
+    private String description;
+    private String marksnNums;
+    private String additionalTerms;
+    private LocalDateTime docsClosingTime;
+    private LocalDateTime cargoClosingTime;
+    private String mrnNumber;
+    private String msnNumber;
+    private LocalDateTime igmFileDate;
+    private LocalDateTime igmInwardDate;
+    private LocalDateTime inwardDateAndTime;
+    private String igmFileNo;
+    private String smtpigmNumber;
+    private LocalDateTime smtpigmDate;
+    private Boolean isInland;
+    private Integer original;
+    private Integer copy;
+    private String doPlaceOfIssue;
+    private LocalDateTime doIssueDate;
+    private Long bondedWarehouseId;
+    private Long warehouseId;
+    private Long sourceTenantId;
+    private String ediTransactionId;
+    private Long triangulationPartner;
+    private Long receivingBranch;
+    private boolean intraBranch;
+    private Long documentationPartner;
+    private Boolean isReceivingAgentFreeTextAddress;
+    private String receivingAgentFreeTextAddress;
+    private Boolean isSendingAgentFreeTextAddress;
+    private String sendingAgentFreeTextAddress;
+    private String placeOfIssue;
+    private CarrierDetailResponse carrierDetails;
+    private AchievedQuantitiesResponse achievedQuantities;
+    private AllocationsResponse allocations;
+    private ArrivalDepartureDetailsResponse arrivalDetails;
+    private ArrivalDepartureDetailsResponse departureDetails;
+    private PartiesResponse sendingAgent;
+    private PartiesResponse receivingAgent;
+    private PartiesResponse borrowedFrom;
+    private PartiesResponse creditor;
+    private PartiesResponse coLoadWith;
+    private String createdBy;
+    private List<String> houseBills;
+    private List<String> shipmentIds;
+    private String bookingId;
+    private String bookingStatus;
+    private String bookingNumber;
+    private BigDecimal teuCount;
+    private Long container20Count;
+    private Long container40Count;
+    private Long container20GPCount;
+    private Long container20RECount;
+    private Long container40GPCount;
+    private Long container40RECount;
+    private Long containerCount;
+    private Set<String> containerNumbers;
+    private Boolean hazardous;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
+    private Integer pendingActionCount;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime latDate;
+    private String department;
+    private LocalDateTime createdAt;
+}

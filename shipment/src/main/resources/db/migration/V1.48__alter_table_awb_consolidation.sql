@@ -1,0 +1,3 @@
+ALTER TABLE IF EXISTS awb
+    ADD COLUMN IF NOT EXISTS consolidation_id BIGINT,
+    ALTER COLUMN shipment_id TYPE BIGINT;

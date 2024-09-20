@@ -1,0 +1,1 @@
+ALTER TABLE shipment_setting ADD COLUMN is_shipment_level_container boolean;
