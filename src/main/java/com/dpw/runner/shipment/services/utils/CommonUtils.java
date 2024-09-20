@@ -1513,21 +1513,31 @@ public class CommonUtils {
     }
 
     public void removeDuplicateTrackingEvents(List<Events> events) {
-        Set<String> uniqueKeys = new HashSet<>();
-        if (events == null) {
+        if (events == null || events.isEmpty()) {
             return;
         }
 
-        events.removeIf(event -> {
-            String uniqueKey = getTrackingEventsUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getShipmentNumber(), event.getSource());
-            return !uniqueKeys.add(uniqueKey);
-        });
+        Set<String> uniqueKeys = new HashSet<>();
+
+        events.removeIf(event -> !uniqueKeys.add(
+                getTrackingEventsUniqueKey(
+                        event.getEventCode(),
+                        event.getContainerNumber(),
+                        event.getShipmentNumber(),
+                        event.getSource(),
+                        event.getPlaceName()
+                )
+        ));
     }
 
-    public String getTrackingEventsUniqueKey(String eventCode, String containerNumber,String shipmentNumber, String source) {
-        containerNumber = StringUtils.defaultString(containerNumber, "");
-        shipmentNumber = StringUtils.defaultString(shipmentNumber, "");
-        return eventCode + "-" + containerNumber + "-"  + shipmentNumber + "-" + source;
+    public String getTrackingEventsUniqueKey(String eventCode, String containerNumber, String shipmentNumber, String source, String placeName) {
+        return String.join("-",
+                StringUtils.defaultString(eventCode),
+                StringUtils.defaultString(containerNumber),
+                StringUtils.defaultString(shipmentNumber),
+                StringUtils.defaultString(source),
+                StringUtils.defaultString(placeName)
+        );
     }
 
 }
