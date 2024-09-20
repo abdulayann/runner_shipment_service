@@ -24,6 +24,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -350,7 +351,7 @@ public class ShipmentDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
     @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
-    private List<ConsolidationDetails> consolidationList;
+    private Set<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")

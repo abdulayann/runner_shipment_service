@@ -606,7 +606,7 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
             if(request.getConsolidationList() != null)
-                shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
+                shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class)));
             if(request.getContainersList() != null)
                 shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
             shipmentDetails = getShipment(shipmentDetails);
@@ -686,7 +686,7 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
-            shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
+            shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class)));
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1614,7 +1614,7 @@ public class ShipmentService implements IShipmentService {
 
         Long consolidationId = null;
         if(shipmentDetails.getConsolidationList() != null && shipmentDetails.getConsolidationList().size() > 0)
-            consolidationId = shipmentDetails.getConsolidationList().get(0).getId();
+            consolidationId = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getId();
         List<Containers> updatedContainers = new ArrayList<>();
 
         if (containerRequest != null) {
@@ -1634,7 +1634,7 @@ public class ShipmentService implements IShipmentService {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if(!Objects.isNull(consolidationDetails)) {
-                    shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                    shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
                     if(IsStringNullOrEmpty(shipmentDetails.getMasterBill()))
                         shipmentDetails.setMasterBill(consolidationDetails.getBol());
                     syncConsole = true;
@@ -1645,7 +1645,7 @@ public class ShipmentService implements IShipmentService {
 
 
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
-            ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
+            ConsolidationDetails consolidationDetails1 = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
             oceanDGValidations(shipmentDetails, consolidationDetails1);
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
@@ -1672,7 +1672,7 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetails.getCarrierDetails().setAta(consolidationDetails1.getCarrierDetails().getAta());
                 }
             }
-            var console = shipmentDetails.getConsolidationList().get(0);
+            var console = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
             if (!Objects.isNull(console) && !Objects.isNull(console.getId()))
                 awbDao.validateAirMessaging(console.getId());
             if(!isCreate) {
@@ -1743,7 +1743,7 @@ public class ShipmentService implements IShipmentService {
                 if(!listIsNullOrEmpty(removedConsolIds) || Boolean.TRUE.equals(isNewConsolAttached.getValue()))
                     throw new RunnerException("You do not have Air DG permissions to attach or detach consolidation as it is a DG Shipment");
             } else {
-                if((!listIsNullOrEmpty(removedConsolIds) && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(oldEntity.getConsolidationList().get(0).getHazardous()))
+                if((!listIsNullOrEmpty(removedConsolIds) && oldEntity != null && oldEntity.getConsolidationList() != null && Boolean.TRUE.equals(CommonUtils.getFirstConsole(oldEntity.getConsolidationList()).getHazardous()))
                         || (!listIsNullOrEmpty(consolidationDetailsRequests) && Boolean.TRUE.equals(consolidationDetailsRequests.get(0).getHazardous()))) {
                     throw new RunnerException("You do not have Air DG permissions to edit this as it is a part of DG Consol");
                 }
@@ -1802,8 +1802,8 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setShipmentPackStatus(SAILED);
         if(shipmentDetails.getShipmentGateInDate() != null) {
             if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()
-                    && shipmentDetails.getConsolidationList().get(0).getCfsCutOffDate() != null) {
-                if(shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getConsolidationList().get(0).getCfsCutOffDate()))
+                    && CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getCfsCutOffDate() != null) {
+                if(shipmentDetails.getShipmentGateInDate().isAfter(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getCfsCutOffDate()))
                     throw new RunnerException("Shipment Gate In date should not be greater than the CFS Cut Off Date entered at the consolidation level.");
             }
             else if(shipmentDetails.getCarrierDetails().getEtd() != null && shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getCarrierDetails().getEtd()))
@@ -1855,14 +1855,14 @@ public class ShipmentService implements IShipmentService {
 //        v1ServiceUtil.validateCreditLimit(shipmentDetails.getClient(), ShipmentConstants.SHIPMENT_CREATION, shipmentDetails.getGuid(), false);
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
-            ConsolidationDetails console = shipmentDetails.getConsolidationList().get(0);
+            ConsolidationDetails console = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
             ConsolidationDetails tempConsole = new ConsolidationDetails();
             tempConsole.setId(console.getId());
             if(console.equals(tempConsole)){
                 console = consolidationDetailsDao.findById(console.getId()).get();
-                shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
+                shipmentDetails.setConsolidationList(Set.of(console));
             }
-            shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
+            shipmentDetails.setConsolRef(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getReferenceNumber());
         }
 
     }
@@ -1999,7 +1999,7 @@ public class ShipmentService implements IShipmentService {
         Long id = shipmentDetails.getId();
         Long consolidationId = null;
         if(shipmentDetails.getConsolidationList() != null && shipmentDetails.getConsolidationList().size() > 0)
-            consolidationId = shipmentDetails.getConsolidationList().get(0).getId();
+            consolidationId = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getId();
         Integer previousStatus = !Objects.isNull(oldEntity) ? oldEntity.getStatus() : null;
 
         List<Containers> updatedContainers = shipmentDetails.getContainersList();
@@ -2070,7 +2070,7 @@ public class ShipmentService implements IShipmentService {
 
         ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity, shipmentRequest);
         if(!Objects.isNull(consolidationDetails)) {
-            shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+            shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
             syncConsole = true;
         }
 
@@ -2139,7 +2139,7 @@ public class ShipmentService implements IShipmentService {
         pushShipmentDataToDependentService(shipmentDetails, isCreate, Boolean.TRUE.equals(shipmentRequest.getIsAutoSellRequired()), Optional.ofNullable(oldEntity).map(ShipmentDetails::getContainersList).orElse(null));
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
-            consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+            consolidationDetails = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
         }
         // Syncing shipment to V1
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
@@ -3416,7 +3416,7 @@ public class ShipmentService implements IShipmentService {
             List<Containers> updatedContainers = null;
             Long consolidationId = null;
             if (ObjectUtils.isNotEmpty(newShipmentDetails.getConsolidationList())) {
-                consolidationId = newShipmentDetails.getConsolidationList().get(0).getId();
+                consolidationId = CommonUtils.getFirstConsole(newShipmentDetails.getConsolidationList()).getId();
             }
             if (containerRequestList != null) {
                 updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id,
@@ -3441,7 +3441,7 @@ public class ShipmentService implements IShipmentService {
 
             ConsolidationDetails consolidationDetails = updateLinkedShipmentData(newShipmentDetails, oldShipmentDetails.get(), null);
             if(!Objects.isNull(consolidationDetails)) {
-                newShipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
+                newShipmentDetails.setConsolidationList(Set.of(consolidationDetails));
             }
             newShipmentDetails = shipmentDao.update(newShipmentDetails, false);
 
@@ -3689,7 +3689,7 @@ public class ShipmentService implements IShipmentService {
             shipmentRequest.setConsolidationList(null);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             if (!tempConsolidations.isEmpty())
-                entity.setConsolidationList(tempConsolidations);
+                entity.setConsolidationList(new HashSet<>(tempConsolidations));
             entity.setId(id);
             List<Containers> updatedContainers = null;
             if (containerRequestList != null) {
@@ -3989,7 +3989,7 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             } catch (Exception e) {}
             if(!Objects.isNull(shipmentDetails)) {
-                List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+                List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList().stream().toList();
                 if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
                     List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.get(0).getId());
                     if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
@@ -4679,7 +4679,7 @@ public class ShipmentService implements IShipmentService {
      * @param old_shipment
      */
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity, ShipmentRequest shipmentRequest) throws RunnerException {
-        List<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
+        List<ConsolidationDetails> consolidationList = shipment.getConsolidationList().stream().toList();
         ConsolidationDetails consolidationDetails;
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
@@ -4697,7 +4697,7 @@ public class ShipmentService implements IShipmentService {
             packingService.savePackUtilisationCalculationInConsole(utilizationRequest);
         }
         else if(oldEntity != null && oldEntity.getConsolidationList() != null && !oldEntity.getConsolidationList().isEmpty()) {
-            var oldConsolId = oldEntity.getConsolidationList().get(0).getId();
+            var oldConsolId = CommonUtils.getFirstConsole(oldEntity.getConsolidationList()).getId();
             CalculatePackUtilizationRequest utilizationRequest = CalculatePackUtilizationRequest.builder()
                     .consolidationId(oldConsolId)
                     .saveConsol(true)

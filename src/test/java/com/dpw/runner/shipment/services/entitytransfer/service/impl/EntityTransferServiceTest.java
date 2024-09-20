@@ -903,7 +903,7 @@ class EntityTransferServiceTest {
     void testPostArValidation_Success() throws RunnerException {
         ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
         shipmentDetails.setTenantId(33);
-        ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+        ConsolidationDetails consolidationDetails = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
         consolidationDetails.setTriangulationPartner(231L);
@@ -917,7 +917,7 @@ class EntityTransferServiceTest {
         shipmentDetailsImp.setDirection(Constants.DIRECTION_IMP);
         shipmentDetailsImp.setSourceGuid(UUID.randomUUID());
         shipmentDetailsImp.setTenantId(33);
-        ConsolidationDetails consolidationDetailsImp = shipmentDetailsImp.getConsolidationList().get(0);
+        ConsolidationDetails consolidationDetailsImp = CommonUtils.getFirstConsole(shipmentDetailsImp.getConsolidationList());
         consolidationDetailsImp.setGuid(UUID.randomUUID());
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
@@ -928,7 +928,7 @@ class EntityTransferServiceTest {
         shipmentDetailsImp1.setDirection(Constants.DIRECTION_IMP);
         shipmentDetailsImp1.setSourceGuid(UUID.randomUUID());
         shipmentDetailsImp1.setTenantId(33);
-        ConsolidationDetails consolidationDetailsImp1 = shipmentDetailsImp1.getConsolidationList().get(0);
+        ConsolidationDetails consolidationDetailsImp1 = CommonUtils.getFirstConsole(shipmentDetailsImp1.getConsolidationList());
         consolidationDetailsImp1.setGuid(UUID.randomUUID());
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
@@ -950,7 +950,7 @@ class EntityTransferServiceTest {
         shipmentDetailsExp.setGuid(UUID.randomUUID());
         shipmentDetailsExp.setDirection(Constants.DIRECTION_EXP);
         shipmentDetailsExp.setTenantId(33);
-        ConsolidationDetails consolidationDetailsExp = shipmentDetailsExp.getConsolidationList().get(0);
+        ConsolidationDetails consolidationDetailsExp = CommonUtils.getFirstConsole(shipmentDetailsExp.getConsolidationList());
         consolidationDetailsExp.setGuid(UUID.randomUUID());
         consolidationDetailsExp.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetailsExp.setReceivingBranch(null);
@@ -977,7 +977,7 @@ class EntityTransferServiceTest {
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
         originShipConsole.setTriangulationPartner(33L);
-        originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
+        originShipment.setConsolidationList(Set.of(originShipConsole));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
         originShipment1.setGuid(shipmentDetailsImp1.getSourceGuid());
@@ -987,7 +987,7 @@ class EntityTransferServiceTest {
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
         originShipConsole1.setTriangulationPartner(33L);
-        originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
+        originShipment1.setConsolidationList(Set.of(originShipConsole1));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
         originShipment2.setGuid(shipmentDetailsImp2.getSourceGuid());
@@ -997,7 +997,7 @@ class EntityTransferServiceTest {
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
         originShipConsole2.setTriangulationPartner(35L);
-        originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
+        originShipment2.setConsolidationList(Set.of(originShipConsole2));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
         triangulationShipment.setGuid(UUID.randomUUID());
@@ -1012,8 +1012,7 @@ class EntityTransferServiceTest {
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
         originShipConsole3.setTriangulationPartner(33L);
-        originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
-
+        originShipment3.setConsolidationList(Set.of(originShipConsole3));
         ShipmentDetails receivingShipment = new ShipmentDetails();
         receivingShipment.setGuid(UUID.randomUUID());
         receivingShipment.setSourceGuid(originShipment3.getGuid());
@@ -1033,25 +1032,26 @@ class EntityTransferServiceTest {
         Set<UUID> shipGuidSet = new HashSet<>(shipGuids);
         Set<UUID> shipGuidSet1 = new HashSet<>(shipGuidSet);
         shipGuidSet1.remove(shipmentDetails.getGuid());
-        Set<UUID> consoleGuids = new LinkedHashSet<>(List.of(shipmentDetails.getConsolidationList().get(0).getGuid(), shipmentDetailsDrt.getConsolidationList().get(0).getGuid(), shipmentDetailsImp.getConsolidationList().get(0).getGuid(),
-                shipmentDetailsImp1.getConsolidationList().get(0).getGuid(), shipmentDetailsExp.getConsolidationList().get(0).getGuid()));
+        var console = CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList());
+        Set<UUID> consoleGuids = new LinkedHashSet<>(List.of(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(shipmentDetailsDrt.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(shipmentDetailsImp.getConsolidationList()).getGuid(),
+                CommonUtils.getFirstConsole(shipmentDetailsImp1.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(shipmentDetailsExp.getConsolidationList()).getGuid()));
         Set<UUID> consoleGuids1 = new HashSet<>(consoleGuids);
-        consoleGuids1.remove(shipmentDetails.getConsolidationList().get(0).getGuid());
+        consoleGuids1.remove(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid());
 
-        LogHistoryResponse consoleLogHistoryResponse = LogHistoryResponse.builder().entityGuid(shipmentDetails.getConsolidationList().get(0).getGuid()).entityPayload(jsonTestUtility.convertToJson(shipmentDetails.getConsolidationList().get(0))).build();
+        LogHistoryResponse consoleLogHistoryResponse = LogHistoryResponse.builder().entityGuid(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()).getGuid()).entityPayload(jsonTestUtility.convertToJson(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()))).build();
 
         when(shipmentDao.findShipmentsByGuids(shipGuidSet1)).thenReturn(List.of(shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
         when(shipmentDao.findShipmentsBySourceGuids(Set.of(shipmentDetails.getGuid(), originShipment.getGuid(), originShipment1.getGuid(), originShipment2.getGuid(), originShipment3.getGuid()))).thenReturn(List.of(destShipment, destShipmentForTriangulation, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsImp2, triangulationShipment, receivingShipment));
         when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetailsImp.getSourceGuid(), shipmentDetailsImp1.getSourceGuid(), shipmentDetailsImp2.getSourceGuid(), shipmentDetailsImp3.getSourceGuid()))).thenReturn(List.of(originShipment, originShipment1, originShipment2, originShipment3));
         when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
         when(consolidationDetailsDao.findConsolidationsByGuids(consoleGuids1))
-                .thenReturn(List.of(shipmentDetailsDrt.getConsolidationList().get(0), shipmentDetailsImp.getConsolidationList().get(0), shipmentDetailsImp1.getConsolidationList().get(0), shipmentDetailsExp.getConsolidationList().get(0)));
-        when(consolidationDetailsDao.findConsolidationsByGuids(Set.of(originShipment.getConsolidationList().get(0).getGuid(), originShipment1.getConsolidationList().get(0).getGuid(), originShipment2.getConsolidationList().get(0).getGuid(), originShipment3.getConsolidationList().get(0).getGuid())))
-                .thenReturn(List.of(originShipment.getConsolidationList().get(0), originShipment1.getConsolidationList().get(0), originShipment2.getConsolidationList().get(0), originShipment3.getConsolidationList().get(0)));
+                .thenReturn(List.of(CommonUtils.getFirstConsole(shipmentDetailsDrt.getConsolidationList()), CommonUtils.getFirstConsole(shipmentDetailsImp.getConsolidationList()), CommonUtils.getFirstConsole(shipmentDetailsImp1.getConsolidationList()), CommonUtils.getFirstConsole(shipmentDetailsExp.getConsolidationList())));
+        when(consolidationDetailsDao.findConsolidationsByGuids(Set.of(CommonUtils.getFirstConsole(originShipment.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(originShipment1.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(originShipment2.getConsolidationList()).getGuid(), CommonUtils.getFirstConsole(originShipment3.getConsolidationList()).getGuid())))
+                .thenReturn(List.of(CommonUtils.getFirstConsole(originShipment.getConsolidationList()), CommonUtils.getFirstConsole(originShipment1.getConsolidationList()), CommonUtils.getFirstConsole(originShipment2.getConsolidationList()), CommonUtils.getFirstConsole(originShipment3.getConsolidationList())));
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(shipGuidSet.stream().toList(), timeStamp)).thenReturn(List.of(logHistoryResponse));
         when(jsonHelper.readFromJson(logHistoryResponse.getEntityPayload(), ShipmentDetails.class)).thenReturn(shipmentDetails);
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(consoleGuids.stream().toList(), timeStamp)).thenReturn(List.of(consoleLogHistoryResponse));
-        when(jsonHelper.readFromJson(consoleLogHistoryResponse.getEntityPayload(), ConsolidationDetails.class)).thenReturn(shipmentDetails.getConsolidationList().get(0));
+        when(jsonHelper.readFromJson(consoleLogHistoryResponse.getEntityPayload(), ConsolidationDetails.class)).thenReturn(CommonUtils.getFirstConsole(shipmentDetails.getConsolidationList()));
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

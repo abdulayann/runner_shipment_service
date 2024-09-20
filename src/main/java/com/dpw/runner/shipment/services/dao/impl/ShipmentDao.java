@@ -118,7 +118,7 @@ public class ShipmentDao implements IShipmentDao {
         }
         else {
             if(shipmentDetails.getConsolidationList() == null)
-                shipmentDetails.setConsolidationList(new ArrayList<>());
+                shipmentDetails.setConsolidationList(new HashSet<>());
             if(shipmentDetails.getContainersList() == null)
                 shipmentDetails.setContainersList(new ArrayList<>());
         }

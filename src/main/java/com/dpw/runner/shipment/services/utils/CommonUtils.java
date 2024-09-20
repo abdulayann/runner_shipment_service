@@ -1473,4 +1473,7 @@ public class CommonUtils {
         }
     }
 
+    public static ConsolidationDetails getFirstConsole(Set<ConsolidationDetails> consolidationDetailsSet) {
+        return consolidationDetailsSet.stream().findFirst().orElse(null);
+    }
 }
