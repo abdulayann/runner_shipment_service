@@ -4679,7 +4679,7 @@ public class ShipmentService implements IShipmentService {
      * @param old_shipment
      */
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity, ShipmentRequest shipmentRequest) throws RunnerException {
-        List<ConsolidationDetails> consolidationList = shipment.getConsolidationList().stream().toList();
+        List<ConsolidationDetails> consolidationList = Objects.isNull(shipment.getConsolidationList()) ? new ArrayList<>() : shipment.getConsolidationList().stream().toList();
         ConsolidationDetails consolidationDetails;
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         var linkedConsol = (consolidationList != null && consolidationList.size() > 0) ? consolidationList.get(0) : null;
