@@ -10,16 +10,27 @@ import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConst
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.EventsDump;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -39,13 +50,19 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,7 +97,7 @@ public class EventService implements IEventService {
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
-    private CommonUtils commonUtils;
+    private final CommonUtils commonUtils;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -595,7 +612,12 @@ public class EventService implements IEventService {
         // Create a map of existing events by their event code
         Map<String, Events> existingEventsMap = eventsFromDb.stream()
                 .collect(Collectors.toMap(
-                        event -> createEventUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource(), event.getPlaceName()),
+                        event -> commonUtils.getTrackingEventsUniqueKey(
+                                event.getEventCode(),
+                                event.getContainerNumber(),
+                                shipmentDetails.getShipmentId(),
+                                event.getSource(),
+                                event.getPlaceName()),
                         Function.identity(),
                         (existingEvent, newEvent) -> {
                             log.debug("Duplicate key detected. Replacing existing event with new event: {}", newEvent);
@@ -607,16 +629,11 @@ public class EventService implements IEventService {
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
                 .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails))
-                .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap))
+                .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId()))
                 .toList();
 
         log.info("Saving updated events to the database.");
         return eventDao.saveAll(updatedEvents);
-    }
-
-    @NotNull
-    private String createEventUniqueKey(String eventCode, String containerNumber, String source, String placeName) {
-        return eventCode + "-" + StringUtils.defaultString(containerNumber) + "-" + source + "-" + StringUtils.defaultString(placeName);
     }
 
     /**
@@ -696,15 +713,16 @@ public class EventService implements IEventService {
     /**
      * Maps a tracking event to an updated event with additional details.
      *
-     * @param trackingEvent The tracking event to map.
-     * @param existingEventsMap A map of existing events to check for duplicates.
-     * @param entityId The ID of the entity associated with the event.
-     * @param entityType The type of the entity associated with the event.
+     * @param trackingEvent                The tracking event to map.
+     * @param existingEventsMap            A map of existing events to check for duplicates.
+     * @param entityId                     The ID of the entity associated with the event.
+     * @param entityType                   The type of the entity associated with the event.
      * @param identifier2ToLocationRoleMap A map of identifiers to location roles for conversion.
+     * @param shipmentId
      * @return The updated event with additional details.
      */
     private Events mapToUpdatedEvent(Events trackingEvent, Map<String, Events> existingEventsMap,
-            Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap) {
+            Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, String shipmentId) {
         // Log the start of mapping
         log.info("Mapping tracking event with container number {} and event code {}.",
                 trackingEvent.getContainerNumber(), trackingEvent.getEventCode());
@@ -714,7 +732,12 @@ public class EventService implements IEventService {
 
         // Check if the event already exists
         Events existingEvent = existingEventsMap.get(
-                createEventUniqueKey(event.getEventCode(), event.getContainerNumber(), event.getSource(), event.getPlaceName()));
+                commonUtils.getTrackingEventsUniqueKey(
+                        event.getEventCode(),
+                        event.getContainerNumber(),
+                        shipmentId,
+                        event.getSource(),
+                        event.getPlaceName()));
 
         if (existingEvent != null) {
             // Update ID and GUID if the event already exists
