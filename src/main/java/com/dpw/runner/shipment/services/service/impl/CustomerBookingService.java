@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.service.impl;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
-import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;

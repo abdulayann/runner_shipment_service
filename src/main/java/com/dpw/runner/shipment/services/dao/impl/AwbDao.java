@@ -2,9 +2,9 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
