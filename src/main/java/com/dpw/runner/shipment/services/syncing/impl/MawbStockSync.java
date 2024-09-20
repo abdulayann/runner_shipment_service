@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
 import com.dpw.runner.shipment.services.syncing.Entity.V1DataSyncRequest;
@@ -24,6 +26,8 @@ public class MawbStockSync implements IMawbStockSync {
 
     @Override
     public void sync(MawbStocks mawbStocks) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return;
         MawbStocksV2 mawbStocksV2 = syncEntityConversionService.mawbStocksV2ToV1(mawbStocks);
 
         String transactionId = String.valueOf(mawbStocks.getGuid());

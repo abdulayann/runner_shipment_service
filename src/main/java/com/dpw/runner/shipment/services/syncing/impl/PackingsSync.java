@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -48,6 +49,9 @@ public class PackingsSync implements IPackingsSync {
 
     @Override
     public ResponseEntity<?> sync(List<Packing> packingList, String transactionId) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         List<PackingRequestV2> packingRequestV2List = new ArrayList<>();
         List<Containers> containers = new ArrayList<>();
         if(packingList != null && packingList.size() > 0) {

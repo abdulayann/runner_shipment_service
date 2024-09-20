@@ -4970,7 +4970,6 @@ ShipmentServiceTest extends CommonMocks {
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -5076,8 +5075,6 @@ ShipmentServiceTest extends CommonMocks {
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(commonUtils.checkIfAnyDGClass(any())).thenReturn(true);
-        when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(jsonHelper.convertValueToList(any(), eq(ConsoleShipmentMapping.class))).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -7635,7 +7632,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testMakeShipmentsDG() throws RunnerException {
-        shipmentService.makeShipmentsDG(null, ShipmentDetails.builder().containsHazardous(true).build());
+        shipmentService.makeShipmentsDG(new HashMap<>(), ShipmentDetails.builder().containsHazardous(true).build());
         verify(shipmentDao, times(0)).save(any(), anyBoolean());
     }
 

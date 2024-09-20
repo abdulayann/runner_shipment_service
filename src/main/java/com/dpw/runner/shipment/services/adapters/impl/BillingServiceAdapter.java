@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganiz
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -115,6 +116,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
     private static final String RESPONSE_CONTAINS_ERROR = "Response contains errors: ";
     private static final String BILLING_SUMMARY = "billingSummary";
+    public static final String LOG_TIME_CONSUMED = "Request ID: {} | BILLING_API_CALL | API {} | Time taken: {} ms";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -141,9 +143,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         invoiceSummaryRequest.setModuleGuid(request.getGuid());
 
         String url = billingBaseUrl + getInvoiceData;
-
+        double start = System.currentTimeMillis();
         HttpEntity<InvoiceSummaryRequest> httpEntity = new HttpEntity<>(invoiceSummaryRequest, V1AuthHelper.getHeaders());
         var response = this.restTemplate.postForEntity(url, httpEntity, BillingSummaryResponse.class).getBody();
+        log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
         BillingSummary billingSummary = new BillingSummary();
         if (Objects.nonNull(response)) {
             billingSummary = modelMapper.map(response.getData(), BillingSummary.class);
@@ -171,7 +174,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         // Create an HttpEntity object with the payload and authentication headers
         HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, V1AuthHelper.getHeaders());
         log.debug(REQUEST_PAYLOAD, externalBillPayloadRequest);
-
+        double start = System.currentTimeMillis();
         try {
             // Send a POST request to the specified URL with the HttpEntity and expect a BillingEntityResponse
             log.info(EXECUTING_POST_REQUEST);
@@ -181,6 +184,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             // Log the response status and body
             log.info("Received response with status: {}", responseEntity.getStatusCode());
             log.debug("Response body: {}", billingEntityResponse);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
 
             // Check if the response is not null and contains errors
             if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
@@ -210,10 +214,11 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
-
+        double start = System.currentTimeMillis();
         try {
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
 
             BillingEntityResponse billingEntityResponse = responseEntity.getBody();
 
@@ -245,12 +250,12 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
-
+        double start = System.currentTimeMillis();
         try {
             log.info(EXECUTING_POST_REQUEST);
             ResponseEntity<R> responseEntity = restTemplate.exchange(url, HttpMethod.POST, httpEntity, responseType);
             R response = responseEntity.getBody();
-
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
             log.info("Received response with status: {}", responseEntity.getStatusCode());
             log.debug("Response body: {}", response);
 

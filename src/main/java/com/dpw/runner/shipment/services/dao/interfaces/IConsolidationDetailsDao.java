@@ -18,6 +18,7 @@ public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment);
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
+    ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
@@ -36,4 +37,5 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
+    void entityDetach(List<ConsolidationDetails> consolidationDetails);
 }

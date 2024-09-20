@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.filters;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -128,6 +129,7 @@ public class AuthFilter extends OncePerRequestFilter {
                 .setDetails(new WebAuthenticationDetailsSource().buildDetails(req));
         PermissionsContext.setPermissions(grantedPermissions);
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+        SyncingContext.setContext(true);
         filterChain.doFilter(servletRequest, servletResponse);
         double _timeTaken = System.currentTimeMillis() - time;
         log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
@@ -142,6 +144,7 @@ public class AuthFilter extends OncePerRequestFilter {
             PermissionsContext.removePermissions();
             SecurityContextHolder.clearContext();
             InterBranchContext.removeContext();
+            SyncingContext.removeContext();
         }
 
     }

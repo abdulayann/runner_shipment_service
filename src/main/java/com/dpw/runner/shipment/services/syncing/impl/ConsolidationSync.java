@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -37,6 +38,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -75,6 +77,9 @@ public class ConsolidationSync implements IConsolidationSync {
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(ConsolidationDetails request, String transactionId, boolean isDirectSync) throws RunnerException {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         if (Objects.isNull(request))
             return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
         CustomConsolidationRequest response = createConsoleSyncReq(request);
@@ -129,14 +134,12 @@ public class ConsolidationSync implements IConsolidationSync {
             response.setAutoUpdateGoodsDesc(false);
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
-        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
+        if(!listIsNullOrEmpty(consoleShipmentMappings)) {
             List<Long> shipmentIds = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(toList());
-            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIds, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair1 = fetchData(listReq, ShipmentDetails.class);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair1.getLeft(), pair1.getRight());
-            if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
-                var map = shipmentDetailsPage.getContent().stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
-                response.setShipmentGuids(shipmentDetailsPage.getContent().stream().collect(toMap(BaseEntity::getGuid, MultiTenancy::getTenantId)));
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+            if(!listIsNullOrEmpty(shipmentDetailsList)) {
+                var map = shipmentDetailsList.stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
+                response.setShipmentGuids(shipmentDetailsList.stream().collect(toMap(BaseEntity::getGuid, MultiTenancy::getTenantId)));
                 mapTruckDriverDetail(response, request, shipmentIds, map);
             }
         }

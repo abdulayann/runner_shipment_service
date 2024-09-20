@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -44,6 +45,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
+import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -149,6 +152,10 @@ class EntityTransferServiceTest {
     V1ServiceUtil v1ServiceUtil;
     @InjectMocks
     private EntityTransferService entityTransferService;
+    @Mock
+    private ShipmentSync shipmentSync;
+    @Mock
+    private ConsolidationSync consolidationSync;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -1412,6 +1419,7 @@ class EntityTransferServiceTest {
 
         when(containerDao.findByConsolidationId(anyLong())).thenReturn(List.of(containers));
         when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(packing)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(oldShipmentDetails));
 
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -1455,7 +1463,7 @@ class EntityTransferServiceTest {
     @Test
     void testSendGroupedEmailForShipmentImport_Success() {
         // Given
-        List<UUID> shipmentGuids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        String consoleSourceBranchTenantName = "consoleBranch";
         when(shipmentDetails.getTenantId()).thenReturn(100);
         when(shipmentDetails.getSourceTenantId()).thenReturn(123L);
         when(shipmentDetails.getShipmentId()).thenReturn("1");
@@ -1469,10 +1477,6 @@ class EntityTransferServiceTest {
         );
 
         // Mocks
-        when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class)))
-                .thenReturn(consolidationDetails);
-        when(shipmentDao.findShipmentsByGuids(anySet()))
-                .thenReturn(shipmentDetailsList);
         doNothing().when(commonUtils).setInterBranchContextForHub();
         doNothing().when(commonUtils).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
         EmailTemplatesRequest emailTemplatesRequest = mock(EmailTemplatesRequest.class);
@@ -1483,7 +1487,6 @@ class EntityTransferServiceTest {
             toEmailIds.add("toEmail@example.com");
             return null;
         }).when(commonUtils).getToAndCcEmailMasterLists(anySet(), anySet(), anyMap(), anyInt(), anyBoolean());
-        when(consolidationDetails.getConsolidationNumber()).thenReturn("12345");
 
         Map<Integer, Object> mockV1Map = new HashMap<>();
         mockV1Map.put(123, new Object());
@@ -1493,12 +1496,10 @@ class EntityTransferServiceTest {
         when(v1TenantResponse.getTenantName()).thenReturn("abcd");
 
         // When
-        entityTransferService.sendGroupedEmailForShipmentImport(consolidationDetailsResponse, shipmentGuids);
+        entityTransferService.sendGroupedEmailForShipmentImport(shipmentDetailsList, consoleSourceBranchTenantName);
 
         // Then
-        verify(jsonHelper, times(1)).convertValue(consolidationDetailsResponse, ConsolidationDetails.class);
         verify(commonUtils, times(1)).setInterBranchContextForHub();
-        verify(shipmentDao, times(1)).findShipmentsByGuids(anySet());
         verify(commonUtils, times(1)).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
     }
 
@@ -1509,7 +1510,8 @@ class EntityTransferServiceTest {
 
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
-        mockV1Map.put(123, new Object());
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
@@ -1532,8 +1534,11 @@ class EntityTransferServiceTest {
 
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
-        mockV1Map.put(123, new Object());
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
 
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(shipmentDetails.getShipmentId()).thenReturn("1");
         when(shipmentDetails.getHouseBill()).thenReturn("hbn");
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");

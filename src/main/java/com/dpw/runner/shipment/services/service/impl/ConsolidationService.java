@@ -743,7 +743,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if (!Objects.isNull(consolidationId))
             awbDao.validateAirMessaging(consolidationId);
-        Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(shipPair.getLeft(), shipPair.getRight());
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         Set<Long> interBranchShipIds = new HashSet<>();
         List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted
         if(shipmentRequestedType == null) {
@@ -808,7 +808,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             this.checkSciForAttachConsole(consolidationId);
             // detaching the shipmentDetailsList but still able to access raw entity data, fetch any lazy load data beforehand if need to be used
-            shipmentDao.entityDetach(shipmentDetailsList.getContent());
+            shipmentDao.entityDetach(shipmentDetailsList);
             updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
             // Update pack utilisation if user accepts any pull or push request
             if(ShipmentRequestedType.APPROVE.equals(shipmentRequestedType)) {
@@ -827,7 +827,7 @@ public class ConsolidationService implements IConsolidationService {
                 {
                     throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
                 }
-                consolidationDetailsDao.update(consolidationDetails, false);
+                consolidationDetailsDao.update(consolidationDetails, false, true);
             }
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
@@ -836,7 +836,7 @@ public class ConsolidationService implements IConsolidationService {
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
             List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
-            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList.getContent(), consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
+            commonUtils.sendRejectionEmailsExplicitly(shipmentDetailsList, consoleShipmentMappingsForEmails, shipmentRequestedTypes, otherConsolidationDetails);
         }
         try {
             consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
@@ -2058,10 +2058,7 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             shipmentDetails.forEach(e -> {
                 e.setContainsHazardous(true);
-                commonUtils.changeShipmentDGStatusToReqd(e);
-                if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(e.getOceanDGStatus())) {
-                    e.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-                }
+                commonUtils.changeShipmentDGStatusToReqd(e, commonUtils.checkIfDGClass1(container.getDgClass()));
             });
             shipmentDetails = shipmentDao.saveAll(shipmentDetails);
             for (ShipmentDetails shipmentDetails1 : shipmentDetails) {
@@ -3335,11 +3332,7 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDetails1.setContainsHazardous(true);
         }
         if(commonUtils.checkIfAnyDGClass(container.getDgClass()))
-            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1);
-        if(commonUtils.checkIfDGClass1(container.getDgClass()) && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails1.getOceanDGStatus())) {
-            shipmentDetails1.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-            valueChanged = true;
-        }
+            valueChanged = valueChanged || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails1, commonUtils.checkIfDGClass1(container.getDgClass()));
         if(valueChanged)
             dgStatusChangeInShipments.put(shipmentDetails1.getId(), shipmentDetails1);
     }
@@ -3349,7 +3342,7 @@ public class ConsolidationService implements IConsolidationService {
         Containers oldContainer = null;
         if(container.getId() != null && oldContainersMap.containsKey(container.getId())) {
             oldContainer = oldContainersMap.get(container.getId());
-            if(container.getId() != null && commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
+            if(commonUtils.checkIfDGFieldsChangedInContainer(jsonHelper.convertValue(container, ContainerRequest.class), oldContainer)
                     && !listIsNullOrEmpty(oldContainer.getShipmentsList())) {
                 for(ShipmentDetails shipmentDetails: oldContainer.getShipmentsList()) {
                     changeDgShipmentMapValues(shipmentDetails, dgStatusChangeInShipments, container);

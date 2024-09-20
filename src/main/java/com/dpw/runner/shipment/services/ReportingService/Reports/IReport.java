@@ -237,11 +237,11 @@ public abstract class IReport {
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
             }
-            ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit);
-            ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit);
-            ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit);
-            ship.PackingGroup = getMasterListItemDesc(row.getPackingGroup());
-            ship.OceanDGClass = getMasterListItemDesc(row.getDgClass());
+            ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit, MasterDataType.VOLUME_UNIT.name(), false);
+            ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit, MasterDataType.WEIGHT_UNIT.name(), false);
+            ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit, MasterDataType.PACKS_UNIT.name(), false);
+            ship.PackingGroup = getMasterListItemDesc(row.getPackingGroup(), MasterDataType.PACKING_GROUP.name(), true);
+            ship.OceanDGClass = getMasterListItemDesc(row.getDgClass(), MasterDataType.DG_CLASS.name(), true);
             ship.DgClassDescription = ship.OceanDGClass;
             if (row.getGrossWeight() != null && row.getTareWeight() != null)
                 ship.VGMWeight = row.getGrossWeight().add(row.getTareWeight());
@@ -259,10 +259,19 @@ public abstract class IReport {
         return ship;
     }
 
-    private String getMasterListItemDesc(String value) {
-        var valueMapper = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, value));
+    private String getMasterListItemDesc(String value, String type, boolean isValueNDesc) {
+        if(StringUtility.isEmpty(value))
+            return value;
+        String key = value + "#" + type;
+        var valueMapper = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
         if(!Objects.isNull(valueMapper)) {
             EntityTransferMasterLists object = (EntityTransferMasterLists) valueMapper.get();
+            if(isValueNDesc)
+            {
+                if(!Objects.isNull(object) && !StringUtility.isEmpty(object.getValuenDesc()))
+                    return object.getValuenDesc();
+                return value;
+            }
             String val = value;
             if(!Objects.isNull(object) && object.getItemDescription() != null)
                 val = object.getItemDescription();
@@ -2634,7 +2643,7 @@ public abstract class IReport {
                 }
             } catch (Exception ignored) {}
             if(!StringUtility.isEmpty(pack.getDGClass()))
-                dict.put(OCEAN_DG_CLASS, getMasterListItemDesc(pack.getDGClass()));
+                dict.put(OCEAN_DG_CLASS, getMasterListItemDesc(pack.getDGClass(), MasterDataType.DG_CLASS.name(), true));
             if(pack.getMinimumFlashPoint() != null)
             {
                 String flashPointAndUnit = String.valueOf(pack.getMinimumFlashPoint());
@@ -2643,7 +2652,7 @@ public abstract class IReport {
                 dict.put(FLASH_POINT_AND_UNIT, flashPointAndUnit);
             }
             if(!StringUtility.isEmpty(pack.getPackingGroup()))
-                dict.put(PACKING_GROUP, getMasterListItemDesc(pack.getPackingGroup()));
+                dict.put(PACKING_GROUP, getMasterListItemDesc(pack.getPackingGroup(), MasterDataType.PACKING_GROUP.name(), true));
             if(Boolean.TRUE.equals(pack.getMarinePollutant()))
                 dict.put(MARINE_POLLUTANT, "Marine Pollutant");
             if(pack.getCommodity() != null) {
