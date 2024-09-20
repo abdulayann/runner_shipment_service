@@ -541,6 +541,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        mockShipment.setConsolidationList(Set.of());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
         LocalDateTime mockDateTime = LocalDateTime.now();
@@ -602,7 +603,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails mockShipment = shipmentDetails;
         mockShipment.setShipmentId("AIR-CAN-00001");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
-
+        mockShipment.setConsolidationList(Set.of());
         LocalDateTime mockDateTime = LocalDateTime.now();
 
         TrackingServiceApiResponse trackingResponse = new TrackingServiceApiResponse();
@@ -661,6 +662,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setConsolidationList(Set.of());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
         LocalDateTime mockDateTime = LocalDateTime.now();
@@ -720,6 +722,7 @@ ShipmentServiceTest extends CommonMocks {
     void create_success_emptyActualEventDate() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setConsolidationList(Set.of());
         mockShipment.setShipmentId("AIR-CAN-00001");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
@@ -858,6 +861,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         mockShipment.getAdditionalDetails().setEfreightStatus("new value");
+        mockShipment.setConsolidationList(Set.of());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -891,6 +895,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         mockShipment.getAdditionalDetails().setSci("T1");
         mockShipment.getAdditionalDetails().setEfreightStatus("new value");
+        mockShipment.setConsolidationList(Set.of());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -2799,7 +2804,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
 
-        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(Arrays.asList(ShipmentDetails.builder().build()));
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(Arrays.asList(ShipmentDetails.builder().consolidationList(Set.of()).build()));
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
@@ -5927,6 +5932,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setConsolidationList(Set.of());
 
         mockShipment.setShipmentId("AIR-CAN-00001");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
@@ -5960,6 +5966,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         shipmentDetails.getCarrierDetails().setAtd(LocalDateTime.now());
+        shipmentDetails.setConsolidationList(Set.of());
         Packing packing = new Packing();
         packing.setCargoGateInDate(LocalDateTime.now());
         packing.setDateType(DateBehaviorType.ACTUAL);
@@ -5995,6 +6002,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setConsolidationList(Set.of());
 
         mockShipment.setShipmentId("AIR-CAN-00001");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
@@ -7134,6 +7142,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setBookingNumber("BookingNUmber");
         shipmentDetails.setDateType(DateBehaviorType.ESTIMATED);
+        shipmentDetails.setConsolidationList(Set.of());
 
         AdditionalDetails additionalDetails = getmockAdditionalDetails(LocalDateTime.now(), true, true, true);
         shipmentDetails.setAdditionalDetails(additionalDetails);
