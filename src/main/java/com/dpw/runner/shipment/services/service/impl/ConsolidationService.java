@@ -4651,7 +4651,7 @@ public class ConsolidationService implements IConsolidationService {
         if (CommonUtils.listIsNullOrEmpty(consoleShipMappingList)) {
             return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
         }
-        List<Long> consoleIds = consoleShipMappingList.stream().filter(x -> (Boolean.FALSE.equals(x.getIsAttachmentDone()) &&
+        List<Long> consoleIds = consoleShipMappingList.stream().filter(x -> (Boolean.TRUE.equals(x.getIsAttachmentDone()) ||
                 Objects.equals(x.getRequestedType(), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED))).map(ConsoleShipmentMapping::getConsolidationId).toList();
         var requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getConsolidationId, Function.identity(), (existingValue, newValue) -> existingValue));
 
