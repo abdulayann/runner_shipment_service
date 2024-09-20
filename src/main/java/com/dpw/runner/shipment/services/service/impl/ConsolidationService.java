@@ -3589,7 +3589,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if (eventsRequestList != null) {
             eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
-            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isFromBooking ? false : isCreate);
+            List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
             commonUtils.removeDuplicateTrackingEvents(eventsList);
             eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.CONSOLIDATION);
             consolidationDetails.setEventsList(eventsList);
