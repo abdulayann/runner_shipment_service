@@ -1,16 +1,15 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
-import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.config.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,8 +68,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Integer innerPacks;
     private String innerPackUnit;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoReadyDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
@@ -97,9 +98,11 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean isShipmentReadOnly;
     private String shipmentCompletedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime financeClosedOn;
     private PartiesResponse client;
     private PartiesResponse consigner;
@@ -138,6 +141,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private BigDecimal insuranceValue;
     private String InsuranceValueCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
@@ -167,8 +171,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
         textData.putAll(dataMap);
     }
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime updatedAt;
 
     private CustomerCategoryRates customerCategory;
@@ -205,6 +211,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String updatedBy;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
@@ -62,7 +63,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 
 /**
@@ -222,7 +222,6 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    @Transactional
     public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
             var response = shipmentServiceAdapter.createShipmentInV2(customerBookingRequest);
@@ -230,6 +229,20 @@ public class BookingIntegrationsUtility {
         } catch (Exception ex) {
             log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;
+        }
+    }
+
+    public ShipmentDetailsResponse getShipmentIdByGuid(String guid) throws RunnerException {
+        try {
+            var response = shipmentServiceAdapter.getShipmentIdbyGuid(guid);
+            ShipmentDetailsResponse shipmentResponse = null;
+            if(response.getBody()!=null){
+                shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse<?>) response.getBody()).getData());
+            }
+            return shipmentResponse;
+        } catch (Exception ex) {
+            log.error("Shipment fetch failed for guid {} with error message: {}", guid, ex.getMessage());
+            return null;
         }
     }
 

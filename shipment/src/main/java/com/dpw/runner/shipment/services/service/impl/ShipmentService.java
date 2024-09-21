@@ -6869,4 +6869,30 @@ public class ShipmentService implements IShipmentService {
         emailBody = commonUtils.replaceTagsFromData(dictionary, emailBody);
         return emailBody;
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getShipmentIdByGuid(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+            }
+            if (request.getGuid() == null) {
+                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(UUID.fromString(request.getGuid()));
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                return ResponseHelper.buildSuccessResponse();
+            }
+            log.info("Shipment details fetched successfully for Guid {} with Request Id {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().id(shipmentDetails.get().getId()).build());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

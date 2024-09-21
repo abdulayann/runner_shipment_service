@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -31,6 +33,7 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isNotifyPartyFreeText;
     private String customerEmail;
     private String bookingNumber;
+    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime bookingDate;
     private String incoTerms;
     private CarrierDetailRequest carrierDetails;

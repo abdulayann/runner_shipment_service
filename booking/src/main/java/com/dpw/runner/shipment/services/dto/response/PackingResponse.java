@@ -1,11 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
-import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
-import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.config.*;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.Data;
@@ -92,6 +90,7 @@ public class PackingResponse implements IRunnerResponse {
     private Boolean assigned;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoGateInDate;
     private Integer tenantId;
     private String unNumber;

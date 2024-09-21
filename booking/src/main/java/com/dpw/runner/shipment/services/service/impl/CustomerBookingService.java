@@ -37,15 +37,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
@@ -71,13 +63,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -382,7 +368,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(customerBooking, CustomerBookingResponse.class));
     }
 
-    @Transactional
     private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingRequest request, String oldEntity) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         populateTotalRevenueDetails(customerBooking, request);
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -1234,14 +1219,16 @@ public class CustomerBookingService implements ICustomerBookingService {
                                                 build();
                                 V1RetrieveResponse v1RetrieveResponse = v1Service.getShipment(v1RetrieveRequest);
                                 ShipmentRetrieveResponse shipmentRetrieveResponse = (ShipmentRetrieveResponse) v1RetrieveResponse.getEntity();
-                                var shipment = shipmentDao.findByGuid(shipmentRetrieveResponse.getGuid());
-                                if (shipment.isPresent())
-                                    customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
+                                ShipmentDetailsResponse shipmentResponse = bookingIntegrationsUtility.getShipmentIdByGuid(String.valueOf(shipmentRetrieveResponse.getGuid()));
+                                if(shipmentResponse!=null && shipmentResponse.getId()!=null){
+                                    customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
+                                }
                             }
                         } else {
-                            var shipment = shipmentDao.findByGuid(UUID.fromString(customerBooking.getShipmentGuid()));
-                            if (shipment.isPresent())
-                                customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
+                            ShipmentDetailsResponse shipmentResponse = bookingIntegrationsUtility.getShipmentIdByGuid(customerBooking.getShipmentGuid());
+                            if(shipmentResponse!=null && shipmentResponse.getId()!=null){
+                                customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
+                            }
                         }
                     }
                 } else {

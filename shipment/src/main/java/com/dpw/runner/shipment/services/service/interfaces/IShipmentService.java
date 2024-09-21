@@ -117,4 +117,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> hblCheck(String hblNumber);
     ResponseEntity<IRunnerResponse> listWithoutTenantCheck(CommonRequestModel commonRequestModel);
 
+    ResponseEntity<IRunnerResponse> getShipmentIdByGuid(CommonRequestModel commonRequestModel);
+
 }

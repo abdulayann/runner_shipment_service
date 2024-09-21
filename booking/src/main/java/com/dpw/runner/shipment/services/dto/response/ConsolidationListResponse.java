@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -124,11 +126,13 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Set<String> containerNumbers;
     private Boolean hazardous;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
     private Integer pendingActionCount;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     @ExcludeTimeZone
     private LocalDateTime latDate;
     private String department;

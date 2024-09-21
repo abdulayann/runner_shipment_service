@@ -8,4 +8,5 @@ import org.springframework.http.ResponseEntity;
 public interface IShipmentServiceAdapter {
 
     ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException;
+    ResponseEntity<IRunnerResponse> getShipmentIdbyGuid(String guid) throws RunnerException;
 }
