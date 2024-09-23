@@ -25,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -107,23 +106,6 @@ public class EventsController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Events";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, response = MyListResponseClass.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @GetMapping(EventConstants.TRACK_EVENT_DETAILS)
-    public ResponseEntity<IRunnerResponse> trackEventDetails(@RequestParam(name = "shipmentId") Optional<Long> id, @RequestParam(name = "consolidationId") Optional<Long> consolidationId) {
-        String responseMsg;
-        try {
-            return eventService.trackEvents(id, consolidationId);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error fetching Events";
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);

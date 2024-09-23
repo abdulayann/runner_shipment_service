@@ -4,11 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
@@ -30,7 +27,6 @@ import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -72,13 +68,7 @@ import static org.mockito.Mockito.*;
 @Execution(ExecutionMode.CONCURRENT)
 class NPMServiceAdapterTest {
     @MockBean
-    private IAwbDao iAwbDao;
-
-    @MockBean
     private ICustomerBookingDao iCustomerBookingDao;
-
-    @MockBean
-    private IShipmentService iShipmentService;
 
     @MockBean
     private IV1Service iV1Service;
@@ -927,138 +917,6 @@ class NPMServiceAdapterTest {
 
         // Act and Assert
         assertThrows(NPMException.class, () -> nPMServiceAdapter.fetchOffersV8(commonRequestModel));
-    }
-
-    /**
-     * Method under test: {@link NPMServiceAdapter#awbAutoSell(CommonRequestModel)}
-     */
-    @Test
-    void testAwbAutoSell() throws RunnerException, RestClientException {
-        // Arrange
-        RunnerResponse.RunnerResponseBuilder<Object> builderResult = RunnerResponse.builder();
-        RunnerResponse.RunnerResponseBuilder<Object> dataResult = builderResult.count(3L).data("Data");
-        RunnerResponse<Object> buildResult = dataResult.error(new ApiError(HttpStatus.CONTINUE))
-                .pageNo(1)
-                .requestId("42")
-                .success(true)
-                .build();
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<RunnerResponse<Object>>>any()))
-                .thenReturn(buildResult);
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult2 = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult2.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(NPMException.class, () -> nPMServiceAdapter.awbAutoSell(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<ApiError>any());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
-    }
-
-    /**
-     * Method under test: {@link NPMServiceAdapter#awbAutoSell(CommonRequestModel)}
-     */
-    @Test
-    void testAwbAutoSell2() throws RunnerException, RestClientException {
-        // Arrange
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<RunnerResponse<Object>>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(HttpClientErrorException.class, () -> nPMServiceAdapter.awbAutoSell(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper).convertToJson(isNull());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
-    }
-
-    /**
-     * Method under test:
-     * {@link NPMServiceAdapter#awbImportRates(CommonRequestModel)}
-     */
-    @Test
-    void testAwbImportRates() throws RunnerException, RestClientException {
-        // Arrange
-        RunnerResponse.RunnerResponseBuilder<Object> builderResult = RunnerResponse.builder();
-        RunnerResponse.RunnerResponseBuilder<Object> dataResult = builderResult.count(3L).data("Data");
-        RunnerResponse<Object> buildResult = dataResult.error(new ApiError(HttpStatus.CONTINUE))
-                .pageNo(1)
-                .requestId("42")
-                .success(true)
-                .build();
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<RunnerResponse<Object>>>any()))
-                .thenReturn(buildResult);
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult2 = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult2.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(NPMException.class, () -> nPMServiceAdapter.awbImportRates(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<ApiError>any());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
-    }
-
-    /**
-     * Method under test:
-     * {@link NPMServiceAdapter#awbImportRates(CommonRequestModel)}
-     */
-    @Test
-    void testAwbImportRates2() throws RunnerException, RestClientException {
-        // Arrange
-        when(jsonHelper.readFromJson(Mockito.<String>any(), Mockito.<Class<RunnerResponse<Object>>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
-                .thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
-        CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
-                CommonRequestModel.CommonRequestModelBuilder.class);
-        when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
-        CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
-                .dependentData("Dependent Data")
-                .guid("1234")
-                .id(1L)
-                .build();
-
-        // Act and Assert
-        assertThrows(HttpClientErrorException.class, () -> nPMServiceAdapter.awbImportRates(commonRequestModel));
-        verify(commonRequestModelBuilder).data(isA(IRunnerRequest.class));
-        verify(jsonHelper).convertToJson(isNull());
-        verify(jsonHelper).readFromJson(eq(""), isA(Class.class));
-        verify(restTemplate).exchange(isA(RequestEntity.class), isA(Class.class));
     }
 
     /**

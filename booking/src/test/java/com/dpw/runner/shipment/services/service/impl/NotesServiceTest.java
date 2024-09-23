@@ -9,9 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -58,12 +56,6 @@ class NotesServiceTest {
 
     @InjectMocks
     private NotesService notesService;
-
-    @Mock
-    private ShipmentService shipmentService;
-
-    @Mock
-    private ConsolidationService consolidationService;
 
     @BeforeEach
     void setUp() {
@@ -131,11 +123,6 @@ class NotesServiceTest {
         commonRequestModel.setData(request);
         Notes notes = new Notes(); // Provide necessary data for notes
         NotesResponse notesResponse = new NotesResponse();
-        if(entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
-            when(shipmentService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().build()));
-        } else {
-            when(consolidationService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().build()));
-        }
 
         ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
 

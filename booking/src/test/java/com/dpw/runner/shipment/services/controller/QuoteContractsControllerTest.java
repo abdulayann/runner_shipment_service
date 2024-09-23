@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
@@ -30,7 +30,7 @@ class QuoteContractsControllerTest {
     @Test
     void list() throws RunnerException {
         when(quoteContractsService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        var responseEntity = quoteContractsController.list(new AttachListShipmentRequest());
+        var responseEntity = quoteContractsController.list(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

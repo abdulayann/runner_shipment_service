@@ -12,14 +12,11 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
@@ -27,7 +24,6 @@ import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -67,27 +63,22 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Component
 @Slf4j
 public class CommonUtils {
-    private final ICarrierDetailsDao carrierDetailsDao;
     private final INotificationService notificationService;
 
     @Autowired
-    public CommonUtils(ICarrierDetailsDao carrierDetailsDao, INotificationService notificationService) {
-        this.carrierDetailsDao = carrierDetailsDao;
+    public CommonUtils(INotificationService notificationService) {
         this.notificationService = notificationService;
     }
 
@@ -489,14 +480,6 @@ public class CommonUtils {
         return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 
-
-    public static boolean areTimeStampsEqual(LocalDateTime a, LocalDateTime b) {
-        if(a == null || b == null)
-            return false;
-        var res = a.truncatedTo(ChronoUnit.MINUTES).compareTo(b.truncatedTo(ChronoUnit.MINUTES));
-        return res == 0;
-    }
-
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return tenantSettingsService.getV1TenantSettings(TenantContext.getCurrentTenant());
     }
@@ -593,43 +576,6 @@ public class CommonUtils {
         }
     }
 
-    private void fetchDataForRejectionExplicitEmails(List<ShipmentDetails> shipmentDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
-                                                     Set<Integer> tenantIds, Set<String> usernamesList, List<ConsolidationDetails> otherConsolidationDetails,
-                                                     Map<String, String> usernameEmailsMap, Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests,
-                                                     Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap) {
-        for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
-            usernamesList.add(shipmentDetails1.getCreatedBy());
-            usernamesList.add(shipmentDetails1.getAssignedTo());
-            tenantIds.add(shipmentDetails1.getTenantId());
-        }
-
-        for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
-            usernamesList.add(consoleShipmentMapping.getCreatedBy());
-        }
-        for(ConsolidationDetails consolidationDetails1 : otherConsolidationDetails) {
-            usernamesList.add(consolidationDetails1.getCreatedBy());
-            tenantIds.add(consolidationDetails1.getTenantId());
-        }
-
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getEmailTemplate(emailTemplatesRequests)), syncExecutorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), syncExecutorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> getUserDetails(usernamesList, usernameEmailsMap)), syncExecutorService);
-        CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
-    }
-
-    public void sendEmailResponseToDGRequester(EmailTemplatesRequest template,
-        OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
-
-
-        Map<String, Object> dictionary = new HashMap<>();
-        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
-
-        populateDGReceiverDictionary(dictionary, shipmentDetails);
-
-        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
-            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
-    }
-
     public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
         if(v1TenantSettingsMap.containsKey(tenantId)) {
             if(isShipment) {
@@ -708,37 +654,6 @@ public class CommonUtils {
         }
         val = val.replaceAll("\\{.*?\\}", "");
         return val;
-    }
-
-    public void getEmailTemplate(Map<ShipmentRequestedType, EmailTemplatesRequest> response) {
-        List<String> requests = new ArrayList<>(List.of(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE, SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE, SHIPMENT_PUSH_REJECTED_EMAIL_TYPE, SHIPMENT_PULL_REJECTED_EMAIL_TYPE,
-                SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE, SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE));
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
-        if(v1DataResponse != null)
-        {
-            List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
-                for (EmailTemplatesRequest emailTemplatesRequest : emailTemplatesRequests) {
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_REQUESTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_REQUESTED, emailTemplatesRequest);
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_ACCEPTED, emailTemplatesRequest);
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_REJECTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_REJECTED, emailTemplatesRequest);
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_REQUESTED, emailTemplatesRequest);
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_ACCEPTED, emailTemplatesRequest);
-                    if(Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_REJECTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_REJECTED, emailTemplatesRequest);
-                }
-            }
-        }
     }
 
     public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
@@ -860,37 +775,6 @@ public class CommonUtils {
         return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
     }
 
-    public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
-        try {
-            if( !Objects.isNull(carrierDetails) && ( Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
-                    || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
-                    || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
-                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
-                List<String> unlocoRequests = new ArrayList<>();
-                if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
-                    unlocoRequests.add(carrierDetails.getOrigin());
-                if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
-                    unlocoRequests.add(carrierDetails.getOriginPort());
-                if(!IsStringNullOrEmpty(carrierDetails.getDestination()))
-                    unlocoRequests.add(carrierDetails.getDestination());
-                if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
-                    unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-                UnlocationsResponse pol = unlocationsMap.get(carrierDetails.getOriginPort());
-                UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
-                UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
-                UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
-            }
-        }
-        catch (Exception e) {
-            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
-        }
-    }
-
     public String convertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
     {
         String strDate = "";
@@ -919,52 +803,6 @@ public class CommonUtils {
             charge = Math.ceil(charge);
         }
         return charge;
-    }
-
-    public void getDGEmailTemplate(Map<OceanDGStatus, EmailTemplatesRequest> response) {
-        List<String> requests = new ArrayList<>(
-            List.of(OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE, OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE, OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE,
-                OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE, OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE,
-                OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE));
-
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-        request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
-        if (v1DataResponse != null && v1DataResponse.entities != null) {
-            List<EmailTemplatesRequest> emailTemplates = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-
-            if (emailTemplates != null && !emailTemplates.isEmpty()) {
-                emailTemplates.stream()
-                    .filter(Objects::nonNull)
-                    .forEach(template -> {
-                        switch (template.getType()) {
-                            case OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE:
-                                response.put(OCEAN_DG_REQUESTED, template);
-                                break;
-                            case OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE:
-                                response.put(OCEAN_DG_ACCEPTED, template);
-                                break;
-                            case OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE:
-                                response.put(OCEAN_DG_REJECTED, template);
-                                break;
-                            case OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE:
-                                response.put(OCEAN_DG_COMMERCIAL_REQUESTED, template);
-                                break;
-                            case OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE:
-                                response.put(OCEAN_DG_COMMERCIAL_ACCEPTED, template);
-                                break;
-                            case OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE:
-                                response.put(OCEAN_DG_COMMERCIAL_REJECTED, template);
-                                break;
-                            default:
-                                break;
-                        }
-                    });
-            }
-        }
     }
 
     public Integer getRoleId(OceanDGStatus oceanDGStatus){

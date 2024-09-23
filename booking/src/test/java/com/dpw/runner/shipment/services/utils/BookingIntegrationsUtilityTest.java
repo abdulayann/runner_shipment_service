@@ -1,25 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -27,10 +7,8 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -44,18 +22,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Stream;
-
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -71,6 +39,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -101,9 +79,6 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IIntegrationResponseDao integrationResponseDao;
-
-    @Mock
-    private IShipmentService shipmentService;
 
     @Mock
     private MasterDataFactory masterDataFactory;
@@ -394,28 +369,6 @@ class BookingIntegrationsUtilityTest {
         when(v1Service.createBooking(any(), anyBoolean(), anyBoolean(), any(UUID.class), any(HttpHeaders.class))).thenReturn(ResponseEntity.ok(null));
         bookingIntegrationsUtility.createShipmentInV1(getCustomerBooking("FCL"), false, true, UUID.randomUUID(), HttpHeaders.EMPTY);
         verify(v1Service, times(1)).createBooking(any(), anyBoolean(), anyBoolean(), any(UUID.class), any(HttpHeaders.class));
-    }
-
-    @Test
-    void testCreateShipmentInV2_sucess() throws RunnerException {
-        var customerBooking = getCustomerBooking("FCL");
-        when(shipmentService.createShipmentInV2(any())).thenReturn((ResponseEntity.of(Optional.of(RunnerResponse.builder().build()))));
-        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
-        var response = bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest);
-        assertTrue(response.hasBody());
-    }
-
-
-    @Test
-    void testCreateShipmentInV2_throwsException() throws RunnerException {
-        willAnswer(invocation -> {
-            throw new Exception("abc msg");
-        }).given(shipmentService).createShipmentInV2(any());
-
-        var customerBooking = getCustomerBooking("FCL");
-        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
-
-        assertThrows(Exception.class, () -> bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest));
     }
 
     @Test

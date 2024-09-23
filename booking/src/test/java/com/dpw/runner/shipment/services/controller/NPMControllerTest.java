@@ -3,9 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -19,10 +17,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {MasterDataController.class})
@@ -183,66 +179,6 @@ class NPMControllerTest {
         when(npmService.fetchOffersV8(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = npmController.getNPMOffersV8(NPMFetchOffersRequestFromUI.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbAutoSell() throws RunnerException {
-        // Mock
-        when(npmService.awbAutoSell(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = npmController.getAwbAutoSell(new NPMAutoSellRequest());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbAutoSell2() throws RunnerException {
-        // Mock
-        when(npmService.awbAutoSell(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = npmController.getAwbAutoSell(new NPMAutoSellRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbAutoSell3() throws RunnerException {
-        // Mock
-        when(npmService.awbAutoSell(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = npmController.getAwbAutoSell(new NPMAutoSellRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbImportRates() throws RunnerException {
-        // Mock
-        when(npmService.awbImportRates(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = npmController.getAwbImportRates(new NPMImportRatesRequest());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbImportRates2() throws RunnerException {
-        // Mock
-        when(npmService.awbImportRates(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = npmController.getAwbImportRates(new NPMImportRatesRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getAwbImportRates3() throws RunnerException {
-        // Mock
-        when(npmService.awbImportRates(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = npmController.getAwbImportRates(new NPMImportRatesRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

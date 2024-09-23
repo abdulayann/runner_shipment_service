@@ -9,9 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -20,7 +18,10 @@ import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
@@ -120,34 +121,6 @@ public class NPMController {
         String responseMsg;
         try {
             return npmService.fetchOffersV8(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @PostMapping("/getAwbAutoSell")
-    @ExcludeTimeZone
-    public ResponseEntity <IRunnerResponse> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
-        String responseMsg;
-        try {
-            return npmService.awbAutoSell(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @PostMapping("/getAwbImportRates")
-    @ExcludeTimeZone
-    public ResponseEntity <IRunnerResponse> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
-        String responseMsg;
-        try {
-            return npmService.awbImportRates(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
