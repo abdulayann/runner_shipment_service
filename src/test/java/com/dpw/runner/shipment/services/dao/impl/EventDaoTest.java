@@ -281,6 +281,45 @@ class EventDaoTest {
     }
 
     @Test
+    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long eventId = 1L;
+        testData.setId(eventId);
+        testData.setEntityId(5L);
+        testData.setEntityType(Constants.CONSOLIDATION);
+
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(testData.getId(), testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
+
+        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+
+        assertEquals(Constants.CONSOLIDATION, result.get(0).getEntityType());
+
+    }
+
+    @Test
+    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long eventId = 1L;
+        testData.setId(eventId);
+        testData.setEntityId(null);
+        testData.setEntityType(null);
+
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(testData.getId(), testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
+
+        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+
+        assertEquals("Shipment", result.get(0).getEntityType());
+
+    }
+
+
+    @Test
     void autoGenerateEvents() {
         CustomAutoEventRequest request = new CustomAutoEventRequest();
         request.createDuplicate = true;

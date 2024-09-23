@@ -2366,4 +2366,68 @@ class CommonUtilsTest {
                 "username");
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
+
+    @Test
+    void testRemoveDuplicateTrackingEvents_NoDuplicates() {
+        List<Events> eventsList = new ArrayList<>();
+        Events e1 = Events.builder().eventCode("E1").containerNumber("C1").shipmentNumber("S1").source("SRC1").build();
+        Events e2 = Events.builder().eventCode("E2").containerNumber("C2").shipmentNumber("S2").source("SRC2").build();
+        eventsList.add(e1);
+        eventsList.add(e2);
+
+        commonUtils.removeDuplicateTrackingEvents(eventsList);
+
+        // No events should be removed since all are unique
+        assertEquals(2, eventsList.size());
+    }
+
+    @Test
+    void testRemoveDuplicateTrackingEvents_WithDuplicates() {
+        List<Events> eventsList = new ArrayList<>();
+        Events e1 = Events.builder().eventCode("E1").containerNumber("C1").shipmentNumber("S1").source("SRC1").build();
+        Events e2 = Events.builder().eventCode("E2").containerNumber("C2").shipmentNumber("S2").source("SRC2").build();
+        eventsList.add(e1);
+        eventsList.add(e2);
+        eventsList.add(e1);
+        eventsList.add(e2);
+
+        commonUtils.removeDuplicateTrackingEvents(eventsList);
+
+        // One duplicate should be removed, expect only two unique events
+        assertEquals(2, eventsList.size());
+    }
+
+    @Test
+    void testRemoveDuplicateTrackingEvents_NullList() {
+        List<Events> events = null;
+
+        commonUtils.removeDuplicateTrackingEvents(events);
+
+        // Should not throw an exception, list is null, nothing happens
+        // In this case, we just check that no exception is thrown.
+        assertNull(events);
+    }
+
+    @Test
+    void testGetTrackingEventsUniqueKey_AllValidInputs() {
+        String eventCode = "E123";
+        String containerNumber = "C456";
+        String shipmentNumber = "S789";
+        String source = "SRC";
+
+        String result = commonUtils.getTrackingEventsUniqueKey(eventCode, containerNumber, shipmentNumber, source);
+        assertEquals("E123-C456-S789-SRC", result);
+    }
+
+    @Test
+    void testGetTrackingEventsUniqueKey_NullContainerNumber() {
+        String eventCode = "E123";
+        String containerNumber = null;  // Testing with null value
+        String shipmentNumber = "S789";
+        String source = "SRC";
+
+        String result = commonUtils.getTrackingEventsUniqueKey(eventCode, containerNumber, shipmentNumber, source);
+        assertEquals("E123--S789-SRC", result);  // Expect containerNumber to be empty
+    }
+
 }
