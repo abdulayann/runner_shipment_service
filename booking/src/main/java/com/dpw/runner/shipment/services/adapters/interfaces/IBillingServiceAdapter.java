@@ -24,24 +24,8 @@ import org.springframework.http.ResponseEntity;
 
 public interface IBillingServiceAdapter {
 
-    Boolean fetchActiveInvoices(CommonGetRequest commonGetRequest) throws RunnerException;
-
-    List<BillingSummary> fetchBillingBulkSummaryBranchWise(BillingBulkSummaryBranchWiseRequest request);
-
-    List<BillChargesBaseResponse> fetchBillCharges(BillChargesFilterRequest request);
-
-    BillBaseResponse fetchBill(BillRetrieveRequest request);
-
-    List<ChargeTypeBaseResponse> fetchChargeTypes(ChargeTypeFilterRequest request);
-
     ResponseEntity<BillingEntityResponse> sendBillCreationRequest(ExternalBillPayloadRequest externalBillPayloadRequest);
 
     ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
             ShipmentDetailsResponse shipmentDetailsResponse);
-
-    List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request);
-
-    ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
-
-    LocalDateTime fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest request);
 }

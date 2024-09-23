@@ -1,14 +1,17 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.impl.ShipmentServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -70,6 +73,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IPlatformServiceAdapter platformServiceAdapter;
+
+    @Mock
+    private ShipmentServiceAdapter shipmentServiceAdapter;
 
     @Mock
     private MasterDataUtils masterDataUtils;
@@ -369,6 +375,48 @@ class BookingIntegrationsUtilityTest {
         when(v1Service.createBooking(any(), anyBoolean(), anyBoolean(), any(UUID.class), any(HttpHeaders.class))).thenReturn(ResponseEntity.ok(null));
         bookingIntegrationsUtility.createShipmentInV1(getCustomerBooking("FCL"), false, true, UUID.randomUUID(), HttpHeaders.EMPTY);
         verify(v1Service, times(1)).createBooking(any(), anyBoolean(), anyBoolean(), any(UUID.class), any(HttpHeaders.class));
+    }
+
+    @Test
+    void testCreateShipmentInV2_sucess() throws RunnerException {
+        var customerBooking = getCustomerBooking("FCL");
+        when(shipmentServiceAdapter.createShipmentInV2(any())).thenReturn((ResponseEntity.of(Optional.of(RunnerResponse.builder().build()))));
+        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
+        var response = bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest);
+        assertTrue(response.hasBody());
+    }
+
+
+    @Test
+    void testCreateShipmentInV2_throwsException() throws RunnerException {
+        willAnswer(invocation -> {
+            throw new Exception("abc msg");
+        }).given(shipmentServiceAdapter).createShipmentInV2(any());
+
+        var customerBooking = getCustomerBooking("FCL");
+        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
+
+        assertThrows(Exception.class, () -> bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest));
+    }
+
+    @Test
+    void testGetShipmentIdByGuid_success() throws RunnerException {
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        shipmentDetailsResponse.setId(1L);
+        RunnerResponse<ShipmentDetailsResponse> runnerResponse = new RunnerResponse<>();
+        runnerResponse.setData(shipmentDetailsResponse);
+        when(shipmentServiceAdapter.getShipmentIdbyGuid(anyString())).thenReturn(ResponseEntity.ok(runnerResponse));
+        ShipmentDetailsResponse response2 = bookingIntegrationsUtility.getShipmentIdByGuid("ancd");
+        assertNotNull(response2.getId());
+    }
+
+
+    @Test
+    void testGetShipmentIdByGuid_throwsException() throws RunnerException {
+        willAnswer(invocation -> {
+            throw new Exception("abc msg");
+        }).given(shipmentServiceAdapter).getShipmentIdbyGuid(any());
+        assertThrows(Exception.class, () -> bookingIntegrationsUtility.getShipmentIdByGuid("abcd"));
     }
 
     @Test

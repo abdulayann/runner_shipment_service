@@ -808,13 +808,13 @@ class CustomerBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNotNull() {
+    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNotNull() throws RunnerException{
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().ShipmentServiceV2Enabled(true).build());
         var inputBooking = customerBooking;
         inputBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         inputBooking.setShipmentGuid(UUID.randomUUID().toString());
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
-//        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+        when(bookingIntegrationsUtility.getShipmentIdByGuid(any())).thenReturn(null);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
@@ -822,13 +822,13 @@ class CustomerBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNotNull2() {
+    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNotNull2() throws RunnerException{
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().ShipmentServiceV2Enabled(true).build());
         var inputBooking = customerBooking;
         inputBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         inputBooking.setShipmentGuid(UUID.randomUUID().toString());
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
-//        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(bookingIntegrationsUtility.getShipmentIdByGuid(any())).thenReturn(new ShipmentDetailsResponse());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
@@ -836,13 +836,13 @@ class CustomerBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNull() {
+    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNull() throws RunnerException{
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().ShipmentServiceV2Enabled(true).build());
         var inputBooking = customerBooking;
         inputBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         inputBooking.setShipmentEntityId("123");
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
-//        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+        when(bookingIntegrationsUtility.getShipmentIdByGuid(any())).thenReturn(null);
         when(v1Service.getShipment(any())).thenReturn(V1RetrieveResponse.builder().entity(ShipmentRetrieveResponse.builder().guid(UUID.randomUUID()).build()).build());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();
@@ -851,13 +851,13 @@ class CustomerBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNull2() {
+    void testRetrieveByIdWithReadyForShipmentWithV2OnWithShipmentGuidNull2() throws RunnerException{
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().ShipmentServiceV2Enabled(true).build());
         var inputBooking = customerBooking;
         inputBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         inputBooking.setShipmentEntityId("123");
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
-//        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(bookingIntegrationsUtility.getShipmentIdByGuid(any())).thenReturn(new ShipmentDetailsResponse());
         when(v1Service.getShipment(any())).thenReturn(V1RetrieveResponse.builder().entity(ShipmentRetrieveResponse.builder().guid(UUID.randomUUID()).build()).build());
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();

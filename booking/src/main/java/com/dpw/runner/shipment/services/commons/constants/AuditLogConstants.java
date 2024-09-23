@@ -9,7 +9,7 @@ public class AuditLogConstants {
     public static final String AUDIT_LOG_API_HANDLE = "/api/v2/audit-log";
 
     public static final String AUDIT_LOG_LIST_SUCCESSFUL = "Successful Audit Log Data List Retrieval";
-
+    public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String AUDIT_LOG_DOWNLOAD_SUCCESSFUL = "Successful Audit Log Data Download";
 
         public static final String TRANSPORT_MODE = "transportMode";
