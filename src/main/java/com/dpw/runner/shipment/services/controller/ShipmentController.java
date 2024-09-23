@@ -113,8 +113,8 @@ public class ShipmentController {
     @GetMapping("/hbl-check")
     public ResponseEntity<IRunnerResponse> hblCheck(
             @ApiParam(value = ShipmentConstants.HBL_NUMBER, required = true) @RequestParam String hblNumber,
-            @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam String shipmentId) {
-        return shipmentService.hblCheck(hblNumber, shipmentId);
+            @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam Optional<String> shipmentId) {
+        return shipmentService.hblCheck(hblNumber, shipmentId.orElse(null));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})

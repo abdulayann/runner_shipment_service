@@ -84,7 +84,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " shipment_id as shipmentId "
             + " FROM shipment_details "
             + " WHERE house_bill = ?1 "
-            + " AND (?2 IS NULL OR shipment_id != ?2)", nativeQuery = true)
+            + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     @ExcludeTenantFilter
