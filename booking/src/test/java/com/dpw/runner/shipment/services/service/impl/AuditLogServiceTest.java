@@ -8,14 +8,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.AuditLogDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcelUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -34,8 +34,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.data.domain.PageImpl;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -67,7 +65,6 @@ public class AuditLogServiceTest {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
-    private static ShipmentDetails testShipment;
 
     @BeforeAll
     static void init() throws IOException {
@@ -81,7 +78,6 @@ public class AuditLogServiceTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        testShipment = jsonTestUtility.getTestShipment();
         MDC.put("skip-audit-log", "false");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
     }
@@ -220,102 +216,6 @@ public class AuditLogServiceTest {
 
         String errorMessage ="Data is missing for ops " + auditLogMetaData.getOperation();
         assertEquals(errorMessage, e.getMessage());
-    }
-
-    @Test
-    void addAuditLog5() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        ShipmentDetails newData = new ShipmentDetails();
-        newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setCreatedBy("abc");
-        newData.setGuid(UUID.randomUUID());
-        newData.setId(1L);
-        newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setUpdatedBy("def");
-        newData.setVolume(BigDecimal.ONE);
-        newData.setWeight(BigDecimal.ZERO);
-        newData.setNetWeight(BigDecimal.ZERO);
-        newData.setHouseBill("1234");
-        newData.setCarrierDetails(CarrierDetails.builder().origin("123").build());
-        newData.setShipmentCompletedOn(LocalDateTime.MIN);
-        newData.setShipmentType("abcd");
-
-        ShipmentDetails prevData = new ShipmentDetails();
-        prevData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setCreatedBy("abc");
-        prevData.setGuid(UUID.randomUUID());
-        prevData.setId(1L);
-        prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setUpdatedBy("def");
-        prevData.setVolume(BigDecimal.TEN);
-        prevData.setWeight(BigDecimal.ZERO);
-        prevData.setVolumetricWeight(BigDecimal.ZERO);
-        prevData.setHouseBill("222");
-        prevData.setShipmentCompletedOn(LocalDateTime.now());
-        prevData.setDirection("EXP");
-        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
-        auditLogService.addAuditLog(auditLogMetaData);
-        verify(auditLogDao, times(1)).save(any());
-    }
-
-    @Test
-    void addAuditLog6() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        ShipmentDetails newData = testShipment;
-        newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setCreatedBy("abc");
-        newData.setGuid(UUID.randomUUID());
-        newData.setId(1L);
-        newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setUpdatedBy("def");
-
-        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
-        auditLogService.addAuditLog(auditLogMetaData);
-        verify(auditLogDao, times(1)).save(any());
-    }
-
-    @Test
-    void addAuditLog6_1() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(null).newData(MblDuplicatedLog.builder().build()).parent("Shipment").operation("LOG").parentId(1L).build();
-        auditLogService.addAuditLog(auditLogMetaData);
-        verify(auditLogDao, times(1)).save(any());
-    }
-
-    @Test
-    void addAuditLog7() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        ShipmentDetails newData = new ShipmentDetails();
-        newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setCreatedBy("abc");
-        newData.setId(1L);
-        newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        newData.setUpdatedBy("def");
-
-        ShipmentDetails prevData = new ShipmentDetails();
-        prevData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setCreatedBy("abc");
-        prevData.setId(1L);
-        prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setUpdatedBy("def");
-
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
-        auditLogService.addAuditLog(auditLogMetaData);
-        verify(auditLogDao, times(0)).save(any());
-    }
-
-    @Test
-    void addAuditLog8() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        ShipmentDetails prevData = testShipment;
-        prevData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setCreatedBy("abc");
-        prevData.setGuid(UUID.randomUUID());
-        prevData.setId(1L);
-        prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
-        prevData.setUpdatedBy("def");
-        //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
-        auditLogService.addAuditLog(auditLogMetaData);
-        verify(auditLogDao, times(1)).save(any());
     }
 
     @Test

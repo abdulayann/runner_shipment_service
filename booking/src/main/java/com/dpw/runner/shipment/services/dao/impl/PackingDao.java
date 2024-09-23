@@ -6,10 +6,8 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -33,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
@@ -80,43 +77,6 @@ public class PackingDao implements IPackingDao {
         packingRepository.delete(packing);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws RunnerException {
-        String responseMsg;
-        List<Packing> responsePackings = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            Map<Long, Packing> hashMap;
-//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = packings.stream()
-                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
-//            }
-            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
-            List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
-                for (Packing request : packingList) {
-                    Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
-                    if(deleteContIds != null && request.getContainerId() != null && deleteContIds.contains(request.getContainerId()))
-                        request.setContainerId(null);
-                    packingRequestList.add(request);
-                }
-                responsePackings = saveEntityFromShipment(packingRequestList, shipmentId, hashMapCopy);
-            }
-            deletePackings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
-            return responsePackings;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
     public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
@@ -148,79 +108,6 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException {
-        String responseMsg;
-        List<Packing> responsePackings = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            Map<Long, Packing> hashMap;
-//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = packings.stream()
-                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
-//            }
-            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
-            List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
-                for (Packing request : packingList) {
-                    Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
-                    packingRequestList.add(request);
-                }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, hashMapCopy);
-            }
-            deletePackings(hashMap, null, null);
-            return responsePackings;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException {
-        String responseMsg;
-        List<Packing> responsePackings = new ArrayList<>();
-        Map<UUID, Packing> packingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
-            for (Packing entity :
-                    oldEntityList) {
-                packingMap.put(entity.getGuid(), entity);
-            }
-        }
-        try {
-            Packing oldEntity;
-            List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
-                for (Packing request : packingList) {
-                    oldEntity = packingMap.get(request.getGuid());
-                    if (oldEntity != null) {
-                        packingMap.remove(oldEntity.getGuid());
-                        request.setId(oldEntity.getId());
-                    }
-                    packingRequestList.add(request);
-                }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId);
-            }
-            Map<Long, Packing> hashMap = new HashMap<>();
-            packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
-
-            deletePackings(hashMap, null, null);
-            return responsePackings;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    @Override
     public List<Packing> getAllPackings() {
         return packingRepository.findAll();
     }
@@ -233,86 +120,6 @@ public class PackingDao implements IPackingDao {
                 throw new ValidationException(String.join(",", errors));
         }
         return packingRepository.saveAll(packingList);
-    }
-
-    public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId) {
-        List<Packing> res = new ArrayList<>();
-        for (Packing req : packings) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if (req.getId() != null) {
-                long id = req.getId();
-                Optional<Packing> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-            }
-            req.setShipmentId(shipmentId);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
-                                .parent(ShipmentDetails.class.getSimpleName())
-                                .parentId(shipmentId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
-        }
-        return res;
-    }
-    @Override
-    public List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId, Map<Long, Packing> oldEntityMap) {
-        List<Packing> res = new ArrayList<>();
-        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for (Packing req : packings) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                if (!oldEntityMap.containsKey(id)) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
-                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
-                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
-                oldEntityJsonStringMap.put(id, oldEntityJsonString);
-            }
-            req.setShipmentId(shipmentId);
-            res.add(req);
-        }
-        res = saveAll(res);
-        for (var req : res) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(oldEntityJsonStringMap.containsKey(req.getId())){
-                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
-                operation = DBOperationType.UPDATE.name();
-            }
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
-                                .parent(ShipmentDetails.class.getSimpleName())
-                                .parentId(shipmentId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-        }
-        return res;
     }
 
     public List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookingId) {
@@ -446,63 +253,6 @@ public class PackingDao implements IPackingDao {
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
         saveEntityFromContainer(packings.getContent(), null);
-    }
-
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
-        String responseMsg;
-        List<Packing> responsePackings = new ArrayList<>();
-        Map<UUID, Packing> packingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
-            for (Packing entity :
-                    oldEntityList) {
-                packingMap.put(entity.getGuid(), entity);
-            }
-        }
-        Map<UUID, Packing> consolePackingMap = new HashMap<>();
-        if (oldConsoleEntityList != null && !oldConsoleEntityList.isEmpty()) {
-            for (Packing entity :
-                    oldConsoleEntityList) {
-                consolePackingMap.put(entity.getGuid(), entity);
-            }
-        }
-        try {
-            Packing oldEntity;
-            Map<String, Long> contMap = new HashMap<>();
-            if(containers != null) {
-                contMap = containers.stream().filter(container -> !IsStringNullOrEmpty(container.getContainerNumber())).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
-            }
-            List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
-                for (Packing request : packingList) {
-                    oldEntity = packingMap.get(request.getGuid());
-                    if (oldEntity != null) {
-                        packingMap.remove(oldEntity.getGuid());
-                        request.setId(oldEntity.getId());
-                    }
-                    else {
-                        oldEntity = consolePackingMap.get(request.getGuid());
-                        if (oldEntity != null) {
-                            consolePackingMap.remove(oldEntity.getGuid());
-                            request.setId(oldEntity.getId());
-                        }
-                    }
-                    if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
-                        request.setContainerId(contMap.get(packMap.get(request.getGuid())));
-                    packingRequestList.add(request);
-                }
-                responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
-            }
-            Map<Long, Packing> hashMap = new HashMap<>();
-            packingMap.forEach((s, packing) -> hashMap.put(packing.getId(), packing));
-
-            deletePackings(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
-            return responsePackings;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
     }
 
     @Override

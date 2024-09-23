@@ -1,19 +1,11 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
-
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
@@ -21,35 +13,28 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.type.StandardBasicTypes;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Repository
 @Slf4j
@@ -110,205 +95,6 @@ public class EventDao implements IEventDao {
         eventRepository.delete(events);
     }
 
-    @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws RunnerException {
-        String responseMsg;
-        List<Events> responseEvents = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            Map<Long, Events> hashMap;
-//            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-                hashMap = events.stream()
-                        .collect(Collectors.toMap(Events::getId, Function.identity()));
-//            }
-            Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
-            List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
-                for (Events request : eventsList) {
-                    Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
-                    eventsRequestList.add(request);
-                }
-                responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType, copyHashMap);
-            }
-            deleteEvents(hashMap, entityType, entityId);
-            return responseEvents;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType) {
-        List<Events> res = new ArrayList<>();
-        for (Events req : events) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if (req.getId() != null) {
-                long id = req.getId();
-                Optional<Events> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Events is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
-            req.setEntityId(entityId);
-            req.setEntityType(entityType);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
-                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                .parentId(entityId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
-        }
-        return res;
-    }
-    @Override
-    public List<Events> saveEntityFromOtherEntity(List<Events> events, Long entityId, String entityType, Map<Long, Events> oldEntityMap) {
-        List<Events> res = new ArrayList<>();
-        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for (Events req : events) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Events is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
-                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
-                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
-                oldEntityJsonStringMap.put(id, oldEntityJsonString);
-            }
-            req.setEntityId(entityId);
-            req.setEntityType(entityType);
-            res.add(req);
-        }
-        res = saveAll(res);
-        for (var req : res) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if (oldEntityJsonStringMap.containsKey(req.getId())) {
-                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
-                operation = DBOperationType.UPDATE.name();
-            }
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
-                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                .parentId(entityId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-        }
-        return res;
-    }
-
-    private void deleteEvents(Map<Long, Events> hashMap, String entityType, Long entityId) {
-        String responseMsg;
-        try {
-            hashMap.values().forEach(event -> {
-                String json = jsonHelper.convertToJson(event);
-                delete(event);
-                if(entityType != null)
-                {
-                    try {
-                        auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
-                                        .newData(null)
-                                        .prevData(jsonHelper.readFromJson(json, Events.class))
-                                        .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                        .parentId(entityId)
-                                        .operation(DBOperationType.DELETE.name()).build()
-                        );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                        log.error(e.getMessage());
-                    }
-                }
-            });
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-    }
-
-    @Override
-    public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
-        String responseMsg;
-        Map<UUID, Events> eventsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
-            for (Events entity :
-                    oldEntityList) {
-                eventsMap.put(entity.getGuid(), entity);
-            }
-        }
-        List<Events> responseEvents = new ArrayList<>();
-        try {
-            Events oldEntity;
-            List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
-                for (Events request : eventsList) {
-                    oldEntity = eventsMap.get(request.getGuid());
-                    if (oldEntity != null) {
-                        eventsMap.remove(oldEntity.getGuid());
-                        request.setId(oldEntity.getId());
-                    }
-                    request.setEntityId(entityId);
-                    request.setEntityType(entityType);
-                    eventsRequestList.add(request);
-                }
-                responseEvents = saveEntityFromOtherEntity(eventsRequestList, entityId, entityType);
-            }
-            Map<Long, Events> hashMap = new HashMap<>();
-            eventsMap.forEach((s, events) -> hashMap.put(events.getId(), events));
-            deleteEvents(hashMap, entityType, entityId);
-            return responseEvents;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    @Override
-    public void autoGenerateEvents(CustomAutoEventRequest request) {
-        try {
-            if (request.createDuplicate || !checkIfEventsRowExistsForEntityTypeAndEntityId(request)) {
-                createAutomatedEventRequest(request.entityType, request.entityId, request.eventCode, request.isEstimatedRequired, request.isActualRequired, request.placeName, request.placeDesc);
-            }
-        } catch (Exception e) {
-            log.error("Error occured while trying to auto create runner event, Request recieved is = " + request + ". Exception raised is: " + e);
-            throw new ValidationException("Error occured while trying to auto create runner event, Request recieved is = " + request, e);
-        }
-    }
-
     public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent) {
         ListCommonRequest listCommonRequest;
         if (publicEvent) {
@@ -341,41 +127,6 @@ public class EventDao implements IEventDao {
             }
         }
         return false;
-    }
-
-    public void createAutomatedEventRequest(String entityType, long entityId, String eventCode, boolean isEstimatedRequired, boolean isActualRequired, String placeName, String placeDesc) {
-        try {
-            Events eventsRow = new Events();
-            if (isActualRequired) {
-                eventsRow.setActual(LocalDate.now().atStartOfDay());
-            }
-
-            if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
-            }
-            eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-            eventsRow.setIsPublicTrackingEvent(true);
-            eventsRow.setEntityType(entityType);
-            eventsRow.setEntityId(entityId);
-            eventsRow.setEventCode(eventCode);
-            eventsRow.setPlaceName(placeName);
-            eventsRow.setPlaceDescription(placeDesc);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(eventsRow)
-                                .prevData(null)
-                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                .parentId(entityId)
-                                .operation(DBOperationType.CREATE.name()).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                log.error(e.getMessage());
-            }
-            eventRepository.save(eventsRow);
-        } catch (Exception e) {
-            log.error("Error occured while trying to create runner event, Exception raised is: " + e);
-        }
     }
 
 

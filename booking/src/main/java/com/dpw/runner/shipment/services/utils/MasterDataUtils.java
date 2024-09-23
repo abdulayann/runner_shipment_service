@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -13,28 +11,14 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -46,19 +30,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -66,6 +37,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -121,8 +100,6 @@ public class MasterDataUtils{
                     if (shipmentListResponse.getCarrierDetails() != null) {
                         locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                     }
-                    if (shipmentListResponse.getAdditionalDetails() != null)
-                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
@@ -143,9 +120,6 @@ public class MasterDataUtils{
                 } else if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null)
                         shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
-
-                    if (shipmentListResponse.getAdditionalDetails() != null)
-                        shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
                  else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
@@ -209,7 +183,6 @@ public class MasterDataUtils{
                     if (shipmentListResponse.getTenantId() != null) {
                         tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()));
                     }
-                    tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()));
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
@@ -224,7 +197,6 @@ public class MasterDataUtils{
                     shipmentListResponse.setTenantMasterData(new HashMap<>());
                     if (shipmentListResponse.getTenantId() != null)
                         shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
-                    shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
@@ -232,82 +204,6 @@ public class MasterDataUtils{
             }
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchTenantIdForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
-        }
-    }
-
-    public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
-        try {
-            Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-            for (IRunnerResponse response : responseList)
-                dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
-
-            Set<String> containerTypes = new HashSet<>();
-
-            for(ShipmentDetails shipment : shipmentDetailsList) {
-                if(!Objects.isNull(shipment.getContainersList()))
-                    shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
-            }
-
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
-
-            BigDecimal teu;
-            for(ShipmentDetails shipment : shipmentDetailsList) {
-                teu = BigDecimal.ZERO;
-                if (shipment.getContainersList() != null) {
-                    for(Containers c : shipment.getContainersList()) {
-                        if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                            if (!Objects.isNull(cache)) {
-                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                                if (!Objects.isNull(object.getTeu()))
-                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
-                            }
-                        }
-                    }
-                }
-                dataMap.get(shipment.getId()).setTeuCount(teu);
-            }
-        } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
-        }
-    }
-
-    public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
-        try {
-            Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
-            for (IRunnerResponse response : responseList)
-                dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
-
-            Set<String> containerTypes = new HashSet<>();
-
-            for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-                if(!Objects.isNull(consolidationDetails.getContainersList()))
-                    consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
-            }
-
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
-
-            BigDecimal teu;
-            for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-                teu = BigDecimal.ZERO;
-                if (consolidationDetails.getContainersList() != null) {
-                    for(Containers c : consolidationDetails.getContainersList()) {
-                        if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
-                            if (!Objects.isNull(cache)) {
-                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
-                                if (!Objects.isNull(object.getTeu()))
-                                    teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
-                            }
-                        }
-                    }
-                }
-                dataMap.get(consolidationDetails.getId()).setTeuCount(teu);
-            }
-        } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: setConsolidationContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
@@ -1245,76 +1141,6 @@ public class MasterDataUtils{
     public Map<String, WareHouseResponse> fetchWareHouseData(List<Long> request) {
         return fetchInWareHousesList(request.stream().filter(Objects::nonNull)
                 .map(StringUtility::convertToString).collect(Collectors.toList()));
-    }
-
-    /**
-     * * Used to Fetch Bill Info from V1 for Shipments
-     * @param shipmentDetails
-     * @param responseList
-     */
-    public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
-        try {
-            Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
-            for (IRunnerResponse response : responseList)
-                dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
-
-            if(shipmentDetails != null && shipmentDetails.size() > 0) {
-                List<UUID> guidsList = createBillRequest(shipmentDetails);
-                if (!guidsList.isEmpty()) {
-                    ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
-                            .guidsList(guidsList).build();
-                    ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
-                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
-                }
-
-                for (ShipmentDetails details: shipmentDetails) {
-                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
-                            get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
-
-                    if (!Objects.isNull(cache)) {
-                        var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
-                        if (!Objects.isNull(billingData)) {
-                            ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
-
-                            shipmentListResponse.setBillStatus(details.getJobStatus());
-                            shipmentListResponse.setTotalEstimatedCost(billingData.getTotalEstimatedCost());
-                            shipmentListResponse.setTotalEstimatedRevenue(billingData.getTotalEstimatedRevenue());
-                            shipmentListResponse.setTotalEstimatedProfit(billingData.getTotalEstimatedProfit());
-                            shipmentListResponse.setTotalEstimatedProfitPercent(billingData.getTotalEstimatedProfitPercent());
-                            shipmentListResponse.setTotalCost(billingData.getTotalCost());
-                            shipmentListResponse.setTotalRevenue(billingData.getTotalRevenue());
-                            shipmentListResponse.setTotalProfit(billingData.getTotalProfit());
-                            shipmentListResponse.setTotalProfitPercent(billingData.getTotalProfitPercent());
-                            shipmentListResponse.setTotalPostedCost(billingData.getTotalPostedCost());
-                            shipmentListResponse.setTotalPostedRevenue(billingData.getTotalPostedRevenue());
-                            shipmentListResponse.setTotalPostedProfit(billingData.getTotalPostedProfit());
-                            shipmentListResponse.setTotalPostedProfitPercent(billingData.getTotalPostedProfitPercent());
-                        }
-
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: fetchBillDataForShipments in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
-        }
-    }
-
-    //TODO- Server to server api we need to remove this
-    private ShipmentBillingListResponse getShipmentBillingListResponse(ShipmentBillingListRequest shipmentBillingListRequest) {
-        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
-            return billingServiceAdapter.fetchShipmentBillingData(shipmentBillingListRequest);
-        }
-        return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-    }
-
-    private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {
-        List<UUID> guidsList = new ArrayList<>();
-        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        shipmentDetails.forEach(shipment -> {
-            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, shipment.getGuid().toString()));
-            if (Objects.isNull(value)) guidsList.add(shipment.getGuid());
-        });
-        return guidsList;
     }
 
     public com.dpw.runner.shipment.services.masterdata.dto.MasterData getMasterListData(MasterDataType type, String ItemValue)

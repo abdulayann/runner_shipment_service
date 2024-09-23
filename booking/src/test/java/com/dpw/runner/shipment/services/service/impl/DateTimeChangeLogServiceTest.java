@@ -4,11 +4,8 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.UpstreamDateUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,7 +45,6 @@ class DateTimeChangeLogServiceTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
-    private static ShipmentDetails testShipment;
 
 
     @BeforeAll
@@ -61,60 +57,6 @@ class DateTimeChangeLogServiceTest extends CommonMocks {
     void setup() {
         var tenantSettings = new V1TenantSettingsResponse();
         TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
-        testShipment = jsonTestUtility.getTestShipment();
-    }
-
-    @Test
-    void createEntryFromShipment() {
-        var tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        tenantSettings.setEnableEstimateAndActualDateTimeUpdates(Boolean.TRUE);
-
-        ShipmentRequest shipmentRequest = objectMapper.convertValue(testShipment, ShipmentRequest.class);
-
-        UpstreamDateUpdateRequest dateUpdateRequest = new UpstreamDateUpdateRequest();
-        UpstreamDateUpdateRequest.DateAndSource ds = new UpstreamDateUpdateRequest.DateAndSource();
-        ds.setDateTime(LocalDateTime.now());
-        ds.setSource(DateTimeChangeLogConstants.TRACKING_SERVICE_SOURCE);
-
-        dateUpdateRequest.setAta(ds);
-        dateUpdateRequest.setAtd(ds);
-        dateUpdateRequest.setEta(ds);
-        dateUpdateRequest.setEtd(ds);
-
-        shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
-        mockTenantSettings();
-        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, testShipment);
-
-        verify(dateTimeChangeLogDao, atLeast(1)).create(any());
-
-    }
-
-    @Test
-    void createEntryFromShipmentWhenCarrierInfoChanges() {
-        var tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
-        tenantSettings.setEnableEstimateAndActualDateTimeUpdates(Boolean.TRUE);
-
-        ShipmentRequest shipmentRequest = objectMapper.convertValue(testShipment, ShipmentRequest.class);
-
-        UpstreamDateUpdateRequest dateUpdateRequest = new UpstreamDateUpdateRequest();
-        UpstreamDateUpdateRequest.DateAndSource ds = new UpstreamDateUpdateRequest.DateAndSource();
-        LocalDateTime mockDateTime = LocalDateTime.now();
-        ds.setDateTime(mockDateTime);
-        ds.setSource(DateTimeChangeLogConstants.TRACKING_SERVICE_SOURCE);
-
-        dateUpdateRequest.setAta(ds);
-        dateUpdateRequest.setAtd(ds);
-        dateUpdateRequest.setEta(ds);
-        dateUpdateRequest.setEtd(ds);
-
-        shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
-        shipmentRequest.getCarrierDetails().setShippingLine("new shipping line");
-        shipmentRequest.setDateUpdateRequest(dateUpdateRequest);
-        mockTenantSettings();
-        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, testShipment);
-
-        verify(dateTimeChangeLogDao, atLeast(1)).create(any());
-
     }
 
     @Test

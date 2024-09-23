@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -17,12 +15,14 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -59,9 +59,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.*;
@@ -70,7 +68,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Component
 @Slf4j
@@ -534,48 +531,6 @@ public class CommonUtils {
         return jsonHelper.convertValueToList(v1Response.entities, CoLoadingMAWBDetailsResponse.class);
     }
 
-    public ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
-        String responseMsg;
-        try {
-            if(consolidationDetails.getAllocations() == null)
-                consolidationDetails.setAllocations(new Allocations());
-            if(consolidationDetails.getAchievedQuantities() == null)
-                consolidationDetails.setAchievedQuantities(new AchievedQuantities());
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != null && consolidationDetails.getAllocations().getWeightUnit() != null) {
-                BigDecimal consolidatedWeight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
-                BigDecimal weight = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
-                if(Objects.equals(weight, BigDecimal.ZERO))
-                    consolidationDetails.getAchievedQuantities().setWeightUtilization("0");
-                else
-                    consolidationDetails.getAchievedQuantities().setWeightUtilization( String.valueOf( (consolidatedWeight.divide(weight, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
-            }
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != null && consolidationDetails.getAllocations().getVolumeUnit() != null) {
-                BigDecimal consolidatedVolume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
-                BigDecimal volume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(), consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
-                if(Objects.equals(volume, BigDecimal.ZERO))
-                    consolidationDetails.getAchievedQuantities().setVolumeUtilization("0");
-                else
-                    consolidationDetails.getAchievedQuantities().setVolumeUtilization( String.valueOf( (consolidatedVolume.divide(volume, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
-            }
-            return consolidationDetails;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                : DaoConstants.DAO_CALCULATION_ERROR;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
-    public void updateConsolOpenForAttachment(ConsolidationDetails consolidationDetails) {
-        if(!Objects.isNull(consolidationDetails.getAchievedQuantities())) {
-            Double weightUtilization = consolidationDetails.getAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getWeightUtilization()) : 0;
-            Double volumeUtilization = consolidationDetails.getAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(consolidationDetails.getAchievedQuantities().getVolumeUtilization()) : 0;
-            if(Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_AIR)
-                    && (weightUtilization > 100 || volumeUtilization > 100))
-                consolidationDetails.setOpenForAttachment(false);
-        }
-    }
-
     public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
         if(v1TenantSettingsMap.containsKey(tenantId)) {
             if(isShipment) {
@@ -594,28 +549,6 @@ public class CommonUtils {
                         .filter(s -> !s.isEmpty()).toList());
             }
         }
-    }
-
-    public void populateDictionaryForPullRejected(Map<String, Object> dictionary, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestedUser) {
-        dictionary.put(CONSOLIDATION_CREATE_USER, consolidationDetails.getCreatedBy());
-        dictionary.put(SHIPMENT_BRANCH_CODE, UserContext.getUser().getCode());
-        dictionary.put(SHIPMENT_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
-        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER, getConsolidationIdHyperLink(consolidationDetails.getConsolidationNumber(), consolidationDetails.getId()));
-        dictionary.put(INTERBRANCH_CONSOLIDATION_NUMBER_WITHOUT_LINK, consolidationDetails.getConsolidationNumber());
-        dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUESTED_USER_NAME, requestedUser);
-    }
-
-    public void populateDictionaryForPushRejected(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String rejectRemarks, String requestUser) {
-        dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
-        dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
-        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
-        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
-        dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
-        dictionary.put(Constants.REJECT_REMARKS, rejectRemarks);
-        dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUESTED_USER_NAME, requestUser);
     }
 
     public void getUnLocationsData(List<String> unLocGuids, Map<String, UnlocationsResponse> map) {
@@ -695,24 +628,6 @@ public class CommonUtils {
         usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
-    // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed
-    public boolean changeShipmentDGStatusToReqd(ShipmentDetails shipmentDetails, boolean isDGClass1) {
-        OceanDGStatus oldOceanDGStatus = shipmentDetails.getOceanDGStatus();
-
-        if(Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
-                (!UserContext.isOceanDgUser() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
-                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
-                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
-                                                  OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
-            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED);
-
-        if((OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !UserContext.isOceanDgCommercialUser()) ||
-                (isDGClass1 && OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))) {
-            shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED);
-        }
-        return !Objects.equals(oldOceanDGStatus, shipmentDetails.getOceanDGStatus());
-    }
-
     public boolean checkIfDGClass1(String dgClass) {
         return !IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1';
     }
@@ -775,34 +690,12 @@ public class CommonUtils {
         return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
     }
 
-    public String convertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
-    {
-        String strDate = "";
-        if (date != null)
-        {
-            if(!IsStringNullOrEmpty(tsDatetimeFormat))
-                strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
-            else
-                strDate = date.format(getDPWDateFormatOrDefault());
-        }
-        return strDate;
-    }
-
     public DateTimeFormatter getDPWDateFormatOrDefault()
     {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    }
-
-    public static double roundOffAirShipment(double charge) {
-        if (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) {
-            charge = Math.floor(charge) + 0.5;
-        } else {
-            charge = Math.ceil(charge);
-        }
-        return charge;
     }
 
     public Integer getRoleId(OceanDGStatus oceanDGStatus){
@@ -830,28 +723,6 @@ public class CommonUtils {
         return userEmailIds;
     }
 
-    public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId)
-        throws RunnerException {
-        DGTaskCreateRequest taskRequest = DGTaskCreateRequest
-            .builder()
-            .entityType(Shipments)
-            .entityId(shipmentDetails.getId().toString())
-            .roleId(roleId.toString())
-            .taskType(OCEAN_DG_TASKTYPE)
-            .taskStatus(PENDING_ACTION)
-            .userId(UserContext.getUser().getUserId())
-            .tenantId(UserContext.getUser().getTenantId().toString())
-            .build();
-
-        try {
-            TaskCreateResponse taskCreateResponse = iv1Service.createTask(taskRequest);
-            return taskCreateResponse;
-        } catch (Exception e) {
-            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
-                shipmentDetails.getId(), e.getMessage()));
-        }
-    }
-
     public void getVesselsData(CarrierDetails carrierDetails, VesselsResponse vesselsResponse) {
         if(carrierDetails == null) return;
         String guid = carrierDetails.getVessel();
@@ -871,34 +742,6 @@ public class CommonUtils {
             vesselsResponse.setName(vesselsResponseList.get(0).getName());
         }
 
-    }
-
-    private void populateDictionaryApprovalRequestForDGEmail(Map<String,Object> dictionary, String remarks) {
-        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
-        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
-        dictionary.put(USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now());
-        dictionary.put(REQUESTER_REMARKS, remarks);
-    }
-
-    private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails){
-        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
-        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
-        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
-        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(APPROVED_TIME, LocalDateTime.now());
-
-    }
-
-    private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
-
-        for (AuditLogChanges change : changesMap.values()) {
-            if(change.getFieldName().equalsIgnoreCase(TIME)){
-                dictionary.put(DG_APPROVER_TIME, change.getNewValue());
-            }else if(change.getFieldName().equalsIgnoreCase(USERNAME)){
-                dictionary.put(DG_APPROVER_NAME, change.getNewValue());
-            }
-        }
     }
 
 }

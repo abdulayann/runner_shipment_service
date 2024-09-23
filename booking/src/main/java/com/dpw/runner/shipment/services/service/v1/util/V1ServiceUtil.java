@@ -1,8 +1,9 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
@@ -14,7 +15,6 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -257,27 +256,6 @@ public class V1ServiceUtil {
             log.error(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
             throw new ValidationException(ShipmentConstants.CHECK_CREDIT_LIMIT_FAILED + ex.getMessage());
         }
-    }
-
-    public ResponseEntity<IRunnerResponse> fetchEmailIdsForShipment(ShipmentDetails shipmentDetail) {
-        Set<String> emailSet = new HashSet<>();
-        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(shipmentDetail.getClient(), shipmentDetail.getConsignee(), shipmentDetail.getConsigner()));
-        setEmails(shipmentDetail.getClient(), emailSet, response.getOrganizations(), response.getAddresses());
-        if (Objects.equals(shipmentDetail.getDirection(), Constants.DIRECTION_IMP))
-            setEmails(shipmentDetail.getConsignee(), emailSet, response.getOrganizations(), response.getAddresses());
-        else
-            setEmails(shipmentDetail.getConsigner(), emailSet, response.getOrganizations(), response.getAddresses());
-        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
-    }
-
-    public ResponseEntity<IRunnerResponse> fetchEmailIdsForConsolidation(ConsolidationDetails consolidationDetail) {
-        Set<String> emailSet = new HashSet<>();
-        OrgAddressResponse response = fetchOrgInfoFromV1(Arrays.asList(consolidationDetail.getSendingAgent(), consolidationDetail.getReceivingAgent()));
-        if (Objects.equals(consolidationDetail.getShipmentType(), Constants.DIRECTION_IMP))
-            setEmails(consolidationDetail.getReceivingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
-        else
-            setEmails(consolidationDetail.getSendingAgent(), emailSet, response.getOrganizations(), response.getAddresses());
-        return ResponseHelper.buildSuccessResponse(String.join(";", emailSet.stream().filter(StringUtility::isNotEmpty).toList()));
     }
 
     private void setEmails(Parties party, Set<String> emailSet, Map<String, Map<String, Object>> organizations, Map<String, Map<String, Object>> addresses) {

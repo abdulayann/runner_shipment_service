@@ -1,4 +1,44 @@
 {
+  "ROUTINGS_LIST": [
+    {
+      "id": 105225,
+      "guid": "47f6a6aa-81cd-4f64-8486-6a4929cefe85",
+      "shipmentId": 155357,
+      "leg": 1,
+      "mode": "SEA",
+      "routingStatus": "PLD",
+      "vesselName": "468275000",
+      "pol": "COBAQ_POR",
+      "pod": "CNBYQ_POR",
+      "eta": "2024-04-14 00:00:00",
+      "etd": "2024-04-12 00:00:00",
+      "ata": "2024-05-02 00:00:00",
+      "atd": "2024-04-30 00:00:00",
+      "isLinked": true,
+      "voyage": "123",
+      "transitDays": 2,
+      "domestic": false
+    }
+  ],
+  "PACKINGS_LIST": [
+    {
+      "guid": "cfb7e782-fd4d-4d09-9e1b-7b5f6c2a9585",
+      "id": 1221,
+      "packs": "1",
+      "packsType": "BBG",
+      "containerId": 284021,
+      "volume": "11",
+      "weight": "11"
+    },
+    {
+
+      "guid": "cfb7e782-fd4d-4d09-9e1b-7b5f6c2a9583",
+      "id": 1222,
+      "packs": "1",
+      "packsType": "BBG",
+      "containerId": 284021
+    }
+  ],
   "SHIPMENT": {
     "id": 1,
     "guid": "3d7ac60d-5ada-4cff-9f4d-2fde960e3e06",

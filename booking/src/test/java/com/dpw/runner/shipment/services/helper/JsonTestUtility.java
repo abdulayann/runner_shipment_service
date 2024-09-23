@@ -65,6 +65,14 @@ public class JsonTestUtility {
         return convertToJson(payload.get("MDM_RESPONSE"));
     }
 
+    public List<Routings> getRoutingsList() {
+        return convertValueToList(payload.get("ROUTINGS_LIST"), Routings.class);
+    }
+
+    public List<Packing> getPackingsList() {
+        return convertValueToList(payload.get("PACKINGS_LIST"), Packing.class);
+    }
+
     public Packing getTestPacking(){
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
     }
@@ -132,10 +140,6 @@ public class JsonTestUtility {
             return null;
         }
     }
-
-    public PickupDeliveryDetails getTestPickupDeliveryDetails() {
-        return objectMapper.convertValue(payload.get("PICKUP_DELIVERY_DETAILS"), PickupDeliveryDetails.class);
-    }
     public EventsRequestV2 getTestEventsRequestV2() {
         return objectMapper.convertValue(payload.get("EVENTS_REQUEST_V2"), EventsRequestV2.class);
     }
@@ -157,10 +161,6 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
     }
 
-    public AdditionalDetails getTestAdditionalDetails(){
-        return objectMapper.convertValue(payload.get("SHIPMENT"), ShipmentDetails.class).getAdditionalDetails();
-    }
-
     public ShipmentSettingsDetails getTestShipmentSettingsDetails() {
         return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS"), ShipmentSettingsDetails.class);
     }
@@ -176,35 +176,8 @@ public class JsonTestUtility {
         return convertValueToList(payload.get("AUTO_ATTACH_CONSOLE_MASTER_DATA_LIST"), EntityTransferMasterLists.class);
     }
 
-    public ShipmentDetails getTestShipment() {
-        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("NEW_SHIPMENT"), ShipmentDetails.class);
-        return shipmentDetails;
-    }
-    public ShipmentDetails getCompleteShipment() {
-        ShipmentDetails shipmentDetails = objectMapper.convertValue(payload.get("COMPLETE_SHIPMENT"), ShipmentDetails.class);
-        return shipmentDetails;
-    }
-
     public Containers getTestContainer() {
         return objectMapper.convertValue(payload.get("NEW_CONTAINER_CREATE"), Containers.class);
-    }
-
-    public ConsolidationDetails getTestConsolidation(){
-        ConsolidationDetails consolidationDetails = objectMapper.convertValue(payload.get("CONSOLIDATION"), ConsolidationDetails.class);
-        return consolidationDetails;
-    }
-
-    public ConsolidationDetails getTestConsolidationAir(){
-        ConsolidationDetails consolidationDetails = objectMapper.convertValue(payload.get("CONSOLIDATION_AIR"), ConsolidationDetails.class);
-        return consolidationDetails;
-    }
-    public MawbStocks getMawbStock() {
-        MawbStocks mawbStocks = objectMapper.convertValue(payload.get("MAWB_STOCK"), MawbStocks.class);
-        return mawbStocks;
-    }
-    public MawbStocksLink getNewMawbStockLink(){
-        MawbStocksLink mawbStocksLink = objectMapper.convertValue(payload.get("MAWB_STOCK_LINK_NEW"), MawbStocksLink.class);
-        return mawbStocksLink;
     }
     public List<Parties> getConsoldiationAddressList() {
         List<Parties> parties = convertValueToList(payload.get("CONSOLIDATION_ADDRESS_LIST"), Parties.class);
@@ -219,22 +192,8 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("NEW_ROUTING"), Routings.class);
     }
 
-    public ConsolidationDetails getTestNewConsolidation(){
-        return objectMapper.convertValue(payload.get("NEW_CONSOLIDATION_CREATE"), ConsolidationDetails.class);
-    }
-    public AirMessagingLogs getTestAirMessagingLogs () {
-        return objectMapper.convertValue(payload.get("AIR_MESSAGING_LOGS"), AirMessagingLogs.class);
-    }
-    public ShipmentsContainersMapping getTestShipmentsContainersMapping() {
-        return objectMapper.convertValue(payload.get("SHIPMENTS_CONTAINERS_MAPPING"), ShipmentsContainersMapping.class);
-    }
-
     public TenantProducts getTenantProducts() {
         return objectMapper.convertValue(payload.get("TENANT_PRODUCT"), TenantProducts.class);
-    }
-
-    public ConsolidationDetails getCompleteConsolidation() {
-        return objectMapper.convertValue(payload.get("COMPLETE_CONSOLIDATION"), ConsolidationDetails.class);
     }
 
     public <T> T getJson(String key, Class<T> clazz) {
@@ -261,39 +220,8 @@ public class JsonTestUtility {
         }
     }
 
-    public Allocations getTestAllocation() {
-        return objectMapper.convertValue(payload.get("NEW_ALLOCATION_CREATE"), Allocations.class);
-    }
-
-    public AchievedQuantities getTestAchievedQuantity() {
-        return objectMapper.convertValue(payload.get("NEW_ACHIEVED_QUANTITY") , AchievedQuantities.class);
-    }
-
-    public ArrivalDepartureDetails getTestArrivalDepartureDetails() {
-        return objectMapper.convertValue(payload.get("NEW_ARRIVAL_DEPART_DETAIL") , ArrivalDepartureDetails.class);
-    }
-
-    public Jobs getTestJob() {
-        return objectMapper.convertValue(payload.get("NEW_JOB") , Jobs.class);
-    }
-
-    public MawbStocksLink getTestMawbStocksLink() {
-        return objectMapper.convertValue(payload.get("MAWB_STOCK_LINK") , MawbStocksLink.class);
-    }
-
-    public MawbStocks getTestMawbStocks(){
-        return objectMapper.convertValue(payload.get("MAWB_STOCK"), MawbStocks.class);
-    }
-    public MawbStocks getTestStockData() {
-        return objectMapper.convertValue(payload.get("STOCK_DATA"), MawbStocks.class);
-    }
-
     public IntegrationResponse getTestIntegrationResponse() {
         return objectMapper.convertValue(payload.get("INTEGRATION_PAYLOAD"), IntegrationResponse.class);
-    }
-
-    public ELDetails getTestELDetails() {
-        return objectMapper.convertValue(payload.get("ELDETAILS") , ELDetails.class);
     }
 
     public Events getTestEventData() {
@@ -312,28 +240,12 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("AUDIT_LOG"), AuditLog.class);
     }
 
-    public BookingCarriage getTestBookingCarriage() {
-        return objectMapper.convertValue(payload.get("BOOKING_CARRIAGE") , BookingCarriage.class);
-    }
-
     public CarrierDetails getTestCarrierDetails() {
         return objectMapper.convertValue(payload.get("CARRIER_DETAILS"), CarrierDetails.class);
     }
 
     public DefaultViews getTestDefaultView() {
         return objectMapper.convertValue(payload.get("DEFAULT_VIEWS"), DefaultViews.class);
-    }
-
-    public OrderNumber getTestOrderNumberDao() {
-        return objectMapper.convertValue(payload.get("ORDER_NUMBER"), OrderNumber.class);
-    }
-
-    public TruckDriverDetails getTestTruckDriverDetails() {
-        return objectMapper.convertValue(payload.get("TRUCK_DRIVER_DETAILS"), TruckDriverDetails.class);
-    }
-
-    public ReferenceNumbers getTestReferenceNumbers() {
-        return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
     }
 
     public CustomerBooking getCompleteCustomerBooking() {

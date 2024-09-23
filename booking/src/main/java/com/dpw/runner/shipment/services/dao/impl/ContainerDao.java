@@ -77,14 +77,8 @@ public class ContainerDao implements IContainerDao {
             }
             containers.setCreatedAt(oldEntity.get().getCreatedAt());
             containers.setCreatedBy(oldEntity.get().getCreatedBy());
-            if(containers.getShipmentsList() == null) {
-                containers.setShipmentsList(oldEntity.get().getShipmentsList());
-            }
             if(containers.getEventsList() == null) {
                 containers.setEventsList(oldEntity.get().getEventsList());
-            }
-            if(containers.getTruckingDetails() == null) {
-                containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
             }
         }
         if(containers.getEventsList() != null && containers.getEventsList().size() > 0) {
@@ -92,11 +86,7 @@ public class ContainerDao implements IContainerDao {
                 events.setEntityType(Constants.CONTAINER);
             }
         }
-        if(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty()){
-            containers.setIsAttached(true);
-        }else{
-            containers.setIsAttached(false);
-        }
+        containers.setIsAttached(false);
         return containerRepository.save(containers);
     }
 
