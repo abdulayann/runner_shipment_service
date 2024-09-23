@@ -9,7 +9,7 @@ public class HealthController {
 
     @GetMapping
     public ResponseEntity<String> health() {
-        return ResponseEntity.status(HttpStatus.OK).body("Shipment Service Up Now");
+        return ResponseEntity.status(HttpStatus.OK).body("Booking Service Up Now");
     }
 
 }

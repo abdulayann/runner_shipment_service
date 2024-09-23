@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -135,9 +134,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private ICustomerBookingDao customerBookingDao;
 
     @Autowired
-    private IShipmentService shipmentService;
-
-    @Autowired
     private IQuoteContractsService quoteContractsService;
 
     @Override
@@ -169,8 +165,9 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             if(response.getBody() != null)
             {
                 mapContractToShipment(shipmentDetailsResponse, response.getBody());
-                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
-                shipmentDetailsResponse.setMasterDataMap(masterData);
+                // TODO:bookingseparation:Mayank- make adapter or completely move to shipment
+//                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+//                shipmentDetailsResponse.setMasterDataMap(masterData);
             }
             quoteContractsService.updateQuoteContracts(response.getBody()); // update quote contracts data in db
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
