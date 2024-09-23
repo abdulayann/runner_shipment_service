@@ -5,19 +5,18 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.NPMConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.*;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchMultiLangChargeCodeRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
+import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -119,9 +118,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Autowired
     @Qualifier("restTemplateForNpmMultiLangChargeCode")
     private RestTemplate restTemplateMultiLang;
-
-    @Autowired
-    private IAwbDao awbDao;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
@@ -265,39 +261,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             throw new NPMException("Error from NPM while fetching offers: " + npmErrorResponse.getErrorMessage());
         }
 
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> awbAutoSell(CommonRequestModel commonRequestModel) throws RunnerException {
-        try {
-            String url = npmServiceBaseUrl + npmAwbAutoSell;
-            NPMAutoSellRequest autoSellRequest = (NPMAutoSellRequest) commonRequestModel.getData();
-            var req = jsonHelper.convertToJson(autoSellRequest);
-            ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
-        } catch (HttpStatusCodeException ex) {
-            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
-            throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
-        }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> awbImportRates(CommonRequestModel commonRequestModel) throws RunnerException {
-        try {
-            String url = npmServiceBaseUrl + npmAwbImportRates;
-            NPMImportRatesRequest importRatesRequest = (NPMImportRatesRequest) commonRequestModel.getData();
-            var req = jsonHelper.convertToJson(importRatesRequest);
-            ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
-            NpmAwbImportRateResponse npmAwbImportRateResponse = jsonHelper.convertValue(response.getBody().getData(), NpmAwbImportRateResponse.class);
-            log.info("Updated AWB from npm service : {}", npmAwbImportRateResponse.updatedAwb);
-            awbDao.save(npmAwbImportRateResponse.updatedAwb);
-            return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
-        } catch (HttpStatusCodeException ex) {
-            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
-            log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));
-            throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
-        }
     }
 
     private String getCurrencyCode()  {

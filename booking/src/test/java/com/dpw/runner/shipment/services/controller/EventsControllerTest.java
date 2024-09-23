@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -124,36 +123,6 @@ class EventsControllerTest {
         when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetails() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetails2() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any(), any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetails3() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

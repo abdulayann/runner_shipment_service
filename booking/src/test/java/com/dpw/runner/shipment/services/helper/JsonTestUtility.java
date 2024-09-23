@@ -3,9 +3,7 @@ package com.dpw.runner.shipment.services.helper;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -75,7 +73,6 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("CSV_PACKING") , Packing.class);
     }
 
-    public VolumeWeightChargeable getVolumeWeightChargeable() { return objectMapper.convertValue(payload.get("VolumeWeightChargeable"), VolumeWeightChargeable.class); }
     public Map getMasterDataMap() {
         try {
             return objectMapper.readValue(objectMapper.writeValueAsString(payload.get("MasterDataMap")),
@@ -160,10 +157,6 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
     }
 
-    public VolumeWeightChargeable getTestVolWtChargeable(){
-        return objectMapper.convertValue(payload.get("VOL_WT_CHARGEABLE"), VolumeWeightChargeable.class);
-    }
-
     public AdditionalDetails getTestAdditionalDetails(){
         return objectMapper.convertValue(payload.get("SHIPMENT"), ShipmentDetails.class).getAdditionalDetails();
     }
@@ -242,21 +235,6 @@ public class JsonTestUtility {
 
     public ConsolidationDetails getCompleteConsolidation() {
         return objectMapper.convertValue(payload.get("COMPLETE_CONSOLIDATION"), ConsolidationDetails.class);
-    }
-
-    public Awb getTestHawb() {
-        Awb awb = objectMapper.convertValue(payload.get("HAWB"), Awb.class);
-        return awb;
-    }
-
-    public Awb getTestDmawb() {
-        Awb awb = objectMapper.convertValue(payload.get("DMAWB"), Awb.class);
-        return awb;
-    }
-
-    public Awb getTestMawb() {
-        Awb awb = objectMapper.convertValue(payload.get("MAWB"), Awb.class);
-        return awb;
     }
 
     public <T> T getJson(String key, Class<T> clazz) {
@@ -356,11 +334,6 @@ public class JsonTestUtility {
 
     public ReferenceNumbers getTestReferenceNumbers() {
         return objectMapper.convertValue(payload.get("REFERENCE_NUMBERS"), ReferenceNumbers.class);
-    }
-
-    public ReportRequest getTestReportRequest() {
-        ReportRequest reportRequest = objectMapper.convertValue(payload.get("REPORT_REQUEST"), ReportRequest.class);
-        return reportRequest;
     }
 
     public CustomerBooking getCompleteCustomerBooking() {
