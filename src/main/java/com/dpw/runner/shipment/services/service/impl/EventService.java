@@ -80,11 +80,12 @@ public class EventService implements IEventService {
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
+    private CommonUtils commonUtils;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
-            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service) {
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -99,6 +100,7 @@ public class EventService implements IEventService {
         this.trackingServiceAdapter = trackingServiceAdapter;
         this.eventDumpDao = eventDumpDao;
         this.v1Service = v1Service;
+        this.commonUtils = commonUtils;
     }
 
     @Transactional
@@ -439,6 +441,7 @@ public class EventService implements IEventService {
             }
             entityId = consolidationId;
             entityType = Constants.CONSOLIDATION;
+            commonUtils.setInterBranchContextForHub();
         } else {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
