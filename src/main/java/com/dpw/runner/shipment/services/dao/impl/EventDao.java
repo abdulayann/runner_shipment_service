@@ -128,6 +128,9 @@ public class EventDao implements IEventDao {
             Map<Long, Events> hashMap;
 //            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
                 ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+                if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+                    listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
+                }
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
                 Page<Events> events = findAll(pair.getLeft(), pair.getRight());
                 hashMap = events.stream()
