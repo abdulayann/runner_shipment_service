@@ -36,7 +36,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
-    List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
+    List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
 }

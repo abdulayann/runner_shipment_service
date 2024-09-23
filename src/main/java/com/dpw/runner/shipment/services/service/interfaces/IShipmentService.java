@@ -114,7 +114,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> hblCheck(String hblNumber);
+    ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId);
     ResponseEntity<IRunnerResponse> listWithoutTenantCheck(CommonRequestModel commonRequestModel);
 
 }

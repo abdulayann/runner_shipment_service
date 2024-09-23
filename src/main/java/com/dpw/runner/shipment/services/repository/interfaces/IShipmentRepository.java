@@ -82,8 +82,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " tenant_id as tenantId, "
             + " house_bill as hblNumber, "
             + " shipment_id as shipmentId "
-            + " FROM shipment_details WHERE house_bill = ?1", nativeQuery = true)
-    List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber);
+            + " FROM shipment_details "
+            + " WHERE house_bill = ?1 "
+            + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
+    List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     @ExcludeTenantFilter
     default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {

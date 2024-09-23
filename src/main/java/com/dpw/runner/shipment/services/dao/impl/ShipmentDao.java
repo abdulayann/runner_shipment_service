@@ -685,8 +685,8 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber) {
-        return shipmentRepository.findHblNumberInAllBranches(hblNumber);
+    public List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId) {
+        return shipmentRepository.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Override
