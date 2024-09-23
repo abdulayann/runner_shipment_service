@@ -75,14 +75,14 @@ class RoutingsServiceTest extends CommonMocks {
     @BeforeEach
     void setUp() {
         routings1 = new Routings();
-        routings1.setPol("POL1");
-        routings1.setPod("POD1");
+        routings1.setPol("POL1_POR");
+        routings1.setPod("POD1_POR");
         routings1.setShipmentId(123L);
         routings1.setLeg(1L);
 
         routings2 = new Routings();
-        routings2.setPol("POL2");
-        routings2.setPod("POD2");
+        routings2.setPol("POL2_POR");
+        routings2.setPod("POD2_POR");
         routings2.setShipmentId(234L);
         routings2.setLeg(2L);
 

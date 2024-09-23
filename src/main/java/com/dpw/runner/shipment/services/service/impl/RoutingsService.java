@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -69,12 +71,12 @@ public class RoutingsService implements IRoutingsService {
         if (trackingServiceApiResponse == null || ObjectUtils.isEmpty(trackingServiceApiResponse.getContainers())) return;
 
         // Create lookup maps for quicker routing updates
-        Map<String, Routings> polToRoutingMap = createRoutingMap(routings, true);
-        Map<String, Routings> podToRoutingMap = createRoutingMap(routings, false);
+        Map<String, List<Routings>> polToRoutingMap = createRoutingMap(routings, true);
+        Map<String, List<Routings>> podToRoutingMap = createRoutingMap(routings, false);
 
         // Process each container's events
-        for (Container container : trackingServiceApiResponse.getContainers()) {
-            processContainerEvents(container, polToRoutingMap, podToRoutingMap);
+        for (Container tsContainer : trackingServiceApiResponse.getContainers()) {
+            processContainerEvents(tsContainer, polToRoutingMap, podToRoutingMap);
         }
     }
 
@@ -100,80 +102,75 @@ public class RoutingsService implements IRoutingsService {
                 new ArrayList<>(routingsResponses), 0, routingsResponses.size());
     }
 
-    private Map<String, Routings> createRoutingMap(List<Routings> routings, boolean isPol) {
+    private Map<String, List<Routings>> createRoutingMap(List<Routings> routings, boolean isPol) {
         return routings.stream()
                 .filter(routing -> isPol ? routing.getPol() != null : routing.getPod() != null)
-                .collect(Collectors.toMap(
-                        routing -> isPol ? routing.getPol() : routing.getPod(),
-                        Function.identity(),
-                        (a, b) -> a));
+                .collect(Collectors.groupingBy(
+                        routing -> isPol ? routing.getPol() : routing.getPod()
+                ));
     }
 
-    private void processContainerEvents(Container container, Map<String, Routings> polToRoutingMap, Map<String, Routings> podToRoutingMap) {
-        if (container == null || ObjectUtils.isEmpty(container.getEvents()) || ObjectUtils.isEmpty(container.getPlaces())) return;
+    private void processContainerEvents(Container tsContainer, Map<String, List<Routings>> polToRoutingMap, Map<String, List<Routings>> podToRoutingMap) {
+        if (tsContainer == null || ObjectUtils.isEmpty(tsContainer.getEvents()) || ObjectUtils.isEmpty(tsContainer.getPlaces())) return;
 
-        Map<Integer, Place> placeIdToPlaceMap = container.getPlaces().stream()
+        Map<Integer, Place> placeIdToPlaceMap = tsContainer.getPlaces().stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(Place::getId, Function.identity()));
 
-        for (Event event : container.getEvents()) {
-            updateRoutingsForEvent(event, placeIdToPlaceMap, polToRoutingMap, podToRoutingMap);
+        for (Event tsEvent : tsContainer.getEvents()) {
+            updateRoutingsForEvent(tsEvent, placeIdToPlaceMap, polToRoutingMap, podToRoutingMap);
         }
     }
 
     private void updateRoutingsForEvent(Event event, Map<Integer, Place> placeIdToPlaceMap,
-            Map<String, Routings> polToRoutingMap, Map<String, Routings> podToRoutingMap) {
+            Map<String, List<Routings>> polToRoutingMap, Map<String, List<Routings>> podToRoutingMap) {
         if (event == null) return;
 
         Place place = placeIdToPlaceMap.get(event.getLocation());
         if (place == null || place.getCode() == null) return;
 
-        String code = place.getCode();
-        String eventType = event.getEventType();
-        String description = event.getDescription();
-        String descriptionFromSource = event.getDescriptionFromSource();
+        String tsPlaceCode = StringUtils.defaultString(place.getCode())+EventConstants._POR;
+        String tsEventType = event.getEventType();
+        String tsEventDescription = event.getDescription();
+        DateAndSources actualDateAndSources = event.getActualEventTime();
+        DateAndSources projectedDateAndSources = event.getProjectedEventTime();
 
-        if (isVesselDepartureEvent(eventType, description, descriptionFromSource)) {
-            updatePolRouting(code, event.getProjectedEventTime(), polToRoutingMap);
-        } else if (isVesselArrivalEvent(eventType, description, descriptionFromSource)) {
-            updatePodRouting(code, event.getActualEventTime(), podToRoutingMap);
+        if (isVesselDepartureEvent(tsEventType, tsEventDescription)) {
+            updateRouting(tsPlaceCode, actualDateAndSources, projectedDateAndSources, polToRoutingMap,
+                    Routings::setEtd, Routings::setAtd);
+        } else if (isVesselArrivalEvent(tsEventType, tsEventDescription)) {
+            updateRouting(tsPlaceCode, actualDateAndSources, projectedDateAndSources, podToRoutingMap,
+                    Routings::setEta, Routings::setAta);
         }
     }
 
-    private void updatePolRouting(String code, DateAndSources projectedEventTime, Map<String, Routings> polToRoutingMap) {
-        if (projectedEventTime == null) return;
+    private void updateRouting(String tsPlaceCode, DateAndSources actualDateAndSources, DateAndSources projectedDateAndSources,
+            Map<String, List<Routings>> routingMap,
+            BiConsumer<Routings, LocalDateTime> setProjectedTime,
+            BiConsumer<Routings, LocalDateTime> setActualTime) {
 
-        LocalDateTime eventTime = projectedEventTime.getDateTime();
-        Routings routing = polToRoutingMap.get(code);
-        if (routing != null) {
-            routing.setEtd(routing.getEtd() == null ? eventTime : routing.getEtd());
-            routing.setAtd(routing.getAtd() == null ? eventTime : routing.getAtd());
+        List<Routings> routings = routingMap.get(tsPlaceCode);
+
+        if (routings != null) {
+            for (Routings routing : routings) {
+                if (projectedDateAndSources != null && projectedDateAndSources.getDateTime() != null) {
+                    setProjectedTime.accept(routing, projectedDateAndSources.getDateTime());
+                }
+                if (actualDateAndSources != null && actualDateAndSources.getDateTime() != null) {
+                    setActualTime.accept(routing, actualDateAndSources.getDateTime());
+                }
+            }
         }
     }
 
-    private void updatePodRouting(String code, DateAndSources actualEventTime, Map<String, Routings> podToRoutingMap) {
-        if (actualEventTime == null) return;
-
-        LocalDateTime eventTime = actualEventTime.getDateTime();
-        Routings routing = podToRoutingMap.get(code);
-        if (routing != null) {
-            routing.setEta(routing.getEta() == null ? eventTime : routing.getEta());
-            routing.setAta(routing.getAta() == null ? eventTime : routing.getAta());
-        }
-    }
-
-    private boolean isVesselDepartureEvent(String eventType, String description, String descriptionFromSource) {
+    private boolean isVesselDepartureEvent(String eventType, String description) {
         return EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(eventType)
-                && EventConstants.VESSEL_DEPARTURE.equalsIgnoreCase(description)
-                && (EventConstants.VESSEL_DEPARTURE_FROM_POL.equalsIgnoreCase(descriptionFromSource)
-                || EventConstants.VESSEL_DEPARTURE_FROM_TS_PORT.equalsIgnoreCase(descriptionFromSource));
+                && EventConstants.VESSEL_DEPARTURE.equalsIgnoreCase(description);
     }
 
-    private boolean isVesselArrivalEvent(String eventType, String description, String descriptionFromSource) {
+    private boolean isVesselArrivalEvent(String eventType, String description) {
         return EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(eventType)
-                && EventConstants.VESSEL_ARRIVAL.equalsIgnoreCase(description)
-                && (EventConstants.VESSEL_ARRIVAL_AT_TS_PORT.equalsIgnoreCase(descriptionFromSource)
-                || EventConstants.VESSEL_ARRIVAL_AT_POD.equalsIgnoreCase(descriptionFromSource));
+                && EventConstants.VESSEL_ARRIVAL.equalsIgnoreCase(description);
     }
 
     @Override
