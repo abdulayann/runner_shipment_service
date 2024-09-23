@@ -102,7 +102,7 @@ class ShipmentDaoTest extends CommonMocks {
     private IMawbStocksDao mawbStocksDao;
 
     @Test
-    void testFindHblNumberInAllBranches() {
+    void testFindByHblNumberAndExcludeShipmentId() {
         try (MockedStatic<TenantContext> mockedTenantContext = Mockito.mockStatic(TenantContext.class)) {
             ShipmentDetailsProjection nullProjection = new NullShipmentDetailsProjection();
 
@@ -110,14 +110,15 @@ class ShipmentDaoTest extends CommonMocks {
             projections.add(nullProjection);
 
             String sampleHblNumber = "sampleHblNumber";
+            String sampleShipmentId = "sampleShipmentId";
             Integer tenantId = 1;
 
             mockedTenantContext.when(TenantContext::getCurrentTenant).thenReturn(tenantId);
 
-            when(shipmentRepository.findHblNumberInAllBranches(sampleHblNumber))
+            when(shipmentRepository.findByHblNumberAndExcludeShipmentId(sampleHblNumber, sampleShipmentId))
                     .thenReturn(projections);
 
-            var response = shipmentDao.findHblNumberInAllBranches(sampleHblNumber);
+            var response = shipmentDao.findByHblNumberAndExcludeShipmentId(sampleHblNumber, sampleShipmentId);
 
             assertEquals(projections, response);
         }
