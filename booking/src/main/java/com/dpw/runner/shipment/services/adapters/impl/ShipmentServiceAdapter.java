@@ -69,11 +69,9 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentIdbyGuid(String guid) throws RunnerException {
         try {
-            var Guid = "8d2714cb-1b27-4e5e-b31d-dc789644bb3a";
-            String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetByGuidUrl() + "?guid=" + Guid;
-            System.out.println(url);
+            String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetByGuidUrl() + "?guid=" + guid;
 
-            log.info("Calling shipment service for booking number: {}", Guid);
+            log.info("Calling shipment service for booking number: {}", guid);
 
             HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
 

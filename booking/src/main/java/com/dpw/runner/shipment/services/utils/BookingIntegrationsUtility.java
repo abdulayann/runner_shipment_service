@@ -242,7 +242,7 @@ public class BookingIntegrationsUtility {
             return shipmentResponse;
         } catch (Exception ex) {
             log.error("Shipment fetch failed for guid {} with error message: {}", guid, ex.getMessage());
-            return null;
+            throw ex;
         }
     }
 
