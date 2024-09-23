@@ -1311,6 +1311,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
+                !Objects.equals(console.getCarrierBookingRef(),oldEntity.getCarrierBookingRef()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
@@ -1327,6 +1328,7 @@ public class ConsolidationService implements IConsolidationService {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
                 i.setDirection(console.getShipmentType());
+                i.setBookingNumber(console.getCarrierBookingRef());
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
                     i.setTriangulationPartner(console.getTriangulationPartner());
                     i.setDocumentationPartner(console.getDocumentationPartner());
