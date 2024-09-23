@@ -48,23 +48,13 @@ public class JsonHelper {
         createMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         createMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         createMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        createMapper.addMixIn(ShipmentDetails.class, BookingMixIn.class);
         createMapper.addMixIn(Parties.class, BookingMixIn.class);
-        createMapper.addMixIn(AdditionalDetails.class, BookingMixIn.class);
         createMapper.addMixIn(Containers.class, BookingMixIn.class);
         createMapper.addMixIn(CarrierDetails.class, BookingMixIn.class);
-        createMapper.addMixIn(ELDetails.class, BookingMixIn.class);
         createMapper.addMixIn(Events.class, BookingMixIn.class);
         createMapper.addMixIn(FileRepo.class, BookingMixIn.class);
         createMapper.addMixIn(Packing.class, BookingMixIn.class);
-        createMapper.addMixIn(ReferenceNumbers.class, BookingMixIn.class);
         createMapper.addMixIn(Routings.class, BookingMixIn.class);
-        createMapper.addMixIn(ServiceDetails.class, BookingMixIn.class);
-        createMapper.addMixIn(TruckDriverDetails.class, BookingMixIn.class);
-        createMapper.addMixIn(PickupDeliveryDetails.class, BookingMixIn.class);
-        createMapper.addMixIn(Jobs.class, BookingMixIn.class);
-        createMapper.addMixIn(ConsolidationDetails.class, BookingMixIn.class);
-        createMapper.addMixIn(BookingCarriage.class, BookingMixIn.class);
         createMapper.addMixIn(Notes.class, BookingMixIn.class);
         createMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 

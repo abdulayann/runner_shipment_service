@@ -128,9 +128,6 @@ class ContainerDaoTest {
         List<Events> eventsList = new ArrayList<>();
         eventsList.add(new Events());
         testContainer.setEventsList(eventsList);
-        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
-        shipmentDetails.add(new ShipmentDetails());
-        testContainer.setShipmentsList(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         when(containerRepository.save(any())).thenReturn(testContainer);
         Containers containers = containerDao.save(testContainer);
@@ -145,10 +142,6 @@ class ContainerDaoTest {
         List<Events> eventsList = new ArrayList<>();
         eventsList.add(new Events());
         testContainer.setEventsList(eventsList);
-        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
-        testContainer.setShipmentsList(shipmentDetails);
-        List<TruckDriverDetails> truckDriverDetails = new ArrayList<>();
-        testContainer.setTruckingDetails(truckDriverDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(containerRepository.save(any())).thenReturn(testContainer);

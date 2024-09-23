@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.Kafka.Consumer;
 
 import com.dpw.runner.shipment.services.Kafka.Dto.BookingOrderUpdateDTO;
-import com.dpw.runner.shipment.services.Kafka.Dto.OrderManageDto;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.repository.interfaces.IOrderManagementRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -13,7 +11,6 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -24,6 +21,7 @@ public class OrderManagementConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
+    //TODO:bookingseparation:Mayank - remove this once bookign service go live
     @KafkaListener(topics = {"#{'${order.management.event.kafka.queue}'}"}, groupId = "#{'${order.management.event.kafka.subs}'}")
     public void consume(String message)
     {

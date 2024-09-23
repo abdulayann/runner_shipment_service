@@ -27,7 +27,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -77,7 +76,7 @@ class RoutingsDaoTest {
 
     @BeforeEach
     void setUp() {
-        testRoutings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        testRoutings = jsonTestUtility.getRoutingsList().get(0);
         testNewRoutings = jsonTestUtility.getTestRouting();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -91,7 +90,7 @@ class RoutingsDaoTest {
 
     @Test
     void testSave() {
-        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Routings routings = jsonTestUtility.getRoutingsList().get(0);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         when(routingsRepository.save(any(Routings.class))).thenReturn(routings);
 
@@ -102,7 +101,7 @@ class RoutingsDaoTest {
 
     @Test
     void testSave_Failure() {
-        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Routings routings = jsonTestUtility.getRoutingsList().get(0);
         Set<String> errors = new HashSet<>();
         errors.add("Required field missing");
         when(jsonHelper.convertToJson(any())).thenReturn(jsonTestUtility.convertToJson(routings));
@@ -112,7 +111,7 @@ class RoutingsDaoTest {
 
     @Test
     void testSaveAll() {
-        List<Routings> routingsList = Arrays.asList(jsonTestUtility.getCompleteShipment().getRoutingsList().get(0), jsonTestUtility.getCompleteShipment().getRoutingsList().get(0));
+        List<Routings> routingsList = Arrays.asList(jsonTestUtility.getRoutingsList().get(0), jsonTestUtility.getRoutingsList().get(0));
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         when(routingsRepository.saveAll(anyList())).thenReturn(routingsList);
 
@@ -125,7 +124,7 @@ class RoutingsDaoTest {
 
     @Test
     void testSaveAll_Failure() {
-        List<Routings> routingsList = Arrays.asList(jsonTestUtility.getCompleteShipment().getRoutingsList().get(0), jsonTestUtility.getCompleteShipment().getRoutingsList().get(0));
+        List<Routings> routingsList = Arrays.asList(jsonTestUtility.getRoutingsList().get(0), jsonTestUtility.getRoutingsList().get(0));
         Set<String> errors = new HashSet<>();
         errors.add("Required field missing");
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(errors);
@@ -146,7 +145,7 @@ class RoutingsDaoTest {
 
     @Test
     void testFindById() {
-        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Routings routings = jsonTestUtility.getRoutingsList().get(0);
         Optional<Routings> optionalRoutings = Optional.of(routings);
         when(routingsRepository.findById(anyLong())).thenReturn(optionalRoutings);
 
@@ -158,7 +157,7 @@ class RoutingsDaoTest {
 
     @Test
     void testFindByGuid() {
-        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Routings routings = jsonTestUtility.getRoutingsList().get(0);
         Optional<Routings> optionalRoutings = Optional.of(routings);
         when(routingsRepository.findByGuid(any(UUID.class))).thenReturn(optionalRoutings);
 
@@ -170,173 +169,10 @@ class RoutingsDaoTest {
 
     @Test
     void testDelete() {
-        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Routings routings = jsonTestUtility.getRoutingsList().get(0);
 
         assertDoesNotThrow(() -> routingsDao.delete(routings));
         verify(routingsRepository, Mockito.times(1)).delete(routings);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_NullId() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_NullRoutings() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(null, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(new ArrayList<>(), routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_DeleteRoutingsCases() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
-        oldRoutingsList.get(1).setId(5L);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_DeleteRoutingsCases_Failures() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
-        oldRoutingsList.get(1).setId(5L);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(RuntimeException.class).when(jsonHelper).convertToJson(any());
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_DeleteRoutingsCases_AuditLogFailure() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
-        oldRoutingsList.get(1).setId(5L);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_Failure() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(routingsList, 1L));
-    }
-
-    @Test
-    void testSaveEntityFromShipment() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(Optional.of(testRoutings)).when(spyService).findById(anyLong());
-        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(testRoutings).when(spyService).save(any());
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromShipment_NullId() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(testRoutings).when(spyService).save(any());
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromShipment_RetrievalFailure() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(Optional.empty()).when(spyService).findById(anyLong());
-        assertThrows(RuntimeException.class, () -> spyService.saveEntityFromShipment(routingsList, 1L));
-    }
-
-    @Test
-    void testSaveEntityFromShipment_AuditLogFailure() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(Optional.of(testRoutings)).when(spyService).findById(anyLong());
-        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(testRoutings).when(spyService).save(any());
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromShipment_WithOldEntity() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(routingsList).when(spyService).saveAll(any());
-        Map<Long, Routings> map = new HashMap<>();
-        map.put(testRoutings.getId(), testRoutings);
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromShipment_WithOldEntity_NullId() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(routingsList).when(spyService).saveAll(any());
-        Map<Long, Routings> map = new HashMap<>();
-        map.put(testRoutings.getId(), testRoutings);
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromShipment_WithOldEntity_AuditLogFailure() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doReturn(routingsList).when(spyService).saveAll(any());
-        Map<Long, Routings> map = new HashMap<>();
-        map.put(testRoutings.getId(), testRoutings);
-        List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
     }
 
     @Test
@@ -422,171 +258,4 @@ class RoutingsDaoTest {
         assertNotNull(routings);
         assertEquals(routingsList, routings);
     }
-
-    @Test
-    void testUpdateEntityFromConsole() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(anyList(), anyLong(), anyMap());
-        List<Routings> routingsList1 = spyService.updateEntityFromConsole(routingsList, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(routingsList, routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_NullRoutings() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        List<Routings> routingsList1 = spyService.updateEntityFromConsole(null, 1L);
-        assertNotNull(routingsList1);
-        assertEquals(new ArrayList<>(), routingsList1);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_Failure() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsole(routingsList, 1L));
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_WithOldEntity() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
-        List<Routings> routings = spyService.updateEntityFromConsole(routingsList, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_WithOldEntity_NullRoutings() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        List<Routings> routings = spyService.updateEntityFromConsole(null, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(new ArrayList<>(), routings);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_WithOldEntityNull() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
-        List<Routings> routings = spyService.updateEntityFromConsole(routingsList, 1L, null);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_WithOldEntity_AuditLogFailure() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
-        List<Routings> routings = spyService.updateEntityFromConsole(routingsList, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromConsole_WithOldEntity_Failure() throws RunnerException {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doThrow(RuntimeException.class).when(spyService).saveEntityFromConsole(anyList(), anyLong());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsole(routingsList, 1L, routingsList));
-    }
-
-    @Test
-    void testSaveEntityFromConsole() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(Optional.of(testRoutings)).when(spyService).findById(anyLong());
-        doReturn(testRoutings).when(spyService).save(any());
-        List<Routings> routings = spyService.saveEntityFromConsole(routingsList, 1L);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromConsole_NullId() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(testRoutings).when(spyService).save(any());
-        List<Routings> routings = spyService.saveEntityFromConsole(routingsList, 1L);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromConsole_RetrievalFailure() throws Exception {
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(Optional.empty()).when(spyService).findById(anyLong());
-        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromConsole(routingsList, 1L));
-    }
-
-    @Test
-    void testSaveEntityFromConsole_WithOldEntity() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveAll(any());
-        Map<Long, Routings> map = new HashMap<>();
-        map.put(testRoutings.getId(), testRoutings);
-        List<Routings> routings = spyService.saveEntityFromConsole(routingsList, 1L, map);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testSaveEntityFromConsole_WithOldEntity_NullId() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveAll(any());
-        Map<Long, Routings> map = new HashMap<>();
-        map.put(testRoutings.getId(), testRoutings);
-        List<Routings> routings = spyService.saveEntityFromConsole(routingsList, 1L, map);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_WithOldEntity() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(any(), anyLong());
-        List<Routings> routings = spyService.updateEntityFromShipment(routingsList, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_WithOldEntity_NullRoutings() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        List<Routings> routings = spyService.updateEntityFromShipment(null, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(new ArrayList<>(), routings);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_WithOldEntity_NullId() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testNewRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doReturn(routingsList).when(spyService).saveEntityFromShipment(any(), anyLong());
-        List<Routings> routings = spyService.updateEntityFromShipment(routingsList, 1L, routingsList);
-        assertNotNull(routings);
-        assertEquals(routingsList, routings);
-    }
-
-    @Test
-    void testUpdateEntityFromShipment_WithOldEntity_Failure() throws Exception{
-        List<Routings> routingsList = Collections.singletonList(testRoutings);
-        RoutingsDao spyService = spy(routingsDao);
-        doThrow(RuntimeException.class).when(spyService).saveEntityFromShipment(any(), anyLong());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(routingsList, 1L, routingsList));
-    }
-
 }

@@ -8,8 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
@@ -116,49 +115,6 @@ class DbAccessHelperTest {
     }
 
     @Test
-    void fetchDataTableNamesNull() {
-        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
-    }
-
-    @Test
-    void fetchDataTableNamesNotNullDoesNotContainTextSortRequestNotNull() {
-        ListCommonRequest tempReq = listCommonRequest;
-        tempReq.getFilterCriteria().get(0).setInnerFilter(Collections.emptyList());
-        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").build());
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
-    }
-
-    @Test
-    void fetchDataSortRequest() {
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class));
-    }
-
-    @Test
-    void fetchDataTableNamesNotNullDoesNotContainText() {
-        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").build());
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
-    }
-
-    @Test
-    void fetchDataTableNamesNotNull() {
-        listCommonRequest.setContainsText("transportMode");
-        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).build());
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
-    }
-
-    @Test
-    void fetchDataTableNamesNotNullLogicalOperator() {
-        listCommonRequest.setContainsText("transportMode");
-        Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).build());
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames));
-    }
-
-    @Test
     void fetchDataTableNamesNotNullPredicate_NotInLong_UUID_Date() {
         listCommonRequest.setContainsText("transportMode");
         listCommonRequest.setContainsText("status");
@@ -185,7 +141,7 @@ class DbAccessHelperTest {
         tableNames.put("customerCategory", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(CustomerCategoryRates.class).build());
 
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         CriteriaBuilder criteriaBuilder = mock(CriteriaBuilder.class);
@@ -214,7 +170,7 @@ class DbAccessHelperTest {
         tableNames.put("eta", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Date.class).build());
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Date.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -236,7 +192,7 @@ class DbAccessHelperTest {
         tableNames.put("eta", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest1, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -251,7 +207,7 @@ class DbAccessHelperTest {
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Enum.class).build());
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIsEnum, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIsEnum, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -273,7 +229,7 @@ class DbAccessHelperTest {
         tableName.put("fieldName", runnerEntityMapping);
         when(runnerEntityMapping.getTableName()).thenReturn("ShipmentDetails");
 
-        Pair<Specification<ShipmentDetails>, Pageable> result = DbAccessHelper.fetchData(request, ShipmentDetails.class, tableName);
+        Pair<Specification<CustomerBooking>, Pageable> result = DbAccessHelper.fetchData(request, CustomerBooking.class, tableName);
         assertNotNull(result);
         assertEquals(PageRequest.of(0, 10, Sort.by("fieldName").ascending()), result.getRight());
     }
@@ -290,7 +246,7 @@ class DbAccessHelperTest {
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(String.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIn, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequestIn, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -307,7 +263,7 @@ class DbAccessHelperTest {
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Integer.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         //when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -327,7 +283,7 @@ class DbAccessHelperTest {
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Integer.class).build());
         tableNames.put("guid", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(UUID.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest6, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest6, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -342,7 +298,7 @@ class DbAccessHelperTest {
         listCommonRequest.setContainsText("text");
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
 
@@ -354,14 +310,14 @@ class DbAccessHelperTest {
     void fetchDataSortRequestOr() {
         ListCommonRequest listCommonRequest7 = jsonTestUtility.getListRequest7();
         listCommonRequest7.getFilterCriteria().get(1).setLogicOperator("or");
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest7, ShipmentDetails.class));
+        assertNotNull(dbAccessHelper.fetchData(listCommonRequest7, CustomerBooking.class));
     }
 
     @Test
     void fetchDataSortRequestAnd() {
         ListCommonRequest listCommonRequest7 = jsonTestUtility.getListRequest7();
         listCommonRequest7.getFilterCriteria().get(1).setLogicOperator("and");
-        assertNotNull(dbAccessHelper.fetchData(listCommonRequest7, ShipmentDetails.class));
+        assertNotNull(dbAccessHelper.fetchData(listCommonRequest7, CustomerBooking.class));
     }
 
     @Test
@@ -375,7 +331,7 @@ class DbAccessHelperTest {
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
 
-        Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest4, ShipmentDetails.class, tableNames);
+        Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest4, CustomerBooking.class, tableNames);
         Specification<String> specification = pair.getLeft();
         assertNotNull(specification);
 
@@ -394,7 +350,7 @@ class DbAccessHelperTest {
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
 
-        Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest8, ShipmentDetails.class, tableNames);
+        Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest8, CustomerBooking.class, tableNames);
         Specification<String> specification = pair.getLeft();
         assertNotNull(specification);
 
@@ -409,7 +365,7 @@ class DbAccessHelperTest {
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
         tableNames.put("andesStatus", RunnerEntityMapping.builder().tableName("shipment_additional_details").isContainsText(true).dataType(AndesStatus.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest9, AdditionalDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest9, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_additional_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -428,7 +384,7 @@ class DbAccessHelperTest {
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest10, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest10, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -447,7 +403,7 @@ class DbAccessHelperTest {
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest11, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest11, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -466,7 +422,7 @@ class DbAccessHelperTest {
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest12, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest12, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);
@@ -485,7 +441,7 @@ class DbAccessHelperTest {
         tableNames.put("etd", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("status", RunnerEntityMapping.builder().tableName("shipment_details").isContainsText(true).dataType(Long.class).build());
 
-        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest13, ShipmentDetails.class, tableNames);
+        Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest13, CustomerBooking.class, tableNames);
         Specification<Object> specification = pair.getLeft();
         assertNotNull(specification);
         when(root.join("shipment_details", JoinType.LEFT)).thenReturn((Join) join);

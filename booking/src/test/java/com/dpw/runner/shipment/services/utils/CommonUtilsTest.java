@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -17,7 +16,10 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -31,13 +33,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.*;
+import org.mockito.InOrder;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.ByteArrayResource;
@@ -56,12 +60,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.*;
@@ -96,15 +96,6 @@ class CommonUtilsTest {
 
     @Mock
     private IV1Service iv1Service;
-
-    @Mock
-    private ConsolidationDetails consolidationDetails;
-
-    @Mock
-    private AchievedQuantities achievedQuantities;
-
-    @Mock
-    private Allocations allocations;
 
     @Mock
     private IAuditLogDao iAuditLogDao;
@@ -640,225 +631,6 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testUpdateConsolOpenForAttachment_withNullAchievedQuantities() {
-        when(consolidationDetails.getAchievedQuantities()).thenReturn(null);
-        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-        verify(consolidationDetails, never()).setOpenForAttachment(anyBoolean());
-    }
-
-    @Test
-    void testUpdateConsolOpenForAttachment_withWeightUtilizationAbove100() {
-        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
-        when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
-        when(achievedQuantities.getWeightUtilization()).thenReturn("150");
-        when(achievedQuantities.getVolumeUtilization()).thenReturn("50");
-        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-        verify(consolidationDetails, times(1)).setOpenForAttachment(false);
-    }
-
-    @Test
-    void testUpdateConsolOpenForAttachment_withVolumeUtilizationAbove100() {
-        when(consolidationDetails.getTransportMode()).thenReturn("AIR");
-        when(consolidationDetails.getAchievedQuantities()).thenReturn(achievedQuantities);
-        when(achievedQuantities.getWeightUtilization()).thenReturn("50");
-        when(achievedQuantities.getVolumeUtilization()).thenReturn("150");
-        commonUtils.updateConsolOpenForAttachment(consolidationDetails);
-        verify(consolidationDetails, times(1)).setOpenForAttachment(false);
-    }
-
-    @Test
-    void testUpdateConsolOpenForAttachment_AchievedQuantitiesIsNull() {
-        ConsolidationDetails details = new ConsolidationDetails();
-        details.setAchievedQuantities(null);
-
-        commonUtils.updateConsolOpenForAttachment(details);
-
-        assertNull(details.getOpenForAttachment());
-    }
-
-    @Test
-    void testUpdateConsolOpenForAttachment_WeightUtilizationAndVolumeUtilizationNull() {
-        achievedQuantities = new AchievedQuantities();
-        ConsolidationDetails details = new ConsolidationDetails();
-        details.setAchievedQuantities(achievedQuantities);
-
-        commonUtils.updateConsolOpenForAttachment(details);
-
-        assertNull(details.getOpenForAttachment());
-    }
-
-    @Test
-    void testCalculateConsolUtilization_NullAllocations() throws RunnerException {
-        ConsolidationDetails details = new ConsolidationDetails();
-        details.setAllocations(null);
-        details.setAchievedQuantities(new AchievedQuantities());
-
-        ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
-
-        assertThat(result.getAllocations()).isNotNull();
-    }
-
-    @Test
-    void testCalculateConsolUtilization_NullAchievedQuantities() throws RunnerException {
-        ConsolidationDetails details = new ConsolidationDetails();
-        details.setAllocations(new Allocations());
-        details.setAchievedQuantities(null);
-
-        ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
-
-        assertThat(result.getAchievedQuantities()).isNotNull();
-    }
-
-
-    @Test
-    void testCalculateConsolUtilization_WeightAndVolumeUtilization() throws RunnerException {
-        ConsolidationDetails details = getConsolidationDetails();
-
-        try (MockedStatic<UnitConversionUtility> mockedStatic = Mockito.mockStatic(UnitConversionUtility.class)) {
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
-                            eq(Constants.MASS), any(BigDecimal.class), eq("KG"), eq(Constants.WEIGHT_UNIT_KG)))
-                    .thenReturn(new BigDecimal("100"));
-
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
-                            eq(Constants.VOLUME), any(BigDecimal.class), eq("M3"), eq(Constants.VOLUME_UNIT_M3)))
-                    .thenReturn(new BigDecimal("50"));
-
-            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
-
-            assertThat(result.getAchievedQuantities().getConsolidatedWeightUnit())
-                    .isNotNull()
-                    .isEqualTo("KG");
-
-            assertThat(result.getAllocations().getWeightUnit())
-                    .isNotNull()
-                    .isEqualTo("KG");
-
-            assertThat(result.getAchievedQuantities().getWeightUtilization()).isEqualTo("100.0");
-            assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("100.0");
-        }
-    }
-
-    private static @NotNull ConsolidationDetails getConsolidationDetails() {
-        ConsolidationDetails details = new ConsolidationDetails();
-        AchievedQuantities achievedQuantities = new AchievedQuantities();
-        Allocations allocations = new Allocations();
-
-        achievedQuantities.setConsolidatedWeightUnit("KG");
-        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
-        achievedQuantities.setConsolidatedVolumeUnit("M3");
-        achievedQuantities.setConsolidatedVolume(new BigDecimal("50"));
-
-        allocations.setWeightUnit("KG");
-        allocations.setWeight(new BigDecimal("200"));
-        allocations.setVolumeUnit("M3");
-        allocations.setVolume(new BigDecimal("100"));
-
-        details.setAchievedQuantities(achievedQuantities);
-        details.setAllocations(allocations);
-        return details;
-    }
-
-    @Test
-    void testCalculateConsolUtilization_ExceptionHandling() {
-        ConsolidationDetails details = getDetails();
-
-        try (MockedStatic<UnitConversionUtility> mockedStatic = Mockito.mockStatic(UnitConversionUtility.class)) {
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
-                            anyString(), any(BigDecimal.class), anyString(), anyString()))
-                    .thenThrow(new RunnerException("Conversion error"));
-
-            assertThatThrownBy(() -> commonUtils.calculateConsolUtilization(details))
-                    .isInstanceOf(RunnerException.class)
-                    .hasMessageContaining("Conversion error");
-        }
-    }
-
-    @Test
-    void testCalculateConsolUtilization_ExceptionWithNullMessage() {
-        ConsolidationDetails details = new ConsolidationDetails();
-        achievedQuantities = new AchievedQuantities();
-        allocations = new Allocations();
-
-        details.setAchievedQuantities(achievedQuantities);
-        details.setAllocations(allocations);
-
-        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
-                    .thenThrow(new RuntimeException());
-
-            try {
-                commonUtils.calculateConsolUtilization(details);
-            } catch (RunnerException e) {
-                assertThat(e.getMessage()).isEqualTo(DaoConstants.DAO_CALCULATION_ERROR);
-            }
-        }
-    }
-
-    private static @NotNull ConsolidationDetails getDetails() {
-        ConsolidationDetails details = new ConsolidationDetails();
-        AchievedQuantities achievedQuantities = new AchievedQuantities();
-        Allocations allocations = new Allocations();
-
-        achievedQuantities.setConsolidatedWeightUnit("KG");
-        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
-
-        allocations.setWeightUnit("KG");
-        allocations.setWeight(new BigDecimal("200"));
-
-        details.setAchievedQuantities(achievedQuantities);
-        details.setAllocations(allocations);
-        return details;
-    }
-
-    @Test
-    void testCalculateConsolUtilization_WeightUtilizationZero() throws RunnerException {
-        ConsolidationDetails details = new ConsolidationDetails();
-        achievedQuantities = new AchievedQuantities();
-        allocations = new Allocations();
-
-        achievedQuantities.setConsolidatedWeightUnit("KG");
-        achievedQuantities.setConsolidatedWeight(new BigDecimal("100"));
-        allocations.setWeightUnit("KG");
-        allocations.setWeight(BigDecimal.ZERO);
-
-        details.setAchievedQuantities(achievedQuantities);
-        details.setAllocations(allocations);
-
-        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
-                    .thenReturn(new BigDecimal("0"));
-
-            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
-
-            assertThat(result.getAchievedQuantities().getWeightUtilization()).isEqualTo("0");
-        }
-    }
-
-    @Test
-    void testCalculateConsolUtilization_VolumeUtilizationZero() throws RunnerException {
-        ConsolidationDetails details = new ConsolidationDetails();
-        achievedQuantities = new AchievedQuantities();
-        allocations = new Allocations();
-
-        achievedQuantities.setConsolidatedVolumeUnit("M3");
-        achievedQuantities.setConsolidatedVolume(new BigDecimal("0"));
-        allocations.setVolumeUnit("M3");
-        allocations.setVolume(BigDecimal.ZERO);
-
-        details.setAchievedQuantities(achievedQuantities);
-        details.setAllocations(allocations);
-
-        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
-            mockedStatic.when(() -> UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
-                    .thenReturn(new BigDecimal("0"));
-
-            ConsolidationDetails result = commonUtils.calculateConsolUtilization(details);
-
-            assertThat(result.getAchievedQuantities().getVolumeUtilization()).isEqualTo("0");
-        }
-    }
-
-    @Test
     void getToAndCCEmailIds() {
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(1);
@@ -936,70 +708,6 @@ class CommonUtilsTest {
                         .entities(new ArrayList<>(List.of(TenantDetailsByListResponse.TenantDetails.builder().tenantId(2).build()))).build());
         Map<Integer, Object> response = commonUtils.getTenantSettings(List.of(2));
         assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd1() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd2() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd3() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build(), true);
-        assertFalse(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd4() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd5() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build(), true);
-        assertFalse(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd6() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd7() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd8() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
-        assertTrue(response);
-    }
-
-    @Test
-    void testChangeShipmentDGStatusToReqd9() {
-        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
-        UserContext.getUser().getPermissions().put(OCEAN_DG_COMMERCIAL_APPROVER, true);
-        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
-        assertFalse(response);
     }
 
     @Test
@@ -1216,17 +924,6 @@ class CommonUtilsTest {
         when(iv1Service.getUserEmailsByRoleId(any())).thenReturn(userEmailResponse);
 
         List<String>  response = commonUtils.getUserEmailsByRoleId(1);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCreateTask_Success() throws RunnerException {
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setId(1l);
-        TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
-        when( iv1Service.createTask(any())).thenReturn(taskCreateResponse);
-
-        TaskCreateResponse response = commonUtils.createTask(shipmentDetails, 1);
         assertNotNull(response);
     }
 

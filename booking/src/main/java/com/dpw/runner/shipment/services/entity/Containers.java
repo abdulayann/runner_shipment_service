@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
@@ -291,13 +290,6 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
     private List<Packing> packsList;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "shipments_containers_mapping",
-            joinColumns = @JoinColumn(name = "container_id"),
-            inverseJoinColumns = @JoinColumn(name = "shipment_id"))
-    @JsonIgnoreProperties(value = "containersList", allowSetters = true)
-    private List<ShipmentDetails> shipmentsList;
-
     @ManyToMany(fetch = FetchType.LAZY,
             mappedBy = "containersList")
     @JsonIgnore
@@ -325,10 +317,6 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "is_attached")
     private Boolean isAttached;
-
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "container_id")
-    private List<TruckDriverDetails> truckingDetails;
 
     @Column(name = "invoice_number")
     private String invoiceNumber;
