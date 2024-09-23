@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.UUID;
 
-public abstract class ShipmentMixIn {
+public abstract class BookingMixIn {
     @JsonIgnore
     abstract Long getId();
 

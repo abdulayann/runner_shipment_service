@@ -5,9 +5,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IShipmentServiceAdap
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -20,9 +18,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -51,14 +46,11 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
+            // TODO: bookingseparation: Request and response date format check
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getCreateShipmentInV2Url();
-
             log.info("Calling shipment service for booking number: {}", customerBookingRequest.getBookingNumber());
-
             HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(customerBookingRequest, V1AuthHelper.getHeaders());
-
             ResponseEntity<MyResponseClass> response = restTemplate.postForEntity(url, entity, MyResponseClass.class);
-
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             log.error("Error occurred while creating shipment: {}", e.getMessage());
@@ -70,13 +62,9 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     public ResponseEntity<IRunnerResponse> getShipmentIdbyGuid(String guid) throws RunnerException {
         try {
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetByGuidUrl() + "?guid=" + guid;
-
-            log.info("Calling shipment service for booking number: {}", guid);
-
+            log.info("Calling shipment service for guid: {}", guid);
             HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
-
             ResponseEntity<MyResponseClass> response = restTemplate.exchange(url, HttpMethod.GET, entity, MyResponseClass.class);
-
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             log.error("Error occurred while getting shipment: {}", e.getMessage());

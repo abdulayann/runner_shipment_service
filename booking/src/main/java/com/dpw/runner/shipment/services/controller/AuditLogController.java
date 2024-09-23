@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -38,14 +37,14 @@ public class AuditLogController {
     private class MyListResponseClass extends RunnerListResponse<AllocationsResponse>{}
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL,
-            response = MyListResponseClass.class, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
+            response = MyListResponseClass.class, responseContainer = AuditLogConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping("/list")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL, responseContainer = AuditLogConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(value = "/download-excel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<Resource> downloadExcel(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         Resource resource = auditLogService.downloadExcel(CommonRequestModel.buildRequest(listCommonRequest));
