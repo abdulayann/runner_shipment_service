@@ -1876,6 +1876,9 @@ public abstract class IReport {
 
     public static List<String> getFormattedDetails(String name, String address)
     {
+        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
+            return null;
+        }
         List<String> details = new ArrayList<>();
         details.add(name);
         if(StringUtility.isNotEmpty(address)) {
