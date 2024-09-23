@@ -1136,7 +1136,11 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
         shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
         shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
-        shipmentRequest.setChargable(autoUpdateWtVolResponse.getChargable());
+        shipmentRequest.setChargable(
+                autoUpdateWtVolResponse.getChargable() != null
+                        ? autoUpdateWtVolResponse.getChargable().setScale(10, RoundingMode.HALF_UP).stripTrailingZeros()
+                        : null
+        );
         shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
         shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
         shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
