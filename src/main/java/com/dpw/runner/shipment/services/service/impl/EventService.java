@@ -464,6 +464,9 @@ public class EventService implements IEventService {
             allEventResponses = jsonHelper.convertValueToList(consolEventsPage.getContent(), EventsResponse.class);
         }
 
+        // set MasterData
+        setEventCodesMasterData(allEventResponses);
+
         return ResponseHelper.buildSuccessResponse(allEventResponses);
     }
 
@@ -577,6 +580,44 @@ public class EventService implements IEventService {
 
             // Return an empty map if an error occurs
             return Collections.emptyMap();
+        }
+    }
+
+    private void setEventCodesMasterData(List<EventsResponse> eventsResponseList) {
+        try {
+            // Define criteria for fetching location role master data
+            List<String> eventCodes = eventsResponseList.stream().map(EventsResponse::getEventCode).toList();
+            List<Object> subCriteria1 = Arrays.asList(
+                    List.of(MasterDataConstants.ITEM_TYPE),
+                    "=",
+                    MasterDataType.ORDER_EVENTS.getId()
+            );
+            List<Object> subCriteria2 = Arrays.asList(
+                    List.of(MasterDataConstants.ITEM_VALUE),
+                    "IN",
+                    List.of(eventCodes)
+            );
+            var eventCodeMasterDataCriteria = List.of(subCriteria1, "and", subCriteria2);
+
+            // Fetch location role data using the defined criteria
+            V1DataResponse masterDataV1Response = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                    .criteriaRequests(eventCodeMasterDataCriteria).build());
+
+            // Convert the response entities to a list of EntityTransferMasterLists
+
+            List<EntityTransferMasterLists> entityTransferMasterLists =
+                    jsonHelper.convertValueToList(masterDataV1Response.entities, EntityTransferMasterLists.class);
+
+            // Convert the list to a map with identifier2 as the key
+            var eventCodeMap =  entityTransferMasterLists.stream().collect(Collectors.toMap(
+                    EntityTransferMasterLists::getItemValue,
+                    Function.identity(),
+                    (existing, replacement) -> existing // Handle duplicate keys by keeping the existing entry
+            ));
+            eventsResponseList.forEach(i -> i.setDescription(eventCodeMap.get(i.getEventCode()).getItemDescription()));
+        } catch (Exception e) {
+            // Log the error message for debugging purposes
+            log.error("Error fetching or processing event codes master data: {}", e.getMessage(), e);
         }
     }
 
