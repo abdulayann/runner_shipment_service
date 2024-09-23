@@ -329,6 +329,7 @@ public class Constants {
     public static final String CREATED_BY = "createdBy";
     public static final String UPDATED_AT = "updatedAt";
     public static final String TRANSPORT_MODE = "transportMode";
+    public static final String LAT_DATE = "latDate";
     public static final String YYYY_MM_DD_T_HH_MM_SS = "yyyy-MM-dd'T'HH:mm:ss";
     public static final String CONTAINER_ID = "containerId";
     public static final String CARRIER_DETAILS = "carrierDetails";
