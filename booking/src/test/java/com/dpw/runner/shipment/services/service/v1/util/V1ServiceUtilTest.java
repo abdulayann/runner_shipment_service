@@ -1,39 +1,37 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.*;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.*;
-
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.BeforeAll;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {V1ServiceUtil.class})
 @ExtendWith(SpringExtension.class)
@@ -61,7 +59,7 @@ class V1ServiceUtilTest {
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         completeCustomerBooking = jsonTestUtility.getCompleteCustomerBooking();
-        party = jsonTestUtility.getCompleteShipment().getClient();
+        party = jsonTestUtility.getParty();
     }
     /**
      * Method under test:
@@ -266,197 +264,6 @@ class V1ServiceUtilTest {
 
         // Assert
         assertTrue(actualValidateCreditLimitResult.getIsValid());
-    }
-
-
-    /**
-     * Method under test:
-     * {@link V1ServiceUtil#fetchEmailIdsForShipment(ShipmentDetails)}
-     */
-    @Test
-    void testFetchEmailIdsForShipment() {
-
-
-        ShipmentDetails shipmentDetail = new ShipmentDetails();
-        shipmentDetail.setConsignee(party);
-        shipmentDetail.setConsigner(party);
-        shipmentDetail.setClient(party);
-
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn( OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build());
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForShipment(shipmentDetail);
-
-        // Assert
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForShipment2() {
-
-
-        ShipmentDetails shipmentDetail = new ShipmentDetails();
-        shipmentDetail.setConsignee(party);
-        shipmentDetail.setConsigner(party);
-        shipmentDetail.setClient(party);
-        shipmentDetail.setDirection(Constants.IMP);
-
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn( OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build());
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForShipment(shipmentDetail);
-
-        // Assert
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    /**
-     * Method under test:
-     * {@link V1ServiceUtil#fetchEmailIdsForConsolidation(ConsolidationDetails)}
-//     */
-    @Test
-    void testFetchEmailIdsForConsolidation() {
-
-        // Arrange
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(party);
-        consolidationDetail.setSendingAgent(party);
-        consolidationDetail.setShipmentType(Constants.DIRECTION_IMP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForConsolidation2() {
-
-        // Arrange
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(party);
-        consolidationDetail.setShipmentType(Constants.DIRECTION_EXP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForConsolidation3() {
-
-        // Arrange
-        var inputParty = party;
-        inputParty.setOrgCode(null);
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(inputParty);
-        consolidationDetail.setShipmentType(Constants.IMP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForConsolidation4() {
-
-        // Arrange
-        var inputParty = party;
-        inputParty.setAddressCode(null);
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(inputParty);
-        consolidationDetail.setShipmentType(Constants.DIRECTION_EXP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForConsolidation5() {
-
-        // Arrange
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(party);
-        consolidationDetail.setSendingAgent(party);
-        consolidationDetail.setShipmentType(Constants.DIRECTION_EXP);
-        var mockV1Response = OrgAddressResponse.builder().addresses(new HashMap<>()).organizations(new HashMap<>()).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testFetchEmailIdsForConsolidation7() {
-
-        // Arrange
-        ConsolidationDetails consolidationDetail = new ConsolidationDetails();
-        consolidationDetail.setReceivingAgent(party);
-        consolidationDetail.setSendingAgent(party);
-        consolidationDetail.setShipmentType(Constants.DIRECTION_EXP);
-        var orgMap = new HashMap<String,  Map<String, Object>>();
-        orgMap.put(party.getOrgCode(), party.getOrgData());
-        orgMap.get(party.getOrgCode()).remove(PartiesConstants.EMAIL);
-        var addressMap = new HashMap<String, Map<String, Object>>();
-        addressMap.put(party.getOrgCode() + "#" + party.getAddressCode(), party.getAddressData());
-        addressMap.get(party.getOrgCode() + "#" + party.getAddressCode()).remove(PartiesConstants.EMAIL);
-        var mockV1Response = OrgAddressResponse.builder().addresses(addressMap).organizations(orgMap).build();
-        //Mock
-        when(iV1Service.fetchOrgAddresses(any())).thenReturn(mockV1Response);
-        // Act
-        var responseEntity = v1ServiceUtil.fetchEmailIdsForConsolidation(consolidationDetail);
-
-        assertNotNull(responseEntity.getBody());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test

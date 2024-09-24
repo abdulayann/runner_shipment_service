@@ -73,6 +73,10 @@ public class JsonTestUtility {
         return convertValueToList(payload.get("PACKINGS_LIST"), Packing.class);
     }
 
+    public Parties getParty() {
+        return objectMapper.convertValue(payload.get("CLIENT"), Parties.class);
+    }
+
     public Packing getTestPacking(){
         return objectMapper.convertValue(payload.get("PACKING") , Packing.class);
     }

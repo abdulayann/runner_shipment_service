@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -32,96 +30,6 @@ class NPMControllerTest {
     private JsonHelper jsonHelper;
     @InjectMocks
     private NPMController npmController;
-
-    @Test
-    void fetchContractFromShipment() throws RunnerException {
-        // Mock
-        when(npmService.fetchContractFromShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = npmController.fetchContractFromShipment(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContractFromShipment2() throws RunnerException {
-        // Mock
-        when(npmService.fetchContractFromShipment(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = npmController.fetchContractFromShipment(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContractFromShipment3() throws RunnerException {
-        // Mock
-        when(npmService.fetchContractFromShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = npmController.fetchContractFromShipment(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContracts() throws RunnerException {
-        // Mock
-        when(npmService.fetchContracts(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContracts2() throws RunnerException {
-        // Mock
-        when(npmService.fetchContracts(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContracts3() throws RunnerException {
-        // Mock
-        when(npmService.fetchContracts(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = npmController.fetchContracts(ListContractsWithFilterRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContract() throws RunnerException {
-        // Mock
-        when(npmService.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = npmController.fetchContract(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContract2() throws RunnerException {
-        // Mock
-        when(npmService.fetchContract(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = npmController.fetchContract(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchContract3() throws RunnerException {
-        // Mock
-        when(npmService.fetchContract(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = npmController.fetchContract(ListContractRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
 
     @Test
     void getNPMOffers() throws RunnerException {
