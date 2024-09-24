@@ -71,6 +71,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> generateCustomHouseBLNumber() throws RunnerException;
     ResponseEntity<IRunnerResponse> validateMawbNumber(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel);
+    ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel);
     ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationDetailsRequest request);
     ResponseEntity<IRunnerResponse> updateConsoleBookingFields(CommonRequestModel commonRequestModel);
 
