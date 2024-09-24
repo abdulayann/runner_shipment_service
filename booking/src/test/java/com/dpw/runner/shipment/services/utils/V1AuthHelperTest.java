@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,23 +40,5 @@ class V1AuthHelperTest {
         HttpHeaders headers = V1AuthHelper.getHeaders();
         assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
         assertEquals("test-auth-token", headers.getFirst("Authorization"));
-    }
-
-    @Test
-    void testGetHeadersForDataSync() {
-        HttpHeaders headers = v1AuthHelper.getHeadersForDataSync();
-        assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
-        assertEquals(null, headers.getFirst(ApiConstants.X_API_KEY));
-        assertEquals("test-user", headers.getFirst("X-USER-NAME"));
-        assertEquals("123", headers.getFirst("X-TENANT-ID"));
-    }
-
-    @Test
-    void testGetHeadersForDataSyncFromKafka() {
-        HttpHeaders headers = v1AuthHelper.getHeadersForDataSyncFromKafka("kafka-user", 456, null);
-        assertEquals(MediaType.APPLICATION_JSON, headers.getContentType());
-        assertEquals(null, headers.getFirst(ApiConstants.X_API_KEY));
-        assertEquals("kafka-user", headers.getFirst("X-USER-NAME"));
-        assertEquals("456", headers.getFirst("X-TENANT-ID"));
     }
 }

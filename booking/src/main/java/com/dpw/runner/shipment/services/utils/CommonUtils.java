@@ -2,72 +2,35 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.validator.enums.Operators;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
 import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
-import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
-import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.TransactionSystemException;
 
-import javax.imageio.ImageIO;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 
 @Component
 @Slf4j
@@ -110,15 +73,6 @@ public class CommonUtils {
     public static FilterCriteria constructCriteria(String fieldName, Object value, String operator, String logicalOperator) {
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         return FilterCriteria.builder().criteria(criteria).logicOperator(logicalOperator).build();
-    }
-
-    public static BufferedImage generateEAN13BarcodeImage(String barcodeText, int resolution) {
-        EAN13Bean barcodeGenerator = new EAN13Bean();
-        BitmapCanvasProvider canvas =
-                new BitmapCanvasProvider(resolution, BufferedImage.TYPE_BYTE_BINARY, false, 0);
-
-        barcodeGenerator.generateBarcode(canvas, barcodeText);
-        return canvas.getBufferedImage();
     }
 
     public static byte[] generateBarcodeImage(String barcodeText) throws BarcodeException, OutputException {
@@ -262,125 +216,6 @@ public class CommonUtils {
         return jsonHelper.convertCreateValue(obj, clazz);
     }
 
-    public static byte[] ImageToByte(BufferedImage img) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(img, "jpg", baos);
-        byte[] data = baos.toByteArray();
-        baos.reset();
-        return data;
-    }
-
-    public static boolean HasUnsupportedCharacters(String input) {
-        int minSupportedAscii = 32;
-        int maxSupportedAscii = 126;
-        for (char c : input.toCharArray()) {
-            if ((int) c < minSupportedAscii || (int) c > maxSupportedAscii) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
-        ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = null;
-        PdfCopy copy = null;
-        doc = new Document();
-        copy = new PdfSmartCopy(doc, ms);
-        doc.open();
-
-        for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = null;
-            reader = new PdfReader(dataByte);
-            copy.addDocument(reader);
-            reader.close();
-        }
-        doc.close();
-        copy.close();
-        byte[] data = ms.toByteArray();
-        ms.reset();
-        return data;
-    }
-
-    public static byte[] removeLastPage(byte[] bytes) throws IOException, DocumentException {
-        PdfReader r = new PdfReader(bytes);
-        ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfWriter w = PdfWriter.getInstance(doc, ms);
-        doc.open();
-        var pagesToKeep = r.getNumberOfPages();
-        for(int page=1; page<pagesToKeep; page++){
-            doc.newPage();
-            w.getDirectContent().addTemplate(w.getImportedPage(r, page), 0, 0);
-        }
-        w.close();
-        r.close();
-        doc.close();
-        byte[] data = ms.toByteArray();
-        ms.reset();
-        return data;
-    }
-
-    public static byte[] getLastPage(byte[] bytes) throws IOException, DocumentException {
-        PdfReader r = new PdfReader(bytes);
-        ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfWriter w = PdfWriter.getInstance(doc, ms);
-        doc.open();
-        doc.newPage();
-        w.getDirectContent().addTemplate(w.getImportedPage(r, r.getNumberOfPages()), 0, 0);
-        w.close();
-        r.close();
-        doc.close();
-        byte[] data = ms.toByteArray();
-        ms.reset();
-        return data;
-    }
-
-    public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect)
-    {
-        var gstate = new PdfGState();
-        gstate.setFillOpacity(0.2f);
-        gstate.setStrokeOpacity(0.3f);
-        dc.saveState();
-        dc.setGState(gstate);
-        dc.setColorFill(color);
-        dc.beginText();
-        dc.setFontAndSize(font, fontSize);
-        var ps = rect == null ? realPageSize : rect; /*dc.PdfDocument.PageSize is not always correct*/
-        var x = (ps.getRight() + ps.getLeft()) / 2;
-        var y = (ps.getBottom() + ps.getTop()) / 2;
-        dc.showTextAligned(Element.ALIGN_CENTER, text, x, y, angle);
-        dc.endText();
-        dc.restoreState();
-    }
-
-    public static byte[] addWatermarkToPdfBytes(byte[] bytes, BaseFont bf, String watermark) throws IOException, DocumentException {
-        ByteArrayOutputStream ms = new ByteArrayOutputStream(10 * 1024);
-        PdfReader reader = new PdfReader(bytes);
-        PdfStamper stamper = new PdfStamper(reader, ms);
-        int times = reader.getNumberOfPages();
-        for (int i = 1; i <= times; i++)
-        {
-            var dc = stamper.getOverContent(i);
-            AddWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
-        }
-        stamper.close();
-        reader.close();
-        byte[] data = ms.toByteArray();
-        ms.reset();
-        return data;
-    }
-
-    public static ByteArrayResource getByteResource(InputStream inputStream, String fileName) throws IOException {
-        return new ByteArrayResource(inputStream.readAllBytes()) {
-            @Override
-            public String getFilename() {
-                return fileName;
-            }
-        };
-    }
-
     public static double roundOffToTwoDecimalPlace(double number) {
         DecimalFormat decimalFormat = new DecimalFormat("#.##");
         return Double.parseDouble(decimalFormat.format(number));
@@ -404,57 +239,6 @@ public class CommonUtils {
         if(IsStringNullOrEmpty(s))
             return null;
         return Integer.parseInt(s);
-    }
-
-    public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
-        String responseMessage = "";
-    responseMessage =
-        switch (e.getClass().getSimpleName()) {
-          case "TransactionSystemException" -> Objects.requireNonNull(
-                  ((TransactionSystemException) e).getRootCause())
-              .getMessage();
-          default -> e.getMessage();
-        };
-        return responseMessage;
-    }
-
-    public static String getConstrainViolationErrorMessage(Exception e) {
-        String errorMessage = "";
-        Set<ConstraintViolation<?>> set = ((ConstraintViolationException) e).getConstraintViolations();
-        List<String> errors = set.stream().map(i -> String.format("%s : %s",i.getInvalidValue(), i.getMessage())).toList();
-        errorMessage = errors.toString();
-        return errorMessage;
-    }
-
-    public static String inWords(Long num) {
-        String[] a = {"", "One ", "Two ", "Three ", "Four ", "Five ", "Six ", "Seven ", "Eight ", "Nine ", "Ten ",
-                "Eleven ", "Twelve ", "Thirteen ", "Fourteen ", "Fifteen ", "Sixteen ", "Seventeen ", "Eighteen ",
-                "Nineteen "};
-        String[] b = {"", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"};
-
-        if (num > 999999999) {
-            return "overflow";
-        }
-
-        String numStr = String.format("%09d", num);
-        int[] n = {
-                Integer.parseInt(numStr.substring(0, 2)), // Crore
-                Integer.parseInt(numStr.substring(2, 4)), // Lakh
-                Integer.parseInt(numStr.substring(4, 6)), // Thousand
-                Integer.parseInt(numStr.substring(6, 7)), // Hundred
-                Integer.parseInt(numStr.substring(7, 9))  // Tens and Ones
-        };
-
-        StringBuilder str = new StringBuilder();
-
-        str.append((n[0] != 0) ? getTwoDigitWordConversion(a, b, n, 0) + "Crore " : "");
-        str.append((n[1] != 0) ? getTwoDigitWordConversion(a, b, n, 1) + "Lakh " : "");
-        str.append((n[2] != 0) ? getTwoDigitWordConversion(a, b, n, 2) + "Thousand " : "");
-        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
-        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
-                getTwoDigitWordConversion(a, b, n, 4) + " " : "");
-
-        return str.toString().trim();
     }
 
     private static String getTwoDigitWordConversion(String[] a, String[] b, int[] n, int unitPlaceFromLeft) {
@@ -483,265 +267,6 @@ public class CommonUtils {
 
     public InterBranchDto getInterBranchContext() {
         return InterBranchContext.getContext();
-    }
-
-    public void removeInterBranchContext() {
-        InterBranchContext.removeContext();
-    }
-
-    public void setInterBranchContextForHub() {
-        /**
-         * Check current branch should be enabled both
-         * Set isHub = true && coloadStationsTenantIds (TenantSettings + Current)
-         */
-        var tenantSettings = getCurrentTenantSettings();
-        var interBranchDto = InterBranchDto.builder().build();
-
-        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
-                && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
-                && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            interBranchDto.setColoadStationsTenantIds(tenantSettings.getColoadingBranchIds());
-            interBranchDto.setHub(true);
-        }
-
-        InterBranchContext.setContext(interBranchDto);
-    }
-
-    public void setInterBranchContextForColoadStation() {
-        /**
-         * Check current branch should be enabled both IsMAWBColoadingEnabled
-         * Set isCoLoadStation = true && hubTenantIds (TenantSettings + Current)
-         */
-        var tenantSettings = getCurrentTenantSettings();
-        var interBranchDto = InterBranchDto.builder().hubTenantIds(Arrays.asList()).build();
-
-        if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
-            && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            interBranchDto.setHubTenantIds(fetchColoadingDetails().stream().map(CoLoadingMAWBDetailsResponse::getParentTenantId).toList());
-            interBranchDto.setCoLoadStation(true);
-        }
-
-        InterBranchContext.setContext(interBranchDto);
-    }
-
-    public List<CoLoadingMAWBDetailsResponse> fetchColoadingDetails() {
-        List<Object> criteria = new ArrayList<>(List.of(List.of("ChildTenantId"), "=", TenantContext.getCurrentTenant()));
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(100).criteriaRequests(criteria).build();
-        var v1Response = iv1Service.getCoLoadingStations(commonV1ListRequest);
-        return jsonHelper.convertValueToList(v1Response.entities, CoLoadingMAWBDetailsResponse.class);
-    }
-
-    public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
-        if(v1TenantSettingsMap.containsKey(tenantId)) {
-            if(isShipment) {
-                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId()))
-                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
-                        .filter(s -> !s.isEmpty()).toList());
-                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId()))
-                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
-                        .filter(s -> !s.isEmpty()).toList());
-            } else {
-                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId()))
-                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
-                        .filter(s -> !s.isEmpty()).toList());
-                if(!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId()))
-                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
-                        .filter(s -> !s.isEmpty()).toList());
-            }
-        }
-    }
-
-    public void getUnLocationsData(List<String> unLocGuids, Map<String, UnlocationsResponse> map) {
-        if(unLocGuids == null || unLocGuids.isEmpty())
-            return;
-        Map<String, UnlocationsResponse> tempMap = masterDataUtils.getLocationData(new HashSet<>(unLocGuids));
-        map.putAll(tempMap);
-    }
-
-    public void getCarriersData(List<String> carrierCodes, Map<String, CarrierMasterData> map) {
-        if(carrierCodes == null || carrierCodes.isEmpty())
-            return;
-        Map<String, CarrierMasterData> tempMap = masterDataUtils.getCarriersData(new HashSet<>(carrierCodes));
-        map.putAll(tempMap);
-    }
-
-    public String getShipmentIdHyperLink(String shipmentId, Long id) {
-        String link = baseUrl + "/v2/shipments/edit/" + id;
-        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
-    }
-
-    public String getTaskIdHyperLink(String shipmentId, String taskId) {
-        String link = baseUrl + "/v2/shipments/tasks/" + taskId;
-        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
-    }
-
-    public String getConsolidationIdHyperLink(String consolidationId, Long id) {
-        String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
-        return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
-    }
-
-    public String replaceTagsFromData(Map<String, Object> map, String val) {
-        for (Map.Entry<String, Object> entry : map.entrySet()) {
-            if(!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
-                val = val.replace("{" + entry.getKey() + "}", entry.getValue().toString());
-        }
-        val = val.replaceAll("\\{.*?\\}", "");
-        return val;
-    }
-
-    public void getToAndCCEmailIdsFromTenantSettings(Set<Integer> tenantIds, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap) {
-        Map<Integer, Object> map = getTenantSettings(new ArrayList<>(tenantIds));
-        map.forEach((key, value) -> tenantSettingsMap.put(key, modelMapper.map(value, V1TenantSettingsResponse.class)));
-    }
-
-    public Map<Integer, Object> getTenantSettings(List<Integer> tenantIds) {
-        if (tenantIds.isEmpty())
-            return new HashMap<>();
-
-        try {
-            var v1Response = iv1Service.getTenantDetails(TenantDetailsByListRequest.builder().tenantIds(tenantIds).take(100).build());
-            return v1Response.getEntities()
-                    .stream()
-                    .collect(Collectors.groupingBy(
-                            TenantDetailsByListResponse.TenantDetails::getTenantId,
-                            Collectors.collectingAndThen(
-                                    Collectors.toList(),
-                                    list -> list.get(0).getTenantSettings()
-                            )));
-        }
-        catch (Exception ex) {
-            log.error(ex.getMessage());
-            return new HashMap<>();
-        }
-    }
-
-    public void getUserDetails(Set<String> usernamesList, Map<String, String> usernameEmailsMap) {
-        usernamesList.remove(null);
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of("Username"));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(usernamesList)));
-        request.setCriteriaRequests(criteria);
-        request.setTake(usernamesList.size());
-        V1DataResponse v1DataResponse = iv1Service.getUserDetails(request);
-        List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
-        usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
-    }
-
-    public boolean checkIfDGClass1(String dgClass) {
-        return !IsStringNullOrEmpty(dgClass) && dgClass.charAt(0) == '1';
-    }
-
-    public boolean checkIfAnyDGClass(String dgClass) throws RunnerException {
-        if(!IsStringNullOrEmpty(dgClass)) {
-            if(dgClass.charAt(0) == '7')
-                throw new RunnerException("As per the DG SOP, you are not allowed to deal in Class 7 DG shipments");
-            return true;
-        }
-        return false;
-    }
-
-    public boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
-        if(!oldPack.getHazardous().equals(newPack.getHazardous()))
-            return true;
-        if(!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
-            return true;
-        if(!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
-            return true;
-        if(!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
-            return true;
-        if(!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
-            return true;
-        if(!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
-            return true;
-        if(!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
-            return true;
-        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
-    }
-
-    public boolean compareBigDecimals(BigDecimal bd1, BigDecimal bd2) {
-        // Check if both are null, they are considered equal
-        if (Objects.equals(bd1, bd2)) {
-            return true;
-        }
-        // If one is null and the other is not, they are not equal
-        if (bd1 == null || bd2 == null) {
-            return false;
-        }
-        // Use compareTo to ignore scale differences (0.00 vs 0.0)
-        return bd1.compareTo(bd2) == 0;
-    }
-
-    public boolean checkIfDGFieldsChangedInContainer(ContainerRequest newContainer, Containers oldContainer) {
-        if(!oldContainer.getHazardous().equals(newContainer.getHazardous()))
-            return true;
-        if(!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
-            return true;
-        if(!Objects.equals(newContainer.getUnNumber(), oldContainer.getUnNumber()))
-            return true;
-        if(!Objects.equals(newContainer.getProperShippingName(), oldContainer.getProperShippingName()))
-            return true;
-        if(!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
-            return true;
-        if(!compareBigDecimals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
-            return true;
-        if(!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
-            return true;
-        return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
-    }
-
-    public DateTimeFormatter getDPWDateFormatOrDefault()
-    {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
-            return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
-        return DateTimeFormatter.ofPattern("MM/dd/yyyy");
-    }
-
-    public Integer getRoleId(OceanDGStatus oceanDGStatus){
-        String roleName = oceanDGStatus == OCEAN_DG_REQUESTED ? OCEAN_DG_ROLE : COMMERCIAL_OCEAN_DG_ROLE;
-        return getRoleIDByRoleName(roleName, UserContext.getUser().getTenantId());
-    }
-
-    private Integer getRoleIDByRoleName(String roleName, Integer tenantId){
-        V1RoleIdRequest v1RoleIdRequest = V1RoleIdRequest
-            .builder()
-            .roleName(roleName)
-            .tenantId(tenantId)
-            .build();
-        return iv1Service.getRoleIdsByRoleName(v1RoleIdRequest);
-    }
-
-    public List<String> getUserEmailsByRoleId(Integer roleId) {
-        V1UsersEmailRequest request = new V1UsersEmailRequest();
-        request.setRoleId(roleId);
-        request.setTake(10);
-        List<String> userEmailIds = new ArrayList<>();
-        List<UsersRoleListResponse> userEmailResponse = iv1Service.getUserEmailsByRoleId(request);
-        userEmailResponse.forEach(e -> userEmailIds.add(e.getEmail()));
-
-        return userEmailIds;
-    }
-
-    public void getVesselsData(CarrierDetails carrierDetails, VesselsResponse vesselsResponse) {
-        if(carrierDetails == null) return;
-        String guid = carrierDetails.getVessel();
-        if (IsStringNullOrEmpty(guid)) {
-            return ;
-        }
-        List<Object> vesselCriteria = Arrays.asList(
-            List.of(Constants.VESSEL_GUID_V1),
-            "=",
-            guid
-        );
-        CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
-        V1DataResponse v1DataResponse = iv1Service.fetchVesselData(vesselRequest);
-        List<VesselsResponse> vesselsResponseList = jsonHelper.convertValueToList(v1DataResponse.entities, VesselsResponse.class);
-
-        if(vesselsResponseList != null && !vesselsResponseList.isEmpty()) {
-            vesselsResponse.setName(vesselsResponseList.get(0).getName());
-        }
-
     }
 
 }

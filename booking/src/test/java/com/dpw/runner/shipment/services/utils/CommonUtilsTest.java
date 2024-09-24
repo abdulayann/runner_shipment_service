@@ -4,63 +4,42 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.*;
-import com.itextpdf.text.exceptions.InvalidPdfException;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Rectangle;
 import com.itextpdf.text.pdf.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.transaction.TransactionSystemException;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -152,15 +131,6 @@ class CommonUtilsTest {
         assertNotNull(filterCriteria);
         assertNotNull(filterCriteria.getCriteria());
         assertNotNull(filterCriteria.getLogicOperator());
-    }
-
-    @Test
-    void generateEAN13BarcodeImage_ValidBarcode_ReturnsBufferedImage() {
-        String barcodeText = "123456789012";
-
-        BufferedImage barcodeImage = CommonUtils.generateEAN13BarcodeImage(barcodeText, 200);
-
-        assertNotNull(barcodeImage);
     }
 
     @Test
@@ -279,33 +249,6 @@ class CommonUtilsTest {
         assertEquals(2, filterCriteria.getInnerFilter().size());
     }
 
-
-    @Test
-    void getConstrainViolationErrorMessage_ValidInput_ReturnsErrorMessage() {
-        ConstraintViolation<?> constraintViolation = mock(ConstraintViolation.class);
-        when(constraintViolation.getInvalidValue()).thenReturn("invalid value");
-        when(constraintViolation.getMessage()).thenReturn("error message");
-
-        Set<ConstraintViolation<?>> set = new HashSet<>();
-        set.add(constraintViolation);
-
-        Exception e = new ConstraintViolationException("constraint violation", set);
-
-        String errorMessage = CommonUtils.getConstrainViolationErrorMessage(e);
-
-        assertEquals("[invalid value : error message]", errorMessage);
-    }
-
-
-    @Test
-    void inWords_ValidInput_ReturnsOverflow() {
-        Long num = 9999999999L;
-
-        String words = CommonUtils.inWords(num);
-
-        assertEquals("overflow", words);
-    }
-
     @Test
     void emptyIfNull_NullIterable_ReturnsEmptyList() {
         Iterable<Integer> iterable = null;
@@ -322,22 +265,6 @@ class CommonUtilsTest {
         assertEquals(list, result);
     }
 
-
-    @Test
-    void testAddWaterMark() {
-        CommonUtils.AddWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
-
-        InOrder inOrder = inOrder(dc);
-        inOrder.verify(dc).saveState();
-        inOrder.verify(dc).setGState(any(PdfGState.class));
-        inOrder.verify(dc).setColorFill(new BaseColor(70, 70, 255));
-        inOrder.verify(dc).beginText();
-        inOrder.verify(dc).setFontAndSize(font, 50);
-        inOrder.verify(dc).showTextAligned(Element.ALIGN_CENTER, "Test Watermark", 300f, 421f, 35);
-        inOrder.verify(dc).endText();
-        inOrder.verify(dc).restoreState();
-    }
-
     private byte[] createSamplePdf() throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
@@ -346,27 +273,6 @@ class CommonUtilsTest {
         document.add(new Paragraph("Sample PDF Content"));
         document.close();
         return baos.toByteArray();
-    }
-
-
-    @Test
-    void addWatermarkToPdfBytes_InvalidInput_ThrowsInvalidPdfException() throws DocumentException, IOException {
-        byte[] pdfBytes = new byte[1024]; // example byte array
-        BaseFont bf = BaseFont.createFont();
-        String watermark = "Watermark"; // example watermark text
-
-        assertThrows(InvalidPdfException.class, () -> CommonUtils.addWatermarkToPdfBytes(pdfBytes, bf, watermark));
-    }
-
-    @Test
-    void getByteResource_ValidInput_ReturnsByteArrayResource() throws IOException {
-        String fileName = "example.pdf";
-        InputStream inputStream = new ByteArrayInputStream(new byte[1024]); // example input stream
-
-        ByteArrayResource result = CommonUtils.getByteResource(inputStream, fileName);
-
-        assertNotNull(result);
-        assertEquals(fileName, result.getFilename());
     }
 
     @Test
@@ -431,71 +337,6 @@ class CommonUtilsTest {
         assertEquals(lst.size(), result.size());
     }
 
-    @Test
-    void testImageToByte() throws IOException {
-        BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        byte[] result = CommonUtils.ImageToByte(img);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void testHasUnsupportedCharacters() {
-        String input = "ValidString123";
-        boolean result = CommonUtils.HasUnsupportedCharacters(input);
-
-        assertFalse(result);
-
-        input = "InvalidString\u001F";
-        result = CommonUtils.HasUnsupportedCharacters(input);
-
-        assertTrue(result);
-    }
-
-    @Test
-    void testConcatAndAddContent() throws DocumentException, IOException {
-        List<byte[]> pdfByteContent = List.of(createSamplePdf(), createSamplePdf());
-        byte[] result = CommonUtils.concatAndAddContent(pdfByteContent);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void testRemoveLastPage() throws IOException, DocumentException {
-        byte[] pdfBytes = createSamplePdfWithMultiplePages();
-        byte[] result = CommonUtils.removeLastPage(pdfBytes);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void testGetLastPage() throws IOException, DocumentException {
-        byte[] pdfBytes = createSamplePdfWithMultiplePages();
-        byte[] result = CommonUtils.getLastPage(pdfBytes);
-
-        assertNotNull(result);
-    }
-
-    @Test
-    void testGetErrorResponseMessage_WithTransactionSystemException() {
-        Throwable rootCause = mock(Throwable.class);
-        when(rootCause.getMessage()).thenReturn("Root cause message");
-
-        TransactionSystemException transactionSystemException = new TransactionSystemException("Transaction failed");
-        transactionSystemException.initCause(rootCause);
-
-        String result = CommonUtils.getErrorResponseMessage(transactionSystemException, CommonUtilsTest.class);
-
-        assertEquals("Root cause message", result);
-    }
-
-    @Test
-    void testGetErrorResponseMessage_WithGenericException() {
-        Exception genericException = new Exception("Generic exception message");
-        String result = CommonUtils.getErrorResponseMessage(genericException, CommonUtilsTest.class);
-        assertEquals("Generic exception message", result);
-    }
-
     private byte[] createSamplePdfWithMultiplePages() throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
@@ -532,446 +373,5 @@ class CommonUtilsTest {
     void defaultTenantSettingsWithValue() {
         when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(V1TenantSettingsResponse.builder().build());
         assertNotNull(commonUtils.getCurrentTenantSettings());
-    }
-
-    @Test
-    void testSetInterBranchContextForHub_withBothFlagsEnabled() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getIsColoadingMAWBStationEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
-
-        assertNotNull(mockTenantSettingsResponse.getColoadingBranchIds());
-
-        InterBranchDto interBranchDto = new InterBranchDto();
-        interBranchDto.setColoadStationsTenantIds(tenantSettingsService.getV1TenantSettings(any()).getColoadingBranchIds());
-        interBranchDto.setHub(true);
-
-        commonUtils.setInterBranchContextForHub();
-        InterBranchDto interBranchContext = InterBranchContext.getContext();
-        assertNotNull(interBranchContext);
-        assertTrue(interBranchContext.isHub());
-        assertEquals(List.of(1,2), interBranchContext.getColoadStationsTenantIds());
-    }
-
-    @Test
-    void testSetInterBranchContextForHub_withMAWBColoadingDisabled() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(false);
-        assertTrue(mockTenantSettingsResponse.getColoadingBranchIds().isEmpty());
-
-        commonUtils.setInterBranchContextForHub();
-
-        InterBranchDto interBranchContext = InterBranchContext.getContext();
-        assertNotNull(interBranchContext);
-        assertFalse(interBranchContext.isHub());
-        assertNull(interBranchContext.getColoadStationsTenantIds());
-    }
-
-    @Test
-    void testSetInterBranchContextForHub_withColoadingMAWBStationDisabled() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getIsColoadingMAWBStationEnabled()).thenReturn(false);
-        assertTrue(mockTenantSettingsResponse.getColoadingBranchIds().isEmpty());
-
-        commonUtils.setInterBranchContextForHub();
-
-        InterBranchDto interBranchContext = InterBranchContext.getContext();
-        assertNotNull(interBranchContext);
-        assertFalse(interBranchContext.isHub());
-        assertNull(interBranchContext.getColoadStationsTenantIds());
-    }
-
-    @Test
-    void testSetInterBranchContextForColoadStation_withColoadingEnabled() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(List.of(1,2));
-
-        List<CoLoadingMAWBDetailsResponse> mockDetails = Arrays.asList(
-                new CoLoadingMAWBDetailsResponse(1L, 1, 1),
-                new CoLoadingMAWBDetailsResponse(2L, 2, 2)
-        );
-
-        V1DataResponse v1DataResponse = mock(V1DataResponse.class);
-        when(iv1Service.getCoLoadingStations(any())).thenReturn(v1DataResponse);
-        when(commonUtils.fetchColoadingDetails()).thenReturn(mockDetails);
-
-        commonUtils.setInterBranchContextForColoadStation();
-        InterBranchDto context = InterBranchContext.getContext();
-        assert context != null;
-        assertNotNull(context.getHubTenantIds());
-        assertTrue(context.isCoLoadStation());
-    }
-
-    @Test
-    void testSetInterBranchContextForColoadStation_withColoadingDisabled() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(false);
-
-        commonUtils.setInterBranchContextForColoadStation();
-        assertNotNull(InterBranchContext.getContext());
-    }
-
-    @Test
-    void testSetInterBranchContextForColoadStation_withNullColoadingBranchIds() {
-        V1TenantSettingsResponse mockTenantSettingsResponse = mock(V1TenantSettingsResponse.class);
-        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(mockTenantSettingsResponse);
-        when(mockTenantSettingsResponse.getIsMAWBColoadingEnabled()).thenReturn(true);
-        when(mockTenantSettingsResponse.getColoadingBranchIds()).thenReturn(null);
-
-        commonUtils.setInterBranchContextForColoadStation();
-        assertNotNull(InterBranchContext.getContext());
-    }
-
-    @Test
-    void getToAndCCEmailIds() {
-        Set<Integer> tenantIds = new HashSet<>();
-        tenantIds.add(1);
-        Map<Integer, V1TenantSettingsResponse> response = new HashMap<>();
-        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, response);
-        assertEquals(0, response.size());
-    }
-
-    @Test
-    void getUserDetails() {
-        Set<String> usernamesList = new HashSet<>();
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        List<UsersDto> usersDtos = new ArrayList<>();
-        usersDtos.add(UsersDto.builder().Username("username").Email("email").build());
-        when(iv1Service.getUserDetails(any())).thenReturn(V1DataResponse.builder().entities(usersDtos).build());
-        when(jsonHelper.convertValueToList(any(), eq(UsersDto.class))).thenReturn(usersDtos);
-        commonUtils.getUserDetails(usernamesList, usernameEmailsMap);
-        assertFalse(usernameEmailsMap.isEmpty());
-    }
-
-    @Test
-    void getUnLocationsData() {
-        Map<String, UnlocationsResponse> map = new HashMap<>();
-        commonUtils.getUnLocationsData(null, map);
-        assertTrue(map.isEmpty());
-    }
-
-    @Test
-    void getUnLocationsData_Empty() {
-        Map<String, UnlocationsResponse> map = new HashMap<>();
-        commonUtils.getUnLocationsData(new ArrayList<>(), map);
-        assertTrue(map.isEmpty());
-    }
-
-    @Test
-    void getUnLocationsData_Value() {
-        Map<String, UnlocationsResponse> map = new HashMap<>();
-        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>() {{ put("unloc", UnlocationsResponse.builder().build()); }});
-        commonUtils.getUnLocationsData(List.of("unloc"), map);
-        assertFalse(map.isEmpty());
-    }
-
-    @Test
-    void getCarriersData() {
-        Map<String, CarrierMasterData> map = new HashMap<>();
-        commonUtils.getCarriersData(null, map);
-        assertTrue(map.isEmpty());
-    }
-
-    @Test
-    void getCarriersData_Empty() {
-        Map<String, CarrierMasterData> map = new HashMap<>();
-        commonUtils.getCarriersData(new ArrayList<>(), map);
-        assertTrue(map.isEmpty());
-    }
-
-    @Test
-    void getCarriersData_Value() {
-        Map<String, CarrierMasterData> map = new HashMap<>();
-        when(masterDataUtils.getCarriersData(any())).thenReturn(new HashMap<>() {{ put("carrier", CarrierMasterData.builder().build()); }});
-        commonUtils.getCarriersData(List.of("carrier"), map);
-        assertFalse(map.isEmpty());
-    }
-
-    @Test
-    void testGetTenantSettings() {
-        Map<Integer, Object> response = commonUtils.getTenantSettings(new ArrayList<>());
-        assertTrue(response.isEmpty());
-    }
-
-    @Test
-    void testGetTenantSettings1() {
-        when(iv1Service.getTenantDetails(any()))
-                .thenReturn(TenantDetailsByListResponse.builder()
-                        .entities(new ArrayList<>(List.of(TenantDetailsByListResponse.TenantDetails.builder().tenantId(2).build()))).build());
-        Map<Integer, Object> response = commonUtils.getTenantSettings(List.of(2));
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void testCheckIfDGClass1() {
-        boolean response = commonUtils.checkIfDGClass1("1.1");
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGClass2() {
-        boolean response = commonUtils.checkIfDGClass1("2");
-        assertFalse(response);
-    }
-
-    @Test
-    void testCheckIfDGClass3() {
-        boolean response = commonUtils.checkIfDGClass1(null);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCheckIfAnyDGClass() throws RunnerException {
-        boolean response = commonUtils.checkIfAnyDGClass(null);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCheckIfAnyDGClass2() throws RunnerException {
-        boolean response = commonUtils.checkIfAnyDGClass("1.1");
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfAnyDGClass3() throws RunnerException {
-        assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking1() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setHazardous(true);
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking2() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setDGClass("2.1");
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking3() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setUnNumber("un");
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking4() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setProperShippingName("psp");
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking5() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setPackingGroup("pg");
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking6() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setMinimumFlashPointUnit("CEL");
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking7() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setMinimumFlashPoint(BigDecimal.ONE);
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInPacking8() {
-        Packing packing = new Packing();
-        PackingRequest packingRequest = new PackingRequest();
-        packingRequest.setMarinePollutant(true);
-        boolean response = commonUtils.checkIfDGFieldsChangedInPacking(packingRequest, packing);
-        assertTrue(response);
-    }
-
-    private Runnable mockRunnable() {
-        return () -> {};
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer1() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setHazardous(true);
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer2() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setDgClass("2.1");
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer3() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setUnNumber("un");
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer4() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setProperShippingName("psp");
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer5() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setPackingGroup("pg");
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer6() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setMinimumFlashPointUnit("CEL");
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer7() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setMinimumFlashPoint(BigDecimal.ONE);
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCheckIfDGFieldsChangedInContainer8() {
-        Containers containers = new Containers();
-        ContainerRequest containerRequest = new ContainerRequest();
-        containerRequest.setMarinePollutant(true);
-        boolean response = commonUtils.checkIfDGFieldsChangedInContainer(containerRequest, containers);
-        assertTrue(response);
-    }
-
-    @Test
-    void testGetRoleId(){
-        OceanDGStatus oceanDGStatus = OCEAN_DG_REQUESTED;
-        when(iv1Service.getRoleIdsByRoleName(any())).thenReturn(10);
-        Integer roleId =  commonUtils.getRoleId(oceanDGStatus);
-        assertEquals(10, roleId);
-    }
-
-    @Test
-    void testGetUserEmailsByRoleId(){
-        List<UsersRoleListResponse> userEmailResponse = new ArrayList<>();
-        userEmailResponse.add(UsersRoleListResponse.builder().email("abc").build());
-        when(iv1Service.getUserEmailsByRoleId(any())).thenReturn(userEmailResponse);
-
-        List<String>  response = commonUtils.getUserEmailsByRoleId(1);
-        assertNotNull(response);
-    }
-
-
-    @Test
-    void testGetVesselsData(){
-        CarrierDetails carrierDetails = CarrierDetails.builder().vessel("vess").build();
-        VesselsResponse vesselsResponse = new VesselsResponse();
-        vesselsResponse.setName("Name");
-
-        V1DataResponse vesselResponse = V1DataResponse.builder().build();
-        when(iv1Service.fetchVesselData(any())).thenReturn(vesselResponse);
-
-        List<VesselsResponse> vesselsResponseList = new ArrayList<>();
-        vesselsResponseList.add(vesselsResponse);
-        when(jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class)).thenReturn(vesselsResponseList);
-
-        commonUtils.getVesselsData(carrierDetails, vesselsResponse);
-        assertEquals("Name", vesselsResponse.getName());
-    }
-
-    @Test
-    void testCompareBigDecimals() {
-        boolean response = commonUtils.compareBigDecimals(null, null);
-        assertTrue(response);
-    }
-
-    @Test
-    void testCompareBigDecimals1() {
-        boolean response = commonUtils.compareBigDecimals(BigDecimal.TEN, null);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCompareBigDecimals2() {
-        boolean response = commonUtils.compareBigDecimals(null, BigDecimal.TEN);
-        assertFalse(response);
-    }
-
-    @Test
-    void testCompareBigDecimals3() {
-        boolean response = commonUtils.compareBigDecimals(BigDecimal.TEN, new BigDecimal("10.00"));
-        assertTrue(response);
-    }
-
-    @Test
-    void testCompareBigDecimals4() {
-        boolean response = commonUtils.compareBigDecimals(BigDecimal.ZERO, BigDecimal.TEN);
-        assertFalse(response);
     }
 }
