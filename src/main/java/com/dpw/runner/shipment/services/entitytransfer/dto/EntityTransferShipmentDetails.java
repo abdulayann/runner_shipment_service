@@ -109,8 +109,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String goodsValueCurrency;
     private BigDecimal insuranceValue;
     private String insuranceValueCurrency;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<EntityTransferParties> shipmentAddresses;
     private String flightStatus;
