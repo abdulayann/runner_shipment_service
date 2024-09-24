@@ -3438,6 +3438,8 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetails oldCarrierDetails = null;
         if(!Boolean.TRUE.equals(isCreate))
             oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
+        if(Objects.isNull(consolidationDetails.getInterBranchConsole()))
+            consolidationDetails.setInterBranchConsole(false);
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
         var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), finalOldCarrierDetails)));
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
