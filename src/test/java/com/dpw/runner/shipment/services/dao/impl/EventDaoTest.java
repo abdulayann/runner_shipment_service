@@ -193,6 +193,23 @@ class EventDaoTest {
     }
 
     @Test
+    void updateEntityFromOtherEntityConsolidation() {
+        testData.setId(1L);
+
+        Events savedEvent = testData;
+
+        Page<Events> page = new PageImpl(List.of(savedEvent));
+        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        try {
+            var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "CONSOLIDATION");
+            assertNotNull(result);
+        } catch(Exception e) {
+            fail();
+        }
+    }
+
+    @Test
     void updateEntityFromOtherEntityWithOldEntityList() {
         testData.setId(1L);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testData));
