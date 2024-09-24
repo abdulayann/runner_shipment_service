@@ -5,20 +5,21 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IShipmentServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.NotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
@@ -50,6 +51,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -83,6 +85,10 @@ public class BookingIntegrationsUtility {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private NotesDao notesDao;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -200,10 +206,169 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
+    public boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
+        return (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ||
+                (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_ROA) &&
+                        (Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FTL) || Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ) ||
+                (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_RAI) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL));
+    }
+
+    private PartiesRequest createPartiesRequest(PartiesRequest party)
+    {
+        if(party == null)
+            return null;
+        return PartiesRequest.builder()
+                .addressCode(party.getAddressCode())
+                .addressData(party.getAddressData())
+                .orgCode(party.getOrgCode())
+                .orgData(party.getOrgData())
+                .build();
+    }
+
+    private List<NotesRequest> createNotes(List<Notes> notes){
+        if(notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+                NotesRequest.builder()
+                        .assignedTo(note.getAssignedTo())
+                        .label(note.getLabel())
+                        .text(note.getText())
+                        .insertUserDisplayName(note.getCreatedBy())
+                        .isPublic(note.getIsPublic())
+                        .insertDate(note.getCreatedAt())
+                        .entityType(Constants.CUSTOMER_BOOKING)
+                        .build()).toList();
+    }
+
+
+
+    public ShipmentDetailsResponse createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
-            var response = shipmentServiceAdapter.createShipmentInV2(customerBookingRequest);
-            return response;
+            List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+            List<ContainerRequest> containerList = new ArrayList<>();
+            List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
+            if(isConsoleCreationNeeded(customerBookingRequest))
+            {
+                ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
+                        carrierDetails(CarrierDetailRequest.builder()
+                                .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                                .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                                .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                                .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                                .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                                .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                                .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                                .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                                .build()
+                        ).
+                        consolidationType("STD").
+                        transportMode(customerBookingRequest.getTransportType()).
+                        containerCategory(customerBookingRequest.getCargoType()).
+                        shipmentType(customerBookingRequest.getDirection()).
+                        referenceNumber(customerBookingRequest.getBookingNumber()).
+                        departureDetails(ArrivalDepartureDetailsRequest.builder().
+                                firstForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                                lastForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
+                                type("Departure").
+                                build()
+                        ).
+                        arrivalDetails(ArrivalDepartureDetailsRequest.builder().
+                                firstForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                                lastForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
+                                type("Arrival").
+                                build()
+                        ).
+                        containersList(customerBookingRequest.getContainersList()).
+                        sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
+                        build();
+                ConsolidationDetailsResponse consolidationDetailsResponse = shipmentServiceAdapter.createConsolidation(consolidationDetailsRequest);
+                if(consolidationDetailsResponse != null)
+                {
+                    ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
+                    containerList = consolRequest.getContainersList();
+                    consolRequest.setContainersList(null);
+                    consolidationDetails.add(consolRequest);
+                }
+            }
+
+            ShipmentRequest shipmentRequest = ShipmentRequest.builder().
+                    carrierDetails(CarrierDetailRequest.builder()
+                            .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                            .destination(customerBookingRequest.getCarrierDetails().getDestination())
+                            .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
+                            .vessel(customerBookingRequest.getCarrierDetails().getVessel())
+                            .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
+                            .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
+                            .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
+                            .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
+                            .carrierCountry(customerBookingRequest.getCarrierDetails().getCarrierCountry())
+                            .minTransitHours(customerBookingRequest.getCarrierDetails().getMinTransitHours())
+                            .maxTransitHours(customerBookingRequest.getCarrierDetails().getMaxTransitHours())
+                            .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
+                            .build()
+                    ).
+                    contractId(customerBookingRequest.getContractId()).
+                    parentContractId(customerBookingRequest.getParentContractId()).
+                    contractType(customerBookingRequest.getContractStatus()).
+                    noOfPacks(customerBookingRequest.getQuantity()).
+                    packsUnit(customerBookingRequest.getQuantityUnit()).
+                    weight(customerBookingRequest.getGrossWeight()).
+                    weightUnit(customerBookingRequest.getGrossWeightUnit()).
+                    volume(customerBookingRequest.getVolume()).
+                    volumeUnit(customerBookingRequest.getVolumeUnit()).
+                    volumetricWeight(customerBookingRequest.getWeightVolume()).
+                    volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
+                    bookingReference(customerBookingRequest.getBookingNumber()).
+                    bookingCreatedDate(customerBookingRequest.getBookingDate()).
+                    shipmentCreatedOn(LocalDateTime.now()).
+                    client(createPartiesRequest(customerBookingRequest.getCustomer())).
+                    consignee(createPartiesRequest(customerBookingRequest.getConsignee())).
+                    consigner(createPartiesRequest(customerBookingRequest.getConsignor())).
+                    additionalDetails(AdditionalDetailRequest.builder().
+                            notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty())).
+                            build()
+                    ).
+                    shipmentType(customerBookingRequest.getCargoType()).
+                    transportMode(customerBookingRequest.getTransportType()).
+                    direction(customerBookingRequest.getDirection()).
+                    jobType("STD").
+                    incoterms(customerBookingRequest.getIncoTerms()).
+                    serviceType(customerBookingRequest.getServiceMode()).
+                    status(4).
+                    fmcTlcId(customerBookingRequest.getFmcTlcId()).
+                    clientCountry(customerBookingRequest.getClientCountry()).
+                    consignorCountry(customerBookingRequest.getConsignorCountry()).
+                    consigneeCountry(customerBookingRequest.getConsigneeCountry()).
+                    notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
+                    salesBranch(customerBookingRequest.getSalesBranch()).
+                    primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
+                    secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
+                    containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
+                    packingList(customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
+                        if(!StringUtility.isEmpty(obj.getLengthUnit()))
+                        {
+                            obj.setWidthUnit(obj.getLengthUnit());
+                            obj.setHeightUnit(obj.getLengthUnit());
+                        }
+                        return obj;
+                    }).collect(Collectors.toList()) : null).
+                    fileRepoList(customerBookingRequest.getFileRepoList()).
+                    routingsList(customerBookingRequest.getRoutingList()).
+                    consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
+                    notesList(createNotes(notes)).
+                    sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
+                    source("API").
+                    bookingType("ONLINE").
+                    consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
+                    masterBill(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
+                    freightLocalCurrency(UserContext.getUser().CompanyCurrency).
+                    currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
+                    autoUpdateWtVol(true).
+                    build();
+            shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
+            shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
+            shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
+            ShipmentDetailsResponse shipmentResponse = jsonHelper.convertValue(shipmentRequest, ShipmentDetailsResponse.class);
+            return shipmentServiceAdapter.createShipment(shipmentResponse);
         } catch (Exception ex) {
             log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;

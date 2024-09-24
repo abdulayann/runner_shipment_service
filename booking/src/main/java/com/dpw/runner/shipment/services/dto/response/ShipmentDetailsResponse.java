@@ -68,10 +68,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Integer innerPacks;
     private String innerPackUnit;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoReadyDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
@@ -98,11 +96,9 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private boolean isShipmentReadOnly;
     private String shipmentCompletedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime financeClosedOn;
     private PartiesResponse client;
     private PartiesResponse consigner;
@@ -141,7 +137,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private BigDecimal insuranceValue;
     private String InsuranceValueCurrency;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentCreatedOn;
     private String entryRefNo;
     private List<PartiesResponse> shipmentAddresses;
@@ -171,10 +166,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
         textData.putAll(dataMap);
     }
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime updatedAt;
 
     private CustomerCategoryRates customerCategory;
@@ -211,7 +204,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String updatedBy;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
     private Integer pendingActionCount;

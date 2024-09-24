@@ -2,9 +2,13 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.config.ShipmentServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IShipmentServiceAdapter;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -18,6 +22,8 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -41,19 +47,38 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     @Autowired
     private CommonUtils commonUtils;
 
-    public static class MyResponseClass extends RunnerResponse<ShipmentDetailsResponse>{}
+    public static class ShipmentResponse extends RunnerResponse<ShipmentDetailsResponse>{}
+    public static class ConsolidationResponse extends RunnerResponse<ConsolidationDetailsResponse>{}
 
     @Override
-    public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
+    public ShipmentDetailsResponse createShipment(ShipmentDetailsResponse shipmentDetailsResponse) throws RunnerException {
         try {
-            // TODO: bookingseparation: Request and response date format check
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getCreateShipmentInV2Url();
-            log.info("Calling shipment service for booking number: {}", customerBookingRequest.getBookingNumber());
-            HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(customerBookingRequest, V1AuthHelper.getHeaders());
-            ResponseEntity<MyResponseClass> response = restTemplate.postForEntity(url, entity, MyResponseClass.class);
-            return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+            log.info("Calling shipment service for url: {}", url);
+            String shipmentDetailsResponsejson = jsonHelper.convertToJson(shipmentDetailsResponse);
+            log.info(shipmentDetailsResponsejson);
+            HttpEntity<String> entity = new HttpEntity<>(shipmentDetailsResponsejson, V1AuthHelper.getHeaders());
+            ResponseEntity<?> response = restTemplate.postForEntity(url, entity, RunnerResponse.class);
+            return jsonHelper.readFromJson((((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData()).toString(), ShipmentDetailsResponse.class);
         } catch (Exception e) {
             log.error("Error occurred while creating shipment: {}", e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
+    public ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
+        try {
+            ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetailsResponse.class);
+            String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getCreateConsolidationFromBookingUrl();
+            log.info("Calling shipment service for request model data: {}", consolidationDetailsResponse.getId());
+            String consolidationDetailsResponsejson = jsonHelper.convertToJson(consolidationDetailsResponse);
+            HttpEntity<String> entity = new HttpEntity<>(consolidationDetailsResponsejson, V1AuthHelper.getHeaders());
+            ResponseEntity<?> response = restTemplate.postForEntity(url, entity, RunnerResponse.class);
+            System.out.println(response);
+            return jsonHelper.readFromJson((((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData()).toString(), ConsolidationDetailsResponse.class);
+        } catch (Exception e) {
+            log.error("Error occurred while creating consolidation: {}", e.getMessage());
             throw new RunnerException(e.getMessage());
         }
     }
@@ -64,7 +89,7 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetByGuidUrl() + "?guid=" + guid;
             log.info("Calling shipment service for guid: {}", guid);
             HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
-            ResponseEntity<MyResponseClass> response = restTemplate.exchange(url, HttpMethod.GET, entity, MyResponseClass.class);
+            ResponseEntity<ShipmentResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity, ShipmentResponse.class);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (Exception e) {
             log.error("Error occurred while getting shipment: {}", e.getMessage());

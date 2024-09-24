@@ -90,7 +90,6 @@ public class PackingResponse implements IRunnerResponse {
     private Boolean assigned;
     private DateBehaviorType dateType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime cargoGateInDate;
     private Integer tenantId;
     private String unNumber;

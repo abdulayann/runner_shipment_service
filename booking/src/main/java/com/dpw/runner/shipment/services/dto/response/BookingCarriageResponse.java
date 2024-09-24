@@ -18,10 +18,8 @@ public class BookingCarriageResponse implements IRunnerResponse {
     private String portOfLoading;
     private String portOfDischarge;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime eta;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime etd;
     private String vessel;
     private String voyage;

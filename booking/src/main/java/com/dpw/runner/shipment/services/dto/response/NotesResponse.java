@@ -25,7 +25,6 @@ public class NotesResponse implements IRunnerResponse {
     private String entityType;
     private String createdBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime createdAt;
     private String insertUserDisplayName;
     private Boolean isPublic;

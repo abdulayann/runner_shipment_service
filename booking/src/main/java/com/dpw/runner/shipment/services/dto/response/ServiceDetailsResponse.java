@@ -22,14 +22,11 @@ public class ServiceDetailsResponse implements IRunnerResponse {
     private PartiesResponse contractor;
     private String srvLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime bookingDate;
     private Long serviceCount;
     @JsonSerialize(using = CustomLocalTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalTime serviceDuration;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;

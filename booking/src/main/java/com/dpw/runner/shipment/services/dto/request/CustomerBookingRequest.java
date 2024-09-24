@@ -33,7 +33,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isNotifyPartyFreeText;
     private String customerEmail;
     private String bookingNumber;
-    @JsonFormat(pattern = Constants.DATE_TIME_FORMAT)
     private LocalDateTime bookingDate;
     private String incoTerms;
     private CarrierDetailRequest carrierDetails;

@@ -354,7 +354,8 @@ public class CustomerBookingService implements ICustomerBookingService {
                 if(Objects.equals(request.getTransportType(),Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission){
                     throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
                 }
-                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
+                ShipmentDetailsResponse shipmentResponse = bookingIntegrationsUtility.createShipmentInV2(request);
+
                 //Check 3
                 if(shipmentResponse != null) {
                     if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {

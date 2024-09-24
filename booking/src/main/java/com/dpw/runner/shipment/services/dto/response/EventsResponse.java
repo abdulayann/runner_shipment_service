@@ -28,10 +28,8 @@ public class EventsResponse implements IRunnerResponse {
     private Long shipmentId;
     private String description;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime estimated;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    @JsonDeserialize(using = CustomLocalDateTimeDeserializer.class)
     private LocalDateTime actual;
     private Boolean isPublicTrackingEvent;
     private String tenantId;
