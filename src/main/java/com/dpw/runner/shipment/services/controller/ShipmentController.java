@@ -38,8 +38,10 @@ import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -241,6 +243,24 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = ShipmentConstants.FETCH_ORG_INFO, response = OrgAddressResponse.class),
+        @ApiResponse(code = 500, message = DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG)
+    })
+    @GetMapping(ShipmentConstants.FETCH_ORG_INFO)
+    public ResponseEntity<OrgAddressResponse> fetchOrgInfo(@RequestBody OrgAddressCode orgAddressCode) {
+        try {
+            OrgAddressResponse orgAddressResponse = shipmentService.fetchOrgInfoFromV1(orgAddressCode);
+            return ResponseEntity.ok(orgAddressResponse);
+
+        } catch (RunnerException e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(errorMsg, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LOCK_TOGGLE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
@@ -735,5 +755,7 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
+
+
 
 }

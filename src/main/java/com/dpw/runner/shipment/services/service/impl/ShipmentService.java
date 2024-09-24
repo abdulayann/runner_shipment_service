@@ -40,6 +40,12 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
@@ -6202,6 +6208,12 @@ public class ShipmentService implements IShipmentService {
         shipmentDao.save(shipmentDetails, false);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    @Override
+    public OrgAddressResponse fetchOrgInfoFromV1(OrgAddressCode orgAddressCode)
+        throws RunnerException {
+        return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(List.of(orgAddressCode)).build());
     }
 
     @Override
