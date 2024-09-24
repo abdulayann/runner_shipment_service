@@ -243,11 +243,6 @@ public class RoutingsService implements IRoutingsService {
             Map<String, List<Routings>> polToRoutingMap,
             Map<String, List<Routings>> podToRoutingMap) {
 
-        if (tsContainer == null) {
-            log.warn("Container is null, skipping processing.");
-            return;
-        }
-
         if (ObjectUtils.isEmpty(tsContainer.getEvents())) {
             log.warn("Container has no events, skipping processing.");
             return;

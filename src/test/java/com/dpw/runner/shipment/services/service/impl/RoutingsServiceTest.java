@@ -185,6 +185,33 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
+    void testUpdateRoutingsBasedOnTracking_nullRoutings() throws RunnerException {
+        Long shipmentId = 123L;
+         List<Routings> vRoutings = new ArrayList<>();
+
+        routingsService.updateRoutingsBasedOnTracking(shipmentId, vRoutings);
+
+        assertEquals(0, vRoutings.size());
+    }
+
+    @Test
+    void testUpdateRoutingsBasedOnTracking_nullPolAndPod() throws RunnerException {
+        Long shipmentId = 123L;
+        Routings routings = new Routings();
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings);
+        Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        routingsService.updateRoutingsBasedOnTracking(shipmentId, routingsList);
+
+        assertNull(routingsList.get(0).getEtd());
+        assertNull(routingsList.get(0).getAtd());
+        assertNull(routingsList.get(0).getAta());
+        assertNull(routingsList.get(0).getEta());
+
+    }
+
+    @Test
     void testUpdateRoutingsBasedOnTracking_emptyTrackingServiceResponse() throws RunnerException {
         Long shipmentId = 123L;
 
