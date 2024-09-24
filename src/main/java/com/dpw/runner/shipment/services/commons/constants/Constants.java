@@ -491,6 +491,7 @@ public class Constants {
     public static final String SHIPMENT_VOLUME_UNIT = "Shipment_Volume_Unit";
     public static final String ACTIONED_USER_NAME = "Actioned_User_name";
     public static final String REJECT_REMARKS = "Reject_remarks";
+    public static final String REMARKS = "Remarks";
     public static final String AUTO_REJECTION_REMARK = "Target Shipment is attached to another consolidation already.";
     public static final String REQUESTED_USER_NAME = "Requested_User_Name";
     public static final String REQUESTER_REMARKS = "Requester_Remarks";

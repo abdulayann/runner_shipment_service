@@ -89,6 +89,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.STATUS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.USER_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAGE;
@@ -698,7 +699,8 @@ public class CommonUtils {
         Map<String, Object> dictionary = new HashMap<>();
         List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
 
-        populateDGReceiverDictionary(dictionary, shipmentDetails);
+        populateDGReceiverDictionary(dictionary, shipmentDetails, request);
+
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
             template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
@@ -1401,8 +1403,14 @@ public class CommonUtils {
             dictionary.put(DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
             dictionary.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
             dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
-            dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta());
-            dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd());
+            if(shipmentDetails.getCarrierDetails().getEta() != null) {
+                dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+            }
+
+            if(shipmentDetails.getCarrierDetails().getEtd() != null) {
+                dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd()
+                    .format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+            }
         }
         dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
         dictionary.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
@@ -1449,17 +1457,18 @@ public class CommonUtils {
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now());
+        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
         dictionary.put(REQUESTER_REMARKS, remarks);
     }
 
-    private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails){
+    private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequest request){
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(APPROVED_TIME, LocalDateTime.now());
-
+        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+        dictionary.put(REMARKS, request.getRemarks());
+        dictionary.put(STATUS, request.getStatus());
     }
 
     private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
