@@ -1403,8 +1403,14 @@ public class CommonUtils {
             dictionary.put(DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
             dictionary.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
             dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
-            dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
-            dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+            if(shipmentDetails.getCarrierDetails().getEta() != null) {
+                dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+            }
+
+            if(shipmentDetails.getCarrierDetails().getEtd() != null) {
+                dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd()
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+            }
         }
         dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
         dictionary.put(SHIPMENT_TYPE, shipmentDetails.getDirection());
