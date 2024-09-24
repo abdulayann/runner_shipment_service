@@ -609,6 +609,7 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentDetailsResponse shipmentDetailsResponse = null;
         if(oldShipmentDetailsList == null || oldShipmentDetailsList.isEmpty()){
             shipmentRequest.setGuid(null);
+            shipmentRequest.setShipmentCreatedOn(LocalDateTime.now());
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
 
             shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest);
