@@ -40,6 +40,10 @@ public class UnlocationsResponse implements Serializable {
     private String countryName;
     @JsonProperty("CountryThreeDigitCode")
     private String CountryThreeDigitCode;
+    @JsonProperty("HasSeaPort")
+    private Boolean hasSeaPort;
+    @JsonProperty("HasAirport")
+    private Boolean hasAirport;
     public String getCountry() {
         return (!Objects.isNull(country) && country.length() == 2 && !Objects.isNull(CountryThreeDigitCode) ? CountryThreeDigitCode : country);
     }

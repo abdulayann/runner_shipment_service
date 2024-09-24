@@ -205,19 +205,31 @@ public class RoutingsService implements IRoutingsService {
     private String getLocationKey(String pol, String pod, Map<String, UnlocationsResponse> locationData, boolean isPol) {
         log.debug("Fetching location key. isPol = {}", isPol);
 
-        UnlocationsResponse polResponse = pol != null ? locationData.get(pol) : null;
-        UnlocationsResponse podResponse = pod != null ? locationData.get(pod) : null;
+        // Fetch location responses based on POL or POD
+        UnlocationsResponse polResponse = (pol != null) ? locationData.get(pol) : null;
+        UnlocationsResponse podResponse = (pod != null) ? locationData.get(pod) : null;
 
         log.debug("Pol response for '{}': {}", pol, polResponse);
         log.debug("Pod response for '{}': {}", pod, podResponse);
 
-        String polLocCode = (polResponse != null) ? polResponse.getLocCode() : null;
-        String podLocCode = (podResponse != null) ? podResponse.getLocCode() : null;
+        // Determine location codes based on availability of airports or sea ports
+        String locationCode = isPol ? getLocationCode(polResponse) : getLocationCode(podResponse);
 
-        log.debug("Pol location code: {}", polLocCode);
-        log.debug("Pod location code: {}", podLocCode);
+        log.debug("Resolved location code: {}", locationCode);
+        return locationCode;
+    }
 
-        return isPol ? polLocCode : podLocCode;
+    /**
+     * Retrieves the location code if the UnlocationsResponse has valid airport or sea port information.
+     *
+     * @param response The UnlocationsResponse object containing location details.
+     * @return The location code or null if not applicable.
+     */
+    private String getLocationCode(UnlocationsResponse response) {
+        if (response != null && (response.getHasAirport() || response.getHasSeaPort())) {
+            return response.getLocCode();
+        }
+        return null;
     }
 
     /**
