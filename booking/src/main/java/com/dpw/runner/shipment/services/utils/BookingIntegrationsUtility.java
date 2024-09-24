@@ -35,7 +35,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -340,11 +339,6 @@ public class BookingIntegrationsUtility {
         }
 
         return loadRequests;
-    }
-
-    private String getItemDescription(MasterDataType type, String itemValue) {
-        var masterData = masterDataUtils.getMasterListData(type, itemValue);
-        return Objects.isNull(masterData) ? null : masterData.getItemDescription();
     }
 
     private RouteRequest createRoute(CustomerBooking customerBooking) {
