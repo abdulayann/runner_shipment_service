@@ -227,8 +227,9 @@ public class BookingIntegrationsUtility {
 
     private List<NotesRequest> createNotes(List<Notes> notes){
         if(notes == null) return null;
-        return notes.stream().filter(Objects::nonNull).map(note ->
-                NotesRequest.builder()
+        return notes.stream()
+                .filter(Objects::nonNull)
+                .map(note -> NotesRequest.builder()
                         .assignedTo(note.getAssignedTo())
                         .label(note.getLabel())
                         .text(note.getText())
@@ -236,7 +237,9 @@ public class BookingIntegrationsUtility {
                         .isPublic(note.getIsPublic())
                         .insertDate(note.getCreatedAt())
                         .entityType(Constants.CUSTOMER_BOOKING)
-                        .build()).toList();
+                        .id(null)  // Ensure the id is set to null
+                        .build())
+                .toList();
     }
 
 
@@ -343,16 +346,25 @@ public class BookingIntegrationsUtility {
                     primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
                     secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
                     containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
-                    packingList(customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-                        if(!StringUtility.isEmpty(obj.getLengthUnit()))
-                        {
-                            obj.setWidthUnit(obj.getLengthUnit());
-                            obj.setHeightUnit(obj.getLengthUnit());
+                    packingList(customerBookingRequest.getPackingList() != null
+                            ? customerBookingRequest.getPackingList().stream().map(packing -> {
+                        packing.setId(null);  // Ensure the id is null
+                        if (!StringUtility.isEmpty(packing.getLengthUnit())) {
+                            packing.setWidthUnit(packing.getLengthUnit());
+                            packing.setHeightUnit(packing.getLengthUnit());
                         }
-                        return obj;
+                        return packing;
                     }).collect(Collectors.toList()) : null).
-                    fileRepoList(customerBookingRequest.getFileRepoList()).
-                    routingsList(customerBookingRequest.getRoutingList()).
+                    fileRepoList(customerBookingRequest.getFileRepoList()  != null
+                            ? customerBookingRequest.getFileRepoList().stream().map(filerepo -> {
+                        filerepo.setId(null);  // Ensure the id is null
+                        return filerepo;
+                    }).collect(Collectors.toList()) : null ).
+                    routingsList(customerBookingRequest.getRoutingList() != null
+                            ? customerBookingRequest.getRoutingList().stream().map(routing -> {
+                        routing.setId(null);  // Ensure the id is null
+                        return routing;
+                    }).collect(Collectors.toList()) : null).
                     consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                     notesList(createNotes(notes)).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).

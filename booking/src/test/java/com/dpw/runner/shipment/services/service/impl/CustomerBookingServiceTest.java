@@ -1225,7 +1225,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build());
         mockTenantSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
@@ -1257,7 +1257,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build());
         mockTenantSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());

@@ -56,7 +56,6 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getCreateShipmentInV2Url();
             log.info("Calling shipment service for url: {}", url);
             String shipmentDetailsResponsejson = jsonHelper.convertToJson(shipmentDetailsResponse);
-            log.info(shipmentDetailsResponsejson);
             HttpEntity<String> entity = new HttpEntity<>(shipmentDetailsResponsejson, V1AuthHelper.getHeaders());
             ResponseEntity<?> response = restTemplate.postForEntity(url, entity, RunnerResponse.class);
             return jsonHelper.readFromJson((((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData()).toString(), ShipmentDetailsResponse.class);
@@ -71,11 +70,9 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
         try {
             ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetailsResponse.class);
             String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getCreateConsolidationFromBookingUrl();
-            log.info("Calling shipment service for request model data: {}", consolidationDetailsResponse.getId());
             String consolidationDetailsResponsejson = jsonHelper.convertToJson(consolidationDetailsResponse);
             HttpEntity<String> entity = new HttpEntity<>(consolidationDetailsResponsejson, V1AuthHelper.getHeaders());
             ResponseEntity<?> response = restTemplate.postForEntity(url, entity, RunnerResponse.class);
-            System.out.println(response);
             return jsonHelper.readFromJson((((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData()).toString(), ConsolidationDetailsResponse.class);
         } catch (Exception e) {
             log.error("Error occurred while creating consolidation: {}", e.getMessage());
