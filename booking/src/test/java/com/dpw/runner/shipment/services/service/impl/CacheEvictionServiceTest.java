@@ -1,14 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.CacheRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionException;
-
-import java.util.ArrayList;
-
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,9 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.util.ArrayList;
+
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 
@@ -115,7 +115,8 @@ class CacheEvictionServiceTest {
         // Arrange
         CacheEvictionService cacheEvictionService = new CacheEvictionService();
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -137,7 +138,8 @@ class CacheEvictionServiceTest {
         // Arrange
         CacheEvictionService cacheEvictionService = new CacheEvictionService();
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")

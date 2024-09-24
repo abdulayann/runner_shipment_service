@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -38,11 +37,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -301,30 +298,6 @@ public class EventService implements IEventService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(event -> responseList.add(convertEntityToDto(event)));
         return responseList;
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
-        EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
-        try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return ResponseHelper.buildSuccessResponse();
-            }
-            Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
-            Events events = modelMapper.map(eventsRequestV2, Events.class);
-            if (existingEvent != null && existingEvent.isPresent()) {
-                events.setId(existingEvent.get().getId());
-            }
-            events = eventDao.save(events);
-            EventsResponse response = objectMapper.convertValue(events, EventsResponse.class);
-            return ResponseHelper.buildSuccessResponse(response);
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
-        }
     }
 
 }

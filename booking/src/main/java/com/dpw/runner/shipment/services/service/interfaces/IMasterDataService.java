@@ -116,5 +116,4 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel);
 }

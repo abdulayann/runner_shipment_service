@@ -2,12 +2,9 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
-import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -22,7 +19,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {EventsController.class})
@@ -32,8 +28,6 @@ class EventsControllerTest {
 
     @Mock
     private IEventService eventService;
-    @Mock
-    private IEventsSync eventsSync;
     @InjectMocks
     private EventsController eventsController;
 
@@ -93,57 +87,6 @@ class EventsControllerTest {
         when(eventService.update(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = eventsController.update(EventsRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void syncEventsToService() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void syncEventsToService2() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), true);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void syncEventsToService3() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-
-    @Test
-    void getEvents2() {
-        // Mock
-        when(eventsSync.sync(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.getEvents(List.of());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getEvents3() {
-        // Mock
-        when(eventsSync.sync(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.getEvents(List.of(new Events()));
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

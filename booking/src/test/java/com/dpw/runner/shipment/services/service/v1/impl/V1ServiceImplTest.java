@@ -1,58 +1,13 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
@@ -62,16 +17,10 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,17 +33,23 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {V1ServiceImpl.class})
 @ExtendWith(SpringExtension.class)
@@ -3392,48 +3347,6 @@ class V1ServiceImplTest {
         assertEquals("RuntimeException", throwable.getMessage());
     }
 
-
-    /**
-     * Method under test: {@link V1ServiceImpl#getDefaultOrg()} )}
-     */
-    @Test
-    void testGetDefaultOrg() throws RestClientException {
-        // Arrange
-        var mock = mock(ResponseEntity.class);
-        var mockResponse = new PartyRequestV2();
-        mockResponse.setOrgCode("DPW");
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(mock.getBody()).thenReturn(mockResponse);
-        // Act
-        var responseEntity = v1ServiceImpl.getDefaultOrg();
-        // Assert
-        assertEquals("DPW", responseEntity.getOrgCode());
-    }
-
-    @Test
-    void testGetDefaultOrg2() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
-        // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getDefaultOrg());
-        // Assert
-        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
-    }
-
-    @Test
-    void testGetDefaultOrg3() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getDefaultOrg());
-        // Assert
-        assertEquals("RuntimeException", throwable.getMessage());
-    }
-
     /**
      * Method under test: {@link V1ServiceImpl#fetchOwnType(Object)} (Object)}
      */
@@ -3702,9 +3615,6 @@ class V1ServiceImplTest {
         assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
-    /**
-     * Method under test: {@link V1ServiceImpl#fetchShipmentBillingData(Object)}
-     */
     @Test
     void testFetchShipmentBillingData() throws RestClientException {
         var mock = mock(ResponseEntity.class);
@@ -4357,74 +4267,6 @@ class V1ServiceImplTest {
     }
 
     /**
-     * Method under test: {@link V1ServiceImpl#getActiveInvoices(CheckActiveInvoiceRequest)}
-     */
-    @Test
-    void testGetActiveInvoices() throws RestClientException {
-        var mockResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipmentLite(false).build());
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        // Act
-        var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
-
-        // Assert
-        assertFalse(responseEntity.getIsAnyActiveInvoiceFound());
-    }
-
-    @Test
-    void testGetActiveInvoices2() throws RestClientException {
-        var mockResponse = CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(true).build();
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipmentLite(true).build());
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-
-        // Act
-        var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
-
-        // Assert
-        assertEquals(mockResponse.getIsAnyActiveInvoiceFound(), responseEntity.getIsAnyActiveInvoiceFound());
-    }
-
-    @Test
-    void testGetActiveInvoices3() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
-
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        // Act and Assert
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
-        assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
-    }
-
-    @Test
-    void testGetActiveInvoices4() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
-
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
-        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
-    }
-
-    @Test
-    void testGetActiveInvoices5() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new RuntimeException());
-
-        // Act and Assert
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
-        assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
-    }
-
-    /**
      * Method under test: {@link V1ServiceImpl#fetchOrgAddresses(Object)}
      */
     @Test
@@ -4704,37 +4546,6 @@ class V1ServiceImplTest {
         var responseEntity = v1ServiceImpl.fetchCarrierMasterData(request, true);
         // Assert
         assertEquals(mockResponse.getEntityId(), responseEntity.getEntityId());
-    }
-
-
-    /**
-     * Method under test: {@link V1ServiceImpl#v1DataSync(Object, HttpHeaders)}
-     */
-    @Test
-    void testV1DataSync() throws RestClientException {
-        var mockResponse = V1DataSyncResponse.builder().isSuccess(true).build();
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(v1AuthHelper.getHeadersForDataSync()).thenReturn(new HttpHeaders());
-        // Act
-        var responseEntity = v1ServiceImpl.v1DataSync("Request", null);
-
-        // Assert
-        assertTrue(responseEntity.getIsSuccess());
-    }
-
-    @Test
-    void testV1DataSync2() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
-
-        // Act and Assert
-        var responseEntity = v1ServiceImpl.v1DataSync("Request", new HttpHeaders());
-
-        // Assert
-        assertFalse(responseEntity.getIsSuccess());
     }
 
     /**

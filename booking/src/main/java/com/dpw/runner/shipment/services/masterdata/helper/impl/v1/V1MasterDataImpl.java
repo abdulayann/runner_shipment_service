@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -514,13 +513,5 @@ public class V1MasterDataImpl implements IMasterDataService {
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
-
-    @Override
-    public DependentServiceResponse getDefaultOrg(Object request) {
-        PartyRequestV2 partyRequestV2 = v1Service.getDefaultOrg();
-        return DependentServiceResponse.builder().success(true)
-                .data(partyRequestV2).build();
-    }
-
 
 }

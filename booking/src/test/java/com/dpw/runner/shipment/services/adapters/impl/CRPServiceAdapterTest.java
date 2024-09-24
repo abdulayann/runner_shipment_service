@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
@@ -53,7 +53,8 @@ class CRPServiceAdapterTest {
         CRPServiceAdapter crpServiceAdapter = new CRPServiceAdapter(restTemplate, "https://example.org/example",
                 "https://example.org/example");
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -88,7 +89,8 @@ class CRPServiceAdapterTest {
         CRPServiceAdapter crpServiceAdapter = new CRPServiceAdapter(restTemplate, "https://example.org/example",
                 "https://example.org/example");
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -114,7 +116,8 @@ class CRPServiceAdapterTest {
         CRPListRequest data = CRPListRequest.builder().pageable(null).build();
         data.setBillable(false);
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -151,7 +154,8 @@ class CRPServiceAdapterTest {
         CRPListRequest data = CRPListRequest.builder().pageable(null).build();
         data.setBillable(false);
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -188,7 +192,8 @@ class CRPServiceAdapterTest {
         CRPListRequest data = CRPListRequest.builder().pageable(null).build();
         data.setBillable(true);
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -225,7 +230,8 @@ class CRPServiceAdapterTest {
         CRPListRequest data = CRPListRequest.builder().pageable(null).build();
         data.setBillable(false);
         CommonRequestModel.CommonRequestModelBuilder builderResult = CommonRequestModel.builder();
-        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = builderResult.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")

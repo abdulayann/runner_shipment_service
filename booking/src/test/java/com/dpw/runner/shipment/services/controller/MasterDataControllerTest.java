@@ -2039,44 +2039,6 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-    /**
-     * Method under test: {@link MasterDataController#getDefaultOrg(Object)}
-     */
-
-    @Test
-    void getDefaultOrgTest() {
-        // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = masterDataController.getDefaultOrg();
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getDefaultOrgTest2() {
-        // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = masterDataController.getDefaultOrg();
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getDefaultOrgTest3() {
-        // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = masterDataController.getDefaultOrg();
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    /**
-     * Method under test: {@link MasterDataController#tenantSettings(Object)}
-     */
-
     @Test
     void tenantSettingsTest() {
         // Mock

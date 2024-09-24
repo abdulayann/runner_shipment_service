@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -41,13 +40,6 @@ class V1MasterDataImplTest {
 
     @Mock
     private JsonHelper jsonHelper;
-
-    @Test
-    void getDefaultOrg() {
-        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
-        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
-        assertNotNull(v1MasterData.getDefaultOrg(new Object()));
-    }
 
     @Test
     void fetchChargeType() {

@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
@@ -47,9 +46,6 @@ public class EventDao implements IEventDao {
 
     @Autowired
     private JsonHelper jsonHelper;
-
-    @Autowired
-    private IEventsSync eventsSync;
 
     @Autowired
     private IAuditLogService auditLogService;

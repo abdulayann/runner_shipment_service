@@ -8,10 +8,8 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -29,7 +27,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 @Component
@@ -52,9 +53,6 @@ public class CommonUtils {
     private JsonHelper jsonHelper;
     @Autowired
     public ExecutorService syncExecutorService;
-
-    @Autowired
-    public IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     private IAuditLogDao iAuditLogDao;
@@ -254,11 +252,6 @@ public class CommonUtils {
 
     public static <T> Iterable<T> emptyIfNull(Iterable<T> iterable) {
         return iterable == null ? Collections.emptyList() : iterable;
-    }
-
-    public ShipmentSettingsDetails getShipmentSettingFromContext() {
-        Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.getSettingsByTenantIdWithCache(TenantContext.getCurrentTenant());
-        return optional.orElseGet(() -> ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
     }
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {

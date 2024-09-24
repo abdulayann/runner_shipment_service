@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,12 +12,8 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
-import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
-import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -32,14 +31,12 @@ import java.util.List;
 @Slf4j
 public class EventsController {
     private final IEventService eventService;
-    private final IEventsSync eventsSync;
     private class MyResponseClass extends RunnerResponse<EventsResponse> {}
     private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
-    public EventsController(IEventService eventService, IEventsSync eventsSync) {
+    public EventsController(IEventService eventService) {
         this.eventService = eventService;
-        this.eventsSync = eventsSync;
     }
 
     @ApiResponses(value = {
@@ -85,37 +82,6 @@ public class EventsController {
         String responseMsg;
         try {
             return eventService.update(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.SHIPMENT_SYNC_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @PostMapping(ApiConstants.SYNC)
-    @ExcludeTimeZone
-    public ResponseEntity<IRunnerResponse> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
-        String responseMsg = "failure executing :(";
-        try {
-            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error syncing provided Events";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @PostMapping(ApiConstants.API_SYNC_EVENTS)
-    public ResponseEntity<IRunnerResponse> getEvents(@RequestBody @Valid List<Events> request) {
-        String responseMsg;
-        try {
-            return (ResponseEntity<IRunnerResponse>) eventsSync.sync(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

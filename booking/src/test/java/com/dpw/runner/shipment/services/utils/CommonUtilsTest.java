@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -9,10 +8,8 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -36,7 +33,10 @@ import org.modelmapper.ModelMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -63,9 +63,6 @@ class CommonUtilsTest {
 
     @Mock
     private ObjectMapper mapper;
-
-    @Mock
-    private IShipmentSettingsDao shipmentSettingsDao;
 
     @InjectMocks
     private CommonUtils commonUtils;
@@ -109,7 +106,6 @@ class CommonUtilsTest {
 
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
-        commonUtils.shipmentSettingsDao = shipmentSettingsDao;
 
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
@@ -348,18 +344,6 @@ class CommonUtilsTest {
         }
         document.close();
         return baos.toByteArray();
-    }
-
-    @Test
-    void defaultShipmentSettings() {
-        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
-        assertNotNull(commonUtils.getShipmentSettingFromContext());
-    }
-
-    @Test
-    void defaultShipmentSettingsWithValue() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        assertNotNull(commonUtils.getShipmentSettingFromContext());
     }
 
     @Test

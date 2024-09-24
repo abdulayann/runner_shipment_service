@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.filters;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -44,8 +46,6 @@ public class AuthFilter extends OncePerRequestFilter {
     private GetUserServiceFactory getUserServiceFactory;
     @Autowired
     TokenUtility tokenUtility;
-    @Autowired
-    IShipmentSettingsDao shipmentSettingsDao;
     @Autowired
     private TenantSettingsService tenantSettingsService;
     @Autowired
