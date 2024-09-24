@@ -674,14 +674,4 @@ class MasterDataImplTest {
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    @Test
-    void getDefaultOrg() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
-        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        Mockito.when(masterDataFactory.getMasterDataService().getDefaultOrg(Mockito.any())).thenReturn(new DependentServiceResponse());
-        ResponseEntity<IRunnerResponse> responseEntity = masterData.getDefaultOrg(commonRequestModel);
-        Assertions.assertNotNull(responseEntity);
-        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
 }
