@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
@@ -20,14 +19,12 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
@@ -53,7 +50,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
@@ -104,7 +100,6 @@ class EventServiceTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
     private static ObjectMapper objectMapperTest;
-    private static EventsRequestV2 testEventsRequestV2;
     private static ConsolidationDetailsResponse testConsolResponse;
     private static ConsolidationDetailsRequest testConsolRequest;
     private static ModelMapper modelMapperTest = new ModelMapper();
@@ -126,10 +121,8 @@ class EventServiceTest extends CommonMocks {
         testData = jsonTestUtility.getTestEventData();
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
 //        testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
 //        testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
-        testEventsRequestV2 = jsonTestUtility.getTestEventsRequestV2();
     }
 
 
@@ -467,60 +460,6 @@ class EventServiceTest extends CommonMocks {
         assertNotNull(responseEntity);
         RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, runnerResponse.getError().getMessage());
-    }
-
-    @Test
-    void testV1EventsCreateAndUpdate_Success() throws RunnerException {
-        Events mockEvent = new Events();
-        when(eventDao.findByGuid(any())).thenReturn(Optional.of(mockEvent));
-        when(modelMapper.map(any(), any())).thenReturn(mockEvent);
-
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testV1EventsCreateAndUpdate_Success_SyncQueue() throws RunnerException, NoSuchFieldException, IllegalAccessException {
-        Field field = SyncConfig.class.getField("IS_REVERSE_SYNC_ACTIVE");
-        field.setAccessible(true);
-        field.set(syncConfig, false);
-        ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
-        ResponseEntity<IRunnerResponse> response = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), true);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    void testV1EventsCreateAndUpdate_NewPack_Success() throws RunnerException {
-        Events mockEvent = new Events();
-        EventsResponse mockEventsResponse = new EventsResponse();
-        when(eventDao.findByGuid(any())).thenReturn(Optional.empty());
-        when(modelMapper.map(any(), any())).thenReturn(mockEvent);
-        when(eventDao.save(any())).thenReturn(mockEvent);
-        when(objectMapper.convertValue(any(), eq(EventsResponse.class))).thenReturn(mockEventsResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void testV1EventsCreateAndUpdate_Failure() throws RunnerException {
-        Events mockEvent = new Events();
-        when(eventDao.findByGuid(any())).thenReturn(Optional.empty());
-        when(modelMapper.map(any(), any())).thenReturn(mockEvent);
-        when(eventDao.save(any())).thenThrow(new RuntimeException());
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testEventsRequestV2);
-        var e  = assertThrows(RuntimeException.class, () -> eventService.V1EventsCreateAndUpdate(commonRequestModel, false));
-        assertNotNull(e);
-    }
-
-    private Events getMockEvent(Long eventId, String eventCode, String entityType, String locationRole){
-        Events mockEvent = new Events();
-        mockEvent.setId(eventId);
-        mockEvent.setGuid(UUID.randomUUID());
-        mockEvent.setEventCode(eventCode);
-        mockEvent.setEntityType(entityType);
-        mockEvent.setLocationRole(locationRole);
-
-        return mockEvent;
     }
 
 }

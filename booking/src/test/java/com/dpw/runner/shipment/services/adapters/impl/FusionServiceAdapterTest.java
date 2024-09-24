@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -55,7 +54,8 @@ class FusionServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -91,7 +91,8 @@ class FusionServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -114,7 +115,8 @@ class FusionServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -149,7 +151,8 @@ class FusionServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel requestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")

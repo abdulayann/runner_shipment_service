@@ -124,6 +124,5 @@ public interface IMasterDataService {
     DependentServiceResponse fetchBillChargesList(Object request);
     DependentServiceResponse fetchArObjectList(Object request);
     DependentServiceResponse fetchChargeType(Object request);
-    DependentServiceResponse getDefaultOrg(Object request);
 
 }

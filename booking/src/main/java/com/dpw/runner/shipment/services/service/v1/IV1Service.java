@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -138,7 +137,6 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTenantSettings();
     CompanySettingsResponse retrieveCompanySettings();
     V1RetrieveResponse retrieveTenant();
-    PartyRequestV2 getDefaultOrg();
 
     V1DataResponse fetchOwnType(Object request);
 
@@ -162,7 +160,6 @@ public interface IV1Service {
     V1RetrieveResponse getShipment(V1RetrieveRequest request);
     CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request);
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
-    CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
     V1DataResponse fetchCreditLimit(Object request);
     OrgAddressResponse fetchOrgAddresses(Object request);
     EntityTransferAddress fetchAddress(String entityId);

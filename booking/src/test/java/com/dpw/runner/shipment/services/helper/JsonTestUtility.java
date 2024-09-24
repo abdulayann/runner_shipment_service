@@ -8,10 +8,6 @@ import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRu
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
-import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -144,15 +140,6 @@ public class JsonTestUtility {
             return null;
         }
     }
-    public EventsRequestV2 getTestEventsRequestV2() {
-        return objectMapper.convertValue(payload.get("EVENTS_REQUEST_V2"), EventsRequestV2.class);
-    }
-    public PackingRequestV2 getTestPackingRequestV2(){
-        return objectMapper.convertValue(payload.get("PACKING_REQUEST_V2"), PackingRequestV2.class);
-    }
-    public ContainerRequestV2 getTestContainerRequestV2(){
-        return objectMapper.convertValue(payload.get("CONTAINER_REQUEST_V2"), ContainerRequestV2.class);
-    }
     public List<Packing> getTestPackingList(){
         return convertValueToList(payload.get("PACKING_LIST"), Packing.class);
     }
@@ -163,18 +150,6 @@ public class JsonTestUtility {
 
     public PackSummaryResponse getTestPackSummaryAirResponse(){
         return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
-    }
-
-    public ShipmentSettingsDetails getTestShipmentSettingsDetails() {
-        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS"), ShipmentSettingsDetails.class);
-    }
-
-    public ShipmentSettingsDetails getTestShipmentSettingsDetails_CreatePayload() {
-        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_CREATE"), ShipmentSettingsDetails.class);
-    }
-
-    public ShipmentSettingsSyncRequest getTestShipmentSettingsSyncRequest() {
-        return objectMapper.convertValue(payload.get("SHIPMENT_SETTINGS_SYNC"), ShipmentSettingsSyncRequest.class);
     }
     public List<EntityTransferMasterLists> getAutoAttachConsoleMasterData() {
         return convertValueToList(payload.get("AUTO_ATTACH_CONSOLE_MASTER_DATA_LIST"), EntityTransferMasterLists.class);
@@ -194,10 +169,6 @@ public class JsonTestUtility {
 
     public Routings getTestRouting() {
         return objectMapper.convertValue(payload.get("NEW_ROUTING"), Routings.class);
-    }
-
-    public TenantProducts getTenantProducts() {
-        return objectMapper.convertValue(payload.get("TENANT_PRODUCT"), TenantProducts.class);
     }
 
     public <T> T getJson(String key, Class<T> clazz) {

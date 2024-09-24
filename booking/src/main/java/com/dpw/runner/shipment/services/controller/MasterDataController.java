@@ -1047,21 +1047,4 @@ public class MasterDataController {
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);
     }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
-    })
-    @GetMapping(MasterDataConstants.DEFAULT_ORG)
-    public ResponseEntity<IRunnerResponse> getDefaultOrg() {
-        String responseMsg;
-        try {
-            return   masterDataService.getDefaultOrg(CommonRequestModel.buildRequest());
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-        }
-        return   ResponseHelper.buildFailedResponse(responseMsg);
-    }
 }

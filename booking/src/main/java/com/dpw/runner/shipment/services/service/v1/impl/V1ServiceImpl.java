@@ -17,7 +17,6 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -1543,23 +1542,6 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public PartyRequestV2 getDefaultOrg() {
-        ResponseEntity masterDataResponse = null;
-
-        try {
-            long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
-            log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
-            return (PartyRequestV2) masterDataResponse.getBody();
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
-        } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
-        }
-    }
-
-    @Override
     public V1DataResponse fetchOwnType(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1948,29 +1930,6 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_ADDRESS_TRANSLATION, entity, AddressTranslationListResponse.class, new Object[0]);
             return (AddressTranslationListResponse) masterDataResponse.getBody();
-
-        } catch (HttpStatusCodeException var6) {
-            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
-                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
-            } else {
-                throw new V1ServiceException(var6.getMessage());
-            }
-        } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
-        }
-    }
-
-    @Override
-    public CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request) {
-        ResponseEntity masterDataResponse = null;
-        try {
-            if(Objects.equals(commonUtils.getShipmentSettingFromContext().getShipmentLite(), false))
-            {
-                return CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
-            }
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.GET_ACTIVE_INVOICES, entity, CheckActiveInvoiceResponse.class, new Object[0]);
-            return (CheckActiveInvoiceResponse) masterDataResponse.getBody();
 
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {

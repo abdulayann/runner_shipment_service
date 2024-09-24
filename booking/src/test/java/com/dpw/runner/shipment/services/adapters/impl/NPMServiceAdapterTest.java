@@ -1,22 +1,15 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.response.FetchOffersResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -25,7 +18,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -51,12 +43,10 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -111,7 +101,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -153,7 +144,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -183,7 +175,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -460,7 +453,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -494,7 +488,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
@@ -524,7 +519,8 @@ class NPMServiceAdapterTest {
         CommonRequestModel.CommonRequestModelBuilder commonRequestModelBuilder = mock(
                 CommonRequestModel.CommonRequestModelBuilder.class);
         when(commonRequestModelBuilder.data(Mockito.<IRunnerRequest>any())).thenReturn(CommonRequestModel.builder());
-        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new DocumentRequest());
+        CommonRequestModel.CommonRequestModelBuilder dataResult = commonRequestModelBuilder.data(new IRunnerRequest() {
+        });
         CommonRequestModel commonRequestModel = dataResult.dataList(new ArrayList<>())
                 .dependentData("Dependent Data")
                 .guid("1234")
