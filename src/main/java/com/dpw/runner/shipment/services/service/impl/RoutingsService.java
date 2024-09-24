@@ -289,11 +289,6 @@ public class RoutingsService implements IRoutingsService {
             Map<String, List<Routings>> polToRoutingMap,
             Map<String, List<Routings>> podToRoutingMap) {
 
-        if (event == null) {
-            log.warn("Event is null, skipping update.");
-            return;
-        }
-
         // Log event details for debugging
         log.debug("Processing event: location={}, eventType={}, description={}",
                 event.getLocation(), event.getEventType(), event.getDescription());
@@ -390,8 +385,6 @@ public class RoutingsService implements IRoutingsService {
                 routing.setEta(projectedDate);
                 log.debug("Updated ETA for routing {}: {}", routing.getId(), projectedDate);
             }
-        } else {
-            log.info("No valid projected date found for routing {}.", routing.getId());
         }
     }
 
@@ -413,8 +406,6 @@ public class RoutingsService implements IRoutingsService {
                 routing.setAta(actualDate);
                 log.debug("Updated ATA for routing {}: {}", routing.getId(), actualDate);
             }
-        } else {
-            log.info("No valid actual date found for routing {}.", routing.getId());
         }
     }
 
