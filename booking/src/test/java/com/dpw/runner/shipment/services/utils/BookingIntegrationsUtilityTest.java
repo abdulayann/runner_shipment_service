@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.ShipmentServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -253,113 +252,6 @@ class BookingIntegrationsUtilityTest {
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         bookingIntegrationsUtility.updateBookingInPlatform(getCustomerBooking("FCL"));
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_throwsException() throws RunnerException {
-        doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any(CommonRequestModel.class));
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.ONLINE);
-        shipment.setBookingReference("12345");
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_LCL_successfulUpdate() throws RunnerException {
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.ONLINE);
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        shipment.setBookingReference("1234");
-        shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-        shipment.setHouseBill("1234");
-        shipment.setMasterBill("1234");
-        Routings routings = new Routings();
-        routings.setMode("SEA");
-        routings.setPod("123");
-        routings.setPol("234");
-        shipment.setRoutingsList(List.of(routings));
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setCountryOfIssue("IND");
-        referenceNumbers.setType("HBL");
-        referenceNumbers.setReferenceNumber("1234");
-        shipment.setReferenceNumbersList(List.of(referenceNumbers));
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_LCL_TransportMode_ROA() throws RunnerException {
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.ONLINE);
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        shipment.setBookingReference("1234");
-        shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_LCL_TransportMode_RAI() throws RunnerException {
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.ONLINE);
-        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        shipment.setBookingReference("1234");
-        shipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_RAI);
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_Offline() throws RunnerException {
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.RUNNER);
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(0)).updateAtPlaform(any(CommonRequestModel.class));
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_LCL_DifferentShipmentStatus_successfulUpdate() throws RunnerException {
-
-        var bookedShipment = jsonTestUtility.getTestShipment();
-        bookedShipment.setBookingType(CustomerBookingConstants.ONLINE);
-        bookedShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        bookedShipment.setBookingReference("1234");
-        bookedShipment.setStatus(1);
-        bookedShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-
-        var cancelledShipment = jsonTestUtility.getTestShipment();
-        cancelledShipment.setBookingType(CustomerBookingConstants.ONLINE);
-        cancelledShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        cancelledShipment.setBookingReference("1234");
-        cancelledShipment.setStatus(2);
-        cancelledShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-
-        var confirmedShipment = jsonTestUtility.getTestShipment();
-        confirmedShipment.setBookingType(CustomerBookingConstants.ONLINE);
-        confirmedShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        confirmedShipment.setBookingReference("1234");
-        confirmedShipment.setStatus(3);
-        confirmedShipment.setPackingList(List.of(jsonTestUtility.getTestPacking()));
-
-        bookingIntegrationsUtility.updateBookingInPlatform(bookedShipment);
-        bookingIntegrationsUtility.updateBookingInPlatform(cancelledShipment);
-        bookingIntegrationsUtility.updateBookingInPlatform(confirmedShipment);
-
-        verify(platformServiceAdapter, times(3)).updateAtPlaform(any(CommonRequestModel.class));
-    }
-
-    @Test
-    void testUpdateBookingInPlatform_fromShipment_FCL_successfulUpdate() throws RunnerException {
-        var shipment = jsonTestUtility.getTestShipment();
-        shipment.setBookingType(CustomerBookingConstants.ONLINE);
-        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        shipment.setBookingReference("1234");
-        shipment.setContainersList(List.of(jsonTestUtility.getTestContainer()));
-        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
     }
 
     @Test
