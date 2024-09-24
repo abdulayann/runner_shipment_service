@@ -5469,8 +5469,9 @@ public class ShipmentService implements IShipmentService {
         }
 
         List<DateTimeChangeLog> shipmentDateLogs = dateTimeChangeLogService.getDateTimeChangeLog(shipmentId);
-        Map<DateType, List<DateTimeChangeLog>> dateChangeLogMap = shipmentDateLogs.stream().collect(
-            Collectors.groupingBy(DateTimeChangeLog::getDateType)
+        Map<DateType, List<DateTimeChangeLog>> dateChangeLogMap = shipmentDateLogs.stream()
+                .sorted(Comparator.comparing(DateTimeChangeLog::getUpdatedAt).reversed())
+                .collect(Collectors.groupingBy(DateTimeChangeLog::getDateType)
         );
 
         UpstreamDateUpdateResponse upstreamDateUpdateResponse = new UpstreamDateUpdateResponse();
