@@ -1404,12 +1404,12 @@ public class CommonUtils {
             dictionary.put(CARRIER, shipmentDetails.getCarrierDetails().getShippingLine());
             dictionary.put(VOYAGE, shipmentDetails.getCarrierDetails().getVoyage());
             if(shipmentDetails.getCarrierDetails().getEta() != null) {
-                dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+                dictionary.put(ETA, shipmentDetails.getCarrierDetails().getEta().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
             }
 
             if(shipmentDetails.getCarrierDetails().getEtd() != null) {
                 dictionary.put(ETD, shipmentDetails.getCarrierDetails().getEtd()
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+                    .format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
             }
         }
         dictionary.put(TRANSPORT_MODE, shipmentDetails.getTransportMode());
@@ -1457,7 +1457,7 @@ public class CommonUtils {
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(USER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+        dictionary.put(REQUEST_DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
         dictionary.put(REQUESTER_REMARKS, remarks);
     }
 
@@ -1466,7 +1466,7 @@ public class CommonUtils {
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
-        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
+        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
         dictionary.put(REMARKS, request.getRemarks());
         dictionary.put(STATUS, request.getStatus());
     }
