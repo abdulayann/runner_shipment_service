@@ -63,6 +63,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
@@ -88,6 +89,9 @@ public class MasterDataUtils{
     private ModelMapper modelMapper;
     @Autowired
     private CommonUtils commonUtils;
+
+    @Value("${v1service.take}")
+    private int take;
 
     private static Map<String, Map<String, List<String>>> entityFieldsMasterDataMap = new HashMap<>();
 
@@ -214,6 +218,9 @@ public class MasterDataUtils{
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
                 }
+                if (response instanceof ConsolidationListResponse consolidationListResponse && (consolidationListResponse.getTenantId() != null)) {
+                        tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()));
+                }
             }
 
             Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList.stream().toList());
@@ -228,6 +235,11 @@ public class MasterDataUtils{
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
                     consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
+                }
+                if (response instanceof ConsolidationListResponse consolidationListResponse) {
+                    consolidationListResponse.setTenantMasterData(new HashMap<>());
+                    if (consolidationListResponse.getTenantId() != null)
+                        consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS));
                 }
             }
         } catch (Exception ex) {
@@ -346,18 +358,42 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return requests;
     }
+
+
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
-        if(requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
+
+        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             log.info("Request: {} || MasterListsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
-            List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(requests);
-            masterLists.forEach(masterData -> {
-                String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
-                keyMasterDataMap.put(key, masterData);
-            });
+
+            List<MasterListRequest> masterListRequests = requests.getMasterListRequests();
+            int batchSize = take;
+            int totalBatches = (int) Math.ceil((double) masterListRequests.size() / batchSize);
+
+
+            for (int i = 0; i < totalBatches; i++) {
+
+                List<MasterListRequest> batch = masterListRequests.stream()
+                    .skip((long) i * batchSize)
+                    .limit(batchSize)
+                    .toList();
+
+                MasterListRequestV2 batchRequest = new MasterListRequestV2();
+                batchRequest.setMasterListRequests(batch);
+                batchRequest.setIncludeCols(requests.getIncludeCols());
+
+                List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(batchRequest);
+
+                masterLists.forEach(masterData -> {
+                    String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
+                    keyMasterDataMap.put(key, masterData);
+                });
+            }
         }
+
         return keyMasterDataMap;
     }
+
 
     public List<EntityTransferMasterLists> fetchMultipleMasterData(MasterListRequestV2 requests) {
         V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
@@ -390,24 +426,43 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return locCodesList;
     }
+
     public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(List<String> requests, String onField) {
         Map<String, EntityTransferUnLocations> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
-            log.info("Request: {} || UnLocationsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+        if (requests.isEmpty()) {
+            return keyMasterDataMap;
+        }
+
+        log.info("Request: {} || UnLocationsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+
+        int batchSize = take;
+        int totalBatches = (int) Math.ceil((double) requests.size() / batchSize); // Calculate total number of batches
+
+        for (int i = 0; i < totalBatches; i++) {
+
+            List<String> batch = requests.stream()
+                .skip((long) i * batchSize)
+                .limit(batchSize)
+                .toList();
+
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(onField));
             String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(batch)));
             request.setCriteriaRequests(criteria);
+
             V1DataResponse response = v1Service.fetchUnlocation(request);
             List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
-            if (Objects.isNull(unLocationsList))
-                return keyMasterDataMap;
 
-            unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
+            if (!Objects.isNull(unLocationsList)) {
+
+                unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
+            }
         }
+
         return keyMasterDataMap;
     }
+
 
     // Fetch All Charge Master in single call from V1
     public List<String> createInBulkChargeTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
@@ -1165,7 +1220,7 @@ public class MasterDataUtils{
                 "=",
                 UNLocCode
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse response = v1Service.fetchUnlocation(commonV1ListRequest);
 
         List<UnlocationsResponse> unLocationsList = jsonHelper.convertValueToList(response.entities, UnlocationsResponse.class);
@@ -1176,17 +1231,32 @@ public class MasterDataUtils{
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
         if (Objects.isNull(locCodes))
             return locationMap;
+
+        int batchSize = take;
         if (!locCodes.isEmpty()) {
-            List<Object> criteria = Arrays.asList(
+            List<String> locCodeList = new ArrayList<>(locCodes);
+            int totalBatches = (int) Math.ceil((double) locCodeList.size() / batchSize);
+
+            for (int i = 0; i < totalBatches; i++) {
+
+                List<String> batch = locCodeList.stream()
+                    .skip((long) i * batchSize)
+                    .limit(batchSize)
+                    .toList();
+
+                List<Object> criteria = Arrays.asList(
                     List.of(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "In",
-                    List.of(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (!Objects.isNull(unlocationsResponse))
-                unlocationsResponse.forEach(location ->  locationMap.put(location.getLocationsReferenceGUID(), location));
+                    List.of(batch)
+                );
+
+                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
+                V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+                List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+                if (!Objects.isNull(unlocationsResponse))
+                    unlocationsResponse.forEach(
+                        location -> locationMap.put(location.getLocationsReferenceGUID(), location));
+            }
         }
         return locationMap;
     }
@@ -1201,7 +1271,7 @@ public class MasterDataUtils{
                     "In",
                     List.of(carrierCodes)
             );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             CarrierListObject carrierListObject = new CarrierListObject();
             carrierListObject.setListObject(commonV1ListRequest);
             carrierListObject.setIsList(true);
@@ -1218,7 +1288,7 @@ public class MasterDataUtils{
         if(Objects.isNull(dgSubstanceId))
             return dgSubstanceRow;
         List<Object> criteria = Arrays.asList(List.of("Id"), "=", dgSubstanceId);
-        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest listRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchDangerousGoodData(listRequest);
 
         if(v1DataResponse.entities != null) {
@@ -1354,7 +1424,7 @@ public class MasterDataUtils{
                 "=",
                 value
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
     }

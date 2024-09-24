@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -133,4 +134,9 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private LocalDateTime latDate;
     private String department;
     private LocalDateTime createdAt;
+    private String requestedType;
+    private String requestedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime requestedOn;
+    private Map<String, String> tenantMasterData;
 }

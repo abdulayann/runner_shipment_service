@@ -18,7 +18,8 @@ public enum ShipmentRequestedType {
     SHIPMENT_PUSH_WITHDRAW(8, "Shipment Push Withdraw"),
     APPROVE(9, "Shipment Accepted"),
     REJECT(10, "Shipment Rejected"),
-    WITHDRAW(11, "Shipment Withdrawn");
+    WITHDRAW(11, "Shipment Withdrawn"),
+    SHIPMENT_DETACH(12, "Shipment Detach");
     private final int value;
     private final String description;
 

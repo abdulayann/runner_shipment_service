@@ -403,7 +403,7 @@ public class AWBLabelReport extends IReport{
                 "In",
                 Arrays.asList(unlocations)
         );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         return jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
     }

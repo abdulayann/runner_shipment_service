@@ -31,12 +31,7 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -68,6 +63,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -115,11 +111,12 @@ class MasterDataUtilsTest {
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
     @InjectMocks
-    private MasterDataUtils masterDataUtils;
+    private  MasterDataUtils masterDataUtils;
 
 
     @BeforeAll
-    static void init() throws IOException {
+    static void init() throws IOException, NoSuchFieldException, IllegalAccessException {
+
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
@@ -129,10 +126,14 @@ class MasterDataUtilsTest {
     }
 
     @BeforeEach
-    void setup() {
+    void setup() throws NoSuchFieldException, IllegalAccessException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
         customerBooking = jsonTestUtility.getCustomerBooking();
+
+        Field takeField = MasterDataUtils.class.getDeclaredField("take");
+        takeField.setAccessible(true);
+        takeField.set(masterDataUtils, 500);
     }
 
 
@@ -140,6 +141,8 @@ class MasterDataUtilsTest {
      * Method under test:
      * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String)}
      */
+
+
 
     @Test
     void testCreateInBulkContainerTypeRequest() {
@@ -2106,6 +2109,26 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(TenantModel::new);
 
         masterDataUtils.fetchTenantIdForList(List.of(ShipmentListResponse.builder().tenantId(1).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Console2() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(ConsolidationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Console() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(ConsolidationListResponse.builder().tenantId(1).build()));
 
         assertTrue(isSuccess);
     }

@@ -264,7 +264,17 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ExcludePermissions;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -1136,7 +1146,11 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
         shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
         shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
-        shipmentRequest.setChargable(autoUpdateWtVolResponse.getChargable());
+        shipmentRequest.setChargable(
+                autoUpdateWtVolResponse.getChargable() != null
+                        ? autoUpdateWtVolResponse.getChargable().setScale(10, RoundingMode.HALF_UP).stripTrailingZeros()
+                        : null
+        );
         shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
         shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
         shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
@@ -6279,8 +6293,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> hblCheck(String hblNumber) {
-        List<ShipmentDetailsProjection> shipmentDetails = shipmentDao.findHblNumberInAllBranches(hblNumber);
+    public ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId) {
+        List<ShipmentDetailsProjection> shipmentDetails = shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
 
         if (ObjectUtils.isNotEmpty(shipmentDetails)) {
             String message = "The HBL provided already exists for " +

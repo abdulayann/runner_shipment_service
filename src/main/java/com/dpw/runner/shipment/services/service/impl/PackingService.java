@@ -241,26 +241,15 @@ public class PackingService implements IPackingService {
             if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
                 Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
                 Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
-                Boolean updateConsolOpenForAttachment = false;
                 if(wtUtilization >= 100) {
                     if(!Boolean.TRUE.equals(request.getOverride()))
                         throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s",utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
-                    else
-                        updateConsolOpenForAttachment = true;
                 }
                 else if(volUtilization >= 100) {
                     if(!Boolean.TRUE.equals(request.getOverride()))
                         throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s",utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
-                    else
-                        updateConsolOpenForAttachment = true;
                 }
 
-                Optional<ConsolidationDetails> optional = consolidationDao.findById(request.getConsolidationId());
-                if(Boolean.TRUE.equals(updateConsolOpenForAttachment) && optional.isPresent() && Objects.equals(optional.get().getTransportMode(), TRANSPORT_MODE_AIR)) {
-                    var consol = optional.get();
-                    consol.setOpenForAttachment(false);
-                    consolidationDao.save(consol, false);
-                }
             }
         }
         catch(IOException | ValidationException e) {
@@ -1157,7 +1146,6 @@ public class PackingService implements IPackingService {
             if(optional.isPresent() && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(optional.get().getTransportMode())) {
                 var consol = optional.get();
                 calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
-                commonUtils.updateConsolOpenForAttachment(consol);
                 consolidationDao.save(consol, false);
             }
         }

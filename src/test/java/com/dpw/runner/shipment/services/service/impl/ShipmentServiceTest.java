@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -276,9 +278,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class
@@ -447,6 +446,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testHblCheck_HblNumberFoundInDifferentTenant() {
         String hblNumber = "HBL123";
+        String shipmentId = "sampleShipmentId";
         ShipmentDetailsProjection projection1 = new ShipmentDetailsProjection() {
             @Override
             public Integer getTenantId() { return 1; }
@@ -481,9 +481,9 @@ ShipmentServiceTest extends CommonMocks {
 
         List<ShipmentDetailsProjection> projections = Arrays.asList(projection1, projection2);
 
-        when(shipmentDao.findHblNumberInAllBranches(hblNumber)).thenReturn(projections);
+        when(shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId)).thenReturn(projections);
 
-        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber);
+        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber, shipmentId);
 
         assertNotNull(response);
         assertNotNull(response.getBody());
@@ -497,17 +497,18 @@ ShipmentServiceTest extends CommonMocks {
         HblCheckResponse hblCheckResponse = (HblCheckResponse) data;
         assertNotNull(hblCheckResponse.getMessage());
 
-        verify(shipmentDao).findHblNumberInAllBranches(hblNumber);
+        verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Test
     void testHblCheck_HblNumberNotFoundInDifferentTenant() {
         String hblNumber = "HBL123";
+        String shipmentId = "sampleShipmentId";
         List<ShipmentDetailsProjection> projections = Collections.emptyList();
 
-        when(shipmentDao.findHblNumberInAllBranches(hblNumber)).thenReturn(projections);
+        when(shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId)).thenReturn(projections);
 
-        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber);
+        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber, shipmentId);
 
         assertNotNull(response);
         assertNotNull(response.getBody());
@@ -521,17 +522,18 @@ ShipmentServiceTest extends CommonMocks {
         HblCheckResponse hblCheckResponse = (HblCheckResponse) data;
         assertNull(hblCheckResponse.getMessage());
 
-        verify(shipmentDao).findHblNumberInAllBranches(hblNumber);
+        verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Test
     void testHblCheck_HblNumberIsNull() {
         String hblNumber = null;
+        String shipmentId = "sampleShipmentId";
         List<ShipmentDetailsProjection> projections = Collections.emptyList();
 
-        when(shipmentDao.findHblNumberInAllBranches(hblNumber)).thenReturn(projections);
+        when(shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId)).thenReturn(projections);
 
-        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber);
+        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber, shipmentId);
 
         assertNotNull(response);
         assertNotNull(response.getBody());
@@ -545,12 +547,13 @@ ShipmentServiceTest extends CommonMocks {
         HblCheckResponse hblCheckResponse = (HblCheckResponse) data;
         assertNull(hblCheckResponse.getMessage());
 
-        verify(shipmentDao).findHblNumberInAllBranches(hblNumber);
+        verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Test
     void testHblCheck_HblNumberFoundInDifferentTenantWithSingleEntry() {
-        String mblNumber = "HBL123";
+        String hblNumber = "HBL123";
+        String shipmentId = "sampleShipmentId";
         ShipmentDetailsProjection projection = new ShipmentDetailsProjection() {
             @Override
             public Integer getTenantId() { return 2; }
@@ -568,9 +571,9 @@ ShipmentServiceTest extends CommonMocks {
 
         List<ShipmentDetailsProjection> projections = Collections.singletonList(projection);
 
-        when(shipmentDao.findHblNumberInAllBranches(mblNumber)).thenReturn(projections);
+        when(shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId)).thenReturn(projections);
 
-        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(mblNumber);
+        ResponseEntity<IRunnerResponse> response = shipmentService.hblCheck(hblNumber, shipmentId);
 
         assertNotNull(response);
         assertNotNull(response.getBody());
@@ -584,7 +587,7 @@ ShipmentServiceTest extends CommonMocks {
         HblCheckResponse hblCheckResponse = (HblCheckResponse) data;
         assertNotNull(hblCheckResponse.getMessage());
 
-        verify(shipmentDao).findHblNumberInAllBranches(mblNumber);
+        verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Test
