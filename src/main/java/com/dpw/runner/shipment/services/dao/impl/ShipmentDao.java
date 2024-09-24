@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -92,7 +93,7 @@ public class ShipmentDao implements IShipmentDao {
     private final EntityManager entityManager;
 
     @Autowired
-    public ShipmentDao(EntityManager entityManager) {
+    public ShipmentDao(@Qualifier("primaryEntityManagerFactory") EntityManager entityManager) {
         this.entityManager = entityManager;
     }
 

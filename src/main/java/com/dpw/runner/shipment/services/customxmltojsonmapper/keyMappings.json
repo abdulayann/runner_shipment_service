@@ -1,0 +1,10 @@
+{
+  "Shipment": "shipment",
+  "ID": "id",
+  "Date": "date",
+  "Name[context=shipment]": "shipmentName",
+  "Name[context=consol]": "consolName",
+  "Root": "payload",
+  "Consolidation": "consolidations",
+  "Shipments": "shipments"
+}

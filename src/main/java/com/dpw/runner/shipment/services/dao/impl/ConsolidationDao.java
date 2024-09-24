@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -77,8 +78,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private CommonUtils commonUtils;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    //@Autowired
+    private final EntityManager entityManager;
+
     @Autowired
-    private EntityManager entityManager;
+    public ConsolidationDao(@Qualifier("primaryEntityManagerFactory") EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {

@@ -1,15 +1,15 @@
 package com.dpw.runner.shipment.services.service.TO.impl;
 
+import com.dpw.runner.shipment.services.dto.TO.fzb.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.IncludedAccountingNote;
-import com.dpw.runner.shipment.services.entity.IntegrationEntity;
+import com.dpw.runner.shipment.services.entityTO.IntegrationEntity;
 import com.dpw.runner.shipment.services.entity.SpecifiedAddressLocation;
 import com.dpw.runner.shipment.services.entity.enums.MeasureUnit;
 import com.dpw.runner.shipment.services.entity.enums.MessageType;
 import com.dpw.runner.shipment.services.entity.enums.StatusType;
-import com.dpw.runner.shipment.services.entity.fwb.HandlingSPHInstructions;
-import com.dpw.runner.shipment.services.entity.fwb.HandlingSSRInstructions;
-import com.dpw.runner.shipment.services.entity.fzb.*;
+import com.dpw.runner.shipment.services.dto.TO.fwb.HandlingSPHInstructions;
+import com.dpw.runner.shipment.services.dto.TO.fwb.HandlingSSRInstructions;
 import com.dpw.runner.shipment.services.service.TO.AbstractMessageService;
 import com.dpw.runner.shipment.services.service.TO.request.AwbData;
 import com.dpw.runner.shipment.services.service.TO.request.AwbKafkaEntity;

@@ -96,9 +96,11 @@ public class DescartesAdapterImpl implements IDescartesAdapter {
             String jsonRequest = gson.toJson(descartesRequest);
             HttpEntity<String> entity = new HttpEntity<>(jsonRequest, headers);
 
+            log.info("Hitting Descartes: {} with body: {}", descartesServiceBaseUrl + uploadDocumentEndpoint, entity.getBody());
             ResponseEntity<DescartesBaseResponse> descartesResponse =
                     restTemplate.exchange(descartesServiceBaseUrl + uploadDocumentEndpoint, HttpMethod.POST, entity, DescartesBaseResponse.class);
 
+            log.info("Decartes Response: {}", descartesResponse);
             if (descartesResponse.getBody() == null) {
                 throw new RuntimeException("Invalid response from Descartes.");
             }

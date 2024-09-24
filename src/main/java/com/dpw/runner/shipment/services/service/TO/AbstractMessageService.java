@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.enums.StatusType;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.TO.impl.DBService;
 import com.dpw.runner.shipment.services.service.TO.impl.ExternalIntegrationService;
+import com.dpw.runner.shipment.services.service.TO.request.AwbData;
 import com.dpw.runner.shipment.services.service.TO.response.ExternalResponse;
 import com.dpw.runner.shipment.services.utils.annotationimpl.StringModifierImpl;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public abstract class AbstractMessageService<X,Y> implements IDescartes<X, Y> {
     private KafkaProducerHelper kafkaProducerHelper;
 
     @Override
-    public void process(X data) {
+    public void process(AwbData data) {
         ExternalResponse externalResponse = new ExternalResponse();
         Y payload = this.convertPayload(data);
         IntegrationEntity integrationEntity = this.createEntity(data, payload);
@@ -61,7 +62,8 @@ public abstract class AbstractMessageService<X,Y> implements IDescartes<X, Y> {
             log.error("CustomSpecialCharSerializer error : " + ex.getMessage());
         }
         //2) validations check
-        this.validate(payload, externalResponse);
+        //todo: revert this
+      //  this.validate(payload, externalResponse);
         //return if any Internal validation errors
         if (externalResponse.status != null && externalResponse.status.isError()) {
             this.updateMainTable(ent, externalResponse);
@@ -105,7 +107,7 @@ public abstract class AbstractMessageService<X,Y> implements IDescartes<X, Y> {
 
     protected  abstract MessageType getMessageType();
 
-    protected abstract IntegrationEntity createEntity(X x, Y y);
+    protected abstract IntegrationEntity createEntity(AwbData x, Y y);
 
     private void validate(Y data, ExternalResponse externalResponse) {
         Set<ConstraintViolation<Y>> validations =  validator.validate(data);

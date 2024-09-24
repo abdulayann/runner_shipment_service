@@ -92,13 +92,13 @@ public class AwbDao implements IAwbDao {
     @Autowired
     private IEventDao eventDao;
 
-   // @Autowired
-    private final EntityManager entityManager;
-
-    @Autowired
-    public AwbDao(@Qualifier("primaryEntityManagerFactory") EntityManager entityManager) {
-        this.entityManager = entityManager;
-    }
+//   // @Autowired
+//    private final EntityManager entityManager;
+//
+//    @Autowired
+//    public AwbDao(@Qualifier("primaryEntityManagerFactory") EntityManager entityManager) {
+//        this.entityManager = entityManager;
+//    }
 
     private V1ServiceUtil v1ServiceUtil;
     private ModelMapper modelMapper;

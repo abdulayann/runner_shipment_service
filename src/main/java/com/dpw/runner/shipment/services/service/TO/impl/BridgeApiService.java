@@ -27,10 +27,13 @@ import java.util.UUID;
 @EnableRetry
 public class BridgeApiService {
 
-    @Value("${bridge.baseUrl}${bridge.login}")
+    @Value("${bridge.baseUrl}")
+    private String BRIDGE_BASE_URL;
+
+    @Value("${bridge.login}")
     private String BRIDGE_LOGIN_URL;
 
-    @Value("${bridge.baseUrl}${bridge.validate}")
+    @Value("${bridge.validate}")
     private String BRIDGE_VALIDATE_URL;
 
     @Value("${bridge.tenantCode}")
@@ -58,7 +61,7 @@ public class BridgeApiService {
                     .password(BRIDGE_PASSWORD)
                     .build();
             HttpEntity<BridgeLoginRequest> entity = new HttpEntity<>(loginRequest, AuthHelper.getBridgeServiceHeaders(BRIDGE_X_CLIENT));
-            ResponseEntity<BridgeLoginResponse> loginResponse = restTemplate.postForEntity(BRIDGE_LOGIN_URL, entity, BridgeLoginResponse.class);
+            ResponseEntity<BridgeLoginResponse> loginResponse = restTemplate.postForEntity( BRIDGE_BASE_URL + BRIDGE_LOGIN_URL, entity, BridgeLoginResponse.class);
             if (loginResponse.getStatusCode() != HttpStatus.OK || Objects.isNull(loginResponse.getBody())
                     || Objects.isNull(loginResponse.getBody().getAccessToken()))
                 throw new UnAuthorizedException("Failed to fetch token from Bridge Service!");
@@ -85,7 +88,7 @@ public class BridgeApiService {
         HttpEntity<BridgeValidateRequest> entity = new HttpEntity<>(bridgeValidateRequest, AuthHelper.getBridgeServiceTokenHeader(BRIDGE_X_CLIENT, LOGIN_TOKEN));
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(BRIDGE_VALIDATE_URL, entity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(BRIDGE_BASE_URL + BRIDGE_VALIDATE_URL, entity, String.class);
             return response.getBody();
         } catch (HttpStatusCodeException exception) {
             if (exception.getStatusCode() == HttpStatus.UNAUTHORIZED) {

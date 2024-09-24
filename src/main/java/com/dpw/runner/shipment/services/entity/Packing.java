@@ -122,7 +122,7 @@ public class Packing extends MultiTenancy {
     @Column(name = "max_temp")
     private BigDecimal maxTemp;
 
-    @JoinColumn(name = "max_temp_unit")
+    @Column(name = "max_temp_unit")
     @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 

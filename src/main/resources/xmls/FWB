@@ -1,0 +1,225 @@
+<#-- @ftlvariable name="JsonUtil" type="de.consol.jbl.util.JsonUtil" -->
+<#assign json = JsonUtil.jsonToMap(json)>
+<?xml version='1.0' encoding='UTF-8'?>
+<rsm:Waybill xmlns:ccts="urn:un:unece:uncefact:documentation:standard:CoreComponentsTechnicalSpecification:2" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:8" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rsm="iata:waybill:1" xmlns:ram="iata:datamodel:3" xsi:schemaLocation="iata:waybill:1 Waybill_1.xsd">
+  <rsm:MessageHeaderDocument>
+    <#if json.MessageHeaderDocument.ID??>
+      <ram:ID>${json.MessageHeaderDocument.ID}</ram:ID>
+    </#if>
+    <#if json.MessageHeaderDocument.Name??><ram:Name>${json.MessageHeaderDocument.Name}</ram:Name></#if>
+    <#if json.MessageHeaderDocument.TypeCode??><ram:TypeCode>${json.MessageHeaderDocument.TypeCode}</ram:TypeCode></#if>
+    <#if json.MessageHeaderDocument.IssueDateTime??><ram:IssueDateTime>${json.MessageHeaderDocument.IssueDateTime}</ram:IssueDateTime></#if>
+    <#if json.MessageHeaderDocument.PurposeCode??><ram:PurposeCode>${json.MessageHeaderDocument.PurposeCode}</ram:PurposeCode></#if>
+    <#if json.MessageHeaderDocument.VersionID??><ram:VersionID>${json.MessageHeaderDocument.VersionID}</ram:VersionID></#if>
+    <#if json.MessageHeaderDocument.conversationId??><ram:ConversationID>${json.MessageHeaderDocument.conversationId}</ram:ConversationID></#if>
+    <#if json.MessageHeaderDocument.SenderParty??>
+      <#list json.MessageHeaderDocument.SenderParty as senderParty>
+        <ram:SenderParty>
+          <#if senderParty.value??><ram:PrimaryID schemeID="${senderParty.schemeID}">${senderParty.value}</ram:PrimaryID></#if>
+        </ram:SenderParty>
+      </#list>
+    </#if>
+    <#if json.MessageHeaderDocument.RecipientParty??>
+      <#list json.MessageHeaderDocument.RecipientParty as recipientParty>
+        <ram:RecipientParty>
+          <#if recipientParty.value??><ram:PrimaryID schemeID="${recipientParty.schemeID}">${recipientParty.value}</ram:PrimaryID></#if>
+        </ram:RecipientParty>
+      </#list>
+    </#if>
+  </rsm:MessageHeaderDocument>
+  <rsm:BusinessHeaderDocument>
+    <#if json.BusinessHeaderDocument.ID??><ram:ID>${json.BusinessHeaderDocument.ID}</ram:ID></#if>
+    <ram:SignatoryCarrierAuthentication>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.ActualDateTime??><ram:ActualDateTime>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.ActualDateTime}</ram:ActualDateTime></#if>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.Signatory??><ram:Signatory>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.Signatory}</ram:Signatory></#if>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.IssueAuthenticationLocationName??>
+        <ram:IssueAuthenticationLocation>
+          <ram:Name>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.IssueAuthenticationLocationName}</ram:Name>
+        </ram:IssueAuthenticationLocation>
+      </#if>
+    </ram:SignatoryCarrierAuthentication>
+  </rsm:BusinessHeaderDocument>
+  <#assign MC = json.MasterConsignment>
+  <rsm:MasterConsignment>
+    <#if MC.TotalChargePrepaidIndicator??><ram:TotalChargePrepaidIndicator>${MC.TotalChargePrepaidIndicator?string('true', 'false')}</ram:TotalChargePrepaidIndicator></#if>
+    <#if MC.TotalDisbursementPrepaidIndicator??><ram:TotalDisbursementPrepaidIndicator>${MC.TotalDisbursementPrepaidIndicator?string('true', 'false')}</ram:TotalDisbursementPrepaidIndicator></#if>
+    <#if MC.IncludedTareGrossWeightMeasureWeight??><ram:IncludedTareGrossWeightMeasure unitCode="${MC.IncludedTareGrossWeightMeasureUnitCode}">${MC.IncludedTareGrossWeightMeasureWeight}</ram:IncludedTareGrossWeightMeasure></#if>
+    <#if MC.TotalPieceQuantity??><ram:TotalPieceQuantity>${MC.TotalPieceQuantity}</ram:TotalPieceQuantity></#if>
+    <#if MC.ConsignorParty??>
+    <ram:ConsignorParty>
+        <#if MC.ConsignorParty.Name??><ram:Name>${MC.ConsignorParty.Name}</ram:Name></#if>
+        <ram:PostalStructuredAddress>
+            <#if MC.ConsignorParty.PartyAddress.StreetName??><ram:StreetName>${MC.ConsignorParty.PartyAddress.StreetName}</ram:StreetName></#if>
+            <#if MC.ConsignorParty.PartyAddress.CityName??><ram:CityName>${MC.ConsignorParty.PartyAddress.CityName}</ram:CityName></#if>
+            <#if MC.ConsignorParty.PartyAddress.CountryID??><ram:CountryID>${MC.ConsignorParty.PartyAddress.CountryID}</ram:CountryID></#if>
+        </ram:PostalStructuredAddress>
+    </ram:ConsignorParty>
+</#if>
+
+<#if MC.ConsigneeParty??>
+    <ram:ConsigneeParty>
+        <#if MC.ConsigneeParty.Name??><ram:Name>${MC.ConsigneeParty.Name}</ram:Name></#if>
+        <ram:PostalStructuredAddress>
+            <#if MC.ConsigneeParty.PartyAddress.StreetName??><ram:StreetName>${MC.ConsigneeParty.PartyAddress.StreetName}</ram:StreetName></#if>
+            <#if MC.ConsigneeParty.PartyAddress.CityName??><ram:CityName>${MC.ConsigneeParty.PartyAddress.CityName}</ram:CityName></#if>
+            <#if MC.ConsigneeParty.PartyAddress.CountryID??><ram:CountryID>${MC.ConsigneeParty.PartyAddress.CountryID}</ram:CountryID></#if>
+        </ram:PostalStructuredAddress>
+    </ram:ConsigneeParty>
+</#if>
+
+<ram:OriginLocation>
+    <#if MC.OriginLocation.ID??><ram:ID>${MC.OriginLocation.ID}</ram:ID></#if>
+    <#if MC.OriginLocation.Name??><ram:Name>${MC.OriginLocation.Name}</ram:Name></#if>
+</ram:OriginLocation>
+<ram:FinalDestinationLocation>
+    <#if MC.FinalDestinationLocation.ID??><ram:ID>${MC.FinalDestinationLocation.ID}</ram:ID></#if>
+    <#if MC.FinalDestinationLocation.Name??><ram:Name>${MC.FinalDestinationLocation.Name}</ram:Name></#if>
+</ram:FinalDestinationLocation>
+
+<#if MC.SpecifiedLogisticsTransportMovement??>
+    <#list MC.SpecifiedLogisticsTransportMovement as rout>
+        <ram:SpecifiedLogisticsTransportMovement>
+            <#if rout.StageCode??><ram:StageCode>${rout.StageCode}</ram:StageCode></#if>
+            <#if rout.ModeCode??><ram:ModeCode>${rout.ModeCode}</ram:ModeCode></#if>
+            <#if rout.Mode??><ram:Mode>${rout.Mode}</ram:Mode></#if>
+            <#if rout.ID??><ram:ID>${rout.ID}</ram:ID></#if>
+            <#if rout.SequenceNumeric??><ram:SequenceNumeric>${rout.SequenceNumeric}</ram:SequenceNumeric></#if>
+
+            <#if rout.ArrivalEvent.OccurrenceArrivalLocation.Name??>
+                <ram:ArrivalEvent>
+                    <ram:OccurrenceArrivalLocation>
+                        <#if rout.ArrivalEvent.OccurrenceArrivalLocation.ID??><ram:ID>${rout.ArrivalEvent.OccurrenceArrivalLocation.ID}</ram:ID></#if>
+                        <#if rout.ArrivalEvent.OccurrenceArrivalLocation.Name??><ram:Name>${rout.ArrivalEvent.OccurrenceArrivalLocation.Name}</ram:Name></#if>
+                        <#if rout.ArrivalEvent.OccurrenceArrivalLocation.TypeCode??><ram:TypeCode>${rout.ArrivalEvent.OccurrenceArrivalLocation.TypeCode}</ram:TypeCode></#if>
+                    </ram:OccurrenceArrivalLocation>
+                </ram:ArrivalEvent>
+            </#if>
+
+<#if rout.DepartureEvent.OccurrenceDepartureLocation.Name??>
+      <ram:DepartureEvent>
+        <#if rout.DepartureEvent.ScheduledOccurrenceDateTime??><ram:ScheduledOccurrenceDateTime>${rout.DepartureEvent.ScheduledOccurrenceDateTime}</ram:ScheduledOccurrenceDateTime></#if>
+        <ram:OccurrenceDepartureLocation>
+          <#if rout.DepartureEvent.OccurrenceDepartureLocation.ID??><ram:ID>${rout.DepartureEvent.OccurrenceDepartureLocation.ID}</ram:ID></#if>
+          <#if rout.DepartureEvent.OccurrenceDepartureLocation.Name??><ram:Name>${rout.DepartureEvent.OccurrenceDepartureLocation.Name}</ram:Name></#if>
+          <#if rout.DepartureEvent.OccurrenceDepartureLocation.TypeCode??><ram:TypeCode>${rout.DepartureEvent.OccurrenceDepartureLocation.TypeCode}</ram:TypeCode></#if>
+        </ram:OccurrenceDepartureLocation>
+      </ram:DepartureEvent>
+      </#if>
+
+</ram:SpecifiedLogisticsTransportMovement>
+</#list>
+</#if>
+
+<#if MC.HandlingSPHInstructions??>
+<#list MC.HandlingSPHInstructions as code>
+<#if code.DescriptionCode??>
+<ram:HandlingSPHInstructions>
+<ram:DescriptionCode>${code.DescriptionCode}</ram:DescriptionCode>
+</ram:HandlingSPHInstructions>
+</#if>
+</#list>
+</#if>
+
+
+<#if MC.HandlingSSRInstructions??>
+<#list MC.HandlingSSRInstructions as ssr>
+<#if ssr.Description??>
+<ram:HandlingSSRInstructions>
+<ram:Description>${ssr.Description}</ram:Description>
+</ram:HandlingSSRInstructions>
+</#if>
+</#list>
+</#if>
+
+<#if MC.IncludedAccountingNote??>
+<#list MC.IncludedAccountingNote as note>
+<ram:IncludedAccountingNote>
+<#if note.ContentCode??><ram:ContentCode>${note.ContentCode}</ram:ContentCode></#if>
+<#if note.Content??><ram:Content>${note.Content}</ram:Content></#if>
+</ram:IncludedAccountingNote>
+</#list>
+</#if>
+
+<#if MC.IncludedCustomsNote??>
+<#list MC.IncludedCustomsNote as c>
+<#if c.Content??>
+<ram:IncludedCustomsNote>
+<#if c.ContentCode??><ram:ContentCode>${c.ContentCode}</ram:ContentCode></#if>
+<#if c.Content??><ram:Content>${c.Content}</ram:Content></#if>
+<#if c.SubjectCode??><ram:SubjectCode>${c.SubjectCode}</ram:SubjectCode></#if>
+<#if c.CountryId??><ram:CountryID>${c.CountryId}</ram:CountryID></#if>
+</ram:IncludedCustomsNote>
+</#if>
+</#list>
+</#if>
+<#if MC.ApplicableOriginCurrencyExchangeCode??>
+    <ram:ApplicableOriginCurrencyExchange>
+        <ram:SourceCurrencyCode>${MC.ApplicableOriginCurrencyExchangeCode}</ram:SourceCurrencyCode>
+    </ram:ApplicableOriginCurrencyExchange>
+</#if>
+
+<#if MC.ApplicableLogisticsAllowanceCharge??>
+    <#list MC.ApplicableLogisticsAllowanceCharge as oth>
+        <#if oth.ID??>
+            <ram:ApplicableLogisticsAllowanceCharge>
+                <#if oth.ID??><ram:ID>${oth.ID}</ram:ID></#if>
+                <#if oth.PrepaidIndicator??><ram:PrepaidIndicator>${oth.PrepaidIndicator?string('true', 'false')}</ram:PrepaidIndicator></#if>
+                <#if oth.PartyTypeCode??><ram:PartyTypeCode>${oth.PartyTypeCode}</ram:PartyTypeCode></#if>
+                <#if oth.ActualAmount??><ram:ActualAmount currencyID="${oth.ActualAmountCurrency}">${oth.ActualAmount}</ram:ActualAmount></#if>
+            </ram:ApplicableLogisticsAllowanceCharge>
+        </#if>
+    </#list>
+</#if>
+
+<#if MC.ApplicableRating??>
+    <#list MC.ApplicableRating as AR>
+        <#if AR.TypeCode??>
+            <ram:ApplicableRating>
+                <#if AR.TypeCode??><ram:TypeCode>${AR.TypeCode}</ram:TypeCode></#if>
+                <#if AR.TotalChargeAmount??><ram:TotalChargeAmount currencyID="${AR.TotalChargeCurrency}">${AR.TotalChargeAmount}</ram:TotalChargeAmount></#if>
+                <#if AR.IncludedMasterConsignmentItem??>
+                    <#list AR.IncludedMasterConsignmentItem as good>
+                        <#if good.SequenceNumeric??>
+                            <ram:IncludedMasterConsignmentItem>
+                                <#if good.SequenceNumeric??><ram:SequenceNumeric>${good.SequenceNumeric}</ram:SequenceNumeric></#if>
+                                <#if good.TypeCode??><ram:TypeCode>${good.TypeCode}</ram:TypeCode></#if>
+                                <#if good.GrossWeightMeasure??><ram:GrossWeightMeasure unitCode="${good.GrossWeightMeasureUnit}">${good.GrossWeightMeasure}</ram:GrossWeightMeasure></#if>
+                                <#if good.PieceQuantity??><ram:PieceQuantity>${good.PieceQuantity}</ram:PieceQuantity></#if>
+                                <#if good.Information??><ram:Information>${good.Information}</ram:Information></#if>
+                                <#if good.ApplicableFreightRateServiceCharge??>
+                                    <ram:ApplicableFreightRateServiceCharge>
+                                        <#if good.ApplicableFreightRateServiceCharge.CategoryCode??><ram:CategoryCode>${good.ApplicableFreightRateServiceCharge.CategoryCode}</ram:CategoryCode></#if>
+                                        <#if good.ApplicableFreightRateServiceCharge.ChargeableWeightMeasure??><ram:ChargeableWeightMeasure unitCode="${good.ApplicableFreightRateServiceCharge.ChargeableWeightMeasureUnit}">${good.ApplicableFreightRateServiceCharge.ChargeableWeightMeasure}</ram:ChargeableWeightMeasure></#if>
+                                        <#if good.ApplicableFreightRateServiceCharge.AppliedRate??><ram:AppliedRate>${good.ApplicableFreightRateServiceCharge.AppliedRate}</ram:AppliedRate></#if>
+                                        <#if good.ApplicableFreightRateServiceCharge.AppliedAmount??><ram:AppliedAmount currencyID="${good.ApplicableFreightRateServiceCharge.AppliedAmountCurrency}">${good.ApplicableFreightRateServiceCharge.AppliedAmount}</ram:AppliedAmount></#if>
+                                    </ram:ApplicableFreightRateServiceCharge>
+                                </ram:IncludedMasterConsignmentItem>
+                            </#if>
+                        </#if>
+                    </#list>
+                </#if>
+            </ram:ApplicableRating>
+        </#if>
+    </#list>
+</#if>
+
+<#if MC.ApplicableTotalRating??>
+    <#list MC.ApplicableTotalRating as AR_TOTAL>
+        <ram:ApplicableTotalRating>
+        <#if AR_TOTAL.TypeCode??><ram:TypeCode>${AR_TOTAL.TypeCode}</ram:TypeCode></#if>
+        <#list AR_TOTAL.ApplicablePrepaidCollectMonetarySummation as TOTAL_CHARGE>
+            <ram:ApplicablePrepaidCollectMonetarySummation>
+                <#if TOTAL_CHARGE.PrepaidIndicator??><ram:PrepaidIndicator>${TOTAL_CHARGE.PrepaidIndicator?string('true', 'false')}</ram:PrepaidIndicator></#if>
+                <#if TOTAL_CHARGE.WeightChargeTotalAmount??><ram:WeightChargeTotalAmount currencyID="${TOTAL_CHARGE.WeightChargeTotalAmountCurrency}">${TOTAL_CHARGE.WeightChargeTotalAmount}</ram:WeightChargeTotalAmount></#if>
+                <#if TOTAL_CHARGE.ValuationChargeTotalAmount??><ram:ValuationChargeTotalAmount currencyID="${TOTAL_CHARGE.ValuationChargeTotalAmountCurrency}">${TOTAL_CHARGE.ValuationChargeTotalAmount}</ram:ValuationChargeTotalAmount> </#if>
+                <#if TOTAL_CHARGE.TaxTotalAmount??><ram:TaxTotalAmount  currencyID="${TOTAL_CHARGE.TaxTotalAmountCurrency}">${TOTAL_CHARGE.TaxTotalAmount}</ram:TaxTotalAmount> </#if>
+                <#if TOTAL_CHARGE.AgentTotalDuePayableAmount??><ram:AgentTotalDuePayableAmount currencyID="${TOTAL_CHARGE.AgentTotalDuePayableAmountCurrency}">${TOTAL_CHARGE.AgentTotalDuePayableAmount}</ram:AgentTotalDuePayableAmount></#if>
+                <#if TOTAL_CHARGE.CarrierTotalDuePayableAmount??><ram:CarrierTotalDuePayableAmount currencyID="${TOTAL_CHARGE.CarrierTotalDuePayableAmountCurr}">${TOTAL_CHARGE.CarrierTotalDuePayableAmount}</ram:CarrierTotalDuePayableAmount></#if>
+                <#if TOTAL_CHARGE.GrandTotalAmount??><ram:GrandTotalAmount currencyID="${TOTAL_CHARGE.GrandTotalAmountCurrency}">${TOTAL_CHARGE.GrandTotalAmount}</ram:GrandTotalAmount></#if>
+            </ram:ApplicablePrepaidCollectMonetarySummation>
+        </#list>
+        </ram:ApplicableTotalRating>
+    </#list>
+</#if>
+</rsm:MasterConsignment>
+</rsm:Waybill>

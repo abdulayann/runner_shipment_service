@@ -1,20 +1,21 @@
 package com.dpw.runner.shipment.services.service.TO.impl;
 
 import com.dpw.runner.shipment.services.commons.EAWBConstants;
+import com.dpw.runner.shipment.services.dto.TO.fwb.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.IncludedAccountingNote;
-import com.dpw.runner.shipment.services.entity.IntegrationEntity;
+import com.dpw.runner.shipment.services.entityTO.IntegrationEntity;
 import com.dpw.runner.shipment.services.entity.SpecifiedAddressLocation;
 import com.dpw.runner.shipment.services.entity.enums.MeasureUnit;
 import com.dpw.runner.shipment.services.entity.enums.MessageType;
 import com.dpw.runner.shipment.services.entity.enums.RatingTypeIndicator;
 import com.dpw.runner.shipment.services.entity.enums.StatusType;
-import com.dpw.runner.shipment.services.entity.fwb.*;
 import com.dpw.runner.shipment.services.service.TO.AbstractMessageService;
 import com.dpw.runner.shipment.services.service.TO.request.AwbData;
 import com.dpw.runner.shipment.services.service.TO.request.AwbKafkaEntity;
 import com.dpw.runner.shipment.services.service.TO.request.MetaData;
 import com.dpw.runner.shipment.services.service.TO.request.TenantInfoMeta;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.stereotype.Service;
@@ -90,7 +91,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
         Party consignor = new Party();
         consignor.setName(StringUtils.substring(shipInfo.getShipperName(), 0 ,70));
         PartyAddress partyAddress = new PartyAddress();
-        if (Objects.nonNull(meta.getShipper())) {
+        if (meta != null && Objects.nonNull(meta.getShipper())) {
             partyAddress.setCountryID(meta.getShipper().country);
             partyAddress.setCityName(StringUtils.substring(meta.getShipper().getCity(), 0 ,17));
             if (Objects.nonNull(data.getAwbShipmentInfo()))
@@ -103,7 +104,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
         Party consignee = new Party();
         consignee.setName(StringUtils.substring(shipInfo.getConsigneeName(), 0 ,70));
         PartyAddress consigneeAdd = new PartyAddress ();
-        if (Objects.nonNull(meta.getConsignee())) {
+        if (meta != null && Objects.nonNull(meta.getConsignee())) {
             consigneeAdd.setCountryID(meta.getConsignee().country);
             consigneeAdd.setCityName(StringUtils.substring(meta.getConsignee().getCity(), 0 ,17));
             if (Objects.nonNull(data.getAwbShipmentInfo()))
@@ -140,7 +141,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
             m.setIncludedAccountingNotes(acc);
         }
 
-        if (Objects.nonNull(data.getMeta().getIssueingAgent())) {
+        if (Objects.nonNull(data.getMeta()) && Objects.nonNull(data.getMeta().getIssueingAgent())) {
             m.setIncludedCustomsNote(List.of(IncludedCustomsNote.builder().content(data.getMeta().getIssueingAgent().getNumber()).build()));
         }
 
@@ -222,7 +223,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
         for(AwbGoodsDescriptionInfo good : data.getAwbGoodsDescriptionInfo()) {
             IncludedMasterConsignmentItem i = new IncludedMasterConsignmentItem();
             i.setSequenceNumeric(seq++);
-            i.setTypeCode(good.getHsCode());
+            i.setTypeCode(good.getHsCode() != null ? good.getHsCode() : null);
             if (Objects.nonNull(good.getGrossWt()) && Strings.isNotBlank(good.getGrossWtUnit())) {
                 i.setGrossWeightMeasure(convertToKg(good.getGrossWt().doubleValue(), good.getGrossWtUnit()));
                 i.setGrossWeightMeasureUnit(MeasureUnit.KGM.name());
@@ -241,13 +242,13 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
 //                i.setTransportLogisticsPackageList(packages);
 //            }
             ApplicableFreightRateServiceCharge appFr = new ApplicableFreightRateServiceCharge();
-            appFr.setCategoryCode(getValueFromMap(String.valueOf(good.getRateClass()), data.getMeta().getRateClass()));
+            appFr.setCategoryCode(getValueFromMap(String.valueOf(good.getRateClass() != null ? good.getRateClass() : null), data.getMeta() != null ? data.getMeta().getRateClass() : null));
             if (Objects.nonNull(good.getChargeableWt()) && Strings.isNotBlank(good.getGrossWtUnit())) {
                 appFr.setChargeableWeightMeasure(convertToKg(good.getChargeableWt().doubleValue(), good.getGrossWtUnit()));
                 appFr.setChargeableWeightMeasureUnit(MeasureUnit.KGM.name());
             }
-            appFr.setAppliedRate(good.getRateCharge().doubleValue());
-            appFr.setAppliedAmount(good.getTotalAmount().doubleValue());
+            appFr.setAppliedRate(good.getRateCharge() != null ? good.getRateCharge().doubleValue() : null);
+            appFr.setAppliedAmount(good.getTotalAmount() != null ? good.getTotalAmount().doubleValue() : null);
             appFr.setAppliedAmountCurrency(getCurrency(data));
             i.setApplicableFreightRateServiceCharge(appFr);
             goods.add(i);
@@ -275,7 +276,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
             ch.setPrepaidIndicator(Objects.nonNull(oth.getModeOfPayment()) && oth.getModeOfPayment().startsWith("P"));
 
 
-            String chargeDueValue = getValueFromMap(String.valueOf(oth.getChargeDue()), data.getMeta().getChargeDue());
+            String chargeDueValue = getValueFromMap(String.valueOf(oth.getChargeDue()), data.getMeta() != null ? data.getMeta().getChargeDue() : null);
             if (chargeDueValue != null) {
                 ch.setPartyTypeCode(chargeDueValue.startsWith("A") ? "A" : "C");
             }
@@ -395,7 +396,7 @@ public class FWBService extends AbstractMessageService<AwbData, EAWBPayload> {
         mHD.setIssueDateTime(getUTCTimeZone());
 
         List<IDdto> senderParty = new ArrayList<>();
-        senderParty.add(IDdto.builder().schemeID("C").value(data.getMeta().getTenantInfo().getPimaAddress()).build());
+        senderParty.add(IDdto.builder().schemeID("C").value(data.getMeta() != null ? data.getMeta().getTenantInfo().getPimaAddress() : StringUtility.getEmptyString()).build());
         mHD.setSenderPartyIds(senderParty);
 
         List<IDdto> receipientParty = new ArrayList<>();

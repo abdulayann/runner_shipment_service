@@ -209,13 +209,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "freight_local")
     private BigDecimal freightLocal;
 
-    @Column(name = "freightLocal_Currency")
+    @Column(name = "freight_local_currency")
     private String freightLocalCurrency;
 
     @Column(name = "freight_overseas")
     private BigDecimal freightOverseas;
 
-    @Column(name = "freightOverseas_Currency")
+    @Column(name = "freight_overseas_currency")
     @DedicatedMasterData(type = Constants.CURRENCY_MASTER_DATA)
     private String freightOverseasCurrency;
 

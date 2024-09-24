@@ -71,6 +71,7 @@ public class ExternalIntegrationService {
         try {
             String xml = bridgeApiService.validateTemplate(xmlReader.readXmlTemplate(type.name()), jsonHelper.convertToJson(payload));
             externalResponse.setXmlPayload(new String(Base64.getEncoder().encode(xml.getBytes())));
+            log.info("xml payload: {}", xml);
         } catch (Exception ex) {
             externalResponse.setMessage(ex.getMessage());
             externalResponse.setStatus(StatusType.INTERNAL_ERROR);

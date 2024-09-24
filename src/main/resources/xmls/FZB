@@ -1,0 +1,232 @@
+<#-- @ftlvariable name="JsonUtil" type="de.consol.jbl.util.JsonUtil" -->
+<#assign json = JsonUtil.jsonToMap(json)>
+<?xml version='1.0' encoding='UTF-8'?>
+<ns0:HouseWaybill xmlns:ns0="iata:housewaybill:1" xmlns:ns1="urn:un:unece:uncefact:data:standard:QualifiedDataType:7" xmlns:ns2="urn:un:unece:uncefact:identifierlist:standard:5:ISO316612A:SecondEdition2006VI-6" xmlns:ns3="urn:un:unece:uncefact:codelist:standard:IANA:MIMEMediaType:2009-09-01" xmlns:ns4="urn:un:unece:uncefact:codelist:standard:6:0133:40106" xmlns:ram="iata:datamodel:3" xmlns:ns5="urn:un:unece:uncefact:codelist:standard:UNECE:DocumentNameCode:D09A" xmlns:ns6="urn:un:unece:uncefact:codelist:standard:5:ISO42173A:2009-09-09" xmlns:ns7="urn:un:unece:uncefact:codelist:standard:6:3055:D09A" xmlns:ns9="urn:un:unece:uncefact:codelist:standard:UNECE:TransportModeCode:2" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:8" xmlns:ns11="urn:un:unece:uncefact:codelist:standard:6:Recommendation20:6" xmlns:ns10="urn:un:unece:uncefact:codelist:standard:IANA:CharacterSetCode:2007-05-14" xmlns:ns8="urn:un:unece:uncefact:codelist:standard:UNECE:PartyRoleCode:D09A">
+  <ns0:MessageHeaderDocument>
+    <#if json.MessageHeaderDocument.ID??>
+      <ram:ID>${json.MessageHeaderDocument.ID}</ram:ID>
+    </#if>
+    <#if json.MessageHeaderDocument.Name??><ram:Name>${json.MessageHeaderDocument.Name}</ram:Name></#if>
+    <#if json.MessageHeaderDocument.TypeCode??><ram:TypeCode>${json.MessageHeaderDocument.TypeCode}</ram:TypeCode></#if>
+    <#if json.MessageHeaderDocument.IssueDateTime??><ram:IssueDateTime>${json.MessageHeaderDocument.IssueDateTime}</ram:IssueDateTime></#if>
+    <#if json.MessageHeaderDocument.PurposeCode??><ram:PurposeCode>${json.MessageHeaderDocument.PurposeCode}</ram:PurposeCode></#if>
+    <#if json.MessageHeaderDocument.VersionID??><ram:VersionID>${json.MessageHeaderDocument.VersionID}</ram:VersionID></#if>
+    <#if json.MessageHeaderDocument.conversationId??><ram:ConversationID>${json.MessageHeaderDocument.conversationId}</ram:ConversationID></#if>
+    <#if json.MessageHeaderDocument.SenderParty??>
+      <#list json.MessageHeaderDocument.SenderParty as senderParty>
+        <ram:SenderParty>
+          <#if senderParty.value??><ram:PrimaryID schemeID="${senderParty.schemeID}">${senderParty.value}</ram:PrimaryID></#if>
+        </ram:SenderParty>
+      </#list>
+    </#if>
+    <#if json.MessageHeaderDocument.RecipientParty??>
+      <#list json.MessageHeaderDocument.RecipientParty as recipientParty>
+        <ram:RecipientParty>
+          <#if recipientParty.value??><ram:PrimaryID schemeID="${recipientParty.schemeID}">${recipientParty.value}</ram:PrimaryID></#if>
+        </ram:RecipientParty>
+      </#list>
+    </#if>
+  </ns0:MessageHeaderDocument>
+  <ns0:BusinessHeaderDocument>
+    <#if json.BusinessHeaderDocument.ID??><ram:ID>${json.BusinessHeaderDocument.ID}</ram:ID></#if>
+    <#if json.BusinessHeaderDocument.SignatoryConsignorAuthenticationName??>
+        <ram:SignatoryConsignorAuthentication>
+          <ram:Signatory>${json.BusinessHeaderDocument.SignatoryConsignorAuthenticationName}</ram:Signatory>
+        </ram:SignatoryConsignorAuthentication>
+    </#if>
+    <ram:SignatoryCarrierAuthentication>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.ActualDateTime??><ram:ActualDateTime>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.ActualDateTime}</ram:ActualDateTime></#if>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.Signatory??><ram:Signatory>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.Signatory}</ram:Signatory></#if>
+      <#if json.BusinessHeaderDocument.SignatoryCarrierAuthentication.IssueAuthenticationLocationName??>
+        <ram:IssueAuthenticationLocation>
+          <ram:Name>${json.BusinessHeaderDocument.SignatoryCarrierAuthentication.IssueAuthenticationLocationName}</ram:Name>
+        </ram:IssueAuthenticationLocation>
+      </#if>
+    </ram:SignatoryCarrierAuthentication>
+  </ns0:BusinessHeaderDocument>
+  <#assign MACO = json.MasterConsignment>
+  <ns0:MasterConsignment>
+    <#if MACO.IncludedTareGrossWeightMeasure??><ram:IncludedTareGrossWeightMeasure unitCode="${MACO.IncludedTareGrossWeightMeasureUnitCode}">${MACO.IncludedTareGrossWeightMeasure}</ram:IncludedTareGrossWeightMeasure></#if>
+    <#if MACO.TotalPieceQuantity??><ram:TotalPieceQuantity>${MACO.TotalPieceQuantity}</ram:TotalPieceQuantity></#if>
+
+
+    <#if MACO.MasterAwbNumber??>
+    <ram:TransportContractDocument>
+      <ram:ID>${MACO.MasterAwbNumber}</ram:ID>
+    </ram:TransportContractDocument>
+    </#if>
+
+
+
+    <#if MACO.OriginLocation??>
+    <ram:OriginLocation>
+      <#if MACO.OriginLocation.Id??><ram:ID>${MACO.OriginLocation.Id}</ram:ID></#if>
+      <#if MACO.OriginLocation.Name??><ram:Name>${MACO.OriginLocation.Name}</ram:Name></#if>
+    </ram:OriginLocation>
+    </#if>
+
+    <#if MACO.FinalDestinationLocation??>
+    <ram:FinalDestinationLocation>
+      <#if MACO.FinalDestinationLocation.Id??><ram:ID>${MACO.FinalDestinationLocation.Id}</ram:ID></#if>
+      <#if MACO.FinalDestinationLocation.Name??><ram:Name>${MACO.FinalDestinationLocation.Name}</ram:Name></#if>
+    </ram:FinalDestinationLocation>
+    </#if>
+
+    <#assign MC = MACO.IncludedHouseConsignment>
+    <ram:IncludedHouseConsignment>
+        <#if MC.ID??><ram:ID>${MC.ID}</ram:ID></#if>
+        <#if MC.TotalChargePrepaidIndicator??><ram:TotalChargePrepaidIndicator>${MC.TotalChargePrepaidIndicator?string('true', 'false')}</ram:TotalChargePrepaidIndicator></#if>
+        <#if MC.WeightChargeTotalAmount??><ram:WeightTotalChargeAmount>${MC.WeightChargeTotalAmount}</ram:WeightTotalChargeAmount></#if>
+        <#if MC.ValuationChargeTotalAmount??><ram:ValuationTotalChargeAmount  currencyID="${MC.AmountCurrency}">${MC.ValuationChargeTotalAmount}</ram:ValuationTotalChargeAmount></#if>
+        <#if MC.TaxTotalAmount??><ram:TaxTotalChargeAmount  currencyID="${MC.AmountCurrency}">${MC.TaxTotalAmount}</ram:TaxTotalChargeAmount></#if>
+        <#if MC.TotalDisbursementPrepaidIndicator??><ram:TotalDisbursementPrepaidIndicator>${MC.TotalDisbursementPrepaidIndicator?string('true', 'false')}</ram:TotalDisbursementPrepaidIndicator></#if>
+        <#if MC.AgentTotalDisbursementAmount??><ram:AgentTotalDisbursementAmount currencyID ="${MC.AmountCurrency}" >${MC.AgentTotalDisbursementAmount} </ram:AgentTotalDisbursementAmount></#if>
+        <#if MC.CarrierTotalDisbursementAmount??><ram:CarrierTotalDisbursementAmount currencyID ="${MC.AmountCurrency}" >${MC.CarrierTotalDisbursementAmount} </ram:CarrierTotalDisbursementAmount></#if>
+        <#if MC.TotalPrepaidChargeAmount??><ram:TotalPrepaidChargeAmount currencyID ="${MC.AmountCurrency}" >${MC.TotalPrepaidChargeAmount} </ram:TotalPrepaidChargeAmount></#if>
+        <#if MC.TotalCollectChargeAmount??><ram:TotalCollectChargeAmount currencyID ="${MC.AmountCurrency}" >${MC.TotalCollectChargeAmount} </ram:TotalCollectChargeAmount></#if>
+        <#if MC.IncludedTareGrossWeightMeasure??><ram:IncludedTareGrossWeightMeasure unitCode="${MC.IncludedTareGrossWeightMeasureUnitCode}">${MC.IncludedTareGrossWeightMeasure}</ram:IncludedTareGrossWeightMeasure></#if>
+        <#if MC.TotalPieceQuantity??><ram:TotalPieceQuantity>${MC.TotalPieceQuantity}</ram:TotalPieceQuantity></#if>
+        <#if MC.SummaryDescription??><ram:SummaryDescription>${MC.SummaryDescription}</ram:SummaryDescription></#if>
+
+        <#if MC.ConsignorParty??>
+            <ram:ConsignorParty>
+                <#if MC.ConsignorParty.Name??><ram:Name>${MC.ConsignorParty.Name}</ram:Name></#if>
+                <ram:PostalStructuredAddress>
+                    <#if MC.ConsignorParty.PartyAddress.StreetName??><ram:StreetName >${MC.ConsignorParty.PartyAddress.StreetName}</ram:StreetName></#if>
+                    <#if MC.ConsignorParty.PartyAddress.CityName??><ram:CityName>${MC.ConsignorParty.PartyAddress.CityName}</ram:CityName></#if>
+                    <#if MC.ConsignorParty.PartyAddress.CountryID??><ram:CountryID>${MC.ConsignorParty.PartyAddress.CountryID}</ram:CountryID></#if>
+                </ram:PostalStructuredAddress>
+            </ram:ConsignorParty>
+        </#if>
+
+        <#if MC.ConsigneeParty??>
+            <ram:ConsigneeParty>
+                <#if MC.ConsigneeParty.Name??><ram:Name>${MC.ConsigneeParty.Name}</ram:Name></#if>
+                <ram:PostalStructuredAddress>
+                    <#if MC.ConsigneeParty.PartyAddress.StreetName??><ram:StreetName >${MC.ConsigneeParty.PartyAddress.StreetName}</ram:StreetName></#if>
+                    <#if MC.ConsigneeParty.PartyAddress.CityName??><ram:CityName>${MC.ConsigneeParty.PartyAddress.CityName}</ram:CityName></#if>
+                    <#if MC.ConsigneeParty.PartyAddress.CountryID??><ram:CountryID>${MC.ConsigneeParty.PartyAddress.CountryID}</ram:CountryID></#if>
+                </ram:PostalStructuredAddress>
+            </ram:ConsigneeParty>
+        </#if>
+
+        <#if MC.OriginLocation??>
+        <ram:OriginLocation>
+            <#if MC.OriginLocation.Id??><ram:ID>${MC.OriginLocation.Id}</ram:ID></#if>
+            <#if MC.OriginLocation.Name??><ram:Name>${MC.OriginLocation.Name}</ram:Name></#if>
+        </ram:OriginLocation>
+        </#if>
+
+        <#if MC.FinalDestinationLocation??>
+        <ram:FinalDestinationLocation>
+            <#if MC.FinalDestinationLocation.Id??><ram:ID>${MC.FinalDestinationLocation.Id}</ram:ID></#if>
+            <#if MC.FinalDestinationLocation.Name??><ram:Name>${MC.FinalDestinationLocation.Name}</ram:Name></#if>
+        </ram:FinalDestinationLocation>
+        </#if>
+
+        <#if MC.SpecifiedLogisticsTransportMovement??>
+            <#list MC.SpecifiedLogisticsTransportMovement as rout>
+                <ram:SpecifiedLogisticsTransportMovement>
+                    <#if rout.StageCode??><ram:StageCode>${rout.StageCode}</ram:StageCode></#if>
+                    <#if rout.ModeCode??><ram:ModeCode>${rout.ModeCode}</ram:ModeCode></#if>
+                    <#if rout.Mode??><ram:Mode>${rout.Mode}</ram:Mode></#if>
+                    <#if rout.ID??><ram:ID>${rout.ID}</ram:ID></#if>
+                    <#if rout.SequenceNumeric??><ram:SequenceNumeric>${rout.SequenceNumeric}</ram:SequenceNumeric></#if>
+
+                    <#if rout.ArrivalEvent.OccurrenceLocation.Name??>
+                        <ram:ArrivalEvent>
+                            <ram:OccurrenceArrivalLocation>
+                                <#if rout.ArrivalEvent.OccurrenceLocation.ID??><ram:ID>${rout.ArrivalEvent.OccurrenceLocation.ID}</ram:ID></#if>
+                                <#if rout.ArrivalEvent.OccurrenceLocation.Name??><ram:Name>${rout.ArrivalEvent.OccurrenceLocation.Name}</ram:Name></#if>
+                                <#if rout.ArrivalEvent.OccurrenceLocation.TypeCode??><ram:TypeCode>${rout.ArrivalEvent.OccurrenceLocation.TypeCode}</ram:TypeCode></#if>
+                            </ram:OccurrenceArrivalLocation>
+                        </ram:ArrivalEvent>
+                    </#if>
+                    <#if rout.DepartureEvent.OccurrenceLocation.Name??>
+                        <ram:DepartureEvent>
+                            <#if rout.DepartureEvent.ScheduledOccurrenceDateTime??><ram:ScheduledOccurrenceDateTime>${rout.DepartureEvent.ScheduledOccurrenceDateTime}</ram:ScheduledOccurrenceDateTime></#if>
+                            <ram:OccurrenceDepartureLocation>
+                            <#if rout.DepartureEvent.OccurrenceLocation.ID??><ram:ID>${rout.DepartureEvent.OccurrenceLocation.ID}</ram:ID></#if>
+                            <#if rout.DepartureEvent.OccurrenceLocation.Name??><ram:Name>${rout.DepartureEvent.OccurrenceLocation.Name}</ram:Name></#if>
+                            <#if rout.DepartureEvent.OccurrenceLocation.TypeCode??><ram:TypeCode>${rout.DepartureEvent.OccurrenceLocation.TypeCode}</ram:TypeCode></#if>
+                            </ram:OccurrenceDepartureLocation>
+                        </ram:DepartureEvent>
+                    </#if>
+                </ram:SpecifiedLogisticsTransportMovement>
+            </#list>
+        </#if>
+
+
+        <#if MC.HandlingSPHInstructions??>
+            <#list MC.HandlingSPHInstructions as code>
+                <#if code.DescriptionCode??>
+                <ram:HandlingSPHInstructions>
+                <ram:DescriptionCode>${code.DescriptionCode}</ram:DescriptionCode>
+                </ram:HandlingSPHInstructions>
+                </#if>
+            </#list>
+        </#if>
+
+        <#if MC.HandlingSSRInstructions??>
+            <#list MC.HandlingSSRInstructions as ssr>
+                <#if ssr.Description??>
+                <ram:HandlingSSRInstructions>
+                <ram:Description>${ssr.Description}</ram:Description>
+                </ram:HandlingSSRInstructions>
+                </#if>
+            </#list>
+        </#if>
+
+        <#if MC.IncludedAccountingNote??>
+            <#list MC.IncludedAccountingNote as note>
+            <ram:IncludedAccountingNote>
+            <#if note.ContentCode??><ram:ContentCode>${note.ContentCode}</ram:ContentCode></#if>
+            <#if note.Content??><ram:Content>${note.Content}</ram:Content></#if>
+            </ram:IncludedAccountingNote>
+            </#list>
+        </#if>
+
+        <#if MC.IncludedCustomsNote??>
+            <#list MC.IncludedCustomsNote as c>
+                <#if c.Content??>
+                    <ram:IncludedCustomsNote>
+                    <#if c.ContentCode??><ram:ContentCode>${c.ContentCode}</ram:ContentCode></#if>
+                    <#if c.Content??><ram:Content>${c.Content}</ram:Content></#if>
+                    <#if c.SubjectCode??><ram:SubjectCode>${c.SubjectCode}</ram:SubjectCode></#if>
+                    <#if c.CountryId??><ram:CountryID>${c.CountryId}</ram:CountryID></#if>
+                    </ram:IncludedCustomsNote>
+                </#if>
+            </#list>
+        </#if>
+
+        <#assign Mitem = MC.IncludedHouseConsignmentItem>
+        <#if Mitem??>
+        <#list Mitem as i>
+            <ram:IncludedHouseConsignmentItem>
+                <#if i.SequenceNumber??><ram:SequenceNumeric>${i.SequenceNumber}</ram:SequenceNumeric></#if>
+                <#if i.TypeCode??><ram:TypeCode>${i.TypeCode}</ram:TypeCode></#if>
+                <#if i.GrossWeight??><ram:GrossWeightMeasure unitCode="${i.GrossWeight.Code}">${i.GrossWeight.Value}</ram:GrossWeightMeasure></#if>
+                <#if i.PieceQuantity??><ram:PieceQuantity>${i.PieceQuantity}</ram:PieceQuantity></#if>
+                <ram:NatureIdentificationTransportCargo>
+                <ram:Identification>${i.natureIdentificationTransportCargo}</ram:Identification>
+                </ram:NatureIdentificationTransportCargo>
+                <ram:OriginCountry>
+                <ram:ID>${i.OriginCountryId}</ram:ID>
+                </ram:OriginCountry>
+
+                <#if i.AppFreightRateServiceCharge??>
+                <ram:ApplicableFreightRateServiceCharge>
+                    <#if i.AppFreightRateServiceCharge.CategoryCode??><ram:CategoryCode>${i.AppFreightRateServiceCharge.CategoryCode}</ram:CategoryCode></#if>
+                    <#if i.AppFreightRateServiceCharge.ChargeableWeightMeasure??><ram:ChargeableWeightMeasure unitCode="${i.AppFreightRateServiceCharge.ChargeableWeightMeasureUnit}">${i.AppFreightRateServiceCharge.ChargeableWeightMeasure}</ram:ChargeableWeightMeasure></#if>
+                    <#if i.AppFreightRateServiceCharge.AppliedRate??><ram:AppliedRate>${i.AppFreightRateServiceCharge.AppliedRate}</ram:AppliedRate></#if>
+                    <#if i.AppFreightRateServiceCharge.AppliedAmount??><ram:AppliedAmount currencyID="${i.AppFreightRateServiceCharge.AppliedAmountCurr}">${i.AppFreightRateServiceCharge.AppliedAmount}</ram:AppliedAmount></#if>
+                </ram:ApplicableFreightRateServiceCharge>
+                </#if>
+
+            </ram:IncludedHouseConsignmentItem>
+        </#list>
+        </#if>
+
+    </ram:IncludedHouseConsignment>
+    </ns0:MasterConsignment>
+</ns0:HouseWaybill>

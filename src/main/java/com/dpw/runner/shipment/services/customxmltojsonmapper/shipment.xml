@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<rsm:Waybill xmlns:ccts="urn:un:unece:uncefact:documentation:standard:CoreComponentsTechnicalSpecification:2" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:8" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rsm="iata:waybill:1" xmlns:ram="iata:datamodel:3" xsi:schemaLocation="iata:waybill:1 Waybill_1.xsd">
+    <rsm:MessageHeaderDocument>
+        <ram:ID>832-12345675_2024-09-23T09:24:22.949378</ram:ID>
+        <ram:Name>Air Waybill</ram:Name>
+        <ram:TypeCode>740</ram:TypeCode>
+        <ram:IssueDateTime>2024-09-23T09:24:22</ram:IssueDateTime>
+        <ram:PurposeCode>Creation</ram:PurposeCode>
+        <ram:VersionID>3.00</ram:VersionID>
+
+        <ram:SenderParty>
+            <ram:PrimaryID schemeID="C"></ram:PrimaryID>
+        </ram:SenderParty>
+        <ram:RecipientParty>
+            <ram:PrimaryID schemeID="C">TDVSYS03GLNUNADDR</ram:PrimaryID>
+        </ram:RecipientParty>
+    </rsm:MessageHeaderDocument>
+    <rsm:BusinessHeaderDocument>
+        <ram:ID>832-12345675</ram:ID>
+        <ram:SignatoryCarrierAuthentication>
+            <ram:ActualDateTime>2024-09-23T09:24:22</ram:ActualDateTime>
+
+        </ram:SignatoryCarrierAuthentication>
+    </rsm:BusinessHeaderDocument>
+    <rsm:MasterConsignment>
+        <ram:TotalChargePrepaidIndicator>false</ram:TotalChargePrepaidIndicator>
+        <ram:TotalDisbursementPrepaidIndicator>false</ram:TotalDisbursementPrepaidIndicator>
+        <ram:IncludedTareGrossWeightMeasure unitCode="KGM">0</ram:IncludedTareGrossWeightMeasure>
+        <ram:TotalPieceQuantity>3</ram:TotalPieceQuantity>
+        <ram:ConsignorParty>
+            <ram:Name>ANTWERP TEST CO. LTD</ram:Name>
+            <ram:PostalStructuredAddress>
+
+
+
+            </ram:PostalStructuredAddress>
+        </ram:ConsignorParty>
+
+        <ram:ConsigneeParty>
+            <ram:Name>22323</ram:Name>
+            <ram:PostalStructuredAddress>
+
+
+
+            </ram:PostalStructuredAddress>
+        </ram:ConsigneeParty>
+
+        <ram:OriginLocation>
+
+            <ram:Name>chhatrapati shivaji international bom</ram:Name>
+        </ram:OriginLocation>
+        <ram:FinalDestinationLocation>
+
+            <ram:Name>Cochin International Airport COK</ram:Name>
+        </ram:FinalDestinationLocation>
+
+
+
+
+        <ram:HandlingSSRInstructions>
+            <ram:Description>Dangerous Goods as per attached Shipper s Declaration 3</ram:Description>
+        </ram:HandlingSSRInstructions>
+
+        <ram:IncludedAccountingNote>
+            <ram:ContentCode>GEN</ram:ContentCode>
+            <ram:Content></ram:Content>
+        </ram:IncludedAccountingNote>
+
+        <ram:ApplicableOriginCurrencyExchange>
+            <ram:SourceCurrencyCode>EGP</ram:SourceCurrencyCode>
+        </ram:ApplicableOriginCurrencyExchange>
+
+
+        <ram:ApplicableRating>
+            <ram:TypeCode>P</ram:TypeCode>
+
+            <ram:IncludedMasterConsignmentItem>
+                <ram:SequenceNumeric>1</ram:SequenceNumeric>
+
+                <ram:GrossWeightMeasure unitCode="KGM">0</ram:GrossWeightMeasure>
+                <ram:PieceQuantity>3</ram:PieceQuantity>
+                <ram:Information>NDA</ram:Information>
+                <ram:ApplicableFreightRateServiceCharge>
+
+                    <ram:ChargeableWeightMeasure unitCode="KGM">0</ram:ChargeableWeightMeasure>
+
+
+                </ram:ApplicableFreightRateServiceCharge>
+            </ram:IncludedMasterConsignmentItem>
+        </ram:ApplicableRating>
+
+        <ram:ApplicableTotalRating>
+            <ram:TypeCode>P</ram:TypeCode>
+            <ram:ApplicablePrepaidCollectMonetarySummation>
+                <ram:PrepaidIndicator>false</ram:PrepaidIndicator>
+                <ram:WeightChargeTotalAmount currencyID="EGP">0</ram:WeightChargeTotalAmount>
+
+
+
+
+
+            </ram:ApplicablePrepaidCollectMonetarySummation>
+        </ram:ApplicableTotalRating>
+    </rsm:MasterConsignment>
+</rsm:Waybill>
