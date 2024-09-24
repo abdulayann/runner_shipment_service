@@ -1462,7 +1462,7 @@ public class CommonUtils {
         dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
         dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd 'Time:' HH:mm:ss")));
         dictionary.put(REMARKS, request.getRemarks());
-        dictionary.put(STATUS, request.getStatus().getName());
+        dictionary.put(STATUS, request.getStatus());
     }
 
     private void populateDGSenderDetailsFromAudit(Map<String, AuditLogChanges> changesMap, Map<String, Object> dictionary) {
