@@ -126,16 +126,16 @@ class DbAccessHelperTest {
         listCommonRequest = CommonUtils.andCriteria("eta", List.of(LocalDateTime.now()), "NOTIN", listCommonRequest);
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(String.class).build());
-        tableNames.put("status", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(String.class).build());
+        tableNames.put("transportMode", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(String.class).build());
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(String.class).build());
         tableNames.put("eta", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(LocalDateTime.class).build());
         tableNames.put("etd", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
-        tableNames.put("masterBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(List.class).build());
+        tableNames.put("masterBill", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(List.class).build());
         tableNames.put("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
         tableNames.put("destination", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).isContainsText(true).dataType(String.class).build());
-        tableNames.put("id", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(Long.class).build());
-        tableNames.put("guid", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(UUID.class).build());
-        tableNames.put("customerCategory", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).isContainsText(true).dataType(CustomerCategoryRates.class).build());
+        tableNames.put("id", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(Long.class).build());
+        tableNames.put("guid", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(UUID.class).build());
+        tableNames.put("customerCategory", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(CustomerCategoryRates.class).build());
 
 
         Pair<Specification<Object>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest, CustomerBooking.class, tableNames);
@@ -224,7 +224,7 @@ class DbAccessHelperTest {
 
         Map<String, RunnerEntityMapping> tableName = new HashMap<>();
         tableName.put("fieldName", runnerEntityMapping);
-        when(runnerEntityMapping.getTableName()).thenReturn("ShipmentDetails");
+        when(runnerEntityMapping.getTableName()).thenReturn("CustomerBooking");
 
         Pair<Specification<CustomerBooking>, Pageable> result = DbAccessHelper.fetchData(request, CustomerBooking.class, tableName);
         assertNotNull(result);
@@ -326,7 +326,7 @@ class DbAccessHelperTest {
         listCommonRequest4.setIncludeTbls(Arrays.asList("status"));
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(String.class).build());
 
         Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest4, CustomerBooking.class, tableNames);
         Specification<String> specification = pair.getLeft();
@@ -345,7 +345,7 @@ class DbAccessHelperTest {
         listCommonRequest8.setIncludeTbls(Arrays.asList("status"));
 
         Map<String, RunnerEntityMapping> tableNames = new HashMap<>();
-        tableNames.put("status", RunnerEntityMapping.builder().tableName("ShipmentDetails").isContainsText(true).dataType(String.class).build());
+        tableNames.put("status", RunnerEntityMapping.builder().tableName("CustomerBooking").isContainsText(true).dataType(String.class).build());
 
         Pair<Specification<String>, Pageable> pair = dbAccessHelper.fetchData(listCommonRequest8, CustomerBooking.class, tableNames);
         Specification<String> specification = pair.getLeft();

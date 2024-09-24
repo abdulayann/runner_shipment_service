@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -40,6 +41,7 @@ class CustomWeightValueSerializerTest {
         BigDecimal input = new BigDecimal("200.111");
         SpringContext.setApplicationContext(applicationContext);
         Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        Mockito.when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().WeightDecimalPlace(2).build());
 
         customWeightValueSerializer.serialize(input, jsonGenerator, serializerProvider);
 
@@ -52,6 +54,7 @@ class CustomWeightValueSerializerTest {
         BigDecimal input = new BigDecimal("200.111");
         SpringContext.setApplicationContext(applicationContext);
         Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        Mockito.when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().WeightDecimalPlace(2).build());
 
         customWeightValueSerializer.serialize(input, jsonGenerator, serializerProvider);
 

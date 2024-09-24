@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
@@ -41,6 +42,7 @@ class CustomVolumeValueSerializerTest {
         BigDecimal input = new BigDecimal("200.111");
         SpringContext.setApplicationContext(applicationContext);
         Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        Mockito.when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().VolumeDecimalPlace(2).build());
 
         customVolumeValueSerializer.serialize(input, jsonGenerator, serializerProvider);
 
@@ -53,6 +55,7 @@ class CustomVolumeValueSerializerTest {
         BigDecimal input = new BigDecimal("200.111");
         SpringContext.setApplicationContext(applicationContext);
         Mockito.when(applicationContext.getBean(CommonUtils.class)).thenReturn(commonUtils);
+        Mockito.when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().VolumeDecimalPlace(3).build());
 
         customVolumeValueSerializer.serialize(input, jsonGenerator, serializerProvider);
 
