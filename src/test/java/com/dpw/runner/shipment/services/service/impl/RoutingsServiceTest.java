@@ -154,7 +154,13 @@ class RoutingsServiceTest extends CommonMocks {
                 .flatMap(routing -> Stream.of(routing.getPol(), routing.getPod()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+
+        UnlocationsResponse unlocationsResponse = UnlocationsResponse.builder()
+                .locationsReferenceGUID("POL1_POR")
+                .locCode("POL1")
+                .hasAirport(true).build();
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        unlocationsResponseMap.put("POL1_POR",unlocationsResponse);
 
         Mockito.when(masterDataUtils.getLocationData(referenceGuids)).thenReturn(unlocationsResponseMap);
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
