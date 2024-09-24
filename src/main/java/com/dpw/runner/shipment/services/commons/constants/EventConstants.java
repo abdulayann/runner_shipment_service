@@ -33,7 +33,6 @@ public class EventConstants {
     public static final String FWB_FZB_EVENT_CODE = "FWB/FZB";
     public static final String FWB_EVENT_CODE = "FWB";
 
-    public static final String _POR = "_POR";
     /*
     Runner Event short codes
      */
