@@ -1,8 +1,13 @@
 package com.dpw.runner.shipment.services.customxmltojsonmapper;
 
+import com.bazaarvoice.jolt.Chainr;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
+
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,17 +20,23 @@ import com.google.gson.reflect.TypeToken;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.parser.Parser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+@Component
 public class XMLToJSONConverter {
 
-    public static String context = "default";
+    public String context = "default";
 
-    public static JSONObject convertXmlToJson(String xmlString) {
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    public JSONObject convertXmlToJson(String xmlString) {
         JSONObject jsonObject = XML.toJSONObject(xmlString);
         return jsonObject;
     }
 
-    public static JSONObject renameKeysOld(JSONObject jsonObject, Map<String, String> keyMapping) {
+    public JSONObject renameKeysOld(JSONObject jsonObject, Map<String, String> keyMapping) {
         JSONObject renamedObject = new JSONObject();
         Iterator<String> keys = jsonObject.keys();
 
@@ -43,7 +54,7 @@ public class XMLToJSONConverter {
         return renamedObject;
     }
 
-    private static JSONArray cleanJsonArray(JSONArray jsonArray) {
+    private JSONArray cleanJsonArray(JSONArray jsonArray) {
         JSONArray cleanedArray = new JSONArray();
 
         for (int i = 0; i < jsonArray.length(); i++) {
@@ -60,7 +71,7 @@ public class XMLToJSONConverter {
         return cleanedArray;
     }
 
-    public static JSONObject removeXmlnsEntries(JSONObject jsonObject) {
+    public JSONObject removeXmlnsEntries(JSONObject jsonObject) {
         JSONObject cleanedJson = new JSONObject(jsonObject.toString());
 
         List<String> keysToRemove = new ArrayList<>();
@@ -98,7 +109,7 @@ public class XMLToJSONConverter {
         return cleanedJson;
     }
 
-    public static Map<String, String> loadKeyMappingsFromFile(String filePath) {
+    public Map<String, String> loadKeyMappingsFromFile(String filePath) {
         try (FileReader reader = new FileReader(filePath)) {
             Gson gson = new Gson();
             return gson.fromJson(reader, new TypeToken<Map<String, String>>(){}.getType());
@@ -109,7 +120,7 @@ public class XMLToJSONConverter {
     }
 
 
-    private static String findNewKey(String key, Map<String, String> keyMapping) {
+    private String findNewKey(String key, Map<String, String> keyMapping) {
         for (Map.Entry<String, String> entry : keyMapping.entrySet()) {
             if (entry.getKey().startsWith(key) && entry.getKey().contains(context)) {
                 return entry.getValue();
@@ -119,7 +130,7 @@ public class XMLToJSONConverter {
         return keyMapping.get(key);
     }
 
-    private static void determineContext(JSONObject jsonObject) {
+    private void determineContext(JSONObject jsonObject) {
         if (jsonObject.keys().hasNext() && (jsonObject.keys().next().equals("Shipment") || jsonObject.keys().next().equals("Shipments")) && (context.equals("default") || context.equals("consol"))) {
             context = "shipment";
         } else if (jsonObject.keys().hasNext() && jsonObject.keys().next().equals("Consolidation") && (context.equals("default")  || context.equals("shipment"))) {
@@ -127,7 +138,7 @@ public class XMLToJSONConverter {
         }
     }
 
-    public static JSONObject renameKeys(JSONObject jsonObject, Map<String, String> keyMapping) {
+    public JSONObject renameKeys(JSONObject jsonObject, Map<String, String> keyMapping) {
         JSONObject newJsonObject = new JSONObject();
         for (String key : jsonObject.keySet()) {
             Object value = jsonObject.get(key);
@@ -166,7 +177,7 @@ public class XMLToJSONConverter {
         return newJsonObject;
     }
 
-    public static String removeNamespaces(String xmlString) {
+    public String removeNamespaces(String xmlString) {
         Document doc = Jsoup.parse(xmlString, "", Parser.xmlParser());
 
         doc.getAllElements().forEach(element -> {
@@ -177,35 +188,69 @@ public class XMLToJSONConverter {
     }
 
 
-    public static void main(String[] args){
+    public JSONObject xmlToJsonConverter(String xmlString) throws IOException {
 
         // Path to the XML file
-        Path filePath = Paths.get("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/shipment.xml");
+//        Path filePath = Paths.get("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/shipment.xml");
 
-        try {
-            String xmlString = Files.readString(filePath);
+        //            String xmlString = Files.readString(filePath);
 
-            String xmlWithoutNamespaces = removeNamespaces(xmlString);
-            JSONObject jsonObject = convertXmlToJson(xmlWithoutNamespaces);
-            System.out.println("Original JSON: " + jsonObject.toString(4));
+        String xmlWithoutNamespaces = removeNamespaces(xmlString);
+        JSONObject jsonObject = convertXmlToJson(xmlWithoutNamespaces);
+        System.out.println("Original JSON: " + jsonObject.toString(4));
 
-            JSONObject cleanedJson = removeXmlnsEntries(jsonObject);
-            System.out.println("Cleaned JSON: " + cleanedJson.toString(4));
+        JSONObject cleanedJson = removeXmlnsEntries(jsonObject);
+        System.out.println("Cleaned JSON: " + cleanedJson.toString(4));
 
-            Map<String, String> keyMappings = loadKeyMappingsFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/keyMappings.json");
-
-
-            determineContext(jsonObject);
-            JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
+        Map<String, String> keyMappings = loadKeyMappingsFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/keyMappings.json");
 
 
-            //  JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
+        determineContext(jsonObject);
+        JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
 
-            System.out.println("Modified JSON: " + renamedJson.toString(4));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+        // Extract the "Waybill" object
+        JSONObject waybill = renamedJson.getJSONObject("Waybill");
 
+        // Load the JOLT spec from a file
+        List<Object> joltSpec = loadSpecFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/resources/jolt/jolt-spec.json");
+
+// Perform the transformation as before
+        JSONObject transformedJson = transformJson(waybill, joltSpec);
+
+
+//        // Move all key-value pairs from "Waybill" to the root level
+//        for (String key : waybill.keySet()) {
+//            jsonObject.put(key, waybill.get(key));
+//        }
+//
+//        // Remove the "Waybill" key from the root level
+//        renamedJson.remove("Waybill");
+
+
+        //  JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
+
+        System.out.println("Modified JSON: " + waybill.toString(4));
+        return  transformedJson;
+
+    }
+
+    public List<Object> loadSpecFromFile(String filePath) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(new File(filePath), List.class);
+    }
+
+    public JSONObject transformJson(JSONObject incomingPayload, List<Object> joltSpec) {
+        // Convert the JSONObject to a Map
+        Map<String, Object> inputMap = incomingPayload.toMap();
+
+        // Create a JOLT Chainr object from the spec
+        Chainr chainr = Chainr.fromSpec(joltSpec);
+
+        // Apply the transformation
+        Object transformedOutput = chainr.transform(inputMap);
+
+        // Convert the transformed output back to JSONObject
+        return new JSONObject((Map<?, ?>) transformedOutput);
     }
 }
 

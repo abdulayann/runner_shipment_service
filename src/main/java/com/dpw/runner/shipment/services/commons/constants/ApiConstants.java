@@ -12,6 +12,8 @@ public class ApiConstants {
 
 
     public static final String API_UPDATE = "/update";
+    public static final String API_GET_FAILED_PAYLOAD = "/getFailedPayloadById/{id}";
+    public static final String API_RESUBMIT_FAILED_PAYLOAD = "/resubmit/payload";
 
     public static final String API_RETRIEVE = "/retrieve";
 

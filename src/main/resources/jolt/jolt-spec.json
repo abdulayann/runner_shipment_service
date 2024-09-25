@@ -1,0 +1,134 @@
+[
+  {
+    "operation": "shift",
+    "spec": {
+      "MessageHeaderDocument": {
+        "id": "MessageHeaderDocument.ID",
+        "Name": "MessageHeaderDocument.Name",
+        "TypeCode": "MessageHeaderDocument.TypeCode",
+        "IssueDateTime": "MessageHeaderDocument.IssueDateTime",
+        "PurposeCode": "MessageHeaderDocument.PurposeCode",
+        "VersionID": "MessageHeaderDocument.VersionID",
+        "SenderParty": {
+          "PrimaryID": {
+            "schemeID": "MessageHeaderDocument.SenderParty[0].schemeID",
+            "content": "MessageHeaderDocument.SenderParty[0].value"
+          }
+        },
+        "RecipientParty": {
+          "PrimaryID": {
+            "schemeID": "MessageHeaderDocument.RecipientParty[0].schemeID",
+            "content": "MessageHeaderDocument.RecipientParty[0].value"
+          }
+        }
+      },
+      "BusinessHeaderDocument": {
+        "id": "BusinessHeaderDocument.ID",
+        "SignatoryCarrierAuthentication": {
+          "ActualDateTime": "BusinessHeaderDocument.SignatoryCarrierAuthentication.ActualDateTime"
+        }
+      },
+      "MasterConsignment": {
+        "id": "MasterConsignment.ID",
+        "TotalChargePrepaidIndicator": "MasterConsignment.TotalChargePrepaidIndicator",
+        "TotalDisbursementPrepaidIndicator": "MasterConsignment.TotalDisbursementPrepaidIndicator",
+        "IncludedTareGrossWeightMeasure": {
+          "content": "MasterConsignment.IncludedTareGrossWeightMeasureWeight",
+          "unitCode": "MasterConsignment.IncludedTareGrossWeightMeasureUnitCode"
+        },
+        "TotalPieceQuantity": "MasterConsignment.TotalPieceQuantity",
+        "ConsignorParty": {
+          "Name": "MasterConsignment.ConsignorParty.Name",
+          "PostalStructuredAddress": {
+            "*": "MasterConsignment.ConsignorParty.PartyAddress.&"
+          }
+        },
+        "ConsigneeParty": {
+          "Name": "MasterConsignment.ConsigneeParty.Name",
+          "PostalStructuredAddress": {
+            "*": "MasterConsignment.ConsigneeParty.PartyAddress.&"
+          }
+        },
+        "OriginLocation": {
+          "Name": "MasterConsignment.OriginLocation.Name"
+        },
+        "FinalDestinationLocation": {
+          "Name": "MasterConsignment.FinalDestinationLocation.Name"
+        },
+        "HandlingSSRInstructions": {
+          "Description": "MasterConsignment.HandlingSSRInstructions[0].Description"
+        },
+        "IncludedAccountingNote": {
+          "Content": "MasterConsignment.IncludedAccountingNote[0].Content",
+          "ContentCode": "MasterConsignment.IncludedAccountingNote[0].ContentCode"
+        },
+        "ApplicableOriginCurrencyExchange": {
+          "SourceCurrencyCode": "MasterConsignment.ApplicableOriginCurrencyExchangeCode"
+        },
+        "ApplicableRating": {
+          "TypeCode": "MasterConsignment.ApplicableRating[0].TypeCode",
+          "IncludedMasterConsignmentItem": {
+            "SequenceNumeric": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].SequenceNumeric",
+            "GrossWeightMeasure": {
+              "content": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].GrossWeightMeasure",
+              "unitCode": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].GrossWeightMeasureUnit"
+            },
+            "PieceQuantity": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].PieceQuantity",
+            "Information": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].Information",
+            "ApplicableFreightRateServiceCharge": {
+              "ChargeableWeightMeasure": {
+                "content": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].ApplicableFreightRateServiceCharge.ChargeableWeightMeasure",
+                "unitCode": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].ApplicableFreightRateServiceCharge.ChargeableWeightMeasureUnit"
+              },
+              "AppliedAmount": {
+                "currencyID": "MasterConsignment.ApplicableRating[0].IncludedMasterConsignmentItem[0].ApplicableFreightRateServiceCharge.AppliedAmountCurrency"
+              }
+            }
+          }
+        },
+        "ApplicableTotalRating": {
+          "TypeCode": "MasterConsignment.ApplicableTotalRating[0].TypeCode",
+          "ApplicablePrepaidCollectMonetarySummation": {
+            "PrepaidIndicator": "MasterConsignment.ApplicableTotalRating[0].ApplicablePrepaidCollectMonetarySummation[0].PrepaidIndicator",
+            "WeightChargeTotalAmount": {
+              "content": "MasterConsignment.ApplicableTotalRating[0].ApplicablePrepaidCollectMonetarySummation[0].WeightChargeTotalAmount",
+              "currencyID": "MasterConsignment.ApplicableTotalRating[0].ApplicablePrepaidCollectMonetarySummation[0].WeightChargeTotalAmountCurrency"
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "operation": "modify-overwrite-beta",
+    "spec": {
+      "MessageHeaderDocument": {
+        "VersionID": "=toString(@(1,MessageHeaderDocument.VersionID))"
+      }
+    }
+  },
+  {
+    "operation": "remove",
+    "spec": {
+      "MasterConsignment": {
+        "ConsignorParty": {
+          "PartyAddress": {
+            "*": ""
+          }
+        }
+      }
+    }
+  },
+  {
+    "operation": "remove",
+    "spec": {
+      "MasterConsignment": {
+        "ConsigneeParty": {
+          "PartyAddress": {
+            "*": ""
+          }
+        }
+      }
+    }
+  }
+]
