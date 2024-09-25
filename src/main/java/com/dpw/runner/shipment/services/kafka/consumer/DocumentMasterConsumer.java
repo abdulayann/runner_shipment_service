@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -22,9 +23,6 @@ public class DocumentMasterConsumer {
     private ObjectMapper objectMapper;
     private BookingIntegrationsUtility bookingIntegrationsUtility;
 
-    @Value("${document.master.integration}")
-    private boolean documentMasterEnabled;
-
     @Autowired
     DocumentMasterConsumer(ObjectMapper objectMapper, BookingIntegrationsUtility bookingIntegrationsUtility) {
         this.objectMapper = objectMapper;
@@ -36,9 +34,9 @@ public class DocumentMasterConsumer {
     {
         try {
             log.info("{} | event message: {}", LoggerEvent.KAFKA_DOCUMENT_MASTER_EVENT, message);
-            DocumentDto object = objectMapper.readValue(message, DocumentDto.class);
+            DocumentDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message).substring(1, StringEscapeUtils.unescapeJson(message).toString().length()), DocumentDto.class);
 
-            if (Objects.nonNull(object) && Objects.nonNull(object.getData()) && Objects.nonNull(object.getAction()) && Boolean.TRUE.equals(documentMasterEnabled)) {
+            if (Objects.nonNull(object) && Objects.nonNull(object.getData()) && Objects.nonNull(object.getAction())) {
                 bookingIntegrationsUtility.documentUploadEvent(object);
             }
             log.info("{} | Passed", LoggerEvent.KAFKA_DOCUMENT_MASTER_EVENT);
