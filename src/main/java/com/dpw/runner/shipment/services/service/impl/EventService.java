@@ -63,6 +63,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -97,7 +98,7 @@ public class EventService implements IEventService {
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
-    private final CommonUtils commonUtils;
+    private CommonUtils commonUtils;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -458,6 +459,7 @@ public class EventService implements IEventService {
             }
             entityId = consolidationId;
             entityType = Constants.CONSOLIDATION;
+            commonUtils.setInterBranchContextForHub();
         } else {
             throw new RunnerException("Both shipmentId and consolidationId are empty !");
         }
@@ -482,6 +484,9 @@ public class EventService implements IEventService {
             log.info("Received {} events for consolidation with id {}", consolEventsPage.getTotalElements(), consolidationId);
             allEventResponses = jsonHelper.convertValueToList(consolEventsPage.getContent(), EventsResponse.class);
         }
+
+        // set MasterData
+        setEventCodesMasterData(allEventResponses);
 
         return ResponseHelper.buildSuccessResponse(allEventResponses);
     }
@@ -537,6 +542,44 @@ public class EventService implements IEventService {
 
             // Return an empty map if an error occurs
             return Collections.emptyMap();
+        }
+    }
+
+    private void setEventCodesMasterData(List<EventsResponse> eventsResponseList) {
+        try {
+            // Define criteria for fetching location role master data
+            List<String> eventCodes = eventsResponseList.stream().map(EventsResponse::getEventCode).toList();
+            List<Object> subCriteria1 = Arrays.asList(
+                    List.of(MasterDataConstants.ITEM_TYPE),
+                    "=",
+                    MasterDataType.ORDER_EVENTS.getId()
+            );
+            List<Object> subCriteria2 = Arrays.asList(
+                    List.of(MasterDataConstants.ITEM_VALUE),
+                    "IN",
+                    List.of(eventCodes)
+            );
+            var eventCodeMasterDataCriteria = List.of(subCriteria1, "and", subCriteria2);
+
+            // Fetch location role data using the defined criteria
+            V1DataResponse masterDataV1Response = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                    .criteriaRequests(eventCodeMasterDataCriteria).build());
+
+            // Convert the response entities to a list of EntityTransferMasterLists
+
+            List<EntityTransferMasterLists> entityTransferMasterLists =
+                    jsonHelper.convertValueToList(masterDataV1Response.entities, EntityTransferMasterLists.class);
+
+            // Convert the list to a map with identifier2 as the key
+            var eventCodeMap =  entityTransferMasterLists.stream().collect(Collectors.toMap(
+                    EntityTransferMasterLists::getItemValue,
+                    Function.identity(),
+                    (existing, replacement) -> existing // Handle duplicate keys by keeping the existing entry
+            ));
+            eventsResponseList.forEach(i -> i.setDescription(eventCodeMap.get(i.getEventCode()).getItemDescription()));
+        } catch (Exception e) {
+            // Log the error message for debugging purposes
+            log.error("Error fetching or processing event codes master data: {}", e.getMessage(), e);
         }
     }
 
@@ -671,10 +714,10 @@ public class EventService implements IEventService {
     /**
      * Maps a tracking event to an updated event with additional details.
      *
-     * @param trackingEvent                The tracking event to map.
-     * @param existingEventsMap            A map of existing events to check for duplicates.
-     * @param entityId                     The ID of the entity associated with the event.
-     * @param entityType                   The type of the entity associated with the event.
+     * @param trackingEvent The tracking event to map.
+     * @param existingEventsMap A map of existing events to check for duplicates.
+     * @param entityId The ID of the entity associated with the event.
+     * @param entityType The type of the entity associated with the event.
      * @param identifier2ToLocationRoleMap A map of identifiers to location roles for conversion.
      * @param shipmentId
      * @return The updated event with additional details.

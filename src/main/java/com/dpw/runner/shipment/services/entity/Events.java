@@ -41,6 +41,7 @@ public class Events extends MultiTenancy {
 
     @Column(name = "event_code")
     @Size(max=210, message = "max size is 210 for event_code")
+    @MasterData(type = MasterDataType.ORDER_EVENTS)
     private String eventCode;
 
     @Column(name = "description")

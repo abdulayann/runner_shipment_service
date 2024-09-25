@@ -193,6 +193,23 @@ class EventDaoTest {
     }
 
     @Test
+    void updateEntityFromOtherEntityConsolidation() {
+        testData.setId(1L);
+
+        Events savedEvent = testData;
+
+        Page<Events> page = new PageImpl(List.of(savedEvent));
+        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        try {
+            var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "CONSOLIDATION");
+            assertNotNull(result);
+        } catch(Exception e) {
+            fail();
+        }
+    }
+
+    @Test
     void updateEntityFromOtherEntityWithOldEntityList() {
         testData.setId(1L);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testData));
@@ -279,6 +296,45 @@ class EventDaoTest {
                 eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", new HashMap<>()));
 
     }
+
+    @Test
+    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long eventId = 1L;
+        testData.setId(eventId);
+        testData.setEntityId(5L);
+        testData.setEntityType(Constants.CONSOLIDATION);
+
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(testData.getId(), testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
+
+        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+
+        assertEquals(Constants.CONSOLIDATION, result.get(0).getEntityType());
+
+    }
+
+    @Test
+    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        Long eventId = 1L;
+        testData.setId(eventId);
+        testData.setEntityId(null);
+        testData.setEntityType(null);
+
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        oldEntityMap.put(testData.getId(), testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
+        when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
+
+        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+
+        assertEquals("Shipment", result.get(0).getEntityType());
+
+    }
+
 
     @Test
     void autoGenerateEvents() {

@@ -1147,7 +1147,11 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
         shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
         shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
-        shipmentRequest.setChargable(autoUpdateWtVolResponse.getChargable());
+        shipmentRequest.setChargable(
+                autoUpdateWtVolResponse.getChargable() != null
+                        ? autoUpdateWtVolResponse.getChargable().setScale(10, RoundingMode.HALF_UP).stripTrailingZeros()
+                        : null
+        );
         shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
         shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
         shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
@@ -5475,8 +5479,9 @@ public class ShipmentService implements IShipmentService {
         }
 
         List<DateTimeChangeLog> shipmentDateLogs = dateTimeChangeLogService.getDateTimeChangeLog(shipmentId);
-        Map<DateType, List<DateTimeChangeLog>> dateChangeLogMap = shipmentDateLogs.stream().collect(
-            Collectors.groupingBy(DateTimeChangeLog::getDateType)
+        Map<DateType, List<DateTimeChangeLog>> dateChangeLogMap = shipmentDateLogs.stream()
+                .sorted(Comparator.comparing(DateTimeChangeLog::getUpdatedAt).reversed())
+                .collect(Collectors.groupingBy(DateTimeChangeLog::getDateType)
         );
 
         UpstreamDateUpdateResponse upstreamDateUpdateResponse = new UpstreamDateUpdateResponse();
@@ -6299,8 +6304,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> hblCheck(String hblNumber) {
-        List<ShipmentDetailsProjection> shipmentDetails = shipmentDao.findHblNumberInAllBranches(hblNumber);
+    public ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId) {
+        List<ShipmentDetailsProjection> shipmentDetails = shipmentDao.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
 
         if (ObjectUtils.isNotEmpty(shipmentDetails)) {
             String message = "The HBL provided already exists for " +

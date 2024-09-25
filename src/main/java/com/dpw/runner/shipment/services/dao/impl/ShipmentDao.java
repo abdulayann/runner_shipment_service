@@ -68,6 +68,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @Repository
 @Slf4j
@@ -129,7 +130,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -176,7 +178,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -408,7 +411,7 @@ public class ShipmentDao implements IShipmentDao {
 //                    "=",
 //                    oldEntity.getLockedBy()
 //            );
-//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
 //            V1DataResponse v1DataResponse = v1Service.fetchUsersData(commonV1ListRequest);
 //            List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
 //            String username = "";
@@ -685,8 +688,8 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public List<ShipmentDetailsProjection> findHblNumberInAllBranches(String hblNumber) {
-        return shipmentRepository.findHblNumberInAllBranches(hblNumber);
+    public List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId) {
+        return shipmentRepository.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
     }
 
     @Override

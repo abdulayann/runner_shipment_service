@@ -66,7 +66,7 @@ public class ShippingRequestAirReport extends IReport{
                         "=",
                         pack.getCommodity()
                 );
-                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
                 V1DataResponse response = v1Service.fetchCommodityData(commonV1ListRequest);
 
                 List<EntityTransferCommodityType> commodityTypeList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);

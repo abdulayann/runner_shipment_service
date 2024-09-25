@@ -9,4 +9,5 @@ public class TimeZoneConstants {
     public static final String TENANT_TIME_ZONE_NAME = "tenant-time-zone";
     public static final String ENABLE_TENANT_TIME_ZONE = "enable-tenant-time-zone";
     public static final LocalDateTime DEFAULT_DATE = LocalDateTime.of(1970, 1, 1, 00, 00, 00);
+    public static final String SKIP_TIME_ZONE = "x-skip-time-zone";
 }
