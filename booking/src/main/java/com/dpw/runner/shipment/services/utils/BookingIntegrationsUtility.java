@@ -345,33 +345,30 @@ public class BookingIntegrationsUtility {
                     salesBranch(customerBookingRequest.getSalesBranch()).
                     primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
                     secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
-                    containersList(consolidationDetails != null && consolidationDetails.size() > 0 ? containerList : null).
+                    containersList(consolidationDetails.size() > 0 ? containerList : null).
                     packingList(customerBookingRequest.getPackingList() != null
-                            ? customerBookingRequest.getPackingList().stream().map(packing -> {
+                            ? customerBookingRequest.getPackingList().stream().peek(packing -> {
                         packing.setId(null);  // Ensure the id is null
                         if (!StringUtility.isEmpty(packing.getLengthUnit())) {
                             packing.setWidthUnit(packing.getLengthUnit());
                             packing.setHeightUnit(packing.getLengthUnit());
                         }
-                        return packing;
                     }).collect(Collectors.toList()) : null).
                     fileRepoList(customerBookingRequest.getFileRepoList()  != null
-                            ? customerBookingRequest.getFileRepoList().stream().map(filerepo -> {
+                            ? customerBookingRequest.getFileRepoList().stream().peek(filerepo -> {
                         filerepo.setId(null);  // Ensure the id is null
-                        return filerepo;
                     }).collect(Collectors.toList()) : null ).
                     routingsList(customerBookingRequest.getRoutingList() != null
-                            ? customerBookingRequest.getRoutingList().stream().map(routing -> {
+                            ? customerBookingRequest.getRoutingList().stream().peek(routing -> {
                         routing.setId(null);  // Ensure the id is null
-                        return routing;
                     }).collect(Collectors.toList()) : null).
                     consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                     notesList(createNotes(notes)).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     source("API").
                     bookingType("ONLINE").
-                    consolRef(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
-                    masterBill(consolidationDetails != null && consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
+                    consolRef(consolidationDetails.size() > 0 ? consolidationDetails.get(0).getReferenceNumber() : "").
+                    masterBill(consolidationDetails.size() > 0 ? consolidationDetails.get(0).getBol() : null).
                     freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                     currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                     autoUpdateWtVol(true).

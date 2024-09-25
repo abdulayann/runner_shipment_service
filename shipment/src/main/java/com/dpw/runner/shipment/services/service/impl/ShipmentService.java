@@ -6768,19 +6768,10 @@ public class ShipmentService implements IShipmentService {
         try {
             Long consolidationId = null;
             List<Containers> updatedContainers = null;
-            if(!listIsNullOrEmpty(request.getConsolidationList())) {
+            if(request.getConsolidationList() != null)
                 shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
-                consolidationId = request.getConsolidationList().get(0).getId();
-            }
-            if (request.getContainersList() != null) {
-                for (ContainerRequest containerRequest1 : request.getContainersList()) {
-                    containerRequest1.setConsolidationId(consolidationId);
-                    if(Boolean.TRUE.equals(containerRequest1.getHazardous()))
-                        shipmentDetails.setContainsHazardous(true);
-                }
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(request.getContainersList(), Containers.class), consolidationId, null, false);
-                shipmentDetails.setContainersList(updatedContainers);
-            }
+            if(request.getContainersList() != null)
+                shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
