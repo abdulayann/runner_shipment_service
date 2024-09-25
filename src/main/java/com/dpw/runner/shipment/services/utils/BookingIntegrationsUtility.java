@@ -714,7 +714,7 @@ public class BookingIntegrationsUtility {
     public void documentUploadEvent(DocumentDto payload) {
 
         if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payload.getAction())
-                && Objects.equals(payload.getData().getEntityType(), Constants.Shipments)
+                && Objects.equals(payload.getData().getEntityType(), Constants.SHIPMENTS)
                 && Boolean.TRUE.equals(payload.getData().getCustomerPortalVisibility())) {
 
             var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));

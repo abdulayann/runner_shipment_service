@@ -595,7 +595,7 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent2() throws RunnerException {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.Shipments).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS).entityId(entityId.toString()).build()
         ).build();
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
@@ -612,7 +612,7 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent3() {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.Shipments).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS).entityId(entityId.toString()).build()
         ).build();
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).build();
@@ -627,7 +627,7 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent4() {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.Shipments).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS).entityId(entityId.toString()).build()
         ).build();
 
         var mockShipment = ShipmentDetails.builder().build();
@@ -642,7 +642,7 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent5() {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(false).entityType(Constants.Shipments).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(false).entityType(Constants.SHIPMENTS).entityId(entityId.toString()).build()
         ).build();
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
