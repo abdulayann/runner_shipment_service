@@ -145,6 +145,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
@@ -747,6 +748,17 @@ ShipmentServiceTest extends CommonMocks {
         List<InvoicePostingValidationResponse> responses = (List<InvoicePostingValidationResponse>) ((RunnerResponse) runnerResponse).getData();
         assertNotNull(responses);
         assertTrue(responses.isEmpty());
+    }
+
+    @Test
+    void fetchOrgInfoFromV1_Test() throws RunnerException {
+        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+        when(v1Service.fetchOrgAddresses(any())).thenReturn(orgAddressResponse);
+
+        OrgAddressResponse response = shipmentService.fetchOrgInfoFromV1(OrgAddressCode.builder()
+            .build());
+
+        assertEquals(orgAddressResponse, response);
     }
 
     @Test
