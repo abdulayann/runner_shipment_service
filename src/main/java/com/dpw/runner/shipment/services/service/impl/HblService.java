@@ -442,7 +442,7 @@ public class HblService implements IHblService {
         hblData.setShipmentId(shipmentDetail.getId());
         Routings routing = null;
         if (Objects.nonNull(shipmentDetail.getRoutingsList()))
-            routing = shipmentDetail.getRoutingsList().stream().filter(Routings::getIsSelectedForDocument).findFirst().orElse(null);
+            routing = shipmentDetail.getRoutingsList().stream().filter(x -> Boolean.TRUE.equals(x.getIsSelectedForDocument())).findFirst().orElse(null);
 
         if(shipmentDetail.getConsigner() != null) {
             if (shipmentDetail.getConsigner().getOrgData() != null)
@@ -719,7 +719,7 @@ public class HblService implements IHblService {
         HblDataDto hblData = hbl.getHblData();
         Routings routing = null;
         if (Objects.nonNull(shipmentDetail.getRoutingsList()))
-            routing = shipmentDetail.getRoutingsList().stream().filter(Routings::getIsSelectedForDocument).findFirst().orElse(null);
+            routing = shipmentDetail.getRoutingsList().stream().filter(x -> Boolean.TRUE.equals(x.getIsSelectedForDocument())).findFirst().orElse(null);
 
         if(shipmentDetail.getConsigner() != null) {
             if(!hblLock.getConsignorNameLock())
@@ -775,6 +775,12 @@ public class HblService implements IHblService {
                 hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
             else
                 hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        }
+        if(!Boolean.TRUE.equals(hblLock.getVoyageLock())) {
+            if (Objects.nonNull(routing))
+                hblData.setVoyage(routing.getVoyage());
+            else
+                hblData.setVoyage(carrierDetails.getVoyage());
         }
 
         // TODO: This needs to re-visit after incorporating this setting in service
