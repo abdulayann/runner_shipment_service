@@ -23,7 +23,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -735,17 +734,6 @@ public class ShipmentController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL)})
-    @GetMapping(ApiConstants.GET_BY_GUID)
-    public ResponseEntity<?> getShipmentDatabyGUID(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid) throws RunnerException {
-        try {
-            CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
-            return shipmentService.getShipmentIdByGuid(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            return ResponseHelper.buildFailedResponse(e.getMessage());
-        }
     }
 
 }

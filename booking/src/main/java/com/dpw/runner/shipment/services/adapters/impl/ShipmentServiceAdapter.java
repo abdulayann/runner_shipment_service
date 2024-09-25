@@ -2,12 +2,10 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.adapters.config.ShipmentServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IShipmentServiceAdapter;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -21,6 +19,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Objects;
@@ -48,7 +47,6 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     private CommonUtils commonUtils;
 
     public static class ShipmentResponse extends RunnerResponse<ShipmentDetailsResponse>{}
-    public static class ConsolidationResponse extends RunnerResponse<ConsolidationDetailsResponse>{}
 
     @Override
     public ShipmentDetailsResponse createShipment(ShipmentDetailsResponse shipmentDetailsResponse) throws RunnerException {
@@ -83,11 +81,14 @@ public class ShipmentServiceAdapter implements IShipmentServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentIdbyGuid(String guid) throws RunnerException {
         try {
-            String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetByGuidUrl() + "?guid=" + guid;
+            String url = shipmentServiceConfig.getBaseUrl() + shipmentServiceConfig.getGetIdByGuidUrl() + "?guid=" + guid;
             log.info("Calling shipment service for guid: {}", guid);
             HttpEntity<CustomerBookingRequest> entity = new HttpEntity<>(V1AuthHelper.getHeaders());
             ResponseEntity<ShipmentResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity, ShipmentResponse.class);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
+        }catch (HttpClientErrorException.BadRequest e) {
+            log.warn("BadRequest encountered for guid: {}", guid);
+            return ResponseEntity.ok(null);
         } catch (Exception e) {
             log.error("Error occurred while getting shipment: {}", e.getMessage());
             throw new RunnerException(e.getMessage());

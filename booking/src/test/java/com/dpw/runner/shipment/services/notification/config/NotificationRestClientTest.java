@@ -9,7 +9,6 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.impl.ReportServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
@@ -27,6 +26,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.RestClientException;
@@ -57,7 +57,7 @@ class NotificationRestClientTest {
         params.setApplicationId("42");
         params.setBccEmails("jane.doe@example.org");
         params.setCcEmails("jane.doe@example.org");
-        params.setFiles(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        params.setFiles(new MockMultipartFile("Ancd", "Abcd".getBytes("UTF-8")));
         params.setHtmlBody("Not all who wander are lost");
         params.setItem("Item");
         params.setMetadata("Metadata");
@@ -88,7 +88,7 @@ class NotificationRestClientTest {
         params.setApplicationId("42");
         params.setBccEmails("jane.doe@example.org");
         params.setCcEmails("jane.doe@example.org");
-        params.setFiles(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        params.setFiles(new MockMultipartFile("Ancd", "Abcd".getBytes("UTF-8")));
         params.setHtmlBody("Not all who wander are lost");
         params.setItem("Item");
         params.setMetadata("Metadata");

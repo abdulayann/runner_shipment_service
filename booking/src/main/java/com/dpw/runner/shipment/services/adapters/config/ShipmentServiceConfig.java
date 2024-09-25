@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +19,7 @@ public class ShipmentServiceConfig {
     private String baseUrl;
     private String xApiKey;
     private String createShipmentInV2Url;
-    private String getByGuidUrl;
+    private String getIdByGuidUrl;
     private String createConsolidationFromBookingUrl;
 
     @Bean

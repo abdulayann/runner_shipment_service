@@ -7,7 +7,6 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
 import com.dpw.runner.shipment.services.notification.config.NotificationRestClient;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
@@ -25,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -59,7 +59,7 @@ class NotificationServiceImplTest {
         request.setBcc("ada.lovelace@example.org");
         request.setBranchId("janedoe/featurebranch");
         request.setCc("ada.lovelace@example.org");
-        request.setFile(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        request.setFile(new MockMultipartFile("Ancd", "Abcd".getBytes("UTF-8")));
         request.setHtmlBody("Not all who wander are lost");
         request.setItem("Item");
         request.setModuleName("Module Name");
@@ -89,7 +89,7 @@ class NotificationServiceImplTest {
         request.setBcc("ada.lovelace@example.org");
         request.setBranchId("janedoe/featurebranch");
         request.setCc("ada.lovelace@example.org");
-        request.setFile(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        request.setFile(new MockMultipartFile("Ancd", "Abcd".getBytes("UTF-8")));
         request.setHtmlBody("Not all who wander are lost");
         request.setItem("Item");
         request.setModuleName("Module Name");
@@ -120,7 +120,7 @@ class NotificationServiceImplTest {
         request.setBcc("ada.lovelace@example.org");
         request.setBranchId("janedoe/featurebranch");
         request.setCc("ada.lovelace@example.org");
-        request.setFile(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        request.setFile(new MockMultipartFile("Ancd", "Abcd".getBytes("UTF-8")));
         request.setHtmlBody("Not all who wander are lost");
         request.setItem("Item");
         request.setModuleName("Module Name");

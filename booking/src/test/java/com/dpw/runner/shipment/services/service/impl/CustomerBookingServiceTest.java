@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
+import com.dpw.runner.shipment.services.adapters.impl.ShipmentServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
@@ -116,6 +117,9 @@ class CustomerBookingServiceTest extends CommonMocks {
     private KafkaProducer producer;
     @Mock
     private OrderManagementAdapter orderManagementAdapter;
+
+    @Mock
+    private ShipmentServiceAdapter shipmentServiceAdapter;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -1319,7 +1323,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
 //        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-//        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenThrow(new NullPointerException());
         mockTenantSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
@@ -1349,7 +1353,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
 //        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-//        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenThrow(new NullPointerException());
         mockTenantSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();

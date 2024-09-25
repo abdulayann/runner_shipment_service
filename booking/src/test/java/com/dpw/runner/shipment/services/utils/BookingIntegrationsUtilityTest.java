@@ -8,10 +8,12 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.NotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
@@ -24,6 +26,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
+import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -87,6 +91,15 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private NotesDao notesDao;
+
+    @Mock
+    private TenantSettingsService tenantSettingsService;
+
+    @Mock
+    private UserContext userContext;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -269,23 +282,26 @@ class BookingIntegrationsUtilityTest {
         verify(v1Service, times(1)).createBooking(any(), anyBoolean(), anyBoolean(), any(UUID.class), any(HttpHeaders.class));
     }
 
-//    @Test
-//    void testCreateShipmentInV2_sucess() throws RunnerException {
-//        var customerBooking = getCustomerBooking("FCL");
-//        when(shipmentServiceAdapter.createShipmentInV2(any())).thenReturn((ResponseEntity.of(Optional.of(RunnerResponse.builder().build()))));
-//        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
-//        var response = bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest);
-//        assertTrue(response.hasBody());
-//    }
+    @Test
+    void testCreateShipmentInV2_sucess() throws RunnerException {
+        var customerBooking = getCustomerBooking("FCL");
+        when(shipmentServiceAdapter.createShipment(any())).thenReturn(ShipmentDetailsResponse.builder().build());
+        CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
+        var response = bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest);
+        assertNotNull(response);
+    }
 
 
     @Test
     void testCreateShipmentInV2_throwsException() throws RunnerException {
-        willAnswer(invocation -> {
-            throw new Exception("abc msg");
-        }).given(shipmentServiceAdapter).createShipment(any());
+        willAnswer(invocation -> {throw new Exception("abc msg");}).given(shipmentServiceAdapter).createShipment(any());
 
         var customerBooking = getCustomerBooking("FCL");
+        when(notesDao.findByEntityIdAndEntityType(any(), anyString())).thenReturn(null);
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
         CustomerBookingRequest customerBookingRequest = objectMapper.convertValue(customerBooking, CustomerBookingRequest.class);
 
         assertThrows(Exception.class, () -> bookingIntegrationsUtility.createShipmentInV2(customerBookingRequest));

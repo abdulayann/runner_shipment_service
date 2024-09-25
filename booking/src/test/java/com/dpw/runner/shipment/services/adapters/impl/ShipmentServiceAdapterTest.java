@@ -5,9 +5,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -27,6 +30,7 @@ import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -64,16 +68,35 @@ public class ShipmentServiceAdapterTest {
         MockitoAnnotations.initMocks(this);
     }
 
-//    @Test
-//    void createShipmentInV2Test() throws RunnerException {
-//        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
-//        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
-//        ResponseEntity<ShipmentDetailsResponse> responseEntity = ResponseEntity.ok(shipmentDetailsResponse);
-//        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
-//                .thenReturn(responseEntity);
-//        ResponseEntity<IRunnerResponse> response = shipmentServiceAdapter.createShipmentInV2(shipmentRequest);
-//        assertEquals(HttpStatus.OK, response.getStatusCode());
-//    }
+    @Test
+    void createShipmentTest() throws RunnerException {
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        ShipmentDetailsResponse expectedResponseData = ShipmentDetailsResponse.builder().shipmentType("FCL").build();
+        RunnerResponse<ShipmentDetailsResponse> runnerResponse = new RunnerResponse<>();
+        runnerResponse.setData(expectedResponseData);
+        ResponseEntity<RunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class))).thenReturn(responseEntity);
+        when(jsonHelper.readFromJson(any(), eq(ShipmentDetailsResponse.class))).thenReturn(expectedResponseData);
+        ShipmentDetailsResponse response = shipmentServiceAdapter.createShipment(shipmentDetailsResponse);
+
+        assertNotNull(response);
+        assertEquals(expectedResponseData, response);
+    }
+
+    @Test
+    void createConsolidationTest() throws RunnerException {
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        ConsolidationDetailsResponse expectedResponseData = ConsolidationDetailsResponse.builder().shipmentType("FCL").build();
+        RunnerResponse<ConsolidationDetailsResponse> runnerResponse = new RunnerResponse<>();
+        runnerResponse.setData(expectedResponseData);
+        ResponseEntity<RunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class))).thenReturn(responseEntity);
+        when(jsonHelper.readFromJson(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(expectedResponseData);
+        ConsolidationDetailsResponse response = shipmentServiceAdapter.createConsolidation(consolidationDetailsRequest);
+
+        assertNotNull(response);
+        assertEquals(expectedResponseData, response);
+    }
 
 
     @Test
