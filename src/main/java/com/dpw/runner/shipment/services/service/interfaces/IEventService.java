@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 
 public interface IEventService extends ICommonService {
