@@ -368,8 +368,6 @@ public class EventDao implements IEventDao {
                 eventsRow.setEstimated(LocalDate.now().atStartOfDay());
             }
 
-            updateEventDetails(eventsRow);
-
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             eventsRow.setIsPublicTrackingEvent(true);
             eventsRow.setEntityType(entityType);
@@ -377,6 +375,9 @@ public class EventDao implements IEventDao {
             eventsRow.setEventCode(eventCode);
             eventsRow.setPlaceName(placeName);
             eventsRow.setPlaceDescription(placeDesc);
+
+            updateEventDetails(eventsRow);
+
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
