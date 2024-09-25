@@ -2602,7 +2602,7 @@ public class ShipmentService implements IShipmentService {
 
     private void createTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails) {
 
-        if (shipmentDetails.getBookingNumber() != null && isLclOrFclOrAir(shipmentDetails)) {
+        if (!StringUtility.isEmpty(shipmentDetails.getBookingNumber()) && isLclOrFclOrAir(shipmentDetails)) {
             events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now(), LocalDateTime.now()));
         }
 
