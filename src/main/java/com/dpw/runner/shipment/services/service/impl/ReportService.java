@@ -466,7 +466,9 @@ public class ReportService implements IReportService {
         }
         else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB))
         {
-            dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
+            if (!reportRequest.isPrintIATAChargeCode()) {
+                dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
+            }
             if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
             {
                 dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
