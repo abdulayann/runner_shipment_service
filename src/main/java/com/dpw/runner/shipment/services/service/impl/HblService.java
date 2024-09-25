@@ -440,6 +440,10 @@ public class HblService implements IHblService {
     private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
+        Routings routing = null;
+        if (Objects.nonNull(shipmentDetail.getRoutingsList()))
+            routing = shipmentDetail.getRoutingsList().stream().filter(Routings::getIsSelectedForDocument).findFirst().orElse(null);
+
         if(shipmentDetail.getConsigner() != null) {
             if (shipmentDetail.getConsigner().getOrgData() != null)
                 hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
@@ -480,11 +484,16 @@ public class HblService implements IHblService {
             syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
-        hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        if (Objects.nonNull(routing)) {
+            hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
+            hblData.setVoyage(routing.getVoyage());
+        } else {
+            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+            hblData.setVoyage(carrierDetails.getVoyage());
+        }        
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
-        hblData.setVoyage(carrierDetails.getVoyage());
         hblData.setPurchaseOrderNumber(shipmentDetail.getOrderManagementNumber());
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
@@ -708,6 +717,9 @@ public class HblService implements IHblService {
     }
     private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
         HblDataDto hblData = hbl.getHblData();
+        Routings routing = null;
+        if (Objects.nonNull(shipmentDetail.getRoutingsList()))
+            routing = shipmentDetail.getRoutingsList().stream().filter(Routings::getIsSelectedForDocument).findFirst().orElse(null);
 
         if(shipmentDetail.getConsigner() != null) {
             if(!hblLock.getConsignorNameLock())
@@ -758,8 +770,12 @@ public class HblService implements IHblService {
             hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
         if(!hblLock.getHouseBillLock())
             hblData.setHouseBill(shipmentDetail.getHouseBill());
-        if(!hblLock.getVesselNameLock())
-            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        if(!hblLock.getVesselNameLock()) {
+            if (Objects.nonNull(routing))
+                hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
+            else
+                hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        }
 
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
