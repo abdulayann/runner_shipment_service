@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -643,27 +645,31 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                         .map(event -> {
                                             // Start building the Events object
                                             Events.EventsBuilder eventBuilder = Events.builder()
-                                                    .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
-                                                    .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
+                                                    .actual(Optional.ofNullable(event.getActualEventTime())
+                                                            .map(DateAndSources::getDateTime).orElse(null))
+                                                    .estimated(Optional.ofNullable(event.getProjectedEventTime())
+                                                            .map(DateAndSources::getDateTime).orElse(null))
                                                     .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
                                                     .description(event.getDescriptionFromSource())
                                                     .containerNumber(container.getContainerNumber())
                                                     .locationRole(event.getLocationRole());
 
                                             // Populate fields from Places independently
-                                            container.getPlaces().stream()
-                                                    .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
-                                                    .findFirst()
+                                            Optional.ofNullable(event.getLocation())
+                                                    .flatMap(locationId -> container.getPlaces().stream()
+                                                            .filter(place -> place != null && locationId.equals(place.getId()))
+                                                            .findFirst())
                                                     .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
                                                             .longitude(place.getLongitude())
                                                             .placeDescription(place.getFormattedDescription())
                                                             .placeName(place.getName()));
 
                                             // Populate fields from Transports independently
-                                            container.getTransports().stream()
-                                                    .filter(transport -> transport != null && event.getLocation() != null && event.getDetails().getTransport()
-                                                            .equals(transport.getId()))
-                                                    .findFirst()
+                                            Optional.ofNullable(event.getDetails())
+                                                    .map(Details::getTransport)
+                                                    .flatMap(transportId -> container.getTransports().stream()
+                                                            .filter(transport -> transport != null && transportId.equals(transport.getId()))
+                                                            .findFirst())
                                                     .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
                                                             .flightName(String.valueOf(transport.getOperatorName())));
 

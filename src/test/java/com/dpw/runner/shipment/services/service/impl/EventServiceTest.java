@@ -646,7 +646,6 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
-        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
@@ -832,7 +831,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
-        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(entityTransferMasterLists));
 
@@ -881,7 +880,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
-        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
@@ -929,7 +928,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
-        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);

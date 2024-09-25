@@ -697,6 +697,7 @@ ShipmentServiceTest extends CommonMocks {
         trackingResponse.setContainers(List.of(Container.builder()
                 .containerNumber("containerNumber")
                 .journey(new Journey())
+                .places(List.of())
                 .events(List.of(Event.builder()
                         .eventType("eventType")
                         .actualEventTime(DateAndSources.builder()
@@ -877,6 +878,7 @@ ShipmentServiceTest extends CommonMocks {
         trackingResponse.setContainers(List.of(Container.builder()
                 .containerNumber("containerNumber")
                 .journey(new Journey())
+                .places(List.of())
                 .events(List.of(Event.builder()
                         .eventType("eventType")
                         .build())).build()));
