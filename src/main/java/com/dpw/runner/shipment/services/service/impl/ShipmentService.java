@@ -1065,6 +1065,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest);
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
                 carrierDetails(CarrierDetailRequest.builder()
                         .origin(customerBookingRequest.getCarrierDetails().getOrigin())
@@ -1127,7 +1128,7 @@ public class ShipmentService implements IShipmentService {
                     return obj;
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
-                routingsList(customerBookingRequest.getRoutingList()).
+                routingsList(customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
@@ -1192,6 +1193,55 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
+
+    private List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
+        CarrierDetailRequest carrierDetails = customerBookingRequest.getCarrierDetails();
+        String origin = carrierDetails.getOrigin();
+        String portOfLoading = carrierDetails.getOriginPort();
+        String portOfDischarge = carrierDetails.getDestinationPort();
+        String destination = carrierDetails.getDestination();
+
+        List<RoutingsRequest> routingsRequests = new ArrayList<>();
+        Long legCounter = 1L;
+
+        if (!origin.equals(portOfLoading)) {
+            // First leg: Origin -> POL (if origin is different from POL)
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++,
+                    customerBookingRequest.getTransportType(), origin, portOfLoading));
+        }
+
+        if (!portOfLoading.equals(portOfDischarge)) {
+            // Second leg: POL -> POD (if POL is different from POD)
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++,
+                    customerBookingRequest.getTransportType(), portOfLoading, portOfDischarge));
+        }
+
+        if (!portOfDischarge.equals(destination)) {
+            // Third leg: POD -> Destination (if POD is different from Destination)
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter,
+                    customerBookingRequest.getTransportType(), portOfDischarge, destination));
+        }
+
+        // If all are same (origin == POL == POD == destination), create a single leg
+        if (routingsRequests.isEmpty()) {
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter,
+                    customerBookingRequest.getTransportType(), origin, destination));
+        }
+
+        return routingsRequests;
+    }
+
+    private RoutingsRequest createRoutingsRequest(Long bookingId, Long leg, String mode,
+            String pol, String pod) {
+        return RoutingsRequest.builder()
+                .bookingId(bookingId)
+                .leg(leg)
+                .mode(mode)
+                .pol(pol)
+                .pod(pod)
+                .isSelectedForDocument(false).isDomestic(false).build();
+    }
+
 
     public boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
         return (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ||
