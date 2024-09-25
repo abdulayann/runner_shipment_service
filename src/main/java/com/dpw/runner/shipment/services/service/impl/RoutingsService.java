@@ -454,6 +454,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponse.carrier(routings.getCarrier());
         routingsResponse.truckReferenceNumber(routings.getTruckReferenceNumber());
         routingsResponse.carrierCountry(routings.getCarrierCountry());
+        routingsResponse.isSelectedForDocument(routings.getIsSelectedForDocument());
 
         return routingsResponse.build();
     }
