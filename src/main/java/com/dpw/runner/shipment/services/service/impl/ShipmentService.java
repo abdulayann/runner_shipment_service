@@ -1194,7 +1194,30 @@ public class ShipmentService implements IShipmentService {
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
 
+    /**
+     * Retrieves the list of routing requests for the specified customer booking request.
+     *
+     * <p>If the customer booking request already contains a routing list, it returns that list.
+     * Otherwise, it generates routing legs based on the carrier details provided in the request.</p>
+     *
+     * <p>The routing legs are generated based on the following logic:</p>
+     * <ul>
+     *     <li>If Origin and Port of Loading (POL) are different, create a leg from Origin to POL.</li>
+     *     <li>If POL and Port of Discharge (POD) are different, create a leg from POL to POD.</li>
+     *     <li>If POD and Destination are different, create a leg from POD to Destination.</li>
+     *     <li>If all points are the same (Origin, POL, POD, Destination), create a single leg from Origin to Destination.</li>
+     * </ul>
+     *
+     * @param customerBookingRequest the customer booking request containing carrier details and routing information
+     * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
+     */
     private List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
+        // Return existing routing list if available
+        List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
+        if (customerBookingRequestRoutingList != null) {
+            return customerBookingRequestRoutingList;
+        }
+
         CarrierDetailRequest carrierDetails = customerBookingRequest.getCarrierDetails();
         String origin = carrierDetails.getOrigin();
         String portOfLoading = carrierDetails.getOriginPort();
@@ -1206,26 +1229,20 @@ public class ShipmentService implements IShipmentService {
 
         if (!origin.equals(portOfLoading)) {
             // First leg: Origin -> POL (if origin is different from POL)
-            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++,
-                    customerBookingRequest.getTransportType(), origin, portOfLoading));
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++, customerBookingRequest.getTransportType(),
+                    origin, portOfLoading));
         }
 
         if (!portOfLoading.equals(portOfDischarge)) {
             // Second leg: POL -> POD (if POL is different from POD)
-            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++,
-                    customerBookingRequest.getTransportType(), portOfLoading, portOfDischarge));
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter++, customerBookingRequest.getTransportType(),
+                    portOfLoading, portOfDischarge));
         }
 
         if (!portOfDischarge.equals(destination)) {
             // Third leg: POD -> Destination (if POD is different from Destination)
-            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter,
-                    customerBookingRequest.getTransportType(), portOfDischarge, destination));
-        }
-
-        // If all are same (origin == POL == POD == destination), create a single leg
-        if (routingsRequests.isEmpty()) {
-            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter,
-                    customerBookingRequest.getTransportType(), origin, destination));
+            routingsRequests.add(createRoutingsRequest(customerBookingRequest.getId(), legCounter, customerBookingRequest.getTransportType(),
+                    portOfDischarge, destination));
         }
 
         return routingsRequests;
