@@ -2582,7 +2582,7 @@ public class AwbService implements IAwbService {
                 res = res + "\n";
             else
                 res = "";
-            res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString();
+            res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString() + (packs > 1 ? " packages" : " package");
         }
         return res;
     }
