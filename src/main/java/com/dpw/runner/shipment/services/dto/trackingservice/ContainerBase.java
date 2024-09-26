@@ -18,6 +18,8 @@ public class ContainerBase {
     private String typeIsoCode;
     private Object bolNumber;
     private Object bookingNumber;
+    private String clientBookingNumber;
+    private String shipmentReference;
     private Object sealNumber;
     private Object marks;
     private Object incoterm;
