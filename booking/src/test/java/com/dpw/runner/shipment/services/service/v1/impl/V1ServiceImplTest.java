@@ -8,13 +8,12 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -2786,59 +2785,6 @@ class V1ServiceImplTest {
         assertEquals("RuntimeException", throwable.getMessage());
     }
 
-    /**
-     * Method under test: {@link V1ServiceImpl#checkTaskExist(CheckTaskExistV1Request)} (Object)}
-     */
-    @Test
-    void testCheckTaskExist() throws RestClientException {
-        // Arrange
-        var mock = mock(ResponseEntity.class);
-        var mockResponse = new CheckTaskExistResponse();
-        mockResponse.setSendToOrg(List.of("DPW"));
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
-        // Act
-        var responseEntity = v1ServiceImpl.checkTaskExist(CheckTaskExistV1Request.builder().build());
-        // Assert
-        assertEquals(List.of("DPW"), responseEntity.getSendToOrg());
-    }
-
-    @Test
-    void testCheckTaskExist2() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
-        // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkTaskExist(CheckTaskExistV1Request.builder().build()));
-        // Assert
-        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
-    }
-
-    @Test
-    void testCheckTaskExist3() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
-        // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkTaskExist(CheckTaskExistV1Request.builder().build()));
-        // Assert
-        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
-    }
-
-    @Test
-    void testCheckTaskExist4() throws RestClientException {
-        // Arrange
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
-                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.checkTaskExist(CheckTaskExistV1Request.builder().build()));
-        // Assert
-        assertEquals("RuntimeException", throwable.getMessage());
-    }
-
 
     /**
      * Method under test: {@link V1ServiceImpl#importFlightSchedules(Object)} (Object)}
@@ -4320,13 +4266,13 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchAddress() throws RestClientException {
-        var inputEntity = new EntityTransferAddress();
+        var inputEntity = new AddressData();
         inputEntity.setOrgId(111L);
         var mockResponse = V1RetrieveResponse.builder().entity(inputEntity).build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(modelMapper.map(any(), eq(EntityTransferAddress.class))).thenReturn(inputEntity);
+        when(modelMapper.map(any(), eq(AddressData.class))).thenReturn(inputEntity);
         // Act
         var responseEntity = v1ServiceImpl.fetchAddress("Request");
 

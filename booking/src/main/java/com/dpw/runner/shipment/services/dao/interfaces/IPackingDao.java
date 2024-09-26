@@ -7,7 +7,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,16 +25,9 @@ public interface IPackingDao {
 
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws RunnerException;
 
-    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
-    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap);
-
     List<Packing> getAllPackings();
 
     List<Packing> saveAll(List<Packing> packingList);
-
-    List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId);
-
-    void deleteEntityFromContainer(Long id);
 
     List<Packing> findByConsolidationId(Long consolidationId);
 }

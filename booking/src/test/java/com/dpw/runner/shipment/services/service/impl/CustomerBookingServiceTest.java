@@ -34,8 +34,8 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.OrganizationsMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -971,10 +971,10 @@ class CustomerBookingServiceTest extends CommonMocks {
         var address = jsonTestUtility.getAddressData();
 
         when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().entities(List.of(org)).build());
-        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(List.of(org));
+        when(jsonHelper.convertValueToList(any(),eq(OrganizationsMasterData.class))).thenReturn(List.of(org));
 
         when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(List.of(address)).build());
-        when(jsonHelper.convertValueToList(any(),eq(EntityTransferAddress.class))).thenReturn(List.of(address));
+        when(jsonHelper.convertValueToList(any(),eq(AddressData.class))).thenReturn(List.of(address));
         mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());

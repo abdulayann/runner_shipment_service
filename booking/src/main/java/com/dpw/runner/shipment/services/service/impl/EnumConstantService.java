@@ -47,21 +47,10 @@ public class EnumConstantService implements IEnumConstantService {
         response.put(Constants.BOOKING_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for (TransportInstructionTemplateType dataType : TransportInstructionTemplateType.values()) {
-            enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
-        }
-        response.put(Constants.TI_TEMPLATE_TYPE, enumList);
-
-        enumList = new ArrayList<>();
         for (CustomerCategoryRates dataType : CustomerCategoryRates.values()) {
             enumList.add(EnumConstantResponse.builder().id(dataType.getValue()).description(dataType.getDescription()).name(dataType.name()).build());
         }
         response.put(Constants.CUSTOMER_CATEGORY_RATES, enumList);
-
-        for (CarrierBookingStatus status : CarrierBookingStatus.values()) {
-            enumList.add(EnumConstantResponse.builder().id(status.getValue()).description(status.getDescription()).name(status.name()).build());
-        }
-        response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 
         enumList = new ArrayList<>();
         for(InstructionType instructionType : InstructionType.values()){

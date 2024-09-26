@@ -27,12 +27,12 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.*;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -525,7 +525,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 List<Object> orgCriteria = new ArrayList<>(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
                 orgRequest.setCriteriaRequests(orgCriteria);
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+                List<OrganizationsMasterData> orgList = jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class);
 
 
                 long orgId=orgList.get(0).getId();
@@ -547,7 +547,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
                 addressReq.setCriteriaRequests(finalCriteria);
                 V1DataResponse addressResponse = v1Service.addressList(addressReq);
-                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                List<AddressData> addressList = jsonHelper.convertValueToList(addressResponse.entities, AddressData.class);
                 creditLimitRequest.setSiteIdentifierId(addressList.get(0).getSiteIdentifier());
 
 
@@ -998,7 +998,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             return null;
         List<String> carrierCodes = new ArrayList<>();
         carrierCodes.add(carrierSCACCode);
-        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
+        Map<String, CarrierMasterData> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
         if(map.containsKey(carrierSCACCode))
             return map.get(carrierSCACCode).ItemValue;
         return null;
@@ -1236,7 +1236,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
             masterListRequestV2.setMasterListRequests(listRequests);
             // fetching from V1 in single call
-            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Map<String, MasterListsV1> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
 
             // Postprocessing
@@ -1266,7 +1266,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
                 customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
             // fetching from V1 in single call
-            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            Map<String, UnLocationsMasterData> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
             // Postprocessing
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
@@ -1289,7 +1289,7 @@ public class CustomerBookingService implements ICustomerBookingService {
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
                 customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
-            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
+            Map<String, ChargeTypeMasterData> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
@@ -1310,7 +1310,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
                 customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
-            Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+            Map<String, ContainerTypeMasterData> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
 
             if (!Objects.isNull(customerBookingResponse.getContainersList()))

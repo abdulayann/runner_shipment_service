@@ -161,45 +161,6 @@ public class PackingDao implements IPackingDao {
         return res;
     }
 
-    @Override
-    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId) {
-        List<Packing> res = new ArrayList<>();
-        for (Packing req : packings) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                Optional<Packing> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
-            req.setConsolidationId(consolidationId);
-            req = save(req);
-            res.add(req);
-        }
-        return res;
-    }
-    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap) {
-        List<Packing> res = new ArrayList<>();
-        for (Packing req : packings) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                if (!oldEntityMap.containsKey(id)) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
-                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
-            }
-            req.setConsolidationId(consolidationId);
-            res.add(req);
-        }
-        res = saveAll(res);
-        return res;
-    }
-
     private void deletePackings(Map<Long, Packing> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
@@ -228,31 +189,6 @@ public class PackingDao implements IPackingDao {
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-    }
-
-    public List<Packing> saveEntityFromContainer(List<Packing> packings, Long containerId) {
-        List<Packing> res = new ArrayList<>();
-        for (Packing req : packings) {
-            if (req.getId() != null) {
-                long id = req.getId();
-                Optional<Packing> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            req.setContainerId(containerId);
-            req = save(req);
-            res.add(req);
-        }
-        return res;
-    }
-
-    public void deleteEntityFromContainer(Long containerId) {
-        ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerId, "=");
-        Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-        Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-        saveEntityFromContainer(packings.getContent(), null);
     }
 
     @Override

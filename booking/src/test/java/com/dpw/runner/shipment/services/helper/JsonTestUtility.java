@@ -7,7 +7,9 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.MasterListsV1;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.OrganizationsMasterData;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -151,8 +153,8 @@ public class JsonTestUtility {
     public PackSummaryResponse getTestPackSummaryAirResponse(){
         return objectMapper.convertValue(payload.get("PACK_SUMMARY_RESPONSE_AIR"), PackSummaryResponse.class);
     }
-    public List<EntityTransferMasterLists> getAutoAttachConsoleMasterData() {
-        return convertValueToList(payload.get("AUTO_ATTACH_CONSOLE_MASTER_DATA_LIST"), EntityTransferMasterLists.class);
+    public List<MasterListsV1> getAutoAttachConsoleMasterData() {
+        return convertValueToList(payload.get("AUTO_ATTACH_CONSOLE_MASTER_DATA_LIST"), MasterListsV1.class);
     }
 
     public Containers getTestContainer() {
@@ -238,12 +240,12 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("PLATFORM_CREATE_UPDATE"), PlatformToRunnerCustomerBookingRequest.class);
     }
 
-    public EntityTransferOrganizations getOrganizationData() {
-        return objectMapper.convertValue(payload.get("ORG_DATA"), EntityTransferOrganizations.class);
+    public OrganizationsMasterData getOrganizationData() {
+        return objectMapper.convertValue(payload.get("ORG_DATA"), OrganizationsMasterData.class);
     }
 
-    public EntityTransferAddress getAddressData() {
-        return objectMapper.convertValue(payload.get("ADDRESS_DATA"), EntityTransferAddress.class);
+    public AddressData getAddressData() {
+        return objectMapper.convertValue(payload.get("ADDRESS_DATA"), AddressData.class);
     }
 
     public ListCommonRequest getListRequest() {
@@ -316,14 +318,5 @@ public class JsonTestUtility {
 
     public ListContractResponse getListContractResponse() {
         return objectMapper.convertValue(payload.get("LIST_CONTRACT_RESPONSE"), ListContractResponse.class);
-    }
-    public EntityTransferShipmentDetails getImportShipmentData() {
-        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferShipmentDetails.class);
-    }
-    public EntityTransferConsolidationDetails getImportConsolidationAir() {
-        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferConsolidationDetails.class);
-    }
-    public EntityTransferConsolidationDetails getImportConsolidationSea() {
-        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
     }
 }

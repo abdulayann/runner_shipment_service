@@ -19,8 +19,8 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.ChargeTypeMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -112,7 +112,7 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -125,7 +125,7 @@ class BookingIntegrationsUtilityTest {
     @MethodSource("provideCargoTypes")
     void testCreateBookingInPlatform(String cargoType) throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking(cargoType);
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_SEA);
 
@@ -167,7 +167,7 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
         customerBooking.getCarrierDetails().setShippingLine("");
 
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -180,8 +180,8 @@ class BookingIntegrationsUtilityTest {
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType_ValidCarrier() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
 
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(masterDataUtils.fetchInBulkCarriers(anyList())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.fetchInBulkCarriers(anyList())).thenReturn(Map.of("Maersk Line", CarrierMasterData.builder().ItemValue("item val").Identifier1("code").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -195,7 +195,7 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("LCL");
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -209,7 +209,7 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("LCL");
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(0);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -233,7 +233,7 @@ class BookingIntegrationsUtilityTest {
 
     @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_succesfulUpdate() throws RunnerException {
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         bookingIntegrationsUtility.updateBookingInPlatform(getCustomerBooking("FCL"));
 
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
@@ -241,7 +241,7 @@ class BookingIntegrationsUtilityTest {
 
     @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_TransportType_ROA() throws RunnerException {
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         CustomerBooking customerBooking = getCustomerBooking("FCL");
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_ROA);
         bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
@@ -251,7 +251,7 @@ class BookingIntegrationsUtilityTest {
 
     @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_TransportType_RAI() throws RunnerException {
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         CustomerBooking customerBooking = getCustomerBooking("FCL");
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_RAI);
         bookingIntegrationsUtility.updateBookingInPlatform(customerBooking);
@@ -262,7 +262,7 @@ class BookingIntegrationsUtilityTest {
     @Test
     void testUpdateBookingInPlatform_fromCustomerBooking_throwsException() throws RunnerException {
         doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any());
-        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
+        when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", ChargeTypeMasterData.builder().Services("services").Description("Desc").build()));
         bookingIntegrationsUtility.updateBookingInPlatform(getCustomerBooking("FCL"));
         verify(platformServiceAdapter, times(1)).updateAtPlaform(any());
     }

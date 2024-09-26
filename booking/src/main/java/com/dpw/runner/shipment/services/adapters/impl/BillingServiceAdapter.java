@@ -14,8 +14,8 @@ import com.dpw.runner.shipment.services.dto.v1.TenantModel;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.OrganizationsMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -158,19 +158,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         List<ExternalBillRequest> externalBillRequests = new ArrayList<>();
         List<ExternalBillChargeRequest> externalBillChargeRequests = new ArrayList<>();
 
-        List<EntityTransferOrganizations> organizationList = getOrganizationsListForBillCreationRequest(entity);
+        List<OrganizationsMasterData> organizationList = getOrganizationsListForBillCreationRequest(entity);
 
-        List<EntityTransferAddress> addressList = getAddressListForBillCreationRequest(organizationList);
+        List<AddressData> addressList = getAddressListForBillCreationRequest(organizationList);
 
-        EntityTransferOrganizations clientDetails = organizationList.stream()
+        OrganizationsMasterData clientDetails = organizationList.stream()
                 .filter(org -> org.getOrganizationCode().equalsIgnoreCase(entity.getClientCode()))
                 .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
 
         Long clientId = Optional.ofNullable(clientDetails)
-                .map(EntityTransferOrganizations::getId)
+                .map(OrganizationsMasterData::getId)
                 .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + entity.getClientCode()));
 
-        EntityTransferAddress clientAddressDetails = Optional.ofNullable(entity.getClientAddressShortCode())
+        AddressData clientAddressDetails = Optional.ofNullable(entity.getClientAddressShortCode())
                 .filter(code -> !code.trim().isEmpty()).flatMap(code -> addressList.stream()
                         .filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
                 .or(() -> addressList.stream()
@@ -188,7 +188,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     private void processExternalBillRequest(UUID shipmentGuid, BookingEntity entity, List<ExternalBillRequest> externalBillRequests,
             List<ExternalBillChargeRequest> externalBillChargeRequests,
-            Long clientId, EntityTransferAddress clientAddressDetails) {
+            Long clientId, AddressData clientAddressDetails) {
         ExternalBillRequest externalBillRequest = ExternalBillRequest.builder()
                 .externalBill(BillRequest.builder()
                         .jobStatus(Constants.WRK)
@@ -196,7 +196,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                         .moduleType(Constants.SHIPMENT)
                         .moduleGuid(shipmentGuid.toString())
                         .clientId(clientId.toString())
-                        .clientAddressId(Optional.ofNullable(clientAddressDetails).map(EntityTransferAddress::getId)
+                        .clientAddressId(Optional.ofNullable(clientAddressDetails).map(AddressData::getId)
                                 .map(Object::toString).orElse(null))
                         .actualInvoiceDateEnabled(false)
                         .manualInvoiceDateEnabled(false)
@@ -224,8 +224,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private void processExternalBillChargeRequest(BookingEntity entity, TenantModel tenantModel,
-            List<ExternalBillChargeRequest> externalBillChargeRequests, List<EntityTransferOrganizations> organizationList,
-            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails) {
+                                                  List<ExternalBillChargeRequest> externalBillChargeRequests, List<OrganizationsMasterData> organizationList,
+                                                  List<AddressData> addressList, Long clientId, AddressData clientAddressDetails) {
         for (BillCharge billCharge : entity.getBillCharges()) {
             populateExternalBillChargeRequest(tenantModel, externalBillChargeRequests, organizationList, addressList, clientId, clientAddressDetails, billCharge);
         }
@@ -273,44 +273,44 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private void populateExternalBillChargeRequest(TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
-            List<EntityTransferOrganizations> organizationList,
-            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails, BillCharge billCharge) {
+                                                   List<OrganizationsMasterData> organizationList,
+                                                   List<AddressData> addressList, Long clientId, AddressData clientAddressDetails, BillCharge billCharge) {
         try {
-            EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
+            OrganizationsMasterData creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
                     .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
 
             Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
                     .filter(code -> !code.trim().isEmpty())
                     .map(code -> Optional.ofNullable(creditorDetails)
-                            .map(EntityTransferOrganizations::getId)
+                            .map(OrganizationsMasterData::getId)
                             .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
                     .orElseGet(() -> Optional.ofNullable(creditorDetails)
-                            .map(EntityTransferOrganizations::getId)
+                            .map(OrganizationsMasterData::getId)
                             .orElse(clientId));
 
             if (creditorDetails == null || creditorDetails.getPayables() == null || Boolean.FALSE.equals(creditorDetails.getPayables())) {
                 creditorId = -1L;
             }
 
-            EntityTransferOrganizations debtorDetails = organizationList.stream()
+            OrganizationsMasterData debtorDetails = organizationList.stream()
                     .filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getDebtorCode()))
                     .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
 
             Long debtorId = Optional.ofNullable(billCharge.getDebtorCode()).filter(code -> !code.trim().isEmpty())
-                    .map(code -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
+                    .map(code -> Optional.ofNullable(debtorDetails).map(OrganizationsMasterData::getId)
                             .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
-                    .orElseGet(() -> Optional.ofNullable(debtorDetails).map(EntityTransferOrganizations::getId)
+                    .orElseGet(() -> Optional.ofNullable(debtorDetails).map(OrganizationsMasterData::getId)
                             .orElse(clientId));
 
             final Long capturedCreditorId = creditorId;
 
-            EntityTransferAddress creditorAddressDetails = creditorId > 0 ?
+            AddressData creditorAddressDetails = creditorId > 0 ?
                     Optional.ofNullable(billCharge.getCreditorAddressCode()).filter(code -> !code.trim().isEmpty())
                             .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
                             .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(capturedCreditorId) && Boolean.TRUE.equals(x.getDefaultAddress())).findFirst().orElse(null))
                     : null;
 
-            EntityTransferAddress debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
+            AddressData debtorAddressDetails = Optional.ofNullable(billCharge.getDebitorAddressCode()).filter(code -> !code.trim().isEmpty())
                     .flatMap(code -> addressList.stream().filter(x -> x.getAddressShortCode().equalsIgnoreCase(code)).findFirst())
                     .orElseGet(() -> addressList.stream().filter(x -> x.getOrgId().equals(debtorId) && Boolean.TRUE.equals(x.getDefaultAddress()))
                             .findFirst().orElse(null));
@@ -368,7 +368,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                     .isRcm(false).build())
                             .billChargeRevenueDetails(BillChargeRevenueDetailsRequest.builder()
                                     .debtorId(debtorId.toString())
-                                    .debtorAddressId(Optional.ofNullable(debtorAddressDetails).map(EntityTransferAddress::getId)
+                                    .debtorAddressId(Optional.ofNullable(debtorAddressDetails).map(AddressData::getId)
                                             .map(Object::toString).orElse(null))
                                     .measurementBasis(measurementBasisRecord.revenueMeasurementBasisV2())
                                     .measurementBasisUnit(measurementBasisRecord.measurementBasisUnit())
@@ -408,9 +408,9 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return tenantModel;
     }
 
-    private List<EntityTransferOrganizations> getOrganizationsListForBillCreationRequest(BookingEntity entity) {
+    private List<OrganizationsMasterData> getOrganizationsListForBillCreationRequest(BookingEntity entity) {
         List<String> clientCodeList = getClientCodeListForBillCreationRequest(entity);
-        List<EntityTransferOrganizations> organizationList = new ArrayList<>();
+        List<OrganizationsMasterData> organizationList = new ArrayList<>();
         if (ObjectUtils.isNotEmpty(clientCodeList)) {
             List<Object> finalCriteria = new ArrayList<>();
             CommonV1ListRequest orgRequest = new CommonV1ListRequest();
@@ -428,19 +428,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             orgRequest.setCriteriaRequests(finalCriteria);
             orgRequest.setTake(clientCodeList.size());
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-            organizationList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+            organizationList = jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class);
         }
         return organizationList;
     }
 
-    private List<EntityTransferAddress> getAddressListForBillCreationRequest(List<EntityTransferOrganizations> organizations) {
-        List<EntityTransferAddress> addressList = new ArrayList<>();
+    private List<AddressData> getAddressListForBillCreationRequest(List<OrganizationsMasterData> organizations) {
+        List<AddressData> addressList = new ArrayList<>();
         if (ObjectUtils.isNotEmpty(organizations)) {
             List<Object> finalCriteria = new ArrayList<>();
             CommonV1ListRequest addressRequest = new CommonV1ListRequest();
 
             List<Object> orgIdField = new ArrayList<>(List.of(Constants.OrgId));
-            List<Long> orgIdList = organizations.stream().filter(ObjectUtils::isNotEmpty).map(EntityTransferOrganizations::getId).toList();
+            List<Long> orgIdList = organizations.stream().filter(ObjectUtils::isNotEmpty).map(OrganizationsMasterData::getId).toList();
             List<Object> orgIdCriteria = new ArrayList<>(List.of(orgIdField, Constants.IN, List.of(orgIdList)));
             finalCriteria.add(orgIdCriteria);
 
@@ -453,7 +453,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             addressRequest.setCriteriaRequests(finalCriteria);
             addressRequest.setTake(orgIdList.size());
             V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-            addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+            addressList = jsonHelper.convertValueToList(addressResponse.entities, AddressData.class);
         }
         return addressList;
     }

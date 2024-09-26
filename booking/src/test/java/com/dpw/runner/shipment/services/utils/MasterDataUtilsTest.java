@@ -13,10 +13,9 @@ import com.dpw.runner.shipment.services.dto.v1.TenantModel;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.*;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -94,7 +93,7 @@ class MasterDataUtilsTest {
      @Test
     void testFetchInBulkMasterList() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(EntityTransferMasterLists.builder().ItemValue("SEA").build()));
+        when(jsonHelper.convertValueToList(any(), eq(MasterListsV1.class))).thenReturn(List.of(MasterListsV1.builder().ItemValue("SEA").build()));
         when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(List.of(MasterListRequest.builder().build())).build());
@@ -121,7 +120,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkUnlocations() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
+        when(jsonHelper.convertValueToList(any(), eq(UnLocationsMasterData.class))).thenReturn(List.of(UnLocationsMasterData.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
@@ -132,7 +131,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkUnlocations2() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
+        when(jsonHelper.convertValueToList(any(), eq(UnLocationsMasterData.class))).thenReturn(List.of(UnLocationsMasterData.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
@@ -143,7 +142,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkUnlocations3() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(UnLocationsMasterData.class))).thenReturn(null);
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
@@ -183,7 +182,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
+        when(cache.get(any())).thenReturn(MasterListsV1::new);
 
         // Act and Assert
         var response = masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code");
@@ -210,7 +209,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkChargeTypes() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferChargeType.class))).thenReturn(List.of(EntityTransferChargeType.builder().ChargeCode("AMS").build()));
+        when(jsonHelper.convertValueToList(any(), eq(ChargeTypeMasterData.class))).thenReturn(List.of(ChargeTypeMasterData.builder().ChargeCode("AMS").build()));
         when(v1Service.fetchChargeCodeData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkChargeTypes(List.of(UUID.randomUUID().toString()));
@@ -230,7 +229,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkContainerTypes() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerTypeMasterData.class))).thenReturn(List.of(ContainerTypeMasterData.builder().Code("20GP").ContainerType("ContainerType").build()));
         when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.fetchInBulkContainerTypes(List.of("20GP", "40HQ"));
@@ -340,7 +339,7 @@ class MasterDataUtilsTest {
     void getCarriersData3() {
         String locationGuid = StringUtility.convertToString(UUID.randomUUID());
         when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData.class))).thenReturn(null);
         var response = masterDataUtils.getCarriersData(Set.of(locationGuid));
         assertNotNull(response);
         assertTrue(response.isEmpty());
@@ -350,7 +349,7 @@ class MasterDataUtilsTest {
     void getCarriersData4() {
         String locationGuid = StringUtility.convertToString(UUID.randomUUID());
         when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(new ArrayList<>());
+        when(jsonHelper.convertValueToList(any(), eq(com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData.class))).thenReturn(new ArrayList<>());
         var response = masterDataUtils.getCarriersData(Set.of(locationGuid));
         assertNotNull(response);
         assertTrue(response.isEmpty());
@@ -388,9 +387,9 @@ class MasterDataUtilsTest {
 
     @Test
     void fetchDgSubstanceRow3() {
-        EntityTransferDGSubstance mockResponse = EntityTransferDGSubstance.builder().Id(11L).build();
+        DGSubstanceMasterData mockResponse = DGSubstanceMasterData.builder().Id(11L).build();
         when(v1Service.fetchDangerousGoodData(any())).thenReturn(V1DataResponse.builder().entities(List.of()).build());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferDGSubstance.class))).thenReturn(List.of(mockResponse));
+        when(jsonHelper.convertValueToList(any(), eq(DGSubstanceMasterData.class))).thenReturn(List.of(mockResponse));
         var response = masterDataUtils.fetchDgSubstanceRow(11);
         assertNotNull(response);
         assertNotNull(response.getId());
@@ -399,9 +398,9 @@ class MasterDataUtilsTest {
 
     @Test
     void fetchOrganizations() {
-        EntityTransferOrganizations mockResponse = EntityTransferOrganizations.builder().Id(11L).build();
+        OrganizationsMasterData mockResponse = OrganizationsMasterData.builder().Id(11L).build();
         when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(List.of(mockResponse));
+        when(jsonHelper.convertValueToList(any(), eq(OrganizationsMasterData.class))).thenReturn(List.of(mockResponse));
         var response = masterDataUtils.fetchOrganizations("field", "value");
         assertNotNull(response);
         assertNotNull(response.get(0));
@@ -458,7 +457,7 @@ class MasterDataUtilsTest {
     @Test
     void getVesselName() {
         var mockVesselGuid = UUID.randomUUID();
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(mockVesselGuid).Name("Mark").build()));
+        when(jsonHelper.convertValueToList(any(), eq(VesselsMasterData.class))).thenReturn(List.of(VesselsMasterData.builder().Guid(mockVesselGuid).Name("Mark").build()));
         when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().build());
 
         var responseEntity = masterDataUtils.getVesselName(mockVesselGuid.toString());
@@ -470,7 +469,7 @@ class MasterDataUtilsTest {
     @Test
     void getVesselName2() {
         var mockVesselGuid = UUID.randomUUID();
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(mockVesselGuid).Name("Mark").build()));
+        when(jsonHelper.convertValueToList(any(), eq(VesselsMasterData.class))).thenReturn(List.of(VesselsMasterData.builder().Guid(mockVesselGuid).Name("Mark").build()));
         when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().build());
 
         var responseEntity = masterDataUtils.getVesselName(UUID.randomUUID().toString());
@@ -487,7 +486,7 @@ class MasterDataUtilsTest {
     @Test
     void getCarrierName() {
         var mockCarrierCode = "APLU";
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemValue(mockCarrierCode).ItemDescription("APULU Carrier").build()));
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().ItemValue(mockCarrierCode).ItemDescription("APULU Carrier").build()));
         when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
 
         var responseEntity = masterDataUtils.getCarrierName(mockCarrierCode);
@@ -499,7 +498,7 @@ class MasterDataUtilsTest {
     @Test
     void getCarrierName2() {
         var mockCarrierCode = "APLU";
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemValue(mockCarrierCode).build()));
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().ItemValue(mockCarrierCode).build()));
         when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
 
         var responseEntity = masterDataUtils.getCarrierName("AAPU");
@@ -540,7 +539,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+        when(cache.get(any())).thenReturn(() -> UnLocationsMasterData.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS);
 
@@ -557,7 +556,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+        when(cache.get(any())).thenReturn(() -> UnLocationsMasterData.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS, true);
 
@@ -573,7 +572,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
+        when(cache.get(any())).thenReturn(() -> UnLocationsMasterData.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB);
 
@@ -589,7 +588,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Code("20GP").Description("20 Foot").build());
+        when(cache.get(any())).thenReturn(() -> ContainerTypeMasterData.builder().Code("20GP").Description("20 Foot").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CONTAINER_TYPE);
 
@@ -605,7 +604,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferChargeType.builder().ChargeCode("AMS").Description("AMS Filling").build());
+        when(cache.get(any())).thenReturn(() -> ChargeTypeMasterData.builder().ChargeCode("AMS").Description("AMS Filling").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CHARGE_TYPE);
 
@@ -621,7 +620,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("ValuenDesc").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ValuenDesc("ValuenDesc").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
 
@@ -637,7 +636,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ItemDescription("ItemDescription").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
 
@@ -653,7 +652,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ItemDescription("ItemDescription").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, true);
 
@@ -669,7 +668,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferVessels.builder().Name("Name").build());
+        when(cache.get(any())).thenReturn(() -> VesselsMasterData.builder().Name("Name").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.VESSELS);
 
@@ -685,7 +684,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(() -> EntityTransferCarrier.builder().ItemDescription("DPW").build());
+        when(cache.get(any())).thenReturn(() -> CarrierMasterData.builder().ItemDescription("DPW").build());
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CARRIER);
 
@@ -765,7 +764,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
+        when(cache.get(any())).thenReturn(CommodityTypeMasterData::new);
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.COMMODITY);
 
@@ -782,7 +781,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
+        when(cache.get(any())).thenReturn(CommodityTypeMasterData::new);
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, StringUtility.getRandomString(10));
 
@@ -798,7 +797,7 @@ class MasterDataUtilsTest {
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferCurrency::new);
+        when(cache.get(any())).thenReturn(CurrencyMasterData::new);
 
         var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CURRENCIES);
 
@@ -809,7 +808,7 @@ class MasterDataUtilsTest {
     @Test
     void getChargeTypes() {
         // Arrange
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferChargeType.class))).thenReturn(List.of(EntityTransferChargeType.builder().ChargeCode("AMS").build()));
+        when(jsonHelper.convertValueToList(any(), eq(ChargeTypeMasterData.class))).thenReturn(List.of(ChargeTypeMasterData.builder().ChargeCode("AMS").build()));
         when(v1Service.fetchChargeCodeData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
         var responseEntity = masterDataUtils.getChargeTypes(List.of("AMS"));
@@ -840,7 +839,7 @@ class MasterDataUtilsTest {
 
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
 
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ValuenDesc("").build());
         masterDataUtils.setLocationData(List.of(CustomerBookingResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
@@ -862,7 +861,7 @@ class MasterDataUtilsTest {
 
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
 
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ValuenDesc("").build());
         masterDataUtils.setLocationData(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).additionalDetails(new AdditionalDetailsListResponse()).build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
@@ -883,7 +882,7 @@ class MasterDataUtilsTest {
 
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
 
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ValuenDesc("").build());
         masterDataUtils.setLocationData(List.of(ConsolidationListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
@@ -918,7 +917,7 @@ class MasterDataUtilsTest {
 
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
 
-        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        when(cache.get(any())).thenReturn(() -> MasterListsV1.builder().ValuenDesc("").build());
         masterDataUtils.setLocationData(List.of(ConsolidationDetailsResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
@@ -930,7 +929,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferVessels::new);
+        when(cache.get(any())).thenReturn(VesselsMasterData::new);
 
         masterDataUtils.fetchVesselForList(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
 
@@ -958,7 +957,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferVessels::new);
+        when(cache.get(any())).thenReturn(VesselsMasterData::new);
 
         masterDataUtils.fetchVesselForList(List.of(ConsolidationListResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
 
@@ -993,7 +992,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferVessels::new);
+        when(cache.get(any())).thenReturn(VesselsMasterData::new);
 
         masterDataUtils.fetchVesselForList(List.of(ConsolidationDetailsResponse.builder().carrierDetails(CarrierDetailResponse.builder().vessel(UUID.randomUUID().toString()).build()).build()));
 
