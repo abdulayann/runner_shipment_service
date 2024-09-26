@@ -145,7 +145,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
@@ -217,6 +217,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -354,7 +355,6 @@ ShipmentServiceTest extends CommonMocks {
     private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
-
 
     @Mock
     private IEventService eventService;
@@ -752,13 +752,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void fetchOrgInfoFromV1_Test() throws RunnerException {
-        OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
-        when(v1Service.fetchOrgAddresses(any())).thenReturn(orgAddressResponse);
+        PartiesRequest expectedResponse = PartiesRequest.builder().build();
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().build();
 
-        OrgAddressResponse response = shipmentService.fetchOrgInfoFromV1(OrgAddressCode.builder()
-            .build());
+        PartiesRequest response = shipmentService.fetchOrgInfoFromV1(request);
 
-        assertEquals(orgAddressResponse, response);
+        assertNull(response);
     }
 
     @Test

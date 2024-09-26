@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -37,10 +38,9 @@ import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequ
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -227,31 +227,32 @@ class ShipmentControllerTest {
 
     @Test
     void fetchOrgInfoTest_Success() throws RunnerException {
-        OrgAddressCode orgAddressCode = OrgAddressCode.builder().OrgCode("OrgCode").AddressCode("AC").build();
-        when(shipmentService.fetchOrgInfoFromV1(orgAddressCode)).thenReturn(OrgAddressResponse.builder()
-            .build());
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().build();
 
-        var responseEntity = shipmentController.fetchOrgInfo(orgAddressCode);
+        PartiesRequest response = PartiesRequest.builder().build();
+        when(shipmentService.fetchOrgInfoFromV1(request)).thenReturn(response);
+
+        var responseEntity = shipmentController.fetchOrgInfo(request);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void fetchOrgInfoTest_Exception() throws RunnerException {
-        OrgAddressCode orgAddressCode = OrgAddressCode.builder().AddressCode("AC").build();
-        when(shipmentService.fetchOrgInfoFromV1(orgAddressCode)).thenThrow(new RunnerException("EX"));
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().build();
+        when(shipmentService.fetchOrgInfoFromV1(request)).thenThrow(new RunnerException("EX"));
 
-        var responseEntity = shipmentController.fetchOrgInfo(orgAddressCode);
+        var responseEntity = shipmentController.fetchOrgInfo(request);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
     }
 
     @Test
     void fetchOrgInfoTest_Exception2() throws RunnerException {
-        OrgAddressCode orgAddressCode = OrgAddressCode.builder().AddressCode("AC").build();
-        when(shipmentService.fetchOrgInfoFromV1(orgAddressCode)).thenThrow(new RunnerException());
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().build();
+        when(shipmentService.fetchOrgInfoFromV1(request)).thenThrow(new RunnerException());
 
-        var responseEntity = shipmentController.fetchOrgInfo(orgAddressCode);
+        var responseEntity = shipmentController.fetchOrgInfo(request);
 
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, responseEntity.getStatusCode());
     }
