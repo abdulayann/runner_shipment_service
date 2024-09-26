@@ -8301,8 +8301,14 @@ ShipmentServiceTest extends CommonMocks {
         AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
         additionalDetailsRequest.setImportBroker(importBrokerRequest);
         additionalDetailsRequest.setExportBroker(importBrokerRequest);
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd").setTransportMode("FCL");
         shipmentDetails.setGuid(UUID.randomUUID());
 
@@ -8318,6 +8324,10 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
