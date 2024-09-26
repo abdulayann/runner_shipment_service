@@ -8200,4 +8200,140 @@ ShipmentServiceTest extends CommonMocks {
         String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
         assertNotNull(shipmentResponse);
     }
+
+    @Test
+    void createShipmentFromBookingTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest3() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(null);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest4() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest5() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
 }

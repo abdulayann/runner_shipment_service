@@ -527,7 +527,7 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel) {
 
-        return ResponseHelper.buildSuccessResponse(createConsolidationForBooking(commonRequestModel));
+        return ResponseHelper.buildSuccessResponse(this.createConsolidationForBooking(commonRequestModel));
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
