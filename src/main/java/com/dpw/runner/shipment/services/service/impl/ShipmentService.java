@@ -1295,6 +1295,75 @@ public class ShipmentService implements IShipmentService {
                 .build();
     }
 
+    @Override
+    @Transactional
+    public String createShipmentFromBooking(ShipmentRequest shipmentRequest) throws RunnerException{
+        List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<ContainerRequest> containerList = new ArrayList<>();
+        if(shipmentRequest.getConsolidationList()!=null){
+            for(ConsolidationDetailsRequest consolidationDetailsRequest: shipmentRequest.getConsolidationList()){
+                CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(consolidationDetailsRequest);
+                ConsolidationDetailsResponse consolidationDetailsResponse = consolidationService.createConsolidationForBooking(commonRequestModel);
+                ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
+                containerList = consolRequest.getContainersList();
+                consolRequest.setContainersList(null);
+                consolidationDetails.add(consolRequest);
+            }
+            if(!consolidationDetails.isEmpty()){
+                shipmentRequest.setContainersList(containerList);
+                shipmentRequest.setConsolRef(consolidationDetails.get(0).getReferenceNumber());
+                shipmentRequest.setMasterBill(consolidationDetails.get(0).getBol());
+                shipmentRequest.setConsolidationList(consolidationDetails);
+            }
+        }
+
+        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
+        shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
+        shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
+        shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
+        shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
+        shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
+        shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
+        shipmentRequest.setChargable(autoUpdateWtVolResponse.getChargable());
+        shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
+        shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
+        shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
+        shipmentRequest.setNetWeight(autoUpdateWtVolResponse.getNetWeight());
+        shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
+        shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
+        shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
+
+        if(shipmentRequest.getOrderManagementId()!=null){
+            ShipmentDetails shipmentDetails = null;
+            shipmentDetails = orderManagementAdapter.getOrderByGuid(shipmentRequest.getOrderManagementId());
+
+            if(shipmentDetails!=null){
+                if(shipmentDetails.getGoodsDescription()!=null)
+                    shipmentRequest.setGoodsDescription(shipmentDetails.getGoodsDescription());
+
+                if(shipmentDetails.getReferenceNumbersList()!=null){
+                    List<ReferenceNumbersRequest> referenceNumbersList = jsonHelper.convertValue(shipmentDetails.getReferenceNumbersList(), new TypeReference<List<ReferenceNumbersRequest>>() {});
+                    shipmentRequest.setReferenceNumbersList(referenceNumbersList);
+                }
+
+                if(shipmentDetails.getAdditionalDetails()!=null){
+                    if(shipmentDetails.getAdditionalDetails().getImportBroker()!=null){
+                        PartiesRequest importBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setImportBroker(importBroker);
+                    }
+
+                    if(shipmentDetails.getAdditionalDetails().getExportBroker()!=null){
+                        PartiesRequest exportBroker = jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class);
+                        shipmentRequest.getAdditionalDetails().setExportBroker(exportBroker);
+                    }
+                }
+            }
+
+        }
+
+        return jsonHelper.convertToJson(this.createFromBookingServiceAPI(CommonRequestModel.buildRequest(shipmentRequest)));
+    }
+
     public boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
         return (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(customerBookingRequest.getCargoType(), Constants.CARGO_TYPE_FCL)) ||
                 (Objects.equals(customerBookingRequest.getTransportType(), Constants.TRANSPORT_MODE_ROA) &&
@@ -6994,5 +7063,79 @@ public class ShipmentService implements IShipmentService {
         String emailBody = htmlTemplate.replace(tableTemplate, populatedTable);
         emailBody = commonUtils.replaceTagsFromData(dictionary, emailBody);
         return emailBody;
+    }
+
+    @Transactional
+    public ShipmentDetailsResponse createFromBookingServiceAPI(CommonRequestModel commonRequestModel)
+    {
+        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is null for Shipment Create From Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
+        try {
+            Long consolidationId = null;
+            List<Containers> updatedContainers = null;
+            if(request.getConsolidationList() != null)
+                shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
+            if(request.getContainersList() != null)
+                shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
+            shipmentDetails = getShipment(shipmentDetails);
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
+                autoGenerateCreateEvent(shipmentDetails);
+            autoGenerateEvents(shipmentDetails, null);
+            Long shipmentId = shipmentDetails.getId();
+            List<Packing> updatedPackings = new ArrayList<>();
+            if (request.getPackingList() != null) {
+                updatedPackings = packingDao.saveEntityFromShipment(jsonHelper.convertValueToList(request.getPackingList(), Packing.class), shipmentId);
+                shipmentDetails.setPackingList(updatedPackings);
+            }
+            List<RoutingsRequest> routingsRequest = request.getRoutingsList();
+            if (routingsRequest != null)
+                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
+
+            List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
+            if (referenceNumbersRequest != null)
+                shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
+
+            Hbl hbl = null;
+            if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+                hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
+            }
+
+            List<NotesRequest> notesRequest = request.getNotesList();
+            if (notesRequest != null) {
+                for(NotesRequest req : notesRequest) {
+                    req.setEntityId(shipmentId);
+                }
+            }
+            if (notesRequest != null) {
+                for(NotesRequest req : notesRequest) {
+                    notesDao.save(jsonHelper.convertValue(req, Notes.class));
+                }
+            }
+            String transactionId = shipmentDetails.getGuid().toString();
+            pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            try {
+                shipmentDetails.setNotesList(null);
+                shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
+            } catch (Exception e){
+                log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
+            }
+
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(shipmentDetails)
+                            .prevData(null)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentDetails.getId())
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ValidationException(e.getMessage());
+        }
+        return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
     }
 }
