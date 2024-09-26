@@ -727,13 +727,12 @@ public class ShipmentController {
 
         String responseMsg;
         try {
-//            log.info("Received shipment creation request for booking number: {}", customerBooking.getBookingNumber());
             return ResponseHelper.buildSuccessResponse(shipmentService.createShipmentFromBooking(shipmentRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
 }

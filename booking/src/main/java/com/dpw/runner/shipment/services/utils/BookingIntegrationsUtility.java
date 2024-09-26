@@ -238,6 +238,7 @@ public class BookingIntegrationsUtility {
                         .insertDate(note.getCreatedAt())
                         .entityType(Constants.CUSTOMER_BOOKING)
                         .id(null)  // Ensure the id is set to null
+                        .entityId(null)
                         .build())
                 .toList();
     }
@@ -280,17 +281,14 @@ public class BookingIntegrationsUtility {
                                 type("Arrival").
                                 build()
                         ).
-                        containersList(customerBookingRequest.getContainersList()).
+                        containersList(customerBookingRequest.getContainersList()  != null
+                                ? customerBookingRequest.getContainersList().stream().peek(container -> {
+                                    container.setId(null);  // Ensure the id is null
+                                    container.setBookingId(null);
+                                }).collect(Collectors.toList()) : null ).
                         sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                         build();
-                ConsolidationDetailsResponse consolidationDetailsResponse = shipmentServiceAdapter.createConsolidation(consolidationDetailsRequest);
-                if(consolidationDetailsResponse != null)
-                {
-                    ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
-                    containerList = consolRequest.getContainersList();
-                    consolRequest.setContainersList(null);
-                    consolidationDetails.add(consolRequest);
-                }
+                consolidationDetails.add(consolidationDetailsRequest);
             }
 
             ShipmentRequest shipmentRequest = ShipmentRequest.builder().
@@ -349,6 +347,7 @@ public class BookingIntegrationsUtility {
                     packingList(customerBookingRequest.getPackingList() != null
                             ? customerBookingRequest.getPackingList().stream().peek(packing -> {
                         packing.setId(null);  // Ensure the id is null
+                        packing.setBookingId(null);
                         if (!StringUtility.isEmpty(packing.getLengthUnit())) {
                             packing.setWidthUnit(packing.getLengthUnit());
                             packing.setHeightUnit(packing.getLengthUnit());
@@ -357,10 +356,12 @@ public class BookingIntegrationsUtility {
                     fileRepoList(customerBookingRequest.getFileRepoList()  != null
                             ? customerBookingRequest.getFileRepoList().stream().peek(filerepo -> {
                         filerepo.setId(null);  // Ensure the id is null
+                        filerepo.setEntityId(null);
                     }).collect(Collectors.toList()) : null ).
                     routingsList(customerBookingRequest.getRoutingList() != null
                             ? customerBookingRequest.getRoutingList().stream().peek(routing -> {
                         routing.setId(null);  // Ensure the id is null
+                        routing.setBookingId(null);
                     }).collect(Collectors.toList()) : null).
                     consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                     notesList(createNotes(notes)).

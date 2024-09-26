@@ -8,10 +8,12 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -186,21 +189,20 @@ class CustomerBookingControllerTest {
     @Test
     void update2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Mock
-        when(customerBookingService.update(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = customerBookingController.update(CustomerBookingRequest.builder().build());
+        when(customerBookingService.update(any())).thenThrow(new RunnerException());
+
         // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertThrows(RunnerException.class, () -> customerBookingController.update(CustomerBookingRequest.builder().build()));
+
     }
 
     @Test
     void update3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Mock
-        when(customerBookingService.update(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = customerBookingController.update(CustomerBookingRequest.builder().build());
+        when(customerBookingService.update(any())).thenThrow(new RunnerException("RuntimeException"));
+
         // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertThrows(RunnerException.class, () -> customerBookingController.update(CustomerBookingRequest.builder().build()));
     }
 
     @Test

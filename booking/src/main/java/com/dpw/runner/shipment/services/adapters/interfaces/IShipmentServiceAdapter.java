@@ -12,5 +12,4 @@ public interface IShipmentServiceAdapter {
 
     ShipmentDetailsResponse createShipment(ShipmentDetailsResponse shipmentRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> getShipmentIdbyGuid(String guid) throws RunnerException;
-    ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
 }

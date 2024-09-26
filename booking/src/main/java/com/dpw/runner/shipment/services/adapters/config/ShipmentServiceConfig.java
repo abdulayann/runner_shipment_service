@@ -4,32 +4,30 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-
 @Component
+@Configuration
 @ConfigurationProperties(prefix = "shipment")
 @Data
 public class ShipmentServiceConfig {
     private String baseUrl;
-    private String xApiKey;
     private String createShipmentInV2Url;
     private String getIdByGuidUrl;
     private String createConsolidationFromBookingUrl;
 
     @Bean
-    public RestTemplate restTemplateForShipmentService() {
-        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
+    public RestTemplate restTemplateForShipment() {
+        RestTemplate restTemplate = new RestTemplate();
+
         restTemplate.getInterceptors().add((request, body, execution) -> {
             HttpHeaders headers = request.getHeaders();
+            headers.set("Authorization", RequestAuthContext.getAuthToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
-            headers.add("Authorization", RequestAuthContext.getAuthToken());
             return execution.execute(request, body);
         });
         return restTemplate;

@@ -119,7 +119,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
     @JsonIgnoreProperties("shipmentsList")
-    private List<ConsolidationListResponse> consolidationList;
+    private List<ConsolidationDetailsResponse> consolidationList;
     private List<ContainerResponse> containersList;
     private Long container20Count;
     private Long container40Count;

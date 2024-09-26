@@ -994,6 +994,25 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public String createShipmentFromBooking(ShipmentRequest shipmentRequest) throws RunnerException{
+        List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
+        List<ContainerRequest> containerList = new ArrayList<>();
+        if(shipmentRequest.getConsolidationList()!=null){
+            for(ConsolidationDetailsRequest consolidationDetailsRequest: shipmentRequest.getConsolidationList()){
+                CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(consolidationDetailsRequest);
+                ConsolidationDetailsResponse consolidationDetailsResponse = consolidationService.createConsolidationForBooking(commonRequestModel);
+                ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
+                containerList = consolRequest.getContainersList();
+                consolRequest.setContainersList(null);
+                consolidationDetails.add(consolRequest);
+            }
+            if(!consolidationDetails.isEmpty()){
+                shipmentRequest.setContainersList(containerList);
+                shipmentRequest.setConsolRef(consolidationDetails.get(0).getReferenceNumber());
+                shipmentRequest.setMasterBill(consolidationDetails.get(0).getBol());
+                shipmentRequest.setConsolidationList(consolidationDetails);
+            }
+        }
+
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());

@@ -160,7 +160,7 @@ public class CustomerBookingController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingUpdate + "')")
-    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CustomerBookingRequest request) {
+    public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CustomerBookingRequest request) throws RunnerException{
         String responseMsg;
         try {
             return customerBookingService.update(CommonRequestModel.buildRequest(request));
@@ -168,8 +168,8 @@ public class CustomerBookingController {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
         }
-        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = MyCreditLimitResponseClass.class)})
