@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import lombok.*;
 
 import java.io.Serializable;
@@ -10,7 +10,7 @@ import java.io.Serializable;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferDGSubstance implements IEntityTranferBaseEntity, Serializable {
+public class DGSubstanceMasterData implements IMasterDataBaseEntity, Serializable {
     public Long Id;
     public Long DGGoodsId;
     public Long UNIDNo;

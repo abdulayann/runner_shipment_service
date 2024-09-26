@@ -19,7 +19,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
@@ -29,8 +28,8 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.entitytransfer.dto.ChargeTypeMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -449,7 +448,7 @@ public class BookingIntegrationsUtility {
             return null;
         List<String> carrierCodes = new ArrayList<>();
         carrierCodes.add(itemValue);
-        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriers(carrierCodes);
+        Map<String, CarrierMasterData> map = masterDataUtils.fetchInBulkCarriers(carrierCodes);
         if(map.containsKey(itemValue))
             return map.get(itemValue).Identifier1;
         return null;
@@ -586,7 +585,7 @@ public class BookingIntegrationsUtility {
         if(Objects.isNull(bookingCharges) || bookingCharges.isEmpty())
             return charges;
         List<String> chargeTypes = bookingCharges.stream().map(BookingCharges::getChargeType).toList();
-        Map<String, EntityTransferChargeType> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
+        Map<String, ChargeTypeMasterData> chargeTypeMap = masterDataUtils.getChargeTypes(chargeTypes);
         log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
 
         bookingCharges.forEach(

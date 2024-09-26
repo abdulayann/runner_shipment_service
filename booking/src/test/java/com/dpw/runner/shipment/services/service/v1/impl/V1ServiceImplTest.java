@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -4320,13 +4320,13 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchAddress() throws RestClientException {
-        var inputEntity = new EntityTransferAddress();
+        var inputEntity = new AddressData();
         inputEntity.setOrgId(111L);
         var mockResponse = V1RetrieveResponse.builder().entity(inputEntity).build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
-        when(modelMapper.map(any(), eq(EntityTransferAddress.class))).thenReturn(inputEntity);
+        when(modelMapper.map(any(), eq(AddressData.class))).thenReturn(inputEntity);
         // Act
         var responseEntity = v1ServiceImpl.fetchAddress("Request");
 

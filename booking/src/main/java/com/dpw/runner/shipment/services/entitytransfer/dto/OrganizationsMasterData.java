@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
 import lombok.*;
 
@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
+public class OrganizationsMasterData implements IMasterDataBaseEntity {
     public long Id;
     public String OrganizationCode;
     public String OrganizationCategory;

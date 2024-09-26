@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
@@ -16,7 +16,7 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferPacking implements IEntityTranferBaseEntity {
+public class PackingData implements IMasterDataBaseEntity {
     private UUID guid;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;

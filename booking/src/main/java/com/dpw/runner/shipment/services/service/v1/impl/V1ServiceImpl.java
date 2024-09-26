@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -1983,14 +1983,14 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public EntityTransferAddress fetchAddress(String addressId) {
+    public AddressData fetchAddress(String addressId) {
         try {
             V1RetrieveRequest retrieveRequest = V1RetrieveRequest.builder().EntityId(addressId).build();
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(retrieveRequest, V1AuthHelper.getHeaders());
             ResponseEntity responseEntity = this.restTemplate.postForEntity(this.ADDRESS_RETRIEVE, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Total time taken in fetchAddress() function: {}", (System.currentTimeMillis() - time));
-            return modelMapper.map(responseEntity.getBody(), EntityTransferAddress.class);
+            return modelMapper.map(responseEntity.getBody(), AddressData.class);
         } catch (HttpClientErrorException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);

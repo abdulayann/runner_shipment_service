@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import lombok.*;
 
 import java.io.Serializable;
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferCurrency implements IEntityTranferBaseEntity, Serializable {
+public class CurrencyMasterData implements IMasterDataBaseEntity, Serializable {
     public Long fileId;
     public String CurrenyCode;
     public String CurrenyDescription;

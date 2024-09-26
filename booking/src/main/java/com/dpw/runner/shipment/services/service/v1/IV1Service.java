@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -162,7 +162,7 @@ public interface IV1Service {
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
     V1DataResponse fetchCreditLimit(Object request);
     OrgAddressResponse fetchOrgAddresses(Object request);
-    EntityTransferAddress fetchAddress(String entityId);
+    AddressData fetchAddress(String entityId);
     V1DataResponse getCoLoadingStations(Object request);
     TenantDetailsByListResponse getTenantDetails(Object request);
     V1DataResponse getEmailTemplates(Object request);

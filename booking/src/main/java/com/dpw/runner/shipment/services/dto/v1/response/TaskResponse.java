@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -37,12 +35,6 @@ public class TaskResponse implements IRunnerResponse {
 
     @JsonProperty("TaskInfoJson")
     private String taskJson;
-
-    @JsonProperty("ConsoleJson")
-    private EntityTransferConsolidationDetails consoleJson;
-
-    @JsonProperty("ShipmentJson")
-    private EntityTransferShipmentDetails shipmentJson;
 
     @JsonProperty("TaskType")
     private String taskType;

@@ -1,22 +1,19 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.enums.AddressTypes;
 import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 
 @Data
 @ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferAddress implements IEntityTranferBaseEntity {
+public class AddressData implements IMasterDataBaseEntity {
 
     @JsonProperty("Id")
     private long id;

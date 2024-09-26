@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import lombok.*;
 
 
@@ -9,7 +9,7 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferNotes implements IEntityTranferBaseEntity {
+public class NotesData implements IMasterDataBaseEntity {
     private String text;
     private Long entityId;
     private String entityType;

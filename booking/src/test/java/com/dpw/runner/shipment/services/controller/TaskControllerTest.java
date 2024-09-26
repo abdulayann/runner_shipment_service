@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
 import org.junit.jupiter.api.Assertions;
@@ -33,7 +32,7 @@ class TaskControllerTest {
         // Mock
         when(tasksService.createTaskForHbl(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = taskController.create(SendShipmentRequest.builder().build());
+        var responseEntity = taskController.create(new Object());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -43,7 +42,7 @@ class TaskControllerTest {
         // Mock
         when(tasksService.createTaskForHbl(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = taskController.create(SendShipmentRequest.builder().build());
+        var responseEntity = taskController.create(new Object());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -53,7 +52,7 @@ class TaskControllerTest {
         // Mock
         when(tasksService.createTaskForHbl(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = taskController.create(SendShipmentRequest.builder().build());
+        var responseEntity = taskController.create(new Object());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

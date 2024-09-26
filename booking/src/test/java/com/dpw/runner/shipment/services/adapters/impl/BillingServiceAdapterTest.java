@@ -15,8 +15,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
+import com.dpw.runner.shipment.services.entitytransfer.dto.OrganizationsMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -145,20 +145,20 @@ class BillingServiceAdapterTest {
         CustomerBooking customerBooking = new CustomerBooking();
         TenantModel tenantModel = new TenantModel();
 
-        EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
+        OrganizationsMasterData entityTransferOrganization = new OrganizationsMasterData();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
 
-        List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
+        List<OrganizationsMasterData> entityTransferOrganizations = List.of(entityTransferOrganization);
 
         V1DataResponse orgResponse = new V1DataResponse();
         orgResponse.setEntities(entityTransferOrganizations);
 
-        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        AddressData entityTransferAddress = new AddressData();
         entityTransferAddress.setId(1L);
         entityTransferAddress.setAddressShortCode("AddressShortCode");
 
-        List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
+        List<AddressData> entityTransferAddresses = List.of(entityTransferAddress);
 
         V1DataResponse addressResponse = new V1DataResponse();
         addressResponse.setEntities(entityTransferAddresses);
@@ -177,9 +177,9 @@ class BillingServiceAdapterTest {
 
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
         when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
-        when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
+        when(jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class)).thenReturn(entityTransferOrganizations);
         when(v1Service.addressList(any())).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
+        when(jsonHelper.convertValueToList(addressResponse.entities, AddressData.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
@@ -211,23 +211,23 @@ class BillingServiceAdapterTest {
             billCharges.add(billCharge);
         }
 
-        EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
+        OrganizationsMasterData entityTransferOrganization = new OrganizationsMasterData();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
         entityTransferOrganization.setPayables(Boolean.TRUE);
 
-        List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
+        List<OrganizationsMasterData> entityTransferOrganizations = List.of(entityTransferOrganization);
 
         V1DataResponse orgResponse = new V1DataResponse();
         orgResponse.setEntities(entityTransferOrganizations);
 
-        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        AddressData entityTransferAddress = new AddressData();
         entityTransferAddress.setId(1L);
         entityTransferAddress.setAddressShortCode("AddressShortCode");
         entityTransferAddress.setOrgId(1L);
         entityTransferAddress.setDefaultAddress(Boolean.TRUE);
 
-        List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
+        List<AddressData> entityTransferAddresses = List.of(entityTransferAddress);
 
         V1DataResponse addressResponse = new V1DataResponse();
         addressResponse.setEntities(entityTransferAddresses);
@@ -247,9 +247,9 @@ class BillingServiceAdapterTest {
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
-        when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
+        when(jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class)).thenReturn(entityTransferOrganizations);
         when(v1Service.addressList(any())).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
+        when(jsonHelper.convertValueToList(addressResponse.entities, AddressData.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
@@ -281,23 +281,23 @@ class BillingServiceAdapterTest {
             billCharges.add(billCharge);
         }
 
-        EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
+        OrganizationsMasterData entityTransferOrganization = new OrganizationsMasterData();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
         entityTransferOrganization.setPayables(Boolean.FALSE);
 
-        List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
+        List<OrganizationsMasterData> entityTransferOrganizations = List.of(entityTransferOrganization);
 
         V1DataResponse orgResponse = new V1DataResponse();
         orgResponse.setEntities(entityTransferOrganizations);
 
-        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        AddressData entityTransferAddress = new AddressData();
         entityTransferAddress.setId(1L);
         entityTransferAddress.setAddressShortCode("AddressShortCode");
         entityTransferAddress.setOrgId(1L);
         entityTransferAddress.setDefaultAddress(Boolean.FALSE);
 
-        List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
+        List<AddressData> entityTransferAddresses = List.of(entityTransferAddress);
 
         V1DataResponse addressResponse = new V1DataResponse();
         addressResponse.setEntities(entityTransferAddresses);
@@ -317,9 +317,9 @@ class BillingServiceAdapterTest {
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
-        when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
+        when(jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class)).thenReturn(entityTransferOrganizations);
         when(v1Service.addressList(any())).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
+        when(jsonHelper.convertValueToList(addressResponse.entities, AddressData.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
@@ -351,23 +351,23 @@ class BillingServiceAdapterTest {
             billCharges.add(billCharge);
         }
 
-        EntityTransferOrganizations entityTransferOrganization = new EntityTransferOrganizations();
+        OrganizationsMasterData entityTransferOrganization = new OrganizationsMasterData();
         entityTransferOrganization.setId(1L);
         entityTransferOrganization.setOrganizationCode("OrganizationCode");
         entityTransferOrganization.setPayables(Boolean.TRUE);
 
-        List<EntityTransferOrganizations> entityTransferOrganizations = List.of(entityTransferOrganization);
+        List<OrganizationsMasterData> entityTransferOrganizations = List.of(entityTransferOrganization);
 
         V1DataResponse orgResponse = new V1DataResponse();
         orgResponse.setEntities(entityTransferOrganizations);
 
-        EntityTransferAddress entityTransferAddress = new EntityTransferAddress();
+        AddressData entityTransferAddress = new AddressData();
         entityTransferAddress.setId(1L);
         entityTransferAddress.setAddressShortCode("AddressShortCode1");
         entityTransferAddress.setOrgId(1L);
         entityTransferAddress.setDefaultAddress(null);
 
-        List<EntityTransferAddress> entityTransferAddresses = List.of(entityTransferAddress);
+        List<AddressData> entityTransferAddresses = List.of(entityTransferAddress);
 
         V1DataResponse addressResponse = new V1DataResponse();
         addressResponse.setEntities(entityTransferAddresses);
@@ -387,9 +387,9 @@ class BillingServiceAdapterTest {
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
-        when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
+        when(jsonHelper.convertValueToList(orgResponse.entities, OrganizationsMasterData.class)).thenReturn(entityTransferOrganizations);
         when(v1Service.addressList(any())).thenReturn(addressResponse);
-        when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
+        when(jsonHelper.convertValueToList(addressResponse.entities, AddressData.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);

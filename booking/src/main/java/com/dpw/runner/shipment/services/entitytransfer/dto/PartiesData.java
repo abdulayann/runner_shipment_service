@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
 import lombok.*;
 
 import java.util.Map;
@@ -9,7 +9,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class EntityTransferParties implements IEntityTranferBaseEntity {
+public class PartiesData implements IMasterDataBaseEntity {
     private String type;
     private String orgCode;
     private String addressCode;

@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
@@ -207,7 +207,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(!IsStringNullOrEmpty(offer.getCarrier())) {
             List<String> carrierCodes = new ArrayList<>();
             carrierCodes.add(offer.getCarrier());
-            Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
+            Map<String, CarrierMasterData> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
             if(map.containsKey(offer.getCarrier()))
                 offer.setCarrier(map.get(offer.getCarrier()).ItemValue);
             else
