@@ -34,7 +34,7 @@ public class DocumentMasterConsumer {
     {
         try {
             log.info("{} | event message: {}", LoggerEvent.KAFKA_DOCUMENT_MASTER_EVENT, message);
-            DocumentDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message).substring(1, StringEscapeUtils.unescapeJson(message).toString().length()), DocumentDto.class);
+            DocumentDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), DocumentDto.class);
 
             if (Objects.nonNull(object) && Objects.nonNull(object.getData()) && Objects.nonNull(object.getAction())) {
                 bookingIntegrationsUtility.documentUploadEvent(object);
