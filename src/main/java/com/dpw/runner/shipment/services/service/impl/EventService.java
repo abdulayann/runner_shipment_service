@@ -24,6 +24,8 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -859,4 +861,20 @@ public class EventService implements IEventService {
         eventDumpDao.saveAll(updatedEvents);
     }
 
+    @Override
+    public void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
+        if(Objects.isNull(container))
+            return;
+        Optional<String> referenceOptional = Optional.of(container.getContainerBase()).map(ContainerBase::getShipmentReference);
+        if (referenceOptional.isEmpty()) {
+            return;
+        }
+        TrackingServiceApiResponse trackingServiceApiResponse = new TrackingServiceApiResponse();
+        trackingServiceApiResponse.setContainers(List.of(container));
+        List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
+
+        // TODO migrate existing tracking flow here for shipment
+
+        log.info("{}", trackEvents);
+    }
 }
