@@ -1065,6 +1065,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest);
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
                 carrierDetails(CarrierDetailRequest.builder()
                         .origin(customerBookingRequest.getCarrierDetails().getOrigin())
@@ -1127,7 +1128,7 @@ public class ShipmentService implements IShipmentService {
                     return obj;
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
-                routingsList(customerBookingRequest.getRoutingList()).
+                routingsList(customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
@@ -1191,6 +1192,106 @@ public class ShipmentService implements IShipmentService {
 
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    /**
+     * Retrieves the list of routing requests for the specified customer booking request.
+     *
+     * <p>If the customer booking request already contains a routing list, it returns that list.
+     * Otherwise, it generates routing legs based on the carrier details provided in the request.</p>
+     *
+     * <p>The routing legs are generated based on the following logic:</p>
+     * <ul>
+     *     <li>If Origin and Port of Loading (POL) are different, create a leg from Origin to POL.</li>
+     *     <li>If POL and Port of Discharge (POD) are different, create a leg from POL to POD.</li>
+     *     <li>If POD and Destination are different, create a leg from POD to Destination.</li>
+     *     <li>If all points are the same (Origin, POL, POD, Destination), create a single leg from Origin to Destination.</li>
+     * </ul>
+     *
+     * @param customerBookingRequest the customer booking request containing carrier details and routing information
+     * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
+     */
+    @Override
+    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
+        // Retrieve existing routing list from the customer booking request
+        List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
+
+        // If the routing list already exists, return it immediately
+        if (customerBookingRequestRoutingList != null) {
+            return customerBookingRequestRoutingList;
+        }
+
+        // Initialize the list to hold routing requests
+        List<RoutingsRequest> routingsRequests = new ArrayList<>();
+
+        if(ObjectUtils.isEmpty(customerBookingRequest.getCarrierDetails())) {
+            return routingsRequests;
+        }
+
+        // Get carrier details from the customer booking request
+        CarrierDetailRequest carrierDetails = Optional.ofNullable(customerBookingRequest.getCarrierDetails())
+                .orElse(new CarrierDetailRequest());
+
+        // Define origin, ports, and destination with their respective transport modes
+        Pair<String, String> origin = Pair.of(carrierDetails.getOrigin(), Constants.TRANSPORT_MODE_ROA);
+        Pair<String, String> portOfLoading = Pair.of(carrierDetails.getOriginPort(), null);
+        Pair<String, String> portOfDischarge = Pair.of(carrierDetails.getDestinationPort(), null);
+        Pair<String, String> destination = Pair.of(carrierDetails.getDestination(), Constants.TRANSPORT_MODE_ROA);
+
+        // Create a list of locations for processing
+        List<Pair<String, String>> locations = List.of(origin, portOfLoading, portOfDischarge, destination);
+
+        Integer currentLocation = 0; // Index for the current location
+        Integer nextLocation = 1; // Index for the next location to compare
+        Long legCounter = 1L;   // A counter for leg numbers
+        // Loop through the locations to generate routing requests
+        while (currentLocation < 4 && nextLocation < 4) {
+            // Skip null locations
+            if (locations.get(currentLocation).getLeft() == null) {
+                currentLocation++;
+                nextLocation++;
+            } else if (locations.get(nextLocation).getLeft() == null) {
+                nextLocation++;
+            } else if (locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
+                // If locations are the same, move to the next pair
+                currentLocation++;
+                nextLocation++;
+            } else {
+                // Determine the transport mode for the routing request
+                String mode = customerBookingRequest.getTransportType();
+                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
+                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
+                }
+                // Create and add a new routing request to the list
+                routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft()));
+                currentLocation = nextLocation;
+                nextLocation++;
+            }
+        }
+
+        // Return the generated routing requests
+        return routingsRequests;
+    }
+
+    /**
+     * Creates a new routing request.
+     *
+     * @param leg   the leg number for the routing request
+     * @param mode  the mode of transport for the routing request
+     * @param pol   the Port of Loading for the routing request
+     * @param pod   the Port of Discharge for the routing request
+     * @return a new {@link RoutingsRequest} object with the specified parameters
+     */
+    private RoutingsRequest createRoutingsRequest(Long leg, String mode, String pol, String pod) {
+        // Build and return the RoutingsRequest object with the given parameters
+        return RoutingsRequest.builder()
+                .leg(leg)
+                .mode(mode)
+                .pol(pol)
+                .pod(pod)
+                .isSelectedForDocument(false)
+                .isDomestic(false)
+                .build();
     }
 
     public boolean isConsoleCreationNeeded(CustomerBookingRequest customerBookingRequest) {
