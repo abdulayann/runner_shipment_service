@@ -3203,6 +3203,7 @@ import static org.mockito.Mockito.*;
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
+        request.setShipmentType(Constants.SHIPMENT_TYPE_LSE);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
