@@ -3916,6 +3916,10 @@ public class ConsolidationService implements IConsolidationService {
             consolListRequest = CommonUtils.andCriteria(Constants.OPEN_FOR_ATTACHMENT, true, "=", consolListRequest);
             if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                     && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+                if(!Objects.isNull(request.getDirection()))
+                    consolListRequest = CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, request.getDirection(), "=", consolListRequest);
+                if(!Objects.isNull(request.getShipmentType()))
+                    consolListRequest = CommonUtils.andCriteria(Constants.CONTAINER_CATEGORY, request.getShipmentType(), "=", consolListRequest);
 
                 if (InterBranchContext.getContext().getHubTenantIds() != null
                         && !InterBranchContext.getContext().getHubTenantIds().isEmpty()) {
