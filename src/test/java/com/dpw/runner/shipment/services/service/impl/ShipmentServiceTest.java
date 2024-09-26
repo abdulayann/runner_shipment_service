@@ -8101,4 +8101,189 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listWithoutTenantCheck(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_ExistingRoutingList() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        List<RoutingsRequest> existingRoutingList = new ArrayList<>();
+        existingRoutingList.add(new RoutingsRequest());
+        customerBookingRequest.setRoutingList(existingRoutingList);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(existingRoutingList, result);
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NoExistingRoutingList() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullCarrierDetails() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        customerBookingRequest.setCarrierDetails(null);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullOrigin() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin(null);
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullPortOfLoading() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort(null);
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullPortOfDischarge() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort(null);
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullDestination() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination(null);
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginAndPortOfLoading() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SamePortOfLoadingAndPortOfDischarge() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Loading");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SamePortOfDischargeAndDestination() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Destination");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingAndPortOfDischarge() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Origin");
+        carrierDetails.setDestination("Destination");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingPortOfDischargeAndDestination() {
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Origin");
+        carrierDetails.setDestination("Origin");
+        customerBookingRequest.setCarrierDetails(carrierDetails);
+
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
 }

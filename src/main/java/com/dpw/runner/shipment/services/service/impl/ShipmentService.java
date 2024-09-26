@@ -1211,7 +1211,8 @@ public class ShipmentService implements IShipmentService {
      * @param customerBookingRequest the customer booking request containing carrier details and routing information
      * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
      */
-    private List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
+    @Override
+    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
         // Retrieve existing routing list from the customer booking request
         List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
 
@@ -1220,8 +1221,16 @@ public class ShipmentService implements IShipmentService {
             return customerBookingRequestRoutingList;
         }
 
+        // Initialize the list to hold routing requests
+        List<RoutingsRequest> routingsRequests = new ArrayList<>();
+
+        if(ObjectUtils.isEmpty(customerBookingRequest.getCarrierDetails())) {
+            return routingsRequests;
+        }
+
         // Get carrier details from the customer booking request
-        CarrierDetailRequest carrierDetails = customerBookingRequest.getCarrierDetails();
+        CarrierDetailRequest carrierDetails = Optional.ofNullable(customerBookingRequest.getCarrierDetails())
+                .orElse(new CarrierDetailRequest());
 
         // Define origin, ports, and destination with their respective transport modes
         Pair<String, String> origin = Pair.of(carrierDetails.getOrigin(), Constants.TRANSPORT_MODE_ROA);
@@ -1229,16 +1238,12 @@ public class ShipmentService implements IShipmentService {
         Pair<String, String> portOfDischarge = Pair.of(carrierDetails.getDestinationPort(), null);
         Pair<String, String> destination = Pair.of(carrierDetails.getDestination(), Constants.TRANSPORT_MODE_ROA);
 
-        // Initialize the list to hold routing requests and a counter for leg numbers
-        List<RoutingsRequest> routingsRequests = new ArrayList<>();
-        Long legCounter = 1L;
-
         // Create a list of locations for processing
         List<Pair<String, String>> locations = List.of(origin, portOfLoading, portOfDischarge, destination);
 
         Integer currentLocation = 0; // Index for the current location
         Integer nextLocation = 1; // Index for the next location to compare
-
+        Long legCounter = 1L;   // A counter for leg numbers
         // Loop through the locations to generate routing requests
         while (currentLocation < 4 && nextLocation < 4) {
             // Skip null locations
@@ -1259,6 +1264,8 @@ public class ShipmentService implements IShipmentService {
                 }
                 // Create and add a new routing request to the list
                 routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft()));
+                currentLocation = nextLocation;
+                nextLocation++;
             }
         }
 
