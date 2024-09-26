@@ -1471,6 +1471,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> ccEmails = new ArrayList<>();
         // Fetching role ids corresponding to console destination branches
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
+        if(shipmentGuidSendToBranch == null)
+            shipmentGuidSendToBranch = new HashMap<>();
         for (var keySet : shipmentGuidSendToBranch.entrySet())
             shipDestinationBranchIds.addAll(keySet.getValue());
         shipDestinationBranchIds.add(TenantContext.getCurrentTenant());
