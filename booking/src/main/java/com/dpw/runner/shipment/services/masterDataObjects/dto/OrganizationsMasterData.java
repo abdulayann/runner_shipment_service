@@ -1,7 +1,7 @@
-package com.dpw.runner.shipment.services.entitytransfer.dto;
+package com.dpw.runner.shipment.services.masterDataObjects.dto;
 
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IMasterDataBaseEntity;
-import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
+import com.dpw.runner.shipment.services.masterDataObjects.common.request.IMasterDataBaseEntity;
+import com.dpw.runner.shipment.services.masterDataObjects.enums.RegStatus;
 import lombok.*;
 
 import java.util.List;

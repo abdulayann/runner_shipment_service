@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.entitytransfer.common.request;
+package com.dpw.runner.shipment.services.masterDataObjects.common.request;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.entitytransfer.enums;
+package com.dpw.runner.shipment.services.masterDataObjects.enums;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 

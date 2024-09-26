@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -201,29 +200,6 @@ class CustomerBookingDaoTest {
 
         assertThrows(DataRetrievalFailureException.class, () -> {
             customerBookingDao.save(customerBooking);
-        });
-    }
-
-    @Test
-    void updateEntityFromShipmentConsoleEntity() throws RunnerException {
-        CustomerBooking customerBooking = CustomerBooking.builder().build();
-        customerBooking.setId(1L);
-
-        when(customerBookingRepository.findById(any())).thenReturn(Optional.of(customerBooking));
-        when(customerBookingRepository.save(any())).thenReturn(customerBooking);
-
-        assertEquals(customerBooking, customerBookingDao.updateEntityFromShipmentConsole(customerBooking));
-    }
-
-    @Test
-    void updateEntityFromShipmentConsoleCatch() {
-        CustomerBooking customerBooking = CustomerBooking.builder().build();
-        customerBooking.setId(1L);
-
-        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
-
-        assertThrows(RunnerException.class, () -> {
-            customerBookingDao.updateEntityFromShipmentConsole(customerBooking);
         });
     }
 }

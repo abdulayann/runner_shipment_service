@@ -23,11 +23,7 @@ public interface IContainerDao {
     void delete(Containers containers);
 
     List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws RunnerException;
-
     List<Containers> saveAll(List<Containers> containers);
-
-    List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws RunnerException;
-    List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws RunnerException;
     List<Containers> findByShipmentId(Long shipmentId);
     List<Containers> findByConsolidationId(Long shipmentId);
     void deleteById(Long id);

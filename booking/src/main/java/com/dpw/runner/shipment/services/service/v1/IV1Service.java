@@ -4,8 +4,7 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
@@ -123,7 +122,6 @@ public interface IV1Service {
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
     SendEntityResponse sendV1ConsolidationTask(CreateV1ConsolidationTaskFromV2Request request);
     SendEntityResponse sendV1ShipmentTask(CreateV1ShipmentTaskFromV2Request request);
-    CheckTaskExistResponse checkTaskExist(CheckTaskExistV1Request request);
 
     V1DataResponse addressList(Object request);
 

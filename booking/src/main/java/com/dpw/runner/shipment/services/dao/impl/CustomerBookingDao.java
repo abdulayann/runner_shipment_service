@@ -90,27 +90,6 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         customerBookingRepository.delete(customerBooking);
     }
 
-    public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException {
-        String responseMsg;
-        try {
-            if (customerBooking.getId() != null) {
-                long id = customerBooking.getId();
-                Optional<CustomerBooking> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Customer Booking is null for Id {}", id);
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-            }
-            customerBooking = save(customerBooking);
-            return customerBooking;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
     public Optional<CustomerBooking> findByBookingNumber(String bookingNumber) {
         return customerBookingRepository.findByBookingNumber(bookingNumber);
     }

@@ -7,8 +7,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.AddressData;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.masterDataObjects.dto.AddressData;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
@@ -1268,23 +1267,6 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
-    @Override
-    public CheckTaskExistResponse checkTaskExist(CheckTaskExistV1Request request) {
-        ResponseEntity masterDataResponse = null;
-
-        try {
-            long time = System.currentTimeMillis();
-            HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.CHECK_TASK_EXIST, entity, CheckTaskExistResponse.class, new Object[0]);
-            log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_SEND_SHIPMENT_TASK_FUNCTION_MSG, (System.currentTimeMillis() - time));
-            return (CheckTaskExistResponse) masterDataResponse.getBody();
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
-        } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
-        }
-    }
-
 
     @Override
     public V1DataResponse importFlightSchedules(Object request) {

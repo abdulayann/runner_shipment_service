@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.entitytransfer.dto;
+package com.dpw.runner.shipment.services.masterDataObjects.dto;
 
 import com.dpw.runner.shipment.services.entity.enums.ChargeTypeCode;
 import com.fasterxml.jackson.annotation.JsonProperty;

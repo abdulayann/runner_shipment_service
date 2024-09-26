@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.entitytransfer.enums;
+package com.dpw.runner.shipment.services.masterDataObjects.enums;
 
 public enum AddressTypes {
     BILLING(1),
