@@ -8162,18 +8162,35 @@ ShipmentServiceTest extends CommonMocks {
         additionalDetailsRequest.setImportBroker(importBrokerRequest);
         additionalDetailsRequest.setExportBroker(importBrokerRequest);
 
+        ContainerRequest containerRequest = ContainerRequest.builder().build();
+
         ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
         consolidationDetailsRequest.setReferenceNumber("1");
         consolidationDetailsRequest.setBol("1");
+        consolidationDetailsRequest.setContainersList(Collections.singletonList(containerRequest));
+
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().build();
+        NotesRequest notesRequest = NotesRequest.builder().build();
+        PackingRequest packingRequest = PackingRequest.builder().build();
+
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
         shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+        shipmentRequest.setRoutingsList(Collections.singletonList(routingsRequest));
+        shipmentRequest.setNotesList(Collections.singletonList(notesRequest));
+        shipmentRequest.setPackingList(Collections.singletonList(packingRequest));
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd").setTransportMode("FCL");
         shipmentDetails.setGuid(UUID.randomUUID());
 
+        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(Collections.singletonList(new ConsolidationDetails()));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(Collections.singletonList(new Containers()));
+        when(jsonHelper.convertValueToList(any(), eq(Routings.class))).thenReturn(Collections.singletonList(new Routings()));
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+        when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(new Notes());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
