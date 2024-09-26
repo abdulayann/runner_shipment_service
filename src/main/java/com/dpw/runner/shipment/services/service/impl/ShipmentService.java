@@ -6893,8 +6893,6 @@ public class ShipmentService implements IShipmentService {
         }
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
-            Long consolidationId = null;
-            List<Containers> updatedContainers = null;
             if(request.getConsolidationList() != null)
                 shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
             if(request.getContainersList() != null)
@@ -6918,9 +6916,8 @@ public class ShipmentService implements IShipmentService {
             if (referenceNumbersRequest != null)
                 shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
 
-            Hbl hbl = null;
-            if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
+            if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
+                hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
             }
 
             List<NotesRequest> notesRequest = request.getNotesList();
@@ -6934,14 +6931,10 @@ public class ShipmentService implements IShipmentService {
                     notesDao.save(jsonHelper.convertValue(req, Notes.class));
                 }
             }
-            String transactionId = shipmentDetails.getGuid().toString();
+
             pushShipmentDataToDependentService(shipmentDetails, true, false, null);
-            try {
-                shipmentDetails.setNotesList(null);
-                shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
-            } catch (Exception e){
-                log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-            }
+
+            setShipmentFromBooking(shipmentDetails, notesRequest);
 
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -6957,4 +6950,15 @@ public class ShipmentService implements IShipmentService {
         }
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
     }
+
+    public void setShipmentFromBooking(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest){
+        try {
+            shipmentDetails.setNotesList(null);
+            shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
+        } catch (Exception e){
+            log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
+        }
+
+    }
+
 }
