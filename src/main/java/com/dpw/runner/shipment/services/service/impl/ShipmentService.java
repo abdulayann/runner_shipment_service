@@ -170,6 +170,7 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmen
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -2777,14 +2778,23 @@ public class ShipmentService implements IShipmentService {
         Map<String, Event> containerEventMapFromTracking = trackingServiceApiResponse.getContainers().stream()
                 .filter(container -> container.getEvents() != null)
                 .flatMap(container -> container.getEvents().stream()
-                        .map(event -> new SimpleEntry<>(
-                                commonUtils.getTrackingEventsUniqueKey(
-                                        eventService.convertTrackingEventCodeToShortCode(
-                                                event.getLocationRole(), event.getEventType()),
-                                        container.getContainerNumber(),
-                                        shipmentDetails.getShipmentId(),
-                                        Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING),
-                                event)))
+                        .map(event -> {
+                            String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                                    event.getLocationRole(), event.getEventType(), event.getDescription());
+
+                            String placeName = container.getPlaces().stream()
+                                    .filter(place -> Objects.equals(place.getId(), event.getLocation()))
+                                    .map(Place::getCode).findFirst()
+                                    .orElse(StringUtils.EMPTY);
+
+                            String trackingEventsUniqueKey = commonUtils.getTrackingEventsUniqueKey(
+                                    eventCode,
+                                    container.getContainerNumber(),
+                                    shipmentDetails.getShipmentId(),
+                                    Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING,
+                                    placeName);
+                            return new SimpleEntry<>(trackingEventsUniqueKey, event);
+                        }))
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
@@ -2797,7 +2807,7 @@ public class ShipmentService implements IShipmentService {
                 EventsResponse shipmentEventsResponse = jsonHelper.convertValue(shipmentEvent, EventsResponse.class);
                 String key = commonUtils.getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
                         shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getShipmentNumber(),
-                        shipmentEventsResponse.getSource());
+                        shipmentEventsResponse.getSource(), shipmentEventsResponse.getPlaceName());
                 Event eventFromTracking = containerEventMapFromTracking.get(key);
 
                 if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
