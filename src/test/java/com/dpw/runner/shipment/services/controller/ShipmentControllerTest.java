@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -21,6 +20,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -1275,4 +1275,20 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.listWithoutTenantFilter(listCommonRequest);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+
+    @Test
+    void testCreateShipmentForBooking() throws RunnerException {
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
+        when(shipmentService.createShipmentFromBooking(any())).thenReturn("Success");
+        var responseEntity = shipmentController.createShipmentForBooking(shipmentRequest);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateShipmentForBookingException() throws RunnerException {
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
+        when(shipmentController.createShipmentForBooking(any())).thenThrow(new RuntimeException());
+        assertThrows(RunnerException.class, () -> shipmentController.createShipmentForBooking(shipmentRequest));
+    }
+
 }
