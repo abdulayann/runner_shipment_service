@@ -3,20 +3,19 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
+import org.springframework.http.ResponseEntity;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,8 +23,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.http.ResponseEntity;
 
 public interface IShipmentService extends ICommonService {
     List<ShipmentDetails> createTestShipment(Integer count) throws RunnerException;
@@ -117,7 +114,7 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> dgApprovalResponse(OceanDGRequest request) throws RunnerException;
-    OrgAddressResponse fetchOrgInfoFromV1(OrgAddressCode orgAddressCode) throws RunnerException;
+    PartiesRequest fetchOrgInfoFromV1(PartiesOrgAddressRequest request) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> hblCheck(String hblNumber, String shipmentId);
     ResponseEntity<IRunnerResponse> listWithoutTenantCheck(CommonRequestModel commonRequestModel);

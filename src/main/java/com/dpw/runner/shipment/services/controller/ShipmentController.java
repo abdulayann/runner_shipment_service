@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -39,6 +40,7 @@ import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -249,9 +251,9 @@ public class ShipmentController {
         @ApiResponse(code = 500, message = DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG)
     })
     @GetMapping(ShipmentConstants.FETCH_ORG_INFO)
-    public ResponseEntity<OrgAddressResponse> fetchOrgInfo(@RequestBody OrgAddressCode orgAddressCode) {
+    public ResponseEntity<PartiesRequest> fetchOrgInfo(@RequestBody PartiesOrgAddressRequest request) {
         try {
-            OrgAddressResponse orgAddressResponse = shipmentService.fetchOrgInfoFromV1(orgAddressCode);
+            PartiesRequest orgAddressResponse = shipmentService.fetchOrgInfoFromV1(request);
             return ResponseEntity.ok(orgAddressResponse);
 
         } catch (RunnerException e) {

@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
@@ -6211,9 +6212,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public OrgAddressResponse fetchOrgInfoFromV1(OrgAddressCode orgAddressCode)
+    public PartiesRequest fetchOrgInfoFromV1(PartiesOrgAddressRequest request)
         throws RunnerException {
-        return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(List.of(orgAddressCode)).build());
+        bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getParty(), request.getAddressCode(), request.getOrgCode());
+        return request.getParty();
     }
 
     @Override
