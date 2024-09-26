@@ -1217,7 +1217,7 @@ public class ShipmentService implements IShipmentService {
         List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
 
         // If the routing list already exists, return it immediately
-        if (customerBookingRequestRoutingList != null) {
+        if (ObjectUtils.isNotEmpty(customerBookingRequestRoutingList)) {
             return customerBookingRequestRoutingList;
         }
 
