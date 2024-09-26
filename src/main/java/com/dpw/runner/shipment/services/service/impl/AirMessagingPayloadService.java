@@ -67,7 +67,7 @@ public class AirMessagingPayloadService implements IAirMessagingPayloadService {
 
     @Override
     @Retryable(
-            value = RunnerException.class,
+            value = Exception.class,
             maxAttempts = 3,
             backoff = @Backoff(delay = 2000))
     public ResponseEntity<IRunnerResponse> resubmitFailedPayload(Object payload, String messageType) throws RunnerException {

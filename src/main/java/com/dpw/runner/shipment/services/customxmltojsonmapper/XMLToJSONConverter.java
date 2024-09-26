@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.customxmltojsonmapper;
 import com.bazaarvoice.jolt.Chainr;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.XML;
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class XMLToJSONConverter {
 
     public String context = "default";
@@ -190,46 +192,29 @@ public class XMLToJSONConverter {
 
     public JSONObject xmlToJsonConverter(String xmlString) throws IOException {
 
-        // Path to the XML file
-//        Path filePath = Paths.get("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/shipment.xml");
-
-        //            String xmlString = Files.readString(filePath);
-
         String xmlWithoutNamespaces = removeNamespaces(xmlString);
         JSONObject jsonObject = convertXmlToJson(xmlWithoutNamespaces);
-        System.out.println("Original JSON: " + jsonObject.toString(4));
+        log.info("Original JSON: " + jsonObject.toString(4));
 
         JSONObject cleanedJson = removeXmlnsEntries(jsonObject);
-        System.out.println("Cleaned JSON: " + cleanedJson.toString(4));
+        log.info("Cleaned JSON: " + cleanedJson.toString(4));
 
-        Map<String, String> keyMappings = loadKeyMappingsFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/keyMappings.json");
+       // Map<String, String> keyMappings = loadKeyMappingsFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/java/com/dpw/runner/shipment/services/customxmltojsonmapper/keyMappings.json");
 
 
-        determineContext(jsonObject);
-        JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
+//        determineContext(jsonObject);
+//        JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
 
         // Extract the "Waybill" object
-        JSONObject waybill = renamedJson.getJSONObject("Waybill");
+        JSONObject waybill = cleanedJson.getJSONObject("Waybill");
 
         // Load the JOLT spec from a file
         List<Object> joltSpec = loadSpecFromFile("/Users/Aditya.Thakur/Documents/runner_shipment_service/src/main/resources/jolt/jolt-spec.json");
 
-// Perform the transformation as before
+        // Perform the transformation as before
         JSONObject transformedJson = transformJson(waybill, joltSpec);
 
-
-//        // Move all key-value pairs from "Waybill" to the root level
-//        for (String key : waybill.keySet()) {
-//            jsonObject.put(key, waybill.get(key));
-//        }
-//
-//        // Remove the "Waybill" key from the root level
-//        renamedJson.remove("Waybill");
-
-
-        //  JSONObject renamedJson = renameKeys(cleanedJson, keyMappings);
-
-        System.out.println("Modified JSON: " + waybill.toString(4));
+        log.info("Modified JSON: " + waybill.toString(4));
         return  transformedJson;
 
     }

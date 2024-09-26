@@ -63,13 +63,14 @@ public abstract class AbstractMessageService<X,Y> implements IDescartes<X, Y> {
         }
         //2) validations check
         //todo: revert this
-      //  this.validate(payload, externalResponse);
+//        this.validate(payload, externalResponse);
         //return if any Internal validation errors
         if (externalResponse.status != null && externalResponse.status.isError()) {
             this.updateMainTable(ent, externalResponse);
             kafkaProducerHelper.produceToKafka(createPayload(ent, externalResponse), UUID.randomUUID().toString() , getHeaders(), shipmentKafkaTopic, null);
             return;
         }
+        log.info("JSON Payload: {}", jsonHelper.convertToJson(payload));
         //3) Convert json to XML
         externalIntegrationService.convertJsontoXML(this.getMessageType(), payload, externalResponse);
         if (externalResponse.status != null && externalResponse.status.isError()) {
