@@ -2046,8 +2046,6 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
-
         if(checkIfLCLConsolidationEligible(shipmentDetails))
             updateShipmentGateInDateAndStatusFromPacks(packingRequest, shipmentDetails);
         CompletableFuture.allOf(carrierDetailsFuture).join();
@@ -2367,6 +2365,9 @@ public class ShipmentService implements IShipmentService {
                 awbDao.updatedAwbInformationEvent(shipmentDetails, oldEntity);
             }
         }
+
+        shipmentRequest.setId(id);
+        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
 
         if (bookingCarriageRequestList != null) {
             List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(commonUtils.convertToEntityList(bookingCarriageRequestList, BookingCarriage.class, isCreate), id);
