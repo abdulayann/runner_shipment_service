@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -642,12 +643,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
         }
-    }
-
-    private List<TrackingServiceApiResponse.Source> getDefaultListValue (List<TrackingServiceApiResponse.Source> lst) {
-        if(lst == null)
-            return Collections.emptyList();
-        return lst;
     }
 
     @Override

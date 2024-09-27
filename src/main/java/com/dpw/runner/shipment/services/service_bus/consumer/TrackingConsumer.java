@@ -61,15 +61,6 @@ public class TrackingConsumer {
         log.info("Finished processing message with id : {}", receivedMessage.getMessageId());
     }
 
-    public void processMessage(ServiceBusReceivedMessage message) {
-        log.info("Started processing message with id : {}", message.getMessageId());
-
-        TrackingServiceApiResponse.Container container = jsonHelper.convertValue(message.getBody().toString(), TrackingServiceApiResponse.Container.class);
-        log.info("{}", jsonHelper.convertToJson(container));
-        eventService.processUpstreamTrackingMessage(container);
-
-    }
-
     public void processError(ServiceBusErrorContext context) {
         // Process error
         log.error("Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
