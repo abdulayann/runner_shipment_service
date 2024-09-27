@@ -1321,7 +1321,14 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
                         !Objects.equals(console.getTriangulationPartner(), oldEntity.getTriangulationPartner()) ||
-                        !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner())
+                        !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner()) ||
+                        !Objects.equals(console.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber()) ||
+                        !Objects.equals(console.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
+                        !Objects.equals(console.getCarrierDetails().getDestinationPort(), oldEntity.getCarrierDetails().getDestinationPort()) ||
+                        !Objects.equals(console.getCarrierDetails().getEtd(), oldEntity.getCarrierDetails().getEtd()) ||
+                        !Objects.equals(console.getCarrierDetails().getEta(), oldEntity.getCarrierDetails().getEta()) ||
+                        !Objects.equals(console.getCarrierDetails().getAtd(), oldEntity.getCarrierDetails().getAtd()) ||
+                        !Objects.equals(console.getCarrierDetails().getAta(), oldEntity.getCarrierDetails().getAta())
                 )) || !dgStatusChangeInShipments.isEmpty())) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
