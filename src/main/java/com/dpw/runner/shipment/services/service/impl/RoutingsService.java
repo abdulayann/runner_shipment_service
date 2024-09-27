@@ -131,6 +131,9 @@ public class RoutingsService implements IRoutingsService {
             Long shipmentId = routings.stream().findFirst()
                     .map(Routings::getShipmentId).orElse(null);
 
+            // clear Routing Timestamps
+            routings.forEach(this::clearRoutingTimestamps);
+
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
@@ -358,7 +361,6 @@ public class RoutingsService implements IRoutingsService {
 
             // Iterate through each routing and update times
             for (Routings routing : routings) {
-                clearRoutingTimestamps(routing);
                 updateProjectedTime(routing, projectedDateAndSources, isPol);
                 updateActualTime(routing, actualDateAndSources, isPol);
             }
