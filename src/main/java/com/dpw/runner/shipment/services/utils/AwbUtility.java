@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.Kafka.Dto.*;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -242,7 +243,7 @@ public class AwbUtility {
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
-                        .postCode(postCode)
+                        .postCode(orgs.get(0).getZipPostCode())
                         .build());
             }
         } else {
@@ -365,7 +366,7 @@ public class AwbUtility {
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
-                        .postCode(address.containsKey(PartiesConstants.ZIP_POST_CODE) ? (String) address.get(PartiesConstants.ZIP_POST_CODE) : null)
+                        .postCode(org.containsKey(PartiesConstants.ZIP_POST_CODE) ? (String) address.get(PartiesConstants.ZIP_POST_CODE) : null)
                 .build();
     }
 
@@ -423,7 +424,7 @@ public class AwbUtility {
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
-                        .postCode(postCode)
+                        .postCode(orgs.get(0).getZipPostCode())
                         .build());
             }
         } else {
