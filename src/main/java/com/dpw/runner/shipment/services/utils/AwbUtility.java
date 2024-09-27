@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
-import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.*;
@@ -37,7 +39,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -91,6 +92,8 @@ public class BookingIntegrationsUtility {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -702,5 +705,50 @@ public class BookingIntegrationsUtility {
             case "ROR" -> lclBusinessCode;
             default -> null;
         };
+    }
+
+    /**
+     * This method will be used to send shipment document to platform
+     * @param payload
+     */
+    public void documentUploadEvent(DocumentDto payload) {
+
+        if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payload.getAction())
+                && Objects.equals(payload.getData().getEntityType(), Constants.SHIPMENTS_CAPS)
+                && Boolean.TRUE.equals(payload.getData().getCustomerPortalVisibility())) {
+
+            var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
+            var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
+
+            // Sending document to Logistics Platform in case of online booking
+            if (Objects.equals(shipment.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipment.getBookingReference())) {
+                this.sendDocumentsToPlatform(shipment, payload);
+            }
+        }
+    }
+
+    private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
+        var request = createPlatformDocumentRequest(shipmentDetails.getBookingReference(), payload.getData());
+        try {
+            platformServiceAdapter.updateAtPlaform(request);
+        } catch (Exception ex) {
+            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), ex.getMessage());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
+        }
+    }
+
+    private CommonRequestModel createPlatformDocumentRequest(String bookingReference, DocumentDto.Document document) {
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(bookingReference)
+                .document_meta(List.of(
+                        DocumentMetaDTO.builder()
+                                .name(document.getFileName())
+                                .document_type(document.getDocType())
+                                .document_link(document.getSecureDownloadLink())
+                                .uploaded_by_user_id(document.getUploadedBy())
+                                .build()))
+                .build();
+
+        return CommonRequestModel.buildRequest(platformUpdateRequest);
     }
 }

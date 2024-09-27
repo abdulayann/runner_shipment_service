@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.Kafka.Dto;
+package com.dpw.runner.shipment.services.kafka.dto;
 
 import lombok.Data;
 

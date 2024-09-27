@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.Kafka.Config;
+package com.dpw.runner.shipment.services.kafka.config;
 
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
