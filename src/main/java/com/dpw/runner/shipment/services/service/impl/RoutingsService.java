@@ -358,6 +358,7 @@ public class RoutingsService implements IRoutingsService {
 
             // Iterate through each routing and update times
             for (Routings routing : routings) {
+                clearRoutingTimestamps(routing);
                 updateProjectedTime(routing, projectedDateAndSources, isPol);
                 updateActualTime(routing, actualDateAndSources, isPol);
             }
@@ -365,6 +366,13 @@ public class RoutingsService implements IRoutingsService {
         } else {
             log.warn("No routings found for place code: {}", tsPlaceCode);
         }
+    }
+
+    private void clearRoutingTimestamps(Routings routing) {
+        routing.setAta(null);
+        routing.setEta(null);
+        routing.setAtd(null);
+        routing.setEtd(null);
     }
 
     /**
