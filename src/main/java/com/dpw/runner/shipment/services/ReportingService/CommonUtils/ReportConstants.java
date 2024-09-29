@@ -704,6 +704,9 @@ public class ReportConstants {
     public static final String SHIPPING_REQUEST = "ShippingRequest";
     public static final String SHIPPING_REQUEST_OUT = "ShippingRequestOut";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
+    public static final String SHIPPER_ACCOUNT_NUMBER = "ShippersAccountNumber";
+    public static final String CONSIGNEE_ACCOUNT_NUMBER = "ConsigneeAccountNumber";
+    public static final String ACCOUNT_NUMBER = "AccountNumber";
 
     public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
     public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";

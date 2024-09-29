@@ -23,4 +23,7 @@ public class AwbOtherInfo implements Serializable {
     @UnlocationData
     private String executedAt;
     private LocalDateTime executedOn;
+    private String shipperAccountNumber;
+    private String consigneeAccountNumber;
+    private String accountNumber;
 }
