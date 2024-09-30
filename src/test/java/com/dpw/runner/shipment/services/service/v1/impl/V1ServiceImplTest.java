@@ -77,6 +77,8 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -98,6 +100,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -5370,6 +5374,45 @@ class V1ServiceImplTest {
             securityContextHolderMock.verify(SecurityContextHolder::clearContext, times(1));
             userContextMock.verify(UserContext::removeUser, times(1));
         }
+    }
+
+    @Test
+    public void testGetAuthoritiesWithNoPermissions() {
+        // Test with an empty list
+        List<String> permissions = Collections.emptyList();
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the returned collection is empty
+        assertTrue(authorities.isEmpty(), "The authorities collection should be empty.");
+    }
+
+    @Test
+    public void testGetAuthoritiesWithPermissions() {
+        // Test with a list of permissions
+        List<String> permissions = Arrays.asList("READ", "WRITE", "DELETE");
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the correct number of authorities are returned
+        assertEquals(3, authorities.size(), "The authorities collection should contain three elements.");
+
+        // Verify that the authorities contain the expected values
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")), "The authorities should contain READ permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")), "The authorities should contain WRITE permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("DELETE")), "The authorities should contain DELETE permission.");
+    }
+
+    @Test
+    public void testGetAuthoritiesWithDuplicatePermissions() {
+        // Test with duplicate permissions
+        List<String> permissions = Arrays.asList("READ", "WRITE", "READ"); // Duplicate READ
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the correct number of authorities are returned
+        assertEquals(3, authorities.size(), "The authorities collection should contain three elements.");
+
+        // Verify that the authorities contain the expected values, duplicates are not an issue here
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")), "The authorities should contain READ permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")), "The authorities should contain WRITE permission.");
     }
 
 }
