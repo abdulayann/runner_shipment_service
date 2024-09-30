@@ -464,53 +464,129 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
+    /**
+     * Sets the authentication context for the current request.
+     * This method generates a token and retrieves the user associated with the token.
+     * If the user is valid, it sets the necessary authentication and authorization contexts
+     * such as tenant, user, and permissions for the current session.
+     */
     @Override
     public void setAuthContext() {
-        String token = "Bearer "+ StringUtils.defaultString(generateToken());
+        log.info("Starting setAuthContext process.");
+
+        // Generate the Bearer token
+        String token = "Bearer " + StringUtils.defaultString(generateToken());
+
+        // Retrieve user by token
         UsersDto user = getUserServiceFactory.returnUserService().getUserByToken(tokenUtility.getUserIdAndBranchId(token), token);
         if (user != null) {
+            log.info("User found for token, setting auth context for user: {}", user.getUsername());
             setAuthContext(token, user);
+        } else {
+            log.warn("No user found for the provided token.");
         }
+
+        log.info("Completed setAuthContext.");
     }
 
+    /**
+     * Sets the authentication and authorization contexts such as token, tenant, user, and permissions.
+     *
+     * @param token The JWT token used for authentication.
+     * @param user  The user details object containing the user's information.
+     */
     private void setAuthContext(String token, UsersDto user) {
+        // Set the authentication token
         RequestAuthContext.setAuthToken(token);
+        log.debug("Set auth token in RequestAuthContext: {}", token);
+
+        // Set the tenant context for the user
         TenantContext.setCurrentTenant(user.getTenantId());
+        log.debug("Set tenant context for tenant ID: {}", user.getTenantId());
+
+        // Set the user context for the current request
         UserContext.setUser(user);
+        log.debug("Set user context for user: {}", user.getUsername());
+
+        // Set the permissions for the user
         List<String> grantedPermissions = new ArrayList<>(user.getPermissions().keySet());
         UsernamePasswordAuthenticationToken authenticationToken =
                 new UsernamePasswordAuthenticationToken(user, null, getAuthorities(grantedPermissions));
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
+        // Set the authentication in the security context
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        log.debug("Security context set for user: {}", user.getUsername());
+
+        // Set permissions context for the current user
         PermissionsContext.setPermissions(grantedPermissions);
+        log.debug("Granted permissions set for user: {}", grantedPermissions);
     }
 
+    /**
+     * Converts a list of permission strings into GrantedAuthority objects.
+     *
+     * @param permissions The list of permissions assigned to the user.
+     * @return A collection of GrantedAuthority objects for Spring Security.
+     */
     private Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+        // Map the list of permissions to GrantedAuthority objects
         return permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
 
+    /**
+     * Clears the authentication context by removing tenant, user, permissions, and security details.
+     * This ensures the next request will not retain any authentication state from the current request.
+     */
     @Override
     public void clearAuthContext() {
+        log.info("Clearing authentication and authorization contexts.");
+
+        // Clear tenant context
         TenantContext.removeTenant();
+        log.debug("Removed tenant context.");
+
+        // Clear authentication token
         RequestAuthContext.removeToken();
+        log.debug("Removed auth token from RequestAuthContext.");
+
+        // Clear permissions context
         PermissionsContext.removePermissions();
+        log.debug("Removed permissions from PermissionsContext.");
+
+        // Clear the security context
         SecurityContextHolder.clearContext();
+        log.debug("Cleared SecurityContextHolder.");
+
+        // Clear user context
         UserContext.removeUser();
+        log.debug("Removed user context.");
+
+        log.info("Completed clearing of authentication context.");
     }
 
+    /**
+     * Generates a token by calling the V1 API with the service account credentials.
+     * The credentials are stored securely and used to retrieve a new token for service requests.
+     *
+     * @return The generated token as a String.
+     * @throws V1ServiceException If there is an error during token generation or if the response is invalid.
+     */
     @Override
     public String generateToken() {
+        log.info("Starting token generation process.");
+
         try {
             long startTime = System.currentTimeMillis();
 
-            // Set headers
+            // Set headers for the API request
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // Create the request body
+            // Create the request body with username and decoded password
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("UserName", serviceAccountUsername);
             requestBody.put("Password", new String(Base64.getDecoder().decode(serviceAccountPassword)));
+            log.debug("Request body prepared with service account username.");
 
             // Create HttpEntity with headers and body
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
@@ -518,19 +594,26 @@ public class V1ServiceImpl implements IV1Service {
             // Call the API to get the token
             ResponseEntity<Map> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, Map.class);
 
-            log.info("Time taken to fetch token: {} ms", (System.currentTimeMillis() - startTime));
+            long timeTaken = System.currentTimeMillis() - startTime;
+            log.info("Time taken to fetch token: {} ms", timeTaken);
 
-            // Extract the token from the response
+            // Extract token from the API response
             Map<String, Object> responseBody = response.getBody();
             if (responseBody != null && responseBody.containsKey("token")) {
-                return (String) responseBody.get("token");
+                String token = (String) responseBody.get("token");
+                log.info("Token successfully retrieved from API.");
+                return token;
             } else {
+                log.error("Token not found in response.");
                 throw new V1ServiceException("Token not found in response");
             }
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+            log.error("HTTP error during token generation: {}", ex.getMessage());
+            String errorMessage = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage();
+            throw new V1ServiceException(errorMessage);
         } catch (Exception ex) {
+            log.error("Error generating token: {}", ex.getMessage());
             throw new V1ServiceException("Error fetching token: " + ex.getMessage());
         }
     }
