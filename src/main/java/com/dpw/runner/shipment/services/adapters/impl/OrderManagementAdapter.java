@@ -172,7 +172,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getConsigner().setOrgData(partyMap.get(order.getSupplierCode()));
             shipmentDetails.getConsigner().setOrgId(String.valueOf(partyMap.get(order.getSupplierCode()).get("Id")));
             shipmentDetails.getConsigner().setAddressCode(order.getSupplierAddressCode());
-            if(order.getSupplierAddress().containsKey("Id"))
+            if(order.getSupplierAddress() != null && order.getSupplierAddress().containsKey("Id"))
                 shipmentDetails.getConsigner().setAddressId(String.valueOf(order.getSupplierAddress().get("Id")));
             shipmentDetails.getConsigner().setAddressData(order.getSupplierAddress());
         }
@@ -182,7 +182,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getConsignee().setOrgData(partyMap.get(order.getBuyerCode()));
             shipmentDetails.getConsignee().setOrgId(String.valueOf(partyMap.get(order.getBuyerCode()).get("Id")));
             shipmentDetails.getConsignee().setAddressCode(order.getBuyerAddressCode());
-            if(order.getBuyerAddress().containsKey("Id"))
+            if(order.getBuyerAddress() != null && order.getBuyerAddress().containsKey("Id"))
                 shipmentDetails.getConsignee().setAddressId(String.valueOf(order.getBuyerAddress().get("Id")));
             shipmentDetails.getConsignee().setAddressData(order.getBuyerAddress());
         }
@@ -192,7 +192,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgData(partyMap.get(order.getNotifyPartyCode()));
             shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgId(String.valueOf(partyMap.get(order.getNotifyPartyCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressCode(order.getNotifyPartyAddressCode());
-            if(order.getNotifyPartyAddress().containsKey("Id"))
+            if(order.getNotifyPartyAddress() != null && order.getNotifyPartyAddress().containsKey("Id"))
                 shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressId(String.valueOf(order.getNotifyPartyAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressData(order.getNotifyPartyAddress());
         }
@@ -202,7 +202,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgData(partyMap.get(order.getSendingAgentCode()));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgId(String.valueOf(partyMap.get(order.getSendingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressCode(order.getSendingAgentAddressCode());
-            if(order.getSendingAgentAddress().containsKey("Id"))
+            if(order.getSendingAgentAddress() != null && order.getSendingAgentAddress().containsKey("Id"))
                 shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressId(String.valueOf(order.getSendingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressData(order.getSendingAgentAddress());
 
@@ -211,7 +211,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getExportBroker().setOrgData(partyMap.get(order.getSendingAgentCode()));
             shipmentDetails.getAdditionalDetails().getExportBroker().setOrgId(String.valueOf(partyMap.get(order.getSendingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getExportBroker().setAddressCode(order.getSendingAgentAddressCode());
-            if(order.getSendingAgentAddress().containsKey("Id"))
+            if(order.getSendingAgentAddress() != null && order.getSendingAgentAddress().containsKey("Id"))
                 shipmentDetails.getAdditionalDetails().getExportBroker().setAddressId(String.valueOf(order.getSendingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getExportBroker().setAddressData(order.getSendingAgentAddress());
         }
@@ -221,7 +221,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgData(partyMap.get(order.getReceivingAgentCode()));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgId(String.valueOf(partyMap.get(order.getReceivingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressCode(order.getReceivingAgentAddressCode());
-            if(order.getReceivingAgentAddress().containsKey("Id"))
+            if(order.getReceivingAgentAddress() != null && order.getReceivingAgentAddress().containsKey("Id"))
                 shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressId(String.valueOf(order.getReceivingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressData(order.getReceivingAgentAddress());
 
@@ -231,7 +231,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.getAdditionalDetails().getImportBroker().setOrgData(partyMap.get(order.getReceivingAgentCode()));
             shipmentDetails.getAdditionalDetails().getImportBroker().setOrgId(String.valueOf(partyMap.get(order.getReceivingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getImportBroker().setAddressCode(order.getReceivingAgentAddressCode());
-            if(order.getReceivingAgentAddress().containsKey("Id"))
+            if(order.getReceivingAgentAddress() != null && order.getReceivingAgentAddress().containsKey("Id"))
                 shipmentDetails.getAdditionalDetails().getImportBroker().setAddressId(String.valueOf(order.getReceivingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getImportBroker().setAddressData(order.getReceivingAgentAddress());
 
