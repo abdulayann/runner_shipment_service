@@ -3131,10 +3131,7 @@ public class ShipmentService implements IShipmentService {
                 boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
                 for (Containers container : containersList) {
                     boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                    if ((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
-
-                    }
-                    else {
+                    if ((!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && isPart) || listIsNullOrEmpty(container.getShipmentsList())) {
                         containerIds.add(container.getId());
                     }
                     if (isFCL) {
