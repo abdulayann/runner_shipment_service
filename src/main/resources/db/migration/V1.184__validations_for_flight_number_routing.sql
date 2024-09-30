@@ -1,0 +1,2 @@
+update validations set schema_validator = '{"properties":{"leg":{"required":true},"flightNumber":{"errors":{"pattern":"Please provide proper Flight number in Routings"},"pattern":"(\\d{4}[A-Z]|\\d{4}|\\d{3}[A-Z]|\\d{3})"}}}'
+where entity = 'ROUTING';
