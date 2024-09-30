@@ -4876,7 +4876,7 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setSci(AwbConstants.T1);
             else if(Objects.equals(consolidationDetails.getSci(), AwbConstants.T1) && !makeConsoleSciT1.get() && oldEntity != null && !Objects.equals(shipment.getAdditionalDetails().getSci(), oldEntity.getAdditionalDetails().getSci()))
                 consolidationDetails.setSci(null);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipment.getContainsHazardous()));
             return consolidationDetails;
         }
         else // only execute when above logic execution not required (i.e. saving all shipments not required)
@@ -4937,7 +4937,7 @@ public class ShipmentService implements IShipmentService {
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
             || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
             consolidationDetails.setHazardous(dgFlag);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, dgFlag);
             return consolidationDetails;
         }
         return null;
