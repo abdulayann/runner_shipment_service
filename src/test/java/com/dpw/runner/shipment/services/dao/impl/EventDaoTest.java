@@ -45,6 +45,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -488,4 +489,101 @@ class EventDaoTest {
 
         assertEquals(1L, events.getConsolidationId());
     }
+
+    @Test
+    void updateEventDetailsForShipmentEvents() {
+        // Create a list of shipment events
+        Events event1 = new Events();
+        event1.setEntityId(1L);
+        event1.setEntityType(Constants.SHIPMENT);
+
+        Events event2 = new Events();
+        event2.setEntityId(2L);
+        event2.setEntityType(Constants.SHIPMENT);
+
+        List<Events> eventsList = List.of(event1, event2);
+
+        // Mocking the results for each event's entityId
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setShipmentId("SHP01");
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setShipmentId("SHP02");
+
+        List<ConsoleShipmentMapping> consoleShipmentMappings1 = List.of(
+                ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build(),
+                ConsoleShipmentMapping.builder().shipmentId(2L).consolidationId(2L).build());
+
+        // Stubbing the findByShipmentId calls
+        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L,2L))).thenReturn(consoleShipmentMappings1);
+
+        // Mocking a single call for getShipmentNumberFromId with a list containing both IDs
+        when(shipmentDao.getShipmentNumberFromId(List.of(1L, 2L)))
+                .thenReturn(List.of(shipment1, shipment2));
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the first event
+        assertEquals(1L, event1.getConsolidationId());
+        assertEquals(shipment1.getShipmentId(), event1.getShipmentNumber());
+
+        // Asserting for the second event
+        assertEquals(2L, event2.getConsolidationId());
+        assertEquals(shipment2.getShipmentId(), event2.getShipmentNumber());
+    }
+
+    @Test
+    void updateEventDetailsForConsolidationEvents() {
+        // Create a list of consolidation events
+        Events event1 = new Events();
+        event1.setEntityId(1L);
+        event1.setEntityType(Constants.CONSOLIDATION);
+
+        Events event2 = new Events();
+        event2.setEntityId(2L);
+        event2.setEntityType(Constants.CONSOLIDATION);
+
+        List<Events> eventsList = List.of(event1, event2);
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the first event
+        assertEquals(1L, event1.getConsolidationId());
+
+        // Asserting for the second event
+        assertEquals(2L, event2.getConsolidationId());
+    }
+
+    @Test
+    void updateEventDetailsForMixedEvents() {
+        // Create a mix of shipment and consolidation events
+        Events shipmentEvent = new Events();
+        shipmentEvent.setEntityId(1L);
+        shipmentEvent.setEntityType(Constants.SHIPMENT);
+
+        Events consolidationEvent = new Events();
+        consolidationEvent.setEntityId(2L);
+        consolidationEvent.setEntityType(Constants.CONSOLIDATION);
+
+        List<Events> eventsList = Arrays.asList(shipmentEvent, consolidationEvent);
+
+        // Mocking for shipment event
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
+        List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
+
+        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L))).thenReturn(consoleShipmentMappings);
+        when(shipmentDao.getShipmentNumberFromId(List.of(1L))).thenReturn(List.of(shipment));
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the shipment event
+        assertEquals(1L, shipmentEvent.getConsolidationId());
+
+        // Asserting for the consolidation event
+        assertEquals(2L, consolidationEvent.getConsolidationId());
+    }
+
+
 }

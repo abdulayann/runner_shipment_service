@@ -490,7 +490,7 @@ public class EventDao implements IEventDao {
         Map<Long, List<ConsoleShipmentMapping>> consoleShipmentMappingMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
                 .collect(Collectors.groupingBy(ConsoleShipmentMapping::getShipmentId));
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(new ArrayList<>(shipmentIds)).stream()
-                .collect(Collectors.toMap(ShipmentDetails::getId, shipmentDetails -> shipmentDetails));
+                .collect(Collectors.toMap(ShipmentDetails::getId, shipmentDetails -> shipmentDetails, (existing, duplicate) -> existing));
 
         // Update SHIPMENT events with fetched data
         shipmentEvents.forEach(event -> {
