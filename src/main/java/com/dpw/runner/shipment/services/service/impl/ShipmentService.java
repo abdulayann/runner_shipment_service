@@ -1325,6 +1325,8 @@ public class ShipmentService implements IShipmentService {
                 .addressData(party.getAddressData())
                 .orgCode(party.getOrgCode())
                 .orgData(party.getOrgData())
+                .orgId(party.getOrgId())
+                .addressId(party.getAddressId())
                 .build();
     }
 

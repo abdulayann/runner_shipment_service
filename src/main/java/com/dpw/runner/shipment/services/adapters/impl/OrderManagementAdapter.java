@@ -170,48 +170,69 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             shipmentDetails.setConsigner(new Parties());
             shipmentDetails.getConsigner().setOrgCode(order.getSupplierCode());
             shipmentDetails.getConsigner().setOrgData(partyMap.get(order.getSupplierCode()));
+            shipmentDetails.getConsigner().setOrgId(String.valueOf(partyMap.get(order.getSupplierCode()).get("Id")));
             shipmentDetails.getConsigner().setAddressCode(order.getSupplierAddressCode());
+            if(order.getSupplierAddress().containsKey("Id"))
+                shipmentDetails.getConsigner().setAddressId(String.valueOf(order.getSupplierAddress().get("Id")));
             shipmentDetails.getConsigner().setAddressData(order.getSupplierAddress());
         }
         if(partyMap.get(order.getBuyerCode()) != null) {
             shipmentDetails.setConsignee(new Parties());
             shipmentDetails.getConsignee().setOrgCode(order.getBuyerCode());
             shipmentDetails.getConsignee().setOrgData(partyMap.get(order.getBuyerCode()));
+            shipmentDetails.getConsignee().setOrgId(String.valueOf(partyMap.get(order.getBuyerCode()).get("Id")));
             shipmentDetails.getConsignee().setAddressCode(order.getBuyerAddressCode());
+            if(order.getBuyerAddress().containsKey("Id"))
+                shipmentDetails.getConsignee().setAddressId(String.valueOf(order.getBuyerAddress().get("Id")));
             shipmentDetails.getConsignee().setAddressData(order.getBuyerAddress());
         }
         if(partyMap.get(order.getNotifyPartyCode()) != null) {
             shipmentDetails.getAdditionalDetails().setNotifyParty(new Parties());
             shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgCode(order.getNotifyPartyCode());
             shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgData(partyMap.get(order.getNotifyPartyCode()));
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgId(String.valueOf(partyMap.get(order.getNotifyPartyCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressCode(order.getNotifyPartyAddressCode());
+            if(order.getNotifyPartyAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressId(String.valueOf(order.getNotifyPartyAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressData(order.getNotifyPartyAddress());
         }
         if(partyMap.get(order.getSendingAgentCode()) != null) {
             shipmentDetails.getAdditionalDetails().setSendingAgent(new Parties());
             shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgCode(order.getSendingAgentCode());
             shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgData(partyMap.get(order.getSendingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getSendingAgent().setOrgId(String.valueOf(partyMap.get(order.getSendingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressCode(order.getSendingAgentAddressCode());
+            if(order.getSendingAgentAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressId(String.valueOf(order.getSendingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getSendingAgent().setAddressData(order.getSendingAgentAddress());
 
             shipmentDetails.getAdditionalDetails().setExportBroker(new Parties());
             shipmentDetails.getAdditionalDetails().getExportBroker().setOrgCode(order.getSendingAgentCode());
             shipmentDetails.getAdditionalDetails().getExportBroker().setOrgData(partyMap.get(order.getSendingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getExportBroker().setOrgId(String.valueOf(partyMap.get(order.getSendingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getExportBroker().setAddressCode(order.getSendingAgentAddressCode());
+            if(order.getSendingAgentAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getExportBroker().setAddressId(String.valueOf(order.getSendingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getExportBroker().setAddressData(order.getSendingAgentAddress());
         }
         if(partyMap.get(order.getReceivingAgentCode()) != null) {
             shipmentDetails.getAdditionalDetails().setReceivingAgent(new Parties());
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgCode(order.getReceivingAgentCode());
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgData(partyMap.get(order.getReceivingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getReceivingAgent().setOrgId(String.valueOf(partyMap.get(order.getReceivingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressCode(order.getReceivingAgentAddressCode());
+            if(order.getReceivingAgentAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressId(String.valueOf(order.getReceivingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getReceivingAgent().setAddressData(order.getReceivingAgentAddress());
 
 
             shipmentDetails.getAdditionalDetails().setImportBroker(new Parties());
             shipmentDetails.getAdditionalDetails().getImportBroker().setOrgCode(order.getReceivingAgentCode());
             shipmentDetails.getAdditionalDetails().getImportBroker().setOrgData(partyMap.get(order.getReceivingAgentCode()));
+            shipmentDetails.getAdditionalDetails().getImportBroker().setOrgId(String.valueOf(partyMap.get(order.getReceivingAgentCode()).get("Id")));
             shipmentDetails.getAdditionalDetails().getImportBroker().setAddressCode(order.getReceivingAgentAddressCode());
+            if(order.getReceivingAgentAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getImportBroker().setAddressId(String.valueOf(order.getReceivingAgentAddress().get("Id")));
             shipmentDetails.getAdditionalDetails().getImportBroker().setAddressData(order.getReceivingAgentAddress());
 
 
