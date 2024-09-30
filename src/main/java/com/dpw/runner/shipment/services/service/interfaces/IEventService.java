@@ -16,5 +16,5 @@ public interface IEventService extends ICommonService {
     ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
     ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException;
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
-    void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container);
+    boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container);
 }

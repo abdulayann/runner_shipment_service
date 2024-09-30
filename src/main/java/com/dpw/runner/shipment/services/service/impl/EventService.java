@@ -915,29 +915,27 @@ public class EventService implements IEventService {
 
     @Override
     @Transactional
-    public void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
+    public boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
         if(Objects.isNull(container))
-            return;
+            return true;
         Optional<String> referenceOptional = Optional.of(container.getContainerBase()).map(ContainerBase::getShipmentReference);
         if (referenceOptional.isEmpty()) {
-            return;
+            return true;
         }
         TrackingServiceApiResponse trackingServiceApiResponse = new TrackingServiceApiResponse();
         trackingServiceApiResponse.setContainers(List.of(container));
         List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
-
-        persistTrackingEvents(trackingServiceApiResponse, trackEvents);
-
-        // TODO migrate existing tracking flow here for shipment
-
         log.info("{}", trackEvents);
+
+        return persistTrackingEvents(trackingServiceApiResponse, trackEvents);
     }
 
-    private void persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
+    private boolean persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
+        boolean isSuccess = true;
         v1Service.setAuthContext();
         if (ObjectUtils.isEmpty(trackingEvents)) {
             log.error("Tracking events are null or empty.");
-            return;
+            return true;
         }
 
         Container container = trackingServiceApiResponse.getContainers().stream()
@@ -946,7 +944,7 @@ public class EventService implements IEventService {
 
         if (container == null) {
             log.error("Container not found in trackingServiceApiResponse.");
-            return; // Exit early if no container is found
+            return true; // Exit early if no container is found
         }
 
         String shipmentNumber = Optional.ofNullable(container.getContainerBase())
@@ -955,20 +953,22 @@ public class EventService implements IEventService {
 
         if (ObjectUtils.isEmpty(shipmentNumber)) {
             log.warn("ShipmentNumber is empty.");
-            return;
+            return true;
         }
 
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByShipmentId(shipmentNumber);
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
+            isSuccess &= updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
         }
         v1Service.clearAuthContext();
+
+        return isSuccess;
     }
 
-    private void updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
+    private boolean updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
             Container container) {
-
+        boolean isSuccess = true;
         Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
 
         saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
@@ -993,9 +993,12 @@ public class EventService implements IEventService {
             try {
                 saveAndSyncShipment(shipmentDetails);
             } catch (Exception e) {
+                isSuccess = false;
                 log.error("Error performing sync on shipment entity, {}", e.getMessage());
             }
         }
+
+        return isSuccess;
     }
 
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails) throws RunnerException {

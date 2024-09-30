@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.service_bus.consumer;
 
-import com.azure.messaging.servicebus.ServiceBusErrorContext;
-import com.azure.messaging.servicebus.ServiceBusProcessorClient;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
-import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.azure.messaging.servicebus.*;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
@@ -49,20 +46,35 @@ public class TrackingConsumer {
         log.info("Message receiver started and listening...");
     }
 
+    /**
+     * @param context
+     * If we get a true response when processing the push message we mark the message as complete by calling complete()
+     * Otherwise we don't explicitly modify any message metadata, and this should be available to this consumer to be
+     * reprocessed next time unless the delivery count exceeds 10 and forces it to be dead lettered.
+     */
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
         log.info("Started processing message with id : {}", receivedMessage.getMessageId());
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
         log.info("{}", jsonHelper.convertToJson(container));
-        eventService.processUpstreamTrackingMessage(container);
+        boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
 
-        log.info("Finished processing message with id : {}", receivedMessage.getMessageId());
+        if(processSuccess) {
+            context.complete();
+            log.info("Finished processing message with id : {}", receivedMessage.getMessageId());
+        }
+
     }
 
     public void processError(ServiceBusErrorContext context) {
         // Process error
-        log.error("Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
+        if (context.getException() instanceof ServiceBusException exception) {
+            log.error("Error source: {}, reason {}", context.getErrorSource(), exception.getReason());
+        }
+        else {
+            log.error("Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
+        }
     }
 
     @PreDestroy
