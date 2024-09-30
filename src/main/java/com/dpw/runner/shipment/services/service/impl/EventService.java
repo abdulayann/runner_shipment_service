@@ -70,7 +70,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -95,8 +94,6 @@ public class EventService implements IEventService {
     private IConsolidationDetailsDao consolidationDao;
     private SyncConfig syncConfig;
     private IDateTimeChangeLogService dateTimeChangeLogService;
-    @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
-    private String trackEventDetailsUrl;
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
@@ -530,8 +527,13 @@ public class EventService implements IEventService {
             );
 
             // Fetch location role data using the defined criteria
-            V1DataResponse locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
-                    .criteriaRequests(locationRoleMasterDataCriteria).build());
+            V1DataResponse locationRoleV1DataResponse = null;
+            try {
+                locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                        .criteriaRequests(locationRoleMasterDataCriteria).build());
+            } catch (Exception e) {
+                log.error("Call for masterdata failed.{}", e.getMessage());
+            }
 
             // Convert the response entities to a list of EntityTransferMasterLists
             List<EntityTransferMasterLists> locationRoleMasterDataList = Optional.ofNullable(locationRoleV1DataResponse)
@@ -912,6 +914,7 @@ public class EventService implements IEventService {
     }
 
     @Override
+    @Transactional
     public void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
         if(Objects.isNull(container))
             return;
@@ -931,7 +934,7 @@ public class EventService implements IEventService {
     }
 
     private void persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
-
+        v1Service.setAuthContext();
         if (ObjectUtils.isEmpty(trackingEvents)) {
             log.error("Tracking events are null or empty.");
             return;
@@ -955,17 +958,19 @@ public class EventService implements IEventService {
             return;
         }
 
-        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByShipmentId(shipmentNumber);
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, identifier2ToLocationRoleMap, container);
+            updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
         }
+        v1Service.clearAuthContext();
     }
 
     private void updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
-            Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap,
             Container container) {
+
+        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+
         saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
 
         List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
