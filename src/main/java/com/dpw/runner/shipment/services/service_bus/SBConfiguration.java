@@ -53,7 +53,7 @@ public class SBConfiguration {
                 .connectionString(connectionString)
                 .processor()
                 .disableAutoComplete()
-                .maxConcurrentCalls(10)
+                .maxConcurrentCalls(1)
                 .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
                 .topicName(topicName)
                 .subscriptionName(subName)

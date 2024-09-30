@@ -60,6 +60,8 @@ import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -509,7 +511,7 @@ public class V1ServiceImpl implements IV1Service {
             // Create the request body
             Map<String, String> requestBody = new HashMap<>();
             requestBody.put("UserName", serviceAccountUsername);
-            requestBody.put("Password", serviceAccountPassword);
+            requestBody.put("Password", Arrays.toString(Base64.getDecoder().decode(serviceAccountPassword)));
 
             // Create HttpEntity with headers and body
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
