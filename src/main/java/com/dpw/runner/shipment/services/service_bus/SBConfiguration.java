@@ -51,9 +51,9 @@ public class SBConfiguration {
     public ServiceBusProcessorClient getSessionProcessorClient(String connectionString, String topicName, String subName, Consumer<ServiceBusReceivedMessageContext> onMessage, Consumer<ServiceBusErrorContext> onError) {
         return new ServiceBusClientBuilder()
                 .connectionString(connectionString)
-                .sessionProcessor()
+                .processor()
                 .disableAutoComplete()
-                .maxConcurrentSessions(64)
+                .maxConcurrentCalls(10)
                 .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
                 .topicName(topicName)
                 .subscriptionName(subName)
