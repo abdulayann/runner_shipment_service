@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -145,13 +145,16 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
 import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
 import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
@@ -216,6 +219,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -267,6 +271,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -353,7 +358,8 @@ ShipmentServiceTest extends CommonMocks {
     private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
-
+    @Mock
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Mock
     private IEventService eventService;
@@ -747,6 +753,27 @@ ShipmentServiceTest extends CommonMocks {
         List<InvoicePostingValidationResponse> responses = (List<InvoicePostingValidationResponse>) ((RunnerResponse) runnerResponse).getData();
         assertNotNull(responses);
         assertTrue(responses.isEmpty());
+    }
+
+    @Test
+    void fetchOrgInfoFromV1_Test() throws RunnerException {
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().party(PartiesRequest.builder()
+            .build()).OrgCode("og").AddressCode("ac").build();
+
+        Mockito.doNothing().when(bookingIntegrationsUtility)
+            .transformOrgAndAddressPayload(request.getParty(), request.getAddressCode(), request.getOrgCode());
+        AddressDataV1 addressDataV1 = AddressDataV1.builder().build();
+        OrgDataV1 orgDataV1 = OrgDataV1.builder().build();
+
+        when(jsonHelper.convertValue(request.getParty().getAddressData(), AddressDataV1.class)).thenReturn(addressDataV1);
+        when(jsonHelper.convertValue(request.getParty().getOrgData(), OrgDataV1.class)).thenReturn(orgDataV1);
+
+        when(jsonHelper.convertValue(addressDataV1, Map.class)).thenReturn(new HashMap());
+        when(jsonHelper.convertValue(orgDataV1, Map.class)).thenReturn(new HashMap());
+
+        PartiesRequest response = shipmentService.fetchOrgInfoFromV1(request);
+
+       assertNotNull(response);
     }
 
     @Test

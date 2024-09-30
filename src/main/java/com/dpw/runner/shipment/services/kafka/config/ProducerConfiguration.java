@@ -1,6 +1,6 @@
-package com.dpw.runner.shipment.services.Kafka.Config;
+package com.dpw.runner.shipment.services.kafka.config;
 
-import com.dpw.runner.shipment.services.Kafka.Serializer.ProducerSerializer;
+import com.dpw.runner.shipment.services.kafka.serializer.ProducerSerializer;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

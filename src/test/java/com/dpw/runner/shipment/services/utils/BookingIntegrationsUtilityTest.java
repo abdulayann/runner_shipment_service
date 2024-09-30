@@ -7,18 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
@@ -30,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
@@ -42,6 +32,8 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeT
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -49,11 +41,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Stream;
 
 import org.jetbrains.annotations.NotNull;
@@ -107,6 +95,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private IShipmentDao shipmentDao;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -581,5 +572,105 @@ class BookingIntegrationsUtilityTest {
         // Verify that createShipmentInV1 and updateBillStatus methods are not called due to retry
 //        verify(yourClass, never()).createShipmentInV1(any(), anyBoolean(), anyBoolean(), anyString(), any());
         verify(customerBookingDao, never()).updateBillStatus(anyLong(), anyBoolean());
+    }
+
+    @Test
+    void testDocumentUploadEvent1() throws RunnerException {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+        when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+
+    }
+
+    @Test
+    void testDocumentUploadEvent2() throws RunnerException {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+        when(platformServiceAdapter.updateAtPlaform(any())).thenThrow(new RuntimeException("Simulated exception"));
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+
+    }
+
+    @Test
+    void testDocumentUploadEvent3() {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).build();
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testDocumentUploadEvent4() {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+        ).build();
+
+        var mockShipment = ShipmentDetails.builder().build();
+        when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testDocumentUploadEvent5() {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(false).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+        ).build();
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testDocumentUploadEvent6() {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(false).entityType(Constants.CONSOLIDATION).entityId(entityId.toString()).build()
+        ).build();
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testDocumentUploadEvent7() {
+        var entityId = UUID.randomUUID();
+        var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_UPDATE).data(
+                DocumentDto.Document.builder().customerPortalVisibility(false).entityType(Constants.CONSOLIDATION).entityId(entityId.toString()).build()
+        ).build();
+
+        bookingIntegrationsUtility.documentUploadEvent(documentDto);
+
+        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
     }
 }
