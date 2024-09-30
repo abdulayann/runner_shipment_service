@@ -915,9 +915,17 @@ public class EventService implements IEventService {
     }
 
     /**
-     * @param container
-     * Returning true signifies that the current payload has been processed, or it's missing some information
-     * and is of no use to us.
+     * Processes an upstream tracking message, generates events, and persists them.
+     *
+     * This method is the main entry point for processing tracking messages. It takes a container object,
+     * generates tracking events based on the container's data using the tracking service adapter,
+     * and persists these events by calling the `persistTrackingEvents` method. If the container is null or empty,
+     * it returns early, logging a warning.
+     *
+     * @param container The container object received in the tracking message that contains shipment and journey details.
+     *
+     * @return boolean  Returns true if the message was successfully processed and events persisted,
+     *                  or if the container was empty. Returns false if any error occurs during the processing.
      */
     @Override
     @Transactional
@@ -940,6 +948,20 @@ public class EventService implements IEventService {
         return result;
     }
 
+    /**
+     * Persists tracking events to the database and updates the relevant shipment details.
+     *
+     * This method takes a response from the tracking service API and a list of tracking events,
+     * and attempts to persist them into the database. It performs necessary validations such as
+     * checking for null or empty events and handles the retrieval of shipment details based on the container data.
+     * It also sets and clears the authentication context required for the transaction.
+     *
+     * @param trackingServiceApiResponse The response from the tracking service API, which contains container information.
+     * @param trackingEvents             The list of tracking events generated from the container data.
+     *
+     * @return boolean                   Returns true if all events were successfully persisted and processed,
+     *                                   false if any failure occurred during the process.
+     */
     private boolean persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
         log.info("Starting persistTrackingEvents with trackingEvents: {}", trackingEvents);
 
@@ -981,6 +1003,19 @@ public class EventService implements IEventService {
         return isSuccess;
     }
 
+    /**
+     * Updates the shipment entity with tracking events and additional data such as ATA and ATD.
+     *
+     * This method processes a list of tracking events, saves them to the appropriate database tables,
+     * and updates shipment details based on the provided container and event data.
+     * It also handles synchronization of the shipment entity if updates are made.
+     *
+     * @param trackingEvents    The list of tracking events generated from the container data.
+     * @param shipmentDetails   The shipment details entity that is being updated with the events.
+     * @param container         The container data from which the tracking events were generated.
+     *
+     * @return boolean          Returns true if the update and sync operations were successful, false if any operation failed.
+     */
     private boolean updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
             Container container) {
         log.info("Starting updateShipmentWithTrackingEvents for shipment: {} and container: {}",
