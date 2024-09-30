@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.utils;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class V1PermissionMapUtil {
     private V1PermissionMapUtil(){}
@@ -379,7 +382,48 @@ public class V1PermissionMapUtil {
             Map.entry("Consolidations:Update:Sea Consolidation:AllSeaConsolidationUpdate","sea-consolidationUpdate")
     );
 
+
+    private static final Map<String, List<String>> updatedPermissionMapping = Map.ofEntries(
+            // SHIPMENT PERMISSION MAPPINGS
+            Map.entry("Operations:Shipments:AIR:Export:View", List.of("air-exp-shipmentList", "air-exp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:Export:Create", List.of("air-exp-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:Export:Modify", List.of("air-exp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:Export:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:Import:View", List.of("air-imp-shipmentList", "air-imp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:Import:Create", List.of("air-imp-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:Import:Modify", List.of("air-imp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:Import:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:View", List.of()),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Create", List.of()),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Modify", List.of()),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:Transhipment:View", List.of()),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Create", List.of()),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Modify", List.of()),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:Reshipment:View", List.of()),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Create", List.of()),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Modify", List.of()),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:Domestic:View", List.of()),
+            Map.entry("Operations:Shipments:AIR:Domestic:Create", List.of()),
+            Map.entry("Operations:Shipments:AIR:Domestic:Modify", List.of()),
+            Map.entry("Operations:Shipments:AIR:Domestic:Cancel", List.of())
+    );
+
     public static String getPermissionName(String v1Permission){
         return v1PermissionMapping.get(v1Permission);
+    }
+
+    public static List<String> getUpdatedPermissions(List<String> v1PermisionList) {
+        List<String> res = new ArrayList<>();
+        for(String permission : v1PermisionList) {
+            var v1MappedPermission = updatedPermissionMapping.get(permission);
+            if(Objects.isNull(v1MappedPermission))
+                continue;
+            res.addAll(v1MappedPermission);
+        }
+
+        return res;
     }
 }

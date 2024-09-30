@@ -41,11 +41,13 @@ public class UpdateValidateAspect {
             if(shipment.getIsDomestic() != null)
                 domesticType = shipment.getIsDomestic();
 
-            for (String permission : userPermissions){
-                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+
+            for (String v1MappedPermission : mappedPermissionList){
+//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
                 if(v1MappedPermission == null)
                     continue;
-                List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
+                List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("update"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
@@ -92,11 +94,13 @@ public class UpdateValidateAspect {
             if(consolidation.getIsDomestic() != null)
                 domesticType = consolidation.getIsDomestic();
 
-            for (String permission : userPermissions){
-                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+
+            for (String v1MappedPermission : mappedPermissionList){
+//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
                 if(v1MappedPermission == null)
                     continue;
-                List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
+                List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("update"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);

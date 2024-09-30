@@ -30,21 +30,21 @@ public class PermissionsContext {
         List<String> carrierBookingView = new ArrayList<>();
 
         for (String permission : UserPermissions) {
-            if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
+            if(permission.endsWith(SHIPMENT_LIST_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
                 shipmentListPermission.add(permission);
-            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
+            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
                 shipmentRetrievePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION))
+            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION) || permission.endsWith(CREATE_PERMISSION))
                 shipmentCreatePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
+            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION) || permission.endsWith(MODIFY_PERMISSION))
                 shipmentUpdatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
                 consolidationListPermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
                 consolidationRetrievePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION) || permission.endsWith(CREATE_PERMISSION))
                 consolidationCreatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION) || permission.endsWith(MODIFY_PERMISSION))
                 consolidationUpdatePermission.add(permission);
             if(permission.equals(CARRIER_BOOKING_CREATE))
                 carrierBookingCreate.add(CARRIER_BOOKING_CREATE);

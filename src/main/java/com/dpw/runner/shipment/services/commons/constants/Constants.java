@@ -28,6 +28,10 @@ public class Constants {
     public static final String DELIMITER = "-";
     public static final String CONTAINS_HAZARDOUS = "containsHazardous";
     public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
+    public static final String VIEW_PERMISSION = "View";
+    public static final String CREATE_PERMISSION = "Create";
+    public static final String MODIFY_PERMISSION = "Modify";
+    public static final String CANCEL_PERMISSION = "Cancel";
     public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
     public static final String SHIPMENT_CREATE_PERMISSION = "ShipmentCreate";
     public static final String SHIPMENT_UPDATE_PERMISSION = "ShipmentUpdate";

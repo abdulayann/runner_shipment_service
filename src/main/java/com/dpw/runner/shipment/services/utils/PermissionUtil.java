@@ -21,12 +21,18 @@ public class PermissionUtil {
         List<FilterCriteria> criterias = new ArrayList<>();
         HashSet<String> permissionSet = new HashSet<>();
 
-        for (String permission : permissionList) {
+        List<String> mappedPermission = V1PermissionMapUtil.getUpdatedPermissions(permissionList);
+
+        for (String v1MappedPermission : mappedPermission) {
+            if(v1MappedPermission.endsWith("Retrieve"))
+                continue;
             List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
-            String v1MappedPermission = getPermissionName(permission);
-            if(v1MappedPermission == null)
-                continue;
+
+//            String v1MappedPermission = getPermissionName(permission);
+//            if(v1MappedPermission == null)
+//                continue;
+
             // De-construct permission string into individual elements and strip the last element
             List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                     .filter(e -> !e.contains("list"))
