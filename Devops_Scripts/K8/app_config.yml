@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: runner-shipment-service-cm
+  name: runner-booking-service-cm
   namespace: NAMESPACE_NAME
 data:
   props_profile: ENV_NAME
-  NEW_RELIC_APP_NAME: runner-shipment-service-ENV_NAME
+  NEW_RELIC_APP_NAME: runner-booking-service-ENV_NAME
   NEW_RELIC_LICENSE_KEY: license_key

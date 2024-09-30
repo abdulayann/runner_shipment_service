@@ -1,3 +1,0 @@
-Update validations set schema_validator = '{"properties":{"shipmentType":{"required":true},"transportMode":{"required":true},"consolidationType":{"required":true},"carrierDetails":{"type":"object","properties":{"eta":{"type":"date-time","compare":[{"operator":"greater-than-equals","compareTo":"carrierDetails.etd"}]},"origin":{"required":true},"originPort":{"required":true},"destination":{"required":true},"destinationPort":{"required":true},"flightNumber":{"pattern":"(\\d{4}[A-Z]|\\d{4}|\\d{3}[A-Z]|\\d{3})"}}}}}'
-where entity = 'CONSOLIDATION';
-

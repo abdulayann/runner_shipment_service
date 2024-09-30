@@ -1,3 +1,0 @@
-Update validations
-set schema_validator = '{"properties":{"shipmentType":{"required":true},"transportMode":{"required":true},"carrierDetails":{"type":"object","properties":{"origin":{"required":true},"flightNumber":{"errors":{"pattern":"Please provide proper Flight number"},"pattern":"(\\d{4}[A-Z]|\\d{4}|\\d{3}[A-Z]|\\d{3})"},"destination":{"required":true}}},"consolidationType":{"required":true}}}'
-where entity = 'CONSOLIDATION';

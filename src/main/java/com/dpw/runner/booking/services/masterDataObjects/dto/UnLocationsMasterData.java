@@ -1,0 +1,42 @@
+package com.dpw.runner.booking.services.masterDataObjects.dto;
+
+import com.dpw.runner.booking.services.masterDataObjects.common.request.IMasterDataBaseEntity;
+import lombok.*;
+
+import java.io.Serializable;
+
+@Data
+@ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class UnLocationsMasterData implements IMasterDataBaseEntity, Serializable {
+    public String Country;
+    public String LocCode;
+    public String Name;
+    public String NameWoDiacritics;
+    public String SubDiv;
+    public String Coordinates;
+    public String lookupDesc;
+    public String lookupDescAir;
+    public String lookupDescSea;
+    public String IATACode;
+    public String IATARegionCode;
+    public String PortName;
+    public String AirPortName;
+    public String SeaPortName;
+    public String State;
+    public String TimeZone;
+    public Boolean HasPost;
+    public Boolean HasRail;
+    public Boolean HasDischarge;
+    public Boolean HasCustoms;
+    public Boolean HasRoad;
+    public Boolean HasSeaPort;
+    public Boolean HasUnload;
+    public Boolean HasStore;
+    public Boolean HasOutPort;
+    public Boolean HasAirport;
+    public Boolean HasTerminal;
+    public String LocationsReferenceGUID;
+}

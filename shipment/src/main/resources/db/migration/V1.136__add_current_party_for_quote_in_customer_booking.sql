@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS customer_booking ADD COLUMN IF NOT EXISTS current_party_for_quote VARCHAR(32);
-ALTER TABLE IF EXISTS shipment_details ADD COLUMN IF NOT EXISTS current_party_for_quote VARCHAR(32);

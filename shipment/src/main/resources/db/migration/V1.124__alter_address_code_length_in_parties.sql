@@ -1,1 +1,0 @@
-ALTER TABLE parties ALTER COLUMN address_code type VARCHAR(170);

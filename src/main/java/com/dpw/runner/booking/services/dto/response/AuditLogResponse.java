@@ -1,0 +1,24 @@
+package com.dpw.runner.booking.services.dto.response;
+
+import com.dpw.runner.booking.services.commons.requests.AuditLogChanges;
+import com.dpw.runner.booking.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.booking.services.config.CustomLocalDateTimeSerializer;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+public class AuditLogResponse implements IRunnerResponse {
+    private long id;
+    private String operation;
+    private String entity;
+    private Long entityId;
+    private List<AuditLogChanges> changes;
+    private String parentType;
+    private Long parentId;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt;
+    private String createdBy;
+}

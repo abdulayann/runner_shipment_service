@@ -1,1 +1,0 @@
-ALTER TABLE IF EXISTS carrier_details ADD COLUMN IF NOT EXISTS carrier_country VARCHAR(32);

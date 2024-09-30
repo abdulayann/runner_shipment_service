@@ -23,4 +23,4 @@ jobs:
   parameters:
     pom_path: pom.xml
     java_version: '1.17'
-    jar_file_name: runner-shipment-services-0.0.1.jar
+    jar_file_name: runner-booking-services-0.0.1.jar

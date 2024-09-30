@@ -27,6 +27,6 @@ steps:
     productName: runner
     serviceConnection: sonar-ce
     javaVersion: '1.17'
-    repoName: runner_shipment_service
+    repoName: runner_booking_service
     mavenPath: pom.xml
     exclusion: '**/*.bin,Devops_Scripts/**,**/*.css,**/*.html,**/*.js,**/node_modules/**,src/assets/**,src/environments/**,**/*.scss,**/shared/constants/**,**/jaxb/*.java,**/schemaobject/**'

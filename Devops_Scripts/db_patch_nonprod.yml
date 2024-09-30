@@ -24,26 +24,26 @@ steps:
     if [[ ! -z "$(SQLFile)" && ! -z "$(ENV)" ]]; then
         if [ $(ENV) = 'dev' ]; then
             echo "Running DB Patch in Dev"
-            export PGPASSWORD='$(Runner-Shipment-service-Dev-DB-User-Pswd-NonProd-Secret)'
-            psql -h $(ServerName) -U $(Runner-Shipment-service-Dev-DB-UserId-NonProd-Secret) -d $(DevDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            export PGPASSWORD='$(runner-booking-service-Dev-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(runner-booking-service-Dev-DB-UserId-NonProd-Secret) -d $(DevDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
             exit_code=$?
             echo $exit_code
         elif [ $(ENV) = 'QA' ]; then
             echo "Running DB Patch in QA"
-            export PGPASSWORD='$(Runner-Shipment-service-QA-DB-User-Pswd-NonProd-Secret)'
-            psql -h $(ServerName) -U $(Runner-Shipment-service-QA-DB-UserId-NonProd-Secret) -d $(QaDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            export PGPASSWORD='$(runner-booking-service-QA-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(runner-booking-service-QA-DB-UserId-NonProd-Secret) -d $(QaDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
             exit_code=$?
             echo $exit_code
         elif [ $(ENV) = 'Staging' ]; then
             echo "Running DB Patch in Staging"
-            export PGPASSWORD='$(Runner-Shipment-service-Staging-DB-User-Pswd-NonProd-Secret)'
-            psql -h $(ServerName) -U $(Runner-Shipment-service-Staging-DB-UserId-NonProd-Secret) -d $(StagingDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            export PGPASSWORD='$(runner-booking-service-Staging-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(runner-booking-service-Staging-DB-UserId-NonProd-Secret) -d $(StagingDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
             exit_code=$?
             echo $exit_code
         elif [ $(ENV) = 'demo' ]; then
             echo "Running DB Patch in demo"
-            export PGPASSWORD='$(Runner-Shipment-service-Demo-DB-User-Pswd-NonProd-Secret)'
-            psql -h $(ServerName) -U $(Runner-Shipment-service-Demo-DB-UserId-NonProd-Secret) -d $(DemoDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
+            export PGPASSWORD='$(runner-booking-service-Demo-DB-User-Pswd-NonProd-Secret)'
+            psql -h $(ServerName) -U $(runner-booking-service-Demo-DB-UserId-NonProd-Secret) -d $(DemoDatabase) -a -f DBPatch/$(SQLFile)  > temp.log 2>&1
             exit_code=$?
             echo $exit_code
 

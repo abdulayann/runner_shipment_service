@@ -18,8 +18,8 @@ variables:
 steps:
   - script: |
       if [[ ! -z "$(SQLFile)" ]]; then  
-        export PGPASSWORD='$(Runner-Shipment-service-DB-User-Pswd-Prod-Secret)'
-        psql -h $(ServerName) -U "$(Runner-Shipment-service-DB-UserId-Prod-Secret)" -d $(DatabaseName) -a -f DBPatch/$(SQLFile) > temp.log 2>&1
+        export PGPASSWORD='$(runner-booking-service-DB-User-Pswd-Prod-Secret)'
+        psql -h $(ServerName) -U "$(runner-booking-service-DB-UserId-Prod-Secret)" -d $(DatabaseName) -a -f DBPatch/$(SQLFile) > temp.log 2>&1
         exit_code=$?
         echo $exit_code
 

@@ -1,1 +1,0 @@
-ALTER TABLE IF EXISTS routings ADD COLUMN IF NOT EXISTS carrier_country VARCHAR(32);

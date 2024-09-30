@@ -1,0 +1,16 @@
+package com.dpw.runner.booking.services.commons.requests;
+
+import lombok.*;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Criteria {
+
+    private String fieldName;
+    private String operator;
+    private Object value;
+
+}

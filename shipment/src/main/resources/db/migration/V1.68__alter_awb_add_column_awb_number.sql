@@ -1,2 +1,0 @@
-ALTER TABLE awb
-    ADD COLUMN IF NOT EXISTS awb_number VARCHAR(255);

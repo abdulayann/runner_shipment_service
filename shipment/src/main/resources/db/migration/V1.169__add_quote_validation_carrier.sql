@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS carrier_details
-    ADD COLUMN IF NOT EXISTS is_carrier_changed BOOLEAN DEFAULT FALSE;

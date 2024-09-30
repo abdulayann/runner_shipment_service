@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: runner-shipment-service-deployment
+  name: runner-booking-service-deployment
   namespace: NAMESPACE_NAME
   labels:
-    app: runner-shipment-service
+    app: runner-booking-service
     product_name: PRODUCT_NAME
     repo_name: REPO_NAME
     service_name: SERVICE_NAME
@@ -18,18 +18,18 @@ spec:
   replicas: REPLICA_COUNT
   selector:
     matchLabels:
-      app: runner-shipment-service
+      app: runner-booking-service
   template:
     metadata:
       labels:
-        app: runner-shipment-service
+        app: runner-booking-service
     spec:
       containers:
-      - name: runner-shipment-service
+      - name: runner-booking-service
         image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
         imagePullPolicy: Always
         command: [/bin/sh, -c]
-        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:+UseG1GC -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
+        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:+UseG1GC -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-booking-services-0.0.1.jar]
         resources:
           requests:
             cpu: MIN_CPU
@@ -41,7 +41,7 @@ spec:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: runner-shipment-service-cm
+            name: runner-booking-service-cm
         readinessProbe:
           httpGet:
             path: /shipment-service/actuator/health

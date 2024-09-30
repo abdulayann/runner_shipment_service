@@ -1,6 +1,6 @@
 productName: runner
 azureProject: DTLP
-repoName: runner_shipment_service
+repoName: runner_booking_service
 repoId: cdeb2aab-0be8-4566-bbba-421a13f55ec5
 serviceType: Backend
 language: Java

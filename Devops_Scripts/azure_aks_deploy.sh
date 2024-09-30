@@ -11,12 +11,12 @@ MIN_CPU=$minCPU
 MIN_MEM=$minMem
 MAX_CPU=$maxCPU
 MAX_MEM=$maxMem
-prod_namespace="runner-shipment-service-production"
-deployment_name="runner-shipment-service-deployment"
-HPA_NAME="runner-shipment-service-hpa"
+prod_namespace="runner-booking-service-production"
+deployment_name="runner-booking-service-deployment"
+HPA_NAME="runner-booking-service-hpa"
 USER_ASSIGNED_IDENTITY_ID=$user_identity_id
 
-source_path="${PWD}/_runner_shipment_service/runner-shipment-service"
+source_path="${PWD}/_runner_booking_service/runner-booking-service"
 k8s_resource_path="${source_path}/Devops_Scripts/K8"
 app_deployment_yaml_path="$k8s_resource_path/app_deployment.yml"
 app_service_yaml_path="$k8s_resource_path/app_service.yml"
@@ -155,6 +155,6 @@ else
     echo "*****App Deployment fail !!!*****"
     exit 1
 fi
-service_yaml_path="${PWD}/_runner_shipment_service/runner-shipment-service/Devops_Scripts/service-values.yaml"
+service_yaml_path="${PWD}/_runner_booking_service/runner-booking-service/Devops_Scripts/service-values.yaml"
 values=$(grep ":" "$service_yaml_path" | awk -F ": " '{print $1"="$2}')
 ${kubectl_current} label --overwrite namespace $namespace $values

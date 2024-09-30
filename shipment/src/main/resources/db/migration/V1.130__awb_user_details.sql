@@ -1,3 +1,0 @@
-ALTER TABLE IF EXISTS awb
-      ADD COLUMN IF NOT EXISTS user_display_name VARCHAR,
-      ADD COLUMN IF NOT EXISTS user_mail_id VARCHAR;

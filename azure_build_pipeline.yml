@@ -43,13 +43,13 @@ steps:
   displayName: Publish Artifacts
   inputs:
     PathtoPublish: $(Build.ArtifactStagingDirectory)
-    artifactName: runner-shipment-service
+    artifactName: runner-booking-service
 
 - task: Docker@2
   displayName: Build and push backend app - Docker
   inputs:
     containerRegistry: ACR_Cargoes Runner
-    repository: runner-shipment-service
+    repository: runner-booking-service
     command: buildAndPush
     Dockerfile: Dockerfile
     tags: |-
