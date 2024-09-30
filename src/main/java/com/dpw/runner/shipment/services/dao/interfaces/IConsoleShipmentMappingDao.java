@@ -16,6 +16,7 @@ public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> saveAll(List<ConsoleShipmentMapping> consoleShipmentMappingList);
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
+    List<ConsoleShipmentMapping> findByShipmentIds(Set<Long> shipmentId);
 
     Integer countAllStateMappings(Long shipmentId);
 
