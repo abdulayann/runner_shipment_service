@@ -61,14 +61,12 @@ import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -84,7 +82,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -530,9 +527,9 @@ public class V1ServiceImpl implements IV1Service {
      * @return A collection of GrantedAuthority objects for Spring Security.
      */
     @Override
-    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+    public List<SimpleGrantedAuthority> getAuthorities(List<String> permissions) {
         // Map the list of permissions to GrantedAuthority objects
-        return permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+        return permissions.stream().map(SimpleGrantedAuthority::new).toList();
     }
 
     /**
@@ -594,7 +591,7 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
             // Call the API to get the token
-            ResponseEntity<Map> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, Map.class);
+            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {});
 
             long timeTaken = System.currentTimeMillis() - startTime;
             log.info("Time taken to fetch token: {} ms", timeTaken);
@@ -615,7 +612,6 @@ public class V1ServiceImpl implements IV1Service {
             String errorMessage = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage();
             throw new V1ServiceException(errorMessage);
         } catch (Exception ex) {
-            log.error("Error generating token: {}", ex.getMessage());
             throw new V1ServiceException("Error fetching token: " + ex.getMessage());
         }
     }

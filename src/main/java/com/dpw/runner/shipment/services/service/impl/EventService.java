@@ -68,6 +68,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -527,13 +528,7 @@ public class EventService implements IEventService {
             );
 
             // Fetch location role data using the defined criteria
-            V1DataResponse locationRoleV1DataResponse = null;
-            try {
-                locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
-                        .criteriaRequests(locationRoleMasterDataCriteria).build());
-            } catch (Exception e) {
-                log.error("Call for masterdata failed.{}", e.getMessage());
-            }
+            V1DataResponse locationRoleV1DataResponse = getLocationRoleV1DataResponse(locationRoleMasterDataCriteria);
 
             // Convert the response entities to a list of EntityTransferMasterLists
             List<EntityTransferMasterLists> locationRoleMasterDataList = Optional.ofNullable(locationRoleV1DataResponse)
@@ -553,6 +548,18 @@ public class EventService implements IEventService {
             // Return an empty map if an error occurs
             return Collections.emptyMap();
         }
+    }
+
+    @Nullable
+    private V1DataResponse getLocationRoleV1DataResponse(List<Object> locationRoleMasterDataCriteria) {
+        V1DataResponse locationRoleV1DataResponse = null;
+        try {
+            locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                    .criteriaRequests(locationRoleMasterDataCriteria).build());
+        } catch (Exception e) {
+            log.error("Call for masterdata failed.{}", e.getMessage());
+        }
+        return locationRoleV1DataResponse;
     }
 
     private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription) {
