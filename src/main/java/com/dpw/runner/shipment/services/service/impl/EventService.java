@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -914,15 +915,16 @@ public class EventService implements IEventService {
         eventDumpDao.saveAll(updatedEvents);
     }
 
+    /**
+     * @param container
+     * Returning true signifies that the current payload has been processed, or it's missing some information
+     * and is of no use to us.
+     */
     @Override
     @Transactional
     public boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
-        if(Objects.isNull(container))
+        if(ObjectUtils.isEmpty(container))
             return true;
-        Optional<String> referenceOptional = Optional.of(container.getContainerBase()).map(ContainerBase::getShipmentReference);
-        if (referenceOptional.isEmpty()) {
-            return true;
-        }
         TrackingServiceApiResponse trackingServiceApiResponse = new TrackingServiceApiResponse();
         trackingServiceApiResponse.setContainers(List.of(container));
         List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
@@ -939,14 +941,7 @@ public class EventService implements IEventService {
             return true;
         }
 
-        Container container = trackingServiceApiResponse.getContainers().stream()
-                .findFirst()
-                .orElse(null); // Set to null if not found
-
-        if (container == null) {
-            log.error("Container not found in trackingServiceApiResponse.");
-            return true; // Exit early if no container is found
-        }
+        Container container = trackingServiceApiResponse.getContainers().get(0);
 
         String shipmentNumber = Optional.ofNullable(container.getContainerBase())
                 .map(ContainerBase::getShipmentReference)
