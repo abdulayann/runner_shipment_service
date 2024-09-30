@@ -45,6 +45,12 @@ public interface IV1Service {
     ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
     ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
+    void setAuthContext();
+
+    void clearAuthContext();
+
+    String generateToken();
+
     V1DataResponse fetchMasterData(Object request);
 
     V1DataResponse createMasterData(Object request);

@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -61,6 +62,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -68,7 +70,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -93,8 +94,6 @@ public class EventService implements IEventService {
     private IConsolidationDetailsDao consolidationDao;
     private SyncConfig syncConfig;
     private IDateTimeChangeLogService dateTimeChangeLogService;
-    @Value("${v1service.url.base}${v1.service.url.trackEventDetails}")
-    private String trackEventDetailsUrl;
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
     private IEventDumpDao eventDumpDao;
@@ -487,7 +486,11 @@ public class EventService implements IEventService {
         }
 
         // set MasterData
-        setEventCodesMasterData(allEventResponses);
+        setEventCodesMasterData(
+                allEventResponses,
+                EventsResponse::getEventCode,
+                EventsResponse::setDescription
+        );
 
         return ResponseHelper.buildSuccessResponse(allEventResponses);
     }
@@ -524,8 +527,13 @@ public class EventService implements IEventService {
             );
 
             // Fetch location role data using the defined criteria
-            V1DataResponse locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
-                    .criteriaRequests(locationRoleMasterDataCriteria).build());
+            V1DataResponse locationRoleV1DataResponse = null;
+            try {
+                locationRoleV1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder()
+                        .criteriaRequests(locationRoleMasterDataCriteria).build());
+            } catch (Exception e) {
+                log.error("Call for masterdata failed.{}", e.getMessage());
+            }
 
             // Convert the response entities to a list of EntityTransferMasterLists
             List<EntityTransferMasterLists> locationRoleMasterDataList = Optional.ofNullable(locationRoleV1DataResponse)
@@ -547,10 +555,10 @@ public class EventService implements IEventService {
         }
     }
 
-    private void setEventCodesMasterData(List<EventsResponse> eventsResponseList) {
+    private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription) {
         try {
-            // Define criteria for fetching location role master data
-            List<String> eventCodes = eventsResponseList.stream().map(EventsResponse::getEventCode).toList();
+            // Define criteria for fetching event codes master data
+            List<String> eventCodes = eventsList.stream().map(getEventCode).toList();
             List<Object> subCriteria1 = Arrays.asList(
                     List.of(MasterDataConstants.ITEM_TYPE),
                     "=",
@@ -563,7 +571,7 @@ public class EventService implements IEventService {
             );
             var eventCodeMasterDataCriteria = List.of(subCriteria1, "and", subCriteria2);
 
-            // Fetch location role data using the defined criteria
+            // Fetch master data using the defined criteria
             V1DataResponse masterDataV1Response = v1Service.fetchMasterData(CommonV1ListRequest.builder()
                     .criteriaRequests(eventCodeMasterDataCriteria).build());
 
@@ -580,12 +588,15 @@ public class EventService implements IEventService {
                             Function.identity(),
                             (existing, replacement) -> existing // Handle duplicate keys by keeping the existing entry
                     ));
-            eventsResponseList.forEach(eventsResponse ->
-                    Optional.ofNullable(eventCodeMap.get(eventsResponse.getEventCode()))
-                    .ifPresentOrElse(
-                            masterList -> eventsResponse.setDescription(masterList.getItemDescription()),
-                            () -> log.warn("No mapping found for event code: {}", eventsResponse.getEventCode())
-                    ));
+
+            // Set description for each event in the list
+            eventsList.forEach(event ->
+                    Optional.ofNullable(eventCodeMap.get(getEventCode.apply(event)))
+                            .ifPresentOrElse(
+                                    masterList -> setDescription.accept(event, masterList.getItemDescription()),
+                                    () -> log.warn("No mapping found for event code: {}", getEventCode.apply(event))
+                            )
+            );
         } catch (Exception e) {
             // Log the error message for debugging purposes
             log.error("Error fetching or processing event codes master data: {}", e.getMessage(), e);
@@ -641,6 +652,12 @@ public class EventService implements IEventService {
                 .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails))
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId()))
                 .toList();
+
+        setEventCodesMasterData(
+                updatedEvents,
+                Events::getEventCode,
+                Events::setDescription
+        );
 
         log.info("Saving updated events to the database.");
         return eventDao.saveAll(updatedEvents);
@@ -803,6 +820,42 @@ public class EventService implements IEventService {
         return isShipmentUpdateRequired;
     }
 
+    private boolean updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
+            LocalDateTime shipmentAta, LocalDateTime shipmentAtd) {
+        boolean isShipmentUpdateRequired = false;
+
+        // Update carrier details with ATA and ATD if present
+        CarrierDetails carrierDetails = Optional.ofNullable(shipment.getCarrierDetails()).orElse(new CarrierDetails());
+
+        if (shipmentAta != null) {
+            carrierDetails.setAta(shipmentAta);
+            isShipmentUpdateRequired = true;
+        }
+        if (shipmentAtd != null) {
+            carrierDetails.setAtd(shipmentAtd);
+            isShipmentUpdateRequired = true;
+        }
+
+        shipment.setCarrierDetails(carrierDetails);
+
+        // Check for empty container returned event
+        boolean isEmptyContainerReturnedEvent = events.stream()
+                .anyMatch(event -> EventConstants.EMCR.equals(event.getEventCode()));
+
+        // Update empty container returned status if conditions are met
+        if (isEmptyContainerReturnedEvent
+                && shipment.getAdditionalDetails() != null
+                && !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned())
+                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
+
+            shipment.getAdditionalDetails().setEmptyContainerReturned(true);
+            isShipmentUpdateRequired = true;
+        }
+
+        return isShipmentUpdateRequired;
+    }
+
     @Override
     public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
         if (ObjectUtils.isNotEmpty(events)) {
@@ -861,6 +914,7 @@ public class EventService implements IEventService {
     }
 
     @Override
+    @Transactional
     public void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
         if(Objects.isNull(container))
             return;
@@ -872,8 +926,81 @@ public class EventService implements IEventService {
         trackingServiceApiResponse.setContainers(List.of(container));
         List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
 
+        persistTrackingEvents(trackingServiceApiResponse, trackEvents);
+
         // TODO migrate existing tracking flow here for shipment
 
         log.info("{}", trackEvents);
     }
+
+    private void persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
+        v1Service.setAuthContext();
+        if (ObjectUtils.isEmpty(trackingEvents)) {
+            log.error("Tracking events are null or empty.");
+            return;
+        }
+
+        Container container = trackingServiceApiResponse.getContainers().stream()
+                .findFirst()
+                .orElse(null); // Set to null if not found
+
+        if (container == null) {
+            log.error("Container not found in trackingServiceApiResponse.");
+            return; // Exit early if no container is found
+        }
+
+        String shipmentNumber = Optional.ofNullable(container.getContainerBase())
+                .map(ContainerBase::getShipmentReference)
+                .orElse(null);
+
+        if (ObjectUtils.isEmpty(shipmentNumber)) {
+            log.warn("ShipmentNumber is empty.");
+            return;
+        }
+
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByShipmentId(shipmentNumber);
+
+        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
+        }
+        v1Service.clearAuthContext();
+    }
+
+    private void updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
+            Container container) {
+
+        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+
+        saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
+
+        List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
+                Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap);
+
+        // Inline extraction of ATA and ATD from container's journey details
+        LocalDateTime shipmentAta = null;
+        LocalDateTime shipmentAtd = null;
+
+        if (container.getJourney() != null) {
+            shipmentAta = Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
+                    .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null);
+            shipmentAtd = Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
+                    .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null);
+        }
+
+        boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd);
+
+        if (isShipmentUpdateRequired) {
+            try {
+                saveAndSyncShipment(shipmentDetails);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e.getMessage());
+            }
+        }
+    }
+
+    private void saveAndSyncShipment(ShipmentDetails shipmentDetails) throws RunnerException {
+        shipmentDao.save(shipmentDetails, false);
+        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
+    }
+
 }

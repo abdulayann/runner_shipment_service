@@ -1,7 +1,12 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
@@ -46,17 +51,24 @@ import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +80,12 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -89,6 +106,8 @@ public class V1ServiceImpl implements IV1Service {
     public static final String JOIN_REGEX = "{} {}";
 
     private RestTemplate restTemplate;
+    private GetUserServiceFactory getUserServiceFactory;
+    private TokenUtility tokenUtility;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
     private String CUSTOMER_BOOKING_URL;
@@ -380,6 +399,15 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.rolesIdByRoleName}")
     private String getRolesIdByRoleName;
 
+    @Value("${v1service.url.base}${v1service.url.generateToken}")
+    private String v1GenerateTokenUrl;
+
+    @Value("${v1service.serviceAccount.username}")
+    private String serviceAccountUsername;
+
+    @Value("${v1service.serviceAccount.password}")
+    private String serviceAccountPassword;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -388,8 +416,11 @@ public class V1ServiceImpl implements IV1Service {
     private CommonUtils commonUtils;
 
     @Autowired
-    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate) {
+    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
+            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility) {
         this.restTemplate = restTemplate;
+        this.getUserServiceFactory = getUserServiceFactory;
+        this.tokenUtility = tokenUtility;
     }
 
     @Autowired
@@ -429,6 +460,77 @@ public class V1ServiceImpl implements IV1Service {
             }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public void setAuthContext() {
+        String token = "Bearer "+ StringUtils.defaultString(generateToken());
+        UsersDto user = getUserServiceFactory.returnUserService().getUserByToken(tokenUtility.getUserIdAndBranchId(token), token);
+        if (user != null) {
+            setAuthContext(token, user);
+        }
+    }
+
+    private void setAuthContext(String token, UsersDto user) {
+        RequestAuthContext.setAuthToken(token);
+        TenantContext.setCurrentTenant(user.getTenantId());
+        UserContext.setUser(user);
+        List<String> grantedPermissions = new ArrayList<>(user.getPermissions().keySet());
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(user, null, getAuthorities(grantedPermissions));
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+
+        PermissionsContext.setPermissions(grantedPermissions);
+    }
+
+    private Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+        return permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
+    }
+
+    @Override
+    public void clearAuthContext() {
+        TenantContext.removeTenant();
+        RequestAuthContext.removeToken();
+        PermissionsContext.removePermissions();
+        SecurityContextHolder.clearContext();
+        UserContext.removeUser();
+    }
+
+    @Override
+    public String generateToken() {
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // Set headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Create the request body
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("UserName", serviceAccountUsername);
+            requestBody.put("Password", serviceAccountPassword);
+
+            // Create HttpEntity with headers and body
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Call the API to get the token
+            ResponseEntity<Map> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, Map.class);
+
+            log.info("Time taken to fetch token: {} ms", (System.currentTimeMillis() - startTime));
+
+            // Extract the token from the response
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody != null && responseBody.containsKey("token")) {
+                return (String) responseBody.get("token");
+            } else {
+                throw new V1ServiceException("Token not found in response");
+            }
+
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception ex) {
+            throw new V1ServiceException("Error fetching token: " + ex.getMessage());
         }
     }
 
