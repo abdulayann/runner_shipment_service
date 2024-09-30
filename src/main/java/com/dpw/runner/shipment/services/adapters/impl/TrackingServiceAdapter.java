@@ -21,7 +21,6 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -628,11 +627,11 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {
             TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
-            var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
-            trackingEventsResponse.setEventsList(generateEventsFromTrackingResponse(res));
+            var trackingServiceApiResponse = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
+            trackingEventsResponse.setEventsList(generateEventsFromTrackingResponse(trackingServiceApiResponse));
             // Set ATA and ATD date based on container journey details
-            var container = res.getContainers().stream()
-                    .filter(Objects::nonNull)
+            var container = Optional.ofNullable(trackingServiceApiResponse.getContainers()) // Handle potential null list
+                    .orElse(Collections.emptyList()).stream().filter(Objects::nonNull)
                     .findFirst()
                     .orElse(null);
 

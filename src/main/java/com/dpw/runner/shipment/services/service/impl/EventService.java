@@ -49,7 +49,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
@@ -922,82 +921,115 @@ public class EventService implements IEventService {
     @Override
     @Transactional
     public boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container) {
-        if(ObjectUtils.isEmpty(container))
+        log.info("Starting processUpstreamTrackingMessage with container: {}", container);
+
+        if (ObjectUtils.isEmpty(container)) {
+            log.warn("Received empty or null container. Returning true.");
             return true;
+        }
+
         TrackingServiceApiResponse trackingServiceApiResponse = new TrackingServiceApiResponse();
         trackingServiceApiResponse.setContainers(List.of(container));
-        List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
-        log.info("{}", trackEvents);
 
-        return persistTrackingEvents(trackingServiceApiResponse, trackEvents);
+        List<Events> trackEvents = trackingServiceAdapter.generateEventsFromTrackingResponse(trackingServiceApiResponse);
+        log.info("Generated {} events from container: {}", trackEvents.size(), trackEvents);
+
+        boolean result = persistTrackingEvents(trackingServiceApiResponse, trackEvents);
+        log.info("Finished processing upstream tracking message for container. Result: {}", result);
+        return result;
     }
 
     private boolean persistTrackingEvents(TrackingServiceApiResponse trackingServiceApiResponse, List<Events> trackingEvents) {
+        log.info("Starting persistTrackingEvents with trackingEvents: {}", trackingEvents);
+
         boolean isSuccess = true;
         v1Service.setAuthContext();
+
         if (ObjectUtils.isEmpty(trackingEvents)) {
-            log.error("Tracking events are null or empty.");
+            log.error("Tracking events are null or empty. Skipping event persistence.");
             return true;
         }
 
         Container container = trackingServiceApiResponse.getContainers().get(0);
+        log.info("Processing container: {}", container);
 
         String shipmentNumber = Optional.ofNullable(container.getContainerBase())
                 .map(ContainerBase::getShipmentReference)
                 .orElse(null);
 
+        log.info("Shipment number extracted: {}", shipmentNumber);
+
         if (ObjectUtils.isEmpty(shipmentNumber)) {
-            log.warn("ShipmentNumber is empty.");
+            log.warn("Shipment number is empty or null. Skipping further processing.");
             return true;
         }
 
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByShipmentId(shipmentNumber);
+        log.info("Found {} shipment details for shipment number: {}", shipmentDetailsList.size(), shipmentNumber);
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            isSuccess &= updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
+            log.info("Processing shipment details: {}", shipmentDetails);
+            boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
+            isSuccess &= updateSuccess;
+            log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
         }
+
         v1Service.clearAuthContext();
+        log.info("Auth context cleared after processing.");
 
         return isSuccess;
     }
 
     private boolean updateShipmentWithTrackingEvents(List<Events> trackingEvents, ShipmentDetails shipmentDetails,
             Container container) {
+        log.info("Starting updateShipmentWithTrackingEvents for shipment: {} and container: {}",
+                shipmentDetails.getShipmentId(), container);
+
         boolean isSuccess = true;
         Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+        log.debug("Fetched identifier-to-location-role map: {}", identifier2ToLocationRoleMap);
 
+        log.info("Saving tracking events to EventsDump for shipment ID: {}", shipmentDetails.getId());
         saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
 
         List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
                 Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap);
+        log.info("Saved {} events to Events table for shipment: {}", eventSaved.size(), shipmentDetails.getShipmentId());
 
-        // Inline extraction of ATA and ATD from container's journey details
-        LocalDateTime shipmentAta = null;
-        LocalDateTime shipmentAtd = null;
+        // Extract ATA and ATD from container's journey details
+        LocalDateTime shipmentAta = Optional.ofNullable(container.getJourney())
+                .map(TrackingServiceApiResponse.Journey::getPortOfArrivalAta)
+                .map(TrackingServiceApiResponse.DateAndSources::getDateTime)
+                .orElse(null);
 
-        if (container.getJourney() != null) {
-            shipmentAta = Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
-                    .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null);
-            shipmentAtd = Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
-                    .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null);
-        }
+        LocalDateTime shipmentAtd = Optional.ofNullable(container.getJourney())
+                .map(TrackingServiceApiResponse.Journey::getPortOfDepartureAtd)
+                .map(TrackingServiceApiResponse.DateAndSources::getDateTime)
+                .orElse(null);
+
+        log.info("Extracted ATA: {}, ATD: {} for shipment: {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId());
 
         boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd);
+        log.info("Shipment update required: {}", isShipmentUpdateRequired);
 
         if (isShipmentUpdateRequired) {
             try {
                 saveAndSyncShipment(shipmentDetails);
+                log.info("Successfully saved and synced shipment: {}", shipmentDetails.getShipmentId());
             } catch (Exception e) {
                 isSuccess = false;
-                log.error("Error performing sync on shipment entity, {}", e.getMessage());
+                log.error("Error performing sync on shipment entity: {}", shipmentDetails.getShipmentId(), e);
             }
         }
 
+        log.info("Finished updating shipment with tracking events. Success: {}", isSuccess);
         return isSuccess;
     }
 
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails) throws RunnerException {
+        log.info("Saving shipment entity: {}", shipmentDetails.getShipmentId());
         shipmentDao.save(shipmentDetails, false);
+        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
         shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
