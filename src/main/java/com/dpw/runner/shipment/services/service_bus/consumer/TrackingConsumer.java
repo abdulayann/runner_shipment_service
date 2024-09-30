@@ -43,7 +43,7 @@ public class TrackingConsumer {
 
         processorClient.start();
 
-        log.info("Message receiver started and listening...");
+        log.info("Tracking Consumer - started and listening...");
     }
 
     /**
@@ -54,15 +54,15 @@ public class TrackingConsumer {
      */
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        log.info("Started processing message with id : {}", receivedMessage.getMessageId());
+        log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
-        log.info("{}", jsonHelper.convertToJson(container));
+        log.info("Tracking Consumer - container payload {}", jsonHelper.convertToJson(container));
         boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
 
         if(processSuccess) {
             context.complete();
-            log.info("Finished processing message with id : {}", receivedMessage.getMessageId());
+            log.info("Tracking Consumer - Finished processing message with id : {}", receivedMessage.getMessageId());
         }
 
     }
@@ -70,10 +70,10 @@ public class TrackingConsumer {
     public void processError(ServiceBusErrorContext context) {
         // Process error
         if (context.getException() instanceof ServiceBusException exception) {
-            log.error("Error source: {}, reason {}", context.getErrorSource(), exception.getReason());
+            log.error("Tracking Consumer - Error source: {}, reason {}", context.getErrorSource(), exception.getReason());
         }
         else {
-            log.error("Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
+            log.error("Tracking Consumer - Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
         }
     }
 

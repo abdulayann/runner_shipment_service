@@ -631,8 +631,12 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
             trackingEventsResponse.setEventsList(generateEventsFromTrackingResponse(res));
             // Set ATA and ATD date based on container journey details
-            var container = res.getContainers().get(0);
-            if (container.getJourney() != null) {
+            var container = res.getContainers().stream()
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+
+            if (container != null && container.getJourney() != null) {
                 trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
                         .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
                 trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
