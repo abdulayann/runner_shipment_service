@@ -495,7 +495,8 @@ public class V1ServiceImpl implements IV1Service {
      * @param token The JWT token used for authentication.
      * @param user  The user details object containing the user's information.
      */
-    private void setAuthContext(String token, UsersDto user) {
+    @Override
+    public void setAuthContext(String token, UsersDto user) {
         // Set the authentication token
         RequestAuthContext.setAuthToken(token);
         log.debug("Set auth token in RequestAuthContext: {}", token);
@@ -528,7 +529,8 @@ public class V1ServiceImpl implements IV1Service {
      * @param permissions The list of permissions assigned to the user.
      * @return A collection of GrantedAuthority objects for Spring Security.
      */
-    private Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities(List<String> permissions) {
         // Map the list of permissions to GrantedAuthority objects
         return permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
     }
