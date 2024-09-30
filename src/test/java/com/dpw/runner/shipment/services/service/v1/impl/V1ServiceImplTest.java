@@ -12,10 +12,16 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -78,7 +84,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.modelmapper.ModelMapper;
@@ -92,6 +98,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
@@ -5342,6 +5349,27 @@ class V1ServiceImplTest {
 
         // Assert
         assertNotNull(throwable);
+    }
+
+    @Test
+    public void testClearAuthContext() {
+        // Mocking the static methods using Mockito
+        try (MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<RequestAuthContext> authContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+
+            // Call the method to be tested
+            v1ServiceImpl.clearAuthContext();
+
+            // Verify the method calls
+            tenantContextMock.verify(TenantContext::removeTenant, times(1));
+            authContextMock.verify(RequestAuthContext::removeToken, times(1));
+            permissionsContextMock.verify(PermissionsContext::removePermissions, times(1));
+            securityContextHolderMock.verify(SecurityContextHolder::clearContext, times(1));
+            userContextMock.verify(UserContext::removeUser, times(1));
+        }
     }
 
 }
