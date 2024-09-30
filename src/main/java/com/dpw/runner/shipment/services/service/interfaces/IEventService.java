@@ -17,5 +17,5 @@ public interface IEventService extends ICommonService {
     ResponseEntity<IRunnerResponse> trackEvents(Optional<Long> shipmentId, Optional<Long> consolidationId) throws RunnerException;
     String convertTrackingEventCodeToShortCode(String locationRole, String eventCode);
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
-    void processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container);
+    boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container);
 }
