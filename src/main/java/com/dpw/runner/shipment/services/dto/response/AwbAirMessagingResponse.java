@@ -44,6 +44,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String country;
         private String currency;
         private String number;
+        private String postCode;
         private LocalDateTime expiry;
     }
     @Data
