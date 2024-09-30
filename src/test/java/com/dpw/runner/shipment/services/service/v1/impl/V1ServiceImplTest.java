@@ -5361,7 +5361,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testClearAuthContext() {
+    void testClearAuthContext() {
         // Mocking the static methods using Mockito
         try (MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
                 MockedStatic<RequestAuthContext> authContextMock = mockStatic(RequestAuthContext.class);
@@ -5382,7 +5382,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testGetAuthoritiesWithNoPermissions() {
+    void testGetAuthoritiesWithNoPermissions() {
         // Test with an empty list
         List<String> permissions = Collections.emptyList();
         Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
@@ -5392,7 +5392,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testGetAuthoritiesWithPermissions() {
+    void testGetAuthoritiesWithPermissions() {
         // Test with a list of permissions
         List<String> permissions = Arrays.asList("READ", "WRITE", "DELETE");
         Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
@@ -5407,7 +5407,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testGetAuthoritiesWithDuplicatePermissions() {
+    void testGetAuthoritiesWithDuplicatePermissions() {
         // Test with duplicate permissions
         List<String> permissions = Arrays.asList("READ", "WRITE", "READ"); // Duplicate READ
         Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
@@ -5421,7 +5421,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testSetAuthContext() {
+    void testSetAuthContext() {
         // Mocking dependencies
         String token = "Bearer sampleToken";
         String tenantId = "tenant123";
@@ -5472,7 +5472,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testSetAuthContextWithEmptyPermissions() {
+    void testSetAuthContextWithEmptyPermissions() {
         // Mocking dependencies
         String token = "Bearer sampleToken";
         int tenantId = 1; // Changed to int to match the expected type
