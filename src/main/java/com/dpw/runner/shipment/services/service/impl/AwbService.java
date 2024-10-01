@@ -863,12 +863,8 @@ public class AwbService implements IAwbService {
                 updateSci = true;
             }
         }
-        if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED)) {
-            if (updateSci) {
-                awb.getAwbCargoInfo().setSci(AwbConstants.T1);
-            } else {
-                awb.getAwbCargoInfo().setSci(null);
-            }
+        if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED) && (updateSci)) {
+            awb.getAwbCargoInfo().setSci(AwbConstants.T1);
         }
     }
 
