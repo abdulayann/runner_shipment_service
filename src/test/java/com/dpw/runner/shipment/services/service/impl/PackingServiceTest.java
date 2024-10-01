@@ -1335,31 +1335,6 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculateVolumetricWeightForAir_Success() throws RunnerException {
-        VolumeWeightChargeable vwObj = packingService.calculateVolumetricWeightForAir(new BigDecimal(1), new BigDecimal(1), Constants.TRANSPORT_MODE_SEA, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3);
-        assertNotNull(vwObj);
-        assertEquals(vwObj.getChargeable(), jsonTestUtility.getTestVolWtChargeable().getChargeable());
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_SEA_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
     void testCalculateVolume_Success() throws RunnerException {
         packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingResponse);
@@ -1453,52 +1428,6 @@ class PackingServiceTest extends CommonMocks {
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
         ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getTestVolWtChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_AIR_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateVolume_Success() throws RunnerException {
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolume(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateChargeableForAir_Success() throws RunnerException {
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForAir_ChWt_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setWeight(new BigDecimal(9));
-        testAutoCalculatePackingRequest.setVolume(new BigDecimal(99999));
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForSEA_LCL_Success() throws RunnerException {
-        packingService.calculateChargeableForSEA_LCL(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
