@@ -616,6 +616,8 @@ public class PackingService implements IPackingService {
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(packingList != null) {
@@ -657,14 +659,19 @@ public class PackingService implements IPackingService {
                     }
                 }
             }
-            if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA) &&
-                    (Objects.equals(containerCategory, SHIPMENT_TYPE_LCL) || Objects.equals(containerCategory, CARGO_TYPE_FCL))) {
-                volumetricWeight = totalWeight/1000;
-                chargeableWeight = Math.max(volumetricWeight, totalVolume);
+            double totalVolInM3 = (double) convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, VOLUME_UNIT_M3);
+            double totalWtInKG = (double) convertUnit(MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, WEIGHT_UNIT_KG);
+            if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
+                volumetricWeight = totalWtInKG/1000;
+                chargeableWeight = Math.max(volumetricWeight, totalVolInM3);
             }
             else {
-                volumetricWeight = totalVolume * 166.667;
-                chargeableWeight = Math.max(volumetricWeight, totalWeight);
+                BigDecimal factor = BigDecimal.valueOf(166.667);
+                if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
+                    factor = BigDecimal.valueOf(333.0);
+                }
+                volumetricWeight = totalVolInM3 * factor.doubleValue();
+                chargeableWeight = Math.max(volumetricWeight, totalWtInKG);
             }
             List<String> sortedKeys = new ArrayList<>(map.keySet());
             Collections.sort(sortedKeys);
@@ -679,7 +686,10 @@ public class PackingService implements IPackingService {
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
-            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), toWeightUnit));
+            if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
+                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
+            else
+                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), WEIGHT_UNIT_KG));
 
             // setting these fields for UI to consume; Only for Consolidation
             response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
@@ -698,11 +708,10 @@ public class PackingService implements IPackingService {
             dto.setInnerPacks(totalInnerPacks);
             dto.setInnerPackUnit(innerPacksUnit);
 
-            String packChargeableWeightUnit = toWeightUnit;
+            String packChargeableWeightUnit = WEIGHT_UNIT_KG;
             if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
                 chargeableWeight = roundOffAirShipment(chargeableWeight);
-            if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+            if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
                 double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
                 chargeableWeight = Math.max(wtInKg / 1000, volInM3);
@@ -768,8 +777,7 @@ public class PackingService implements IPackingService {
                         charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
                     }
                     response.setChargeable(charge);
-                } else if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA) &&
-                        (Objects.equals(containerCategory, SHIPMENT_TYPE_LCL) || Objects.equals(containerCategory, CARGO_TYPE_FCL))) {
+                } else if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
                     // wtVol is set as wt (in kg) / 1000 - rounding off multiply by 10 then take ceiling then divide by 10
                     // wtVol unit M3
                     // chargeable is set as max of wtVol and vol in M3
