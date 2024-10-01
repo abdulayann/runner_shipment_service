@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.Data;
 
@@ -16,6 +17,7 @@ public class AwbRoutingInfoResponse implements IRunnerResponse {
     private String destination;
     private String  byCarrier;
     private String  flightNumber;
+    @ExcludeTimeZone
     private LocalDateTime flightDate;
     private String departureAirport;
     private String destinationAirport;

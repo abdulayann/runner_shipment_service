@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
@@ -23,6 +24,7 @@ public class AwbRoutingInfo implements Serializable {
     private String destination;
     private String  byCarrier;
     private String  flightNumber;
+    @ExcludeTimeZone
     private LocalDateTime flightDate;
     private String departureAirport;
     private String destinationAirport;
