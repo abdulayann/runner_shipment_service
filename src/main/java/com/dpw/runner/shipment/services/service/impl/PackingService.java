@@ -658,8 +658,15 @@ public class PackingService implements IPackingService {
                     }
                 }
             }
-            volumetricWeight = totalVolume * 166.667;
-            chargeableWeight = Math.max(volumetricWeight, totalWeight);
+            if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA) &&
+                    (Objects.equals(containerCategory, SHIPMENT_TYPE_LCL) || Objects.equals(containerCategory, CARGO_TYPE_FCL))) {
+                volumetricWeight = totalWeight/1000;
+                chargeableWeight = Math.max(volumetricWeight, totalVolume);
+            }
+            else {
+                volumetricWeight = totalVolume * 166.667;
+                chargeableWeight = Math.max(volumetricWeight, totalWeight);
+            }
             List<String> sortedKeys = new ArrayList<>(map.keySet());
             Collections.sort(sortedKeys);
             for (int i=0; i<sortedKeys.size(); i++) {
@@ -673,10 +680,7 @@ public class PackingService implements IPackingService {
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
-            if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
-                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight/1000), v1TenantSettingsResponse), toWeightUnit));
-            else
-                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), toWeightUnit));
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), toWeightUnit));
 
             // setting these fields for UI to consume; Only for Consolidation
             response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
@@ -713,44 +717,6 @@ public class PackingService implements IPackingService {
         }
     }
 
-    public VolumeWeightChargeable calculateVolumetricWeightForAir(BigDecimal volume, BigDecimal weight, String transportMode, String weightUnit, String volumeUnit) throws RunnerException {
-        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
-        BigDecimal vlInM3 = new BigDecimal(convertUnit(VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-        BigDecimal factor = new BigDecimal("166.667");
-        if (Objects.equals(transportMode, TRANSPORT_MODE_ROA)) {
-            factor = BigDecimal.valueOf(333.0);
-        }
-        BigDecimal wvInKG = vlInM3.multiply(factor);
-        if (wtInKG.compareTo(wvInKG) < 0) {
-            wtInKG = wvInKG;
-        }
-        vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
-        vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
-        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
-        vwOb.setVolumeWeight(WV);
-        vwOb.setVolumeWeightUnit(weightUnit);
-        return vwOb;
-    }
-
-    public ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel model) throws RunnerException {
-        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) model.getData();
-        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
-        if (!StringUtils.isEmpty(request.getTransportMode()) && !request.getTransportMode().equals(TRANSPORT_MODE_AIR)) {
-            return ResponseHelper.buildSuccessResponse(response);
-        }
-        BigDecimal volume = request.getVolume();
-        BigDecimal weight = request.getWeight();
-        String transportMode = request.getTransportMode();
-        String weightUnit = request.getWeightUnit();
-        String volumeUnit = request.getVolumeUnit();
-        var obj = calculateVolumetricWeightForAir(volume, weight, transportMode, weightUnit, volumeUnit);
-        calculateChargeableForAir(response, request);
-        response.setVolumeWeight(obj.getVolumeWeight());
-        response.setVolumeWeightUnit(obj.getVolumeWeightUnit());
-        return ResponseHelper.buildSuccessResponse(response);
-    }
-
     public void calculateVolume(AutoCalculatePackingRequest request, AutoCalculatePackingResponse pack) throws RunnerException {
 
         if (IsStringNullOrEmpty(request.getWidthUnit()) || IsStringNullOrEmpty(request.getLengthUnit()) || IsStringNullOrEmpty(request.getHeightUnit()))
@@ -763,12 +729,6 @@ public class PackingService implements IPackingService {
         pack.setVolume(BigDecimal.valueOf(vol));
         request.setVolumeUnit("M3");
         request.setVolume(BigDecimal.valueOf(vol));
-        if (vol > 0.0 && TRANSPORT_MODE_AIR.equals(request.getTransportMode())) {
-            var obj = this.calculateVolumetricWeightForAir(BigDecimal.valueOf(vol), pack.getWeight(), request.getTransportMode(), request.getWeightUnit(), request.getVolumeUnit());
-            calculateChargeableForAir(pack, request);
-            pack.setVolumeWeight(obj.getVolumeWeight());
-            pack.setVolumeWeightUnit(obj.getVolumeWeightUnit());
-        }
     }
 
     private double calculateVolume(AutoCalculatePackingRequest request) throws RunnerException {
@@ -788,6 +748,7 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             String transportMode = request.getTransportMode();
+            String containerCategory = request.getContainerCategory();
             BigDecimal weight = request.getWeight();
             String weightUnit = request.getWeightUnit();
             BigDecimal volume = request.getVolume();
@@ -809,7 +770,8 @@ public class PackingService implements IPackingService {
                     }
                     response.setChargeable(charge);
                 }
-                if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
+                if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA) &&
+                        (Objects.equals(containerCategory, SHIPMENT_TYPE_LCL) || Objects.equals(containerCategory, CARGO_TYPE_FCL))) {
                     // wtVol is set as wt (in kg) / 1000 - rounding off multiply by 10 then take ceiling then divide by 10
                     // wtVol unit M3
                     // chargeable is set as max of wtVol and vol in M3
@@ -830,86 +792,6 @@ public class PackingService implements IPackingService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws RunnerException {
-        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
-        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
-        calculateChargeable(request, response);
-        return ResponseHelper.buildSuccessResponse(response);
-    }
-
-    private void calculateChargeable(AutoCalculatePackingRequest request, AutoCalculatePackingResponse response) throws RunnerException {
-        if (StringUtility.isNotEmpty(request.getTransportMode())) {
-            if (!request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)){
-                String wunit = request.getWeightUnit();
-                String vunit = request.getVolumeUnit();
-                var vol = request.getVolume();
-                var weight = request.getWeight();
-
-                if (wunit != null && !wunit.isEmpty() && vunit != null && !vunit.isEmpty()) {
-                    VolumeWeightChargeable vwobj = consolidationService.calculateVolumeWeight(request.getTransportMode(), wunit, vunit, weight, vol);
-
-                    response.setVolumeWeight(vwobj.getVolumeWeight());
-                    response.setVolumeWeightUnit(vwobj.getVolumeWeightUnit());
-
-                    if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                        if (request.getContainerCategory() != null && request.getContainerCategory().equals(SHIPMENT_TYPE_LCL)) {
-                            calculateChargeableForSEA_LCL(response, request);
-                        }
-                    }
-                }
-            } else {
-                calculateChargeableForAir(response, request);
-            }
-        }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws RunnerException {
-        AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
-        AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();
-        if(!request.isVolumeChange()) {
-            calculateVolume(request, response);
-        }
-        calculateChargeable(request, response);
-        return ResponseHelper.buildSuccessResponse(response);
-    }
-
-    public void calculateChargeableForAir(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) {
-        if (request.getWeight() == null) {
-            return;
-        }
-
-        if (request.getWeightUnit().equals("KG")) {
-            var totalWeight = request.getWeight();
-            var totalVolume = (request.getVolume() != null && Objects.equals(request.getVolumeUnit(), VOLUME_UNIT_M3)) ? request.getVolume() : BigDecimal.ZERO;
-            response.setChargeableUnit("KG");
-            response.setChargeable(calculateChargeableWeight(totalVolume, totalWeight));
-        }
-    }
-
-    private BigDecimal calculateChargeableWeight(BigDecimal totalVolume, BigDecimal totalWeight) {
-        var chargeableWeight = totalWeight;
-        var factorForVW = BigDecimal.valueOf(166.667);
-        var volumetricWeight = totalVolume.multiply(factorForVW);
-
-        if (chargeableWeight.doubleValue() < volumetricWeight.doubleValue()) {
-            chargeableWeight = volumetricWeight;
-        }
-        return chargeableWeight;
-    }
-
-    public void calculateChargeableForSEA_LCL(AutoCalculatePackingResponse response, AutoCalculatePackingRequest request) throws RunnerException {
-        var wunit = request.getWeightUnit();
-        var vunit = request.getVolumeUnit();
-        var vol = request.getVolume();
-        var weight = request.getWeight();
-        var vol_in_m3 = BigDecimal.valueOf(convertUnit(VOLUME, vol, vunit, VOLUME_UNIT_M3).doubleValue());
-        var weight_in_kg = BigDecimal.valueOf(convertUnit(MASS, weight, wunit, WEIGHT_UNIT_KG).doubleValue());
-        response.setChargeable(BigDecimal.valueOf(Math.max(weight_in_kg.doubleValue() / 1000.0, vol_in_m3.doubleValue())));
-        response.setChargeableUnit(VOLUME_UNIT_M3);
     }
 
     private double roundOffAirShipment(double charge) {
@@ -992,10 +874,6 @@ public class PackingService implements IPackingService {
 
     private IRunnerResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
-    }
-
-    private Packing convertRequestToEntity(PackingRequest request) {
-        return jsonHelper.convertValue(request, Packing.class);
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
