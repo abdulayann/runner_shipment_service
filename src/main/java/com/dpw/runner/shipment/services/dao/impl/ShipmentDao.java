@@ -249,6 +249,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
+        return shipmentRepository.findByShipmentId(shipmentNumber);
+    }
+
+    @Override
     public void delete(ShipmentDetails shipmentDetails) {
         validateLockStatus(shipmentDetails);
         shipmentRepository.delete(shipmentDetails);

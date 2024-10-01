@@ -467,6 +467,21 @@ ShipmentServiceTest extends CommonMocks {
                 return "SHIPID1";
             }
 
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
+            }
+
         };
 
         ShipmentDetailsProjection projection2 = new ShipmentDetailsProjection() {
@@ -481,6 +496,21 @@ ShipmentServiceTest extends CommonMocks {
             @Override
             public String getShipmentId() {
                 return "SHIPID2";
+            }
+
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
             }
 
         };
@@ -572,6 +602,21 @@ ShipmentServiceTest extends CommonMocks {
             @Override
             public String getShipmentId() {
                 return "SHIPID2";
+            }
+
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
             }
         };
 

@@ -24,4 +24,5 @@ public interface ITrackingServiceAdapter {
 
     String convertTrackingEventCodeToShortCode(String locationRole, String eventCode, String description);
     TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException;
+    List<Events> generateEventsFromTrackingResponse(TrackingServiceApiResponse trackingServiceApiResponse);
 }
