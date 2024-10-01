@@ -2927,7 +2927,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
 
         String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(csdInfo, expectedCsdInfo);
+        assertEquals(expectedCsdInfo, csdInfo);
     }
 
     @Test
@@ -2940,7 +2940,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
 
         String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(csdInfo, expectedCsdInfo);
+        assertEquals(expectedCsdInfo, csdInfo);
     }
 
     @Test
@@ -2952,7 +2952,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
 
         String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(csdInfo, expectedCsdInfo);
+        assertEquals(expectedCsdInfo, csdInfo);
     }
 
     @Test
@@ -2971,7 +2971,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
         String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(csdInfo, Strings.EMPTY);
+        assertEquals(Strings.EMPTY, csdInfo);
     }
 
     private OrgAddressResponse createOrgAddressResponse() {
