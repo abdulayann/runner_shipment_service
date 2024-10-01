@@ -756,7 +756,6 @@ public class PackingService implements IPackingService {
         String responseMsg;
         try {
             String transportMode = request.getTransportMode();
-            String containerCategory = request.getContainerCategory();
             BigDecimal weight = request.getWeight();
             String weightUnit = request.getWeightUnit();
             calculateVolume(request, response);
