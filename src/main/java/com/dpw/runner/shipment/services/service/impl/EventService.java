@@ -773,6 +773,7 @@ public class EventService implements IEventService {
         event.setEntityId(entityId);
         event.setEntityType(entityType);
         event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
+        eventDao.updateEventDetails(event); // updating the consolidation ID & shipment number
         log.info("Set entityId: {}, entityType: {}, source: {}", entityId, entityType, Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
         return event;
     }

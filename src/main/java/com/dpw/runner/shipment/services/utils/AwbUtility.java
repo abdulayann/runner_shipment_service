@@ -1,13 +1,10 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -242,6 +239,7 @@ public class AwbUtility {
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
+                        .postCode(orgs.get(0).getZipPostCode())
                         .build());
             }
         } else {
@@ -364,6 +362,7 @@ public class AwbUtility {
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
+                        .postCode(org.containsKey(PartiesConstants.ZIP_POST_CODE) ? (String) address.get(PartiesConstants.ZIP_POST_CODE) : null)
                 .build();
     }
 
@@ -419,6 +418,7 @@ public class AwbUtility {
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
+                        .postCode(orgs.get(0).getZipPostCode())
                         .build());
             }
         } else {
@@ -535,6 +535,8 @@ public class AwbUtility {
             status = AirMessagingStatus.SUBMITTED;
         } else if (Objects.equals(airMessageStatus.getStatus(), "RECEIVED")){
             status = AirMessagingStatus.SUCCESS;
+        } else if (Objects.equals(airMessageStatus.getStatus(), AirMessagingLogsConstants.PROCESSED)) {
+            status = AirMessagingStatus.SUCCESS_BY_CARRIER;
         } else {
             throw new RunnerException("This status is not accepted by runner");
         }

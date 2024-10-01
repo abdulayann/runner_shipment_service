@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -38,6 +39,7 @@ import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -241,6 +243,24 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = ShipmentConstants.FETCH_ORG_INFO, response = PartiesRequest.class),
+        @ApiResponse(code = 500, message = DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG)
+    })
+    @GetMapping(ShipmentConstants.FETCH_ORG_INFO)
+    public ResponseEntity<PartiesRequest> fetchOrgInfo(@RequestBody PartiesOrgAddressRequest request) {
+        try {
+            PartiesRequest orgAddressResponse = shipmentService.fetchOrgInfoFromV1(request);
+            return ResponseEntity.ok(orgAddressResponse);
+
+        } catch (RunnerException e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(errorMsg, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LOCK_TOGGLE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)

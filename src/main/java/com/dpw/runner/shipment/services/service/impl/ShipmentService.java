@@ -175,16 +175,20 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
 import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
 import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
@@ -1218,7 +1222,7 @@ public class ShipmentService implements IShipmentService {
         List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
 
         // If the routing list already exists, return it immediately
-        if (customerBookingRequestRoutingList != null) {
+        if (ObjectUtils.isNotEmpty(customerBookingRequestRoutingList)) {
             return customerBookingRequestRoutingList;
         }
 
@@ -1394,6 +1398,8 @@ public class ShipmentService implements IShipmentService {
                 .addressData(party.getAddressData())
                 .orgCode(party.getOrgCode())
                 .orgData(party.getOrgData())
+                .orgId(party.getOrgId())
+                .addressId(party.getAddressId())
                 .build();
     }
 
@@ -6471,6 +6477,23 @@ public class ShipmentService implements IShipmentService {
         shipmentDao.save(shipmentDetails, false);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    @Override
+    public PartiesRequest fetchOrgInfoFromV1(PartiesOrgAddressRequest request)
+        throws RunnerException {
+        bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getParty(), request.getAddressCode(), request.getOrgCode());
+        var addressDataV1 = jsonHelper.convertValue(request.getParty().getAddressData(), AddressDataV1.class);
+        var orgDataV1 = jsonHelper.convertValue(request.getParty().getOrgData(), OrgDataV1.class);
+
+        Map<String, Object> addressDataMap = jsonHelper.convertValue(addressDataV1, Map.class);
+        Map<String, Object> orgDataMap = jsonHelper.convertValue(orgDataV1, Map.class);
+
+        request.getParty().setOrgData(orgDataMap);
+        request.getParty().setAddressData(addressDataMap);
+        request.getParty().setOrgCode(request.getOrgCode());
+        request.getParty().setAddressCode(request.getAddressCode());
+        return request.getParty();
     }
 
     @Override

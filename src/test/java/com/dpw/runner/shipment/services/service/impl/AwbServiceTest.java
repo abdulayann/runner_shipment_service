@@ -53,6 +53,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
@@ -2813,10 +2814,13 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {
-            true, false
+    @CsvSource({
+            "true, 1",
+            "true, 2",
+            "false, 1",
+            "false, 2"
     })
-    void createAwb_success_Dg(boolean hazardous) throws RunnerException {
+    void createAwb_success_Dg(boolean hazardous, int packs) throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
@@ -2824,6 +2828,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setContainsHazardous(hazardous);
         testShipment.getPackingList().get(0).setHazardous(hazardous);
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(packs));  // Set packs value
         testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
         addShipmentDataForAwbGeneration(testShipment);
 
