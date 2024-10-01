@@ -616,7 +616,6 @@ public class PackingService implements IPackingService {
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-            // TODO: check with Mohit if we need to consider volume from tenant settings or not?
             if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(packingList != null) {
@@ -688,11 +687,11 @@ public class PackingService implements IPackingService {
             response.setWeightUnit(toWeightUnit);
             response.setVolumeUnit(toVolumeUnit);
 
-            dto.setWeight(new BigDecimal(totalWeight));
+            dto.setWeight(BigDecimal.valueOf(totalWeight));
             dto.setWeightUnit(toWeightUnit);
-            dto.setNetWeight(new BigDecimal(netWeight));
+            dto.setNetWeight(BigDecimal.valueOf(netWeight));
             dto.setNetWeightUnit(toWeightUnit);
-            dto.setVolume(new BigDecimal(totalVolume));
+            dto.setVolume(BigDecimal.valueOf(totalVolume));
             dto.setVolumeUnit(toVolumeUnit);
             dto.setNoOfPacks(String.valueOf(totalPacks));
             dto.setPacksUnit(packsUnit);
@@ -704,8 +703,8 @@ public class PackingService implements IPackingService {
                 chargeableWeight = roundOffAirShipment(chargeableWeight);
             if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
                     !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
-                double volInM3 = convertUnit(VOLUME, new BigDecimal(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-                double wtInKg = convertUnit(Constants.MASS, new BigDecimal(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+                double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
                 chargeableWeight = Math.max(wtInKg / 1000, volInM3);
                 packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
             }
