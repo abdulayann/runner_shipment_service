@@ -89,6 +89,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -5519,5 +5520,131 @@ class V1ServiceImplTest {
             permissionsContextMock.verify(() -> PermissionsContext.setPermissions(grantedPermissions), times(1));
         }
     }
+
+    @Test
+    public void testGenerateToken_Success() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+        String v1GenerateTokenUrl = "https://qa-runner.cargoes.com/Api/Account/GenerateToken";
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("token", token);
+
+        // Create a non-null ResponseEntity with the mocked response body
+        ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
+
+        // Properly instantiate ParameterizedTypeReference to match the method
+        ParameterizedTypeReference<Map<String, Object>> responseType = new ParameterizedTypeReference<>() {
+        };
+
+        // Mock RestTemplate exchange method to return the mocked ResponseEntity
+        when(restTemplate.exchange(
+                eq(v1GenerateTokenUrl), // Ensure URL matches
+                eq(HttpMethod.POST),
+                any(),
+                eq(responseType)) // Ensure the ParameterizedTypeReference matches
+        ).thenReturn(responseEntity);
+
+        // Call the method and verify the result
+        String resultToken = v1ServiceImpl.generateToken();
+        assertEquals(token, resultToken);
+
+        // Verify the token was retrieved and logged
+        verify(restTemplate, times(1)).exchange(eq(v1GenerateTokenUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType));
+    }
+
+    @Test
+    public void testSetAuthContext_Success2() {
+        // Mock token and user details
+        String token = "Bearer sampleToken";
+        String username = "testUser";
+        UsersDto user = mock(UsersDto.class);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(Map.of("READ", true, "WRITE", true));
+
+        // Mock static method calls
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock security context
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method under test
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify token and context setting
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(user.getTenantId()), times(1));
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Verify the security context was set
+            ArgumentCaptor<UsernamePasswordAuthenticationToken> captor = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
+            verify(contextMock).setAuthentication(captor.capture());
+            UsernamePasswordAuthenticationToken authToken = captor.getValue();
+            assertNotNull(authToken);
+            assertEquals(user, authToken.getPrincipal());
+        }
+    }
+
+    @Test
+    public void testSetAuthContextWithEmptyPermissions2() {
+        // Mock dependencies
+        String token = "Bearer sampleToken";
+        String username = "user1";
+        UsersDto user = mock(UsersDto.class);
+        Map<String, Boolean> permissionsMap = new HashMap<>(); // Empty permissions
+
+        when(user.getTenantId()).thenReturn(1);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(permissionsMap);
+
+        // Mock static methods
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock the SecurityContextHolder behavior
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method under test
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify token and context setting
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(1), times(1));
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Verify the security context was set with empty permissions
+            List<String> grantedPermissions = new ArrayList<>(permissionsMap.keySet());
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(user, null, v1ServiceImpl.getAuthorities(grantedPermissions));
+            verify(contextMock).setAuthentication(authenticationToken);
+
+            // Verify permissions were set with an empty list
+            permissionsContextMock.verify(() -> PermissionsContext.setPermissions(grantedPermissions), times(1));
+        }
+    }
+
+    @Test
+    public void testGetAuthorities() {
+        // Prepare mock permissions
+        List<String> permissions = List.of("READ", "WRITE");
+
+        // Call the method under test
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify the authorities are correctly mapped
+        assertNotNull(authorities);
+        assertEquals(2, authorities.size());
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")));
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")));
+    }
+
 
 }
