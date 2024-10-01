@@ -17,7 +17,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
+import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -37,7 +46,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,8 +56,13 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -187,7 +200,7 @@ public class BookingIntegrationsUtility {
             }
             try {
                 try {
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.SECONDS.sleep(5);
                 } catch (Exception ex) {
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
@@ -207,7 +220,7 @@ public class BookingIntegrationsUtility {
 
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
             billingServiceAdapter.createBillV2(customerBooking, isShipmentEnabled,
-                    isBillingEnabled, shipmentDetailsResponse);
+                    isBillingEnabled, shipmentDetailsResponse, headers);
         } else {
             this.createShipmentInV1(customerBooking, false, true, shipmentDetailsResponse.getGuid(), headers);
         }
