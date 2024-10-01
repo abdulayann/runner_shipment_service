@@ -1391,9 +1391,9 @@ public class ShipmentService implements IShipmentService {
                 || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            if(request.getTransportMode() != null && ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)
-            && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))) {
+            if((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) &&
+                    Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) ||
+                    Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 response.setInnerPacks(dto.getInnerPacks());
                 response.setInnerPackUnit(dto.getInnerPackUnit());
             }

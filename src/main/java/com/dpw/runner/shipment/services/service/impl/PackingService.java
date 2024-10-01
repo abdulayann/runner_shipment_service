@@ -741,7 +741,7 @@ public class PackingService implements IPackingService {
 
 
     @Override
-    public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> autoCalculatePacksData(CommonRequestModel commonRequestModel) {
 
         AutoCalculatePackingRequest request = (AutoCalculatePackingRequest) commonRequestModel.getData();
         AutoCalculatePackingResponse response = new AutoCalculatePackingResponse();

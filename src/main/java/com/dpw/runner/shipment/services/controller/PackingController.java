@@ -198,11 +198,11 @@ public class PackingController {
             @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
+    @PostMapping(ApiConstants.AUTO_CALCULATE_PACKS_DATA)
+    public ResponseEntity<IRunnerResponse> autoCalculatePacksData(@RequestBody AutoCalculatePackingRequest request) {
         String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
         try {
-            return packingService.autoCalculateVolumetricWeight(CommonRequestModel.buildRequest(request));
+            return packingService.autoCalculatePacksData(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error in auto calculate volmetric weight";
