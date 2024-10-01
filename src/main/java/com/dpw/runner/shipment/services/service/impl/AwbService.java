@@ -1385,7 +1385,7 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private String populateCsdInfo(ShipmentDetails shipment) {
+    public String populateCsdInfo(ShipmentDetails shipment) {
         Parties originAgent = shipment.getAdditionalDetails().getExportBroker() != null ? shipment.getAdditionalDetails().getExportBroker() : null;
         OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(Arrays.asList(originAgent));
 
