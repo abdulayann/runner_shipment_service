@@ -816,6 +816,8 @@ public class BookingIntegrationsUtility {
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            if(organizationRow.containsKey("Id"))
+                request.setOrgId(String.valueOf(organizationRow.get("Id")));
             request.setOrgData(organizationRow);
 
             CommonV1ListRequest addressRequest = createCriteriaForThreeFields("OrgId", organizationRow.get("Id"), "AddressShortCode", addressCode, "Active", Boolean.TRUE);
@@ -825,6 +827,8 @@ public class BookingIntegrationsUtility {
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            if(addressRow.containsKey("Id"))
+                request.setAddressId(String.valueOf(addressRow.get("Id")));
             request.setAddressData(addressRow);
         }
         catch (Exception ex) {
