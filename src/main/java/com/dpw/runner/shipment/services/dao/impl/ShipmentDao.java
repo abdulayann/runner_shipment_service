@@ -85,15 +85,6 @@ public class ShipmentDao implements IShipmentDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private ISBUtils sbUtils;
-
-    @Autowired
-    private ISBProperties isbProperties;
-
-    @Autowired
-    private AzureServiceBusTopic azureServiceBusTopic;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
 
@@ -108,6 +99,9 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     private final EntityManager entityManager;
 
@@ -234,8 +228,12 @@ public class ShipmentDao implements IShipmentDao {
                 setMawbStock(shipmentDetails);
             }
         }
-//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldShipment)
+                && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
+        }
     }
 
     @Override
