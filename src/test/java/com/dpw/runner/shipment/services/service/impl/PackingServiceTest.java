@@ -1361,7 +1361,7 @@ class PackingServiceTest extends CommonMocks {
 
     @Test
     void testCalculateVolume_Success() throws RunnerException {
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingResponse);
     }
 
@@ -1370,7 +1370,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1379,7 +1379,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.CM, Constants.CM, Constants.CM, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1389,7 +1389,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        packingService.calculateVolume(Constants.FT, Constants.FT, Constants.FT, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1398,7 +1398,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.IN, Constants.IN, Constants.IN, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1407,7 +1407,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MTR, Constants.MTR, Constants.MTR, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1416,7 +1416,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1425,7 +1425,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MILLIMETER, Constants.MILLIMETER, Constants.MILLIMETER, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
