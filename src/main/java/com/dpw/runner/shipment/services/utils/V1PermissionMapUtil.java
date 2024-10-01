@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 public class V1PermissionMapUtil {
     private V1PermissionMapUtil(){}
@@ -388,27 +385,102 @@ public class V1PermissionMapUtil {
             Map.entry("Operations:Shipments:AIR:Export:View", List.of("air-exp-shipmentList", "air-exp-shipmentRetrieve")),
             Map.entry("Operations:Shipments:AIR:Export:Create", List.of("air-exp-shipmentCreate")),
             Map.entry("Operations:Shipments:AIR:Export:Modify", List.of("air-exp-shipmentUpdate")),
-            Map.entry("Operations:Shipments:AIR:Export:Cancel", List.of()),
+            Map.entry("Operations:Shipments:AIR:Export:Cancel", List.of("air-exp-shipmentCancel")),
             Map.entry("Operations:Shipments:AIR:Import:View", List.of("air-imp-shipmentList", "air-imp-shipmentRetrieve")),
             Map.entry("Operations:Shipments:AIR:Import:Create", List.of("air-imp-shipmentCreate")),
             Map.entry("Operations:Shipments:AIR:Import:Modify", List.of("air-imp-shipmentUpdate")),
-            Map.entry("Operations:Shipments:AIR:Import:Cancel", List.of()),
-            Map.entry("Operations:Shipments:AIR:CrossTrade:View", List.of()),
-            Map.entry("Operations:Shipments:AIR:CrossTrade:Create", List.of()),
-            Map.entry("Operations:Shipments:AIR:CrossTrade:Modify", List.of()),
-            Map.entry("Operations:Shipments:AIR:CrossTrade:Cancel", List.of()),
-            Map.entry("Operations:Shipments:AIR:Transhipment:View", List.of()),
-            Map.entry("Operations:Shipments:AIR:Transhipment:Create", List.of()),
-            Map.entry("Operations:Shipments:AIR:Transhipment:Modify", List.of()),
-            Map.entry("Operations:Shipments:AIR:Transhipment:Cancel", List.of()),
-            Map.entry("Operations:Shipments:AIR:Reshipment:View", List.of()),
-            Map.entry("Operations:Shipments:AIR:Reshipment:Create", List.of()),
-            Map.entry("Operations:Shipments:AIR:Reshipment:Modify", List.of()),
-            Map.entry("Operations:Shipments:AIR:Reshipment:Cancel", List.of()),
-            Map.entry("Operations:Shipments:AIR:Domestic:View", List.of()),
-            Map.entry("Operations:Shipments:AIR:Domestic:Create", List.of()),
-            Map.entry("Operations:Shipments:AIR:Domestic:Modify", List.of()),
-            Map.entry("Operations:Shipments:AIR:Domestic:Cancel", List.of())
+            Map.entry("Operations:Shipments:AIR:Import:Cancel", List.of("air-imp-shipmentCancel")),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:View", List.of("air-cts-shipmentList", "air-cts-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Create", List.of("air-cts-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Modify", List.of("air-cts-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:CrossTrade:Cancel", List.of("air-cts-shipmentCancel")),
+            Map.entry("Operations:Shipments:AIR:Transhipment:View", List.of("air-tra-shipmentList", "air-tra-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Create", List.of("air-tra-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Modify", List.of("air-tra-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:Transhipment:Cancel", List.of("air-tra-shipmentCancel")),
+            Map.entry("Operations:Shipments:AIR:Reshipment:View", List.of("air-res-shipmentList", "air-res-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Create", List.of("air-res-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Modify", List.of("air-res-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:Reshipment:Cancel", List.of("air-res-shipmentCancel")),
+            Map.entry("Operations:Shipments:AIR:Domestic:View", List.of("air-dom-shipmentList", "air-dom-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:AIR:Domestic:Create", List.of("air-dom-shipmentCreate")),
+            Map.entry("Operations:Shipments:AIR:Domestic:Modify", List.of("air-dom-shipmentUpdate")),
+            Map.entry("Operations:Shipments:AIR:Domestic:Cancel", List.of("air-dom-shipmentCancel")),
+
+            Map.entry("Operations:Shipments:ROA::Export:View", List.of("roa-exp-shipmentList", "roa-exp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::Export:Create", List.of("roa-exp-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::Export:Modify", List.of("roa-exp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::Export:Cancel", List.of("roa-exp-shipmentCancel")),
+            Map.entry("Operations:Shipments:ROA::Import:View", List.of("roa-imp-shipmentList", "roa-imp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::Import:Create", List.of("roa-imp-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::Import:Modify", List.of("roa-imp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::Import:Cancel", List.of("roa-imp-shipmentCancel")),
+            Map.entry("Operations:Shipments:ROA::CrossTrade:View", List.of("roa-cts-shipmentList", "roa-cts-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::CrossTrade:Create", List.of("roa-cts-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::CrossTrade:Modify", List.of("roa-cts-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::CrossTrade:Cancel", List.of("roa-cts-shipmentCancel")),
+            Map.entry("Operations:Shipments:ROA::Transhipment:View", List.of("roa-tra-shipmentList", "roa-tra-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::Transhipment:Create", List.of("roa-tra-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::Transhipment:Modify", List.of("roa-tra-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::Transhipment:Cancel", List.of("roa-tra-shipmentCancel")),
+            Map.entry("Operations:Shipments:ROA::Domestic:View", List.of("roa-res-shipmentList", "roa-res-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::Domestic:Create", List.of("roa-res-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::Domestic:Modify", List.of("roa-res-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::Domestic:Cancel", List.of("roa-res-shipmentCancel")),
+            Map.entry("Operations:Shipments:ROA::Reshipment:View", List.of("roa-dom-shipmentList", "roa-dom-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:ROA::Reshipment:Create", List.of("roa-dom-shipmentCreate")),
+            Map.entry("Operations:Shipments:ROA::Reshipment:Modify", List.of("roa-dom-shipmentUpdate")),
+            Map.entry("Operations:Shipments:ROA::Reshipment:Cancel", List.of("roa-dom-shipmentCancel")),
+
+            Map.entry("Operations:Shipments:RAI:Export:View", List.of("rai-exp-shipmentList", "rai-exp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:Export:Create", List.of("rai-exp-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:Export:Modify", List.of("rai-exp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:Export:Cancel", List.of("rai-exp-shipmentCancel")),
+            Map.entry("Operations:Shipments:RAI:Import:View", List.of("rai-imp-shipmentList", "rai-imp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:Import:Create", List.of("rai-imp-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:Import:Modify", List.of("rai-imp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:Import:Cancel", List.of("rai-imp-shipmentCancel")),
+            Map.entry("Operations:Shipments:RAI:CrossTrade:View", List.of("rai-cts-shipmentList", "rai-cts-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:CrossTrade:Create", List.of("rai-cts-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:CrossTrade:Modify", List.of("rai-cts-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:CrossTrade:Cancel", List.of("rai-cts-shipmentCancel")),
+            Map.entry("Operations:Shipments:RAI:Transhipment:View", List.of("rai-tra-shipmentList", "rai-tra-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:Transhipment:Create", List.of("rai-tra-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:Transhipment:Modify", List.of("rai-tra-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:Transhipment:Cancel", List.of("rai-tra-shipmentCancel")),
+            Map.entry("Operations:Shipments:RAI:Reshipment:View", List.of("rai-res-shipmentList", "rai-res-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:Reshipment:Create", List.of("rai-res-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:Reshipment:Modify", List.of("rai-res-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:Reshipment:Cancel", List.of("rai-res-shipmentCancel")),
+            Map.entry("Operations:Shipments:RAI:Domestic:View", List.of("rai-dom-shipmentList", "rai-dom-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:RAI:Domestic:Create", List.of("rai-dom-shipmentCreate")),
+            Map.entry("Operations:Shipments:RAI:Domestic:Modify", List.of("rai-dom-shipmentUpdate")),
+            Map.entry("Operations:Shipments:RAI:Domestic:Cancel", List.of("rai-dom-shipmentCancel")),
+
+            Map.entry("Operations:Shipments:SEA:Export:View", List.of("sea-exp-shipmentList", "sea-exp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:Export:Create", List.of("sea-exp-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:Export:Modify", List.of("sea-exp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:Export:Cancel", List.of("sea-exp-shipmentCancel")),
+            Map.entry("Operations:Shipments:SEA:Import:View", List.of("sea-imp-shipmentList", "sea-imp-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:Import:Create", List.of("sea-imp-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:Import:Modify", List.of("sea-imp-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:Import:Cancel", List.of("sea-imp-shipmentCancel")),
+            Map.entry("Operations:Shipments:SEA:CrossTrade:View", List.of("sea-cts-shipmentList", "sea-cts-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:CrossTrade:Create", List.of("sea-cts-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:CrossTrade:Modify", List.of("sea-cts-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:CrossTrade:Cancel", List.of("sea-cts-shipmentCancel")),
+            Map.entry("Operations:Shipments:SEA:Transhipment:View", List.of("sea-tra-shipmentList", "sea-tra-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:Transhipment:Create", List.of("sea-tra-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:Transhipment:Modify", List.of("sea-tra-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:Transhipment:Cancel", List.of("sea-tra-shipmentCancel")),
+            Map.entry("Operations:Shipments:SEA:Reshipment:View", List.of("sea-res-shipmentList", "sea-res-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:Reshipment:Create", List.of("sea-res-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:Reshipment:Modify", List.of("sea-res-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:Reshipment:Cancel", List.of("sea-res-shipmentCancel")),
+            Map.entry("Operations:Shipments:SEA:Domestic:View", List.of("sea-dom-shipmentList", "sea-dom-shipmentRetrieve")),
+            Map.entry("Operations:Shipments:SEA:Domestic:Create", List.of("sea-dom-shipmentCreate")),
+            Map.entry("Operations:Shipments:SEA:Domestic:Modify", List.of("sea-dom-shipmentUpdate")),
+            Map.entry("Operations:Shipments:SEA:Domestic:Cancel", List.of("sea-dom-shipmentCancel"))
     );
 
     public static String getPermissionName(String v1Permission){
@@ -416,14 +488,20 @@ public class V1PermissionMapUtil {
     }
 
     public static List<String> getUpdatedPermissions(List<String> v1PermisionList) {
-        List<String> res = new ArrayList<>();
+        Set<String> res = new HashSet<>();
         for(String permission : v1PermisionList) {
-            var v1MappedPermission = updatedPermissionMapping.get(permission);
-            if(Objects.isNull(v1MappedPermission))
+            var v1UpdatedPermission = updatedPermissionMapping.get(permission);
+            if(Objects.isNull(v1UpdatedPermission))
                 continue;
-            res.addAll(v1MappedPermission);
+            res.addAll(v1UpdatedPermission);
+
+            var v1OldPermission = getPermissionName(permission);
+            if(Objects.isNull(v1OldPermission))
+                continue;
+
+            res.add(v1OldPermission);
         }
 
-        return res;
+        return res.stream().toList();
     }
 }

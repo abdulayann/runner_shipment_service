@@ -4950,4 +4950,9 @@ public class ConsolidationService implements IConsolidationService {
         return response;
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
+        return null;
+    }
+
 }

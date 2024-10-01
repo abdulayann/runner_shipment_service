@@ -16,6 +16,14 @@ import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPerm
 public class PermissionUtil {
     private PermissionUtil(){}
 
+    /**
+     * We receive LIST_PERMISSION set of the user permissions , since the permission structure have been updated now
+     * the system only has VIEW permission as far as this method is concerned;
+     * Internally we are bifurcating that view permission into List and Retrieve
+     * @param permissionList : VIEW permissions from user token
+     * @param isShipment : boolean value for identifying shipment or consolidation
+     * @return List<FilterCriteria> based upon available view permission
+     */
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList, Boolean isShipment) {
 
         List<FilterCriteria> criterias = new ArrayList<>();
@@ -24,6 +32,7 @@ public class PermissionUtil {
         List<String> mappedPermission = V1PermissionMapUtil.getUpdatedPermissions(permissionList);
 
         for (String v1MappedPermission : mappedPermission) {
+            // skipping the retrieve entries as they are duplicate in here form of List
             if(v1MappedPermission.endsWith("Retrieve"))
                 continue;
             List<FilterCriteria> innerFilters = new ArrayList();

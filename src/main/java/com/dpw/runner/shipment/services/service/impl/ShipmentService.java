@@ -6671,6 +6671,11 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
+        return null;
+    }
+
     private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
