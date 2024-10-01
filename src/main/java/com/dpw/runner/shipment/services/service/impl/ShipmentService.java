@@ -45,8 +45,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmp
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -153,7 +151,6 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
@@ -169,13 +166,10 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingNotific
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -239,6 +233,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -295,7 +291,6 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2391,7 +2386,6 @@ public class ShipmentService implements IShipmentService {
         if (eventsRequestList != null) {
             eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
-            updateActualFromTracking(eventsList, shipmentDetails);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
@@ -2762,69 +2756,6 @@ public class ShipmentService implements IShipmentService {
             events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
         }
 
-    }
-
-
-    private void updateActualFromTracking(List<Events> shipmentEvents, ShipmentDetails shipmentDetails) {
-
-        TrackingServiceApiResponse trackingServiceApiResponse;
-        try {
-            trackingServiceApiResponse = trackingServiceAdapter.fetchTrackingData(
-                    TrackingRequest.builder().referenceNumber(shipmentDetails.getShipmentId()).build());
-        } catch (RunnerException e) {
-            log.error("Error fetching tracking data for shipment ID {}: {}", shipmentDetails.getShipmentId(), e.getMessage());
-            return;
-        }
-
-        if (trackingServiceApiResponse == null || trackingServiceApiResponse.getContainers() == null) {
-            log.warn("No tracking data available for shipment ID {}", shipmentDetails.getShipmentId());
-            return;
-        }
-
-        Map<String, Event> containerEventMapFromTracking = trackingServiceApiResponse.getContainers().stream()
-                .filter(container -> container.getEvents() != null)
-                .flatMap(container -> container.getEvents().stream()
-                        .map(event -> {
-                            String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                                    event.getLocationRole(), event.getEventType(), event.getDescription());
-
-                            String placeName = container.getPlaces().stream()
-                                    .filter(place -> Objects.equals(place.getId(), event.getLocation()))
-                                    .map(Place::getCode).findFirst()
-                                    .orElse(StringUtils.EMPTY);
-
-                            String trackingEventsUniqueKey = commonUtils.getTrackingEventsUniqueKey(
-                                    eventCode,
-                                    container.getContainerNumber(),
-                                    shipmentDetails.getShipmentId(),
-                                    Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING,
-                                    placeName);
-                            return new SimpleEntry<>(trackingEventsUniqueKey, event);
-                        }))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        // Merge function to keep the event with the highest Id
-                        (existing, newEvent) -> existing.getId() > newEvent.getId() ? existing : newEvent
-                ));
-
-        shipmentEvents.forEach(shipmentEvent -> {
-            if (Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
-                EventsResponse shipmentEventsResponse = jsonHelper.convertValue(shipmentEvent, EventsResponse.class);
-                String key = commonUtils.getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
-                        shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getShipmentNumber(),
-                        shipmentEventsResponse.getSource(), shipmentEventsResponse.getPlaceName());
-                Event eventFromTracking = containerEventMapFromTracking.get(key);
-
-                if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
-                    shipmentEvent.setActual(eventFromTracking.getActualEventTime().getDateTime());
-                    log.info("Updated actual event time for event code {} in container {}",
-                            shipmentEventsResponse.getEventCode(), shipmentEventsResponse.getContainerNumber());
-                } else {
-                    log.warn("No matching event found or missing actual event time for key: {}", key);
-                }
-            }
-        });
     }
 
     private boolean checkForAwbUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -3799,7 +3730,6 @@ public class ShipmentService implements IShipmentService {
             }
             if (eventsRequestList != null) {
                 List<Events> eventsList = jsonHelper.convertValueToList(eventsRequestList, Events.class);
-                updateActualFromTracking(eventsList, newShipmentDetails);
                 eventsList = createOrUpdateTrackingEvents(newShipmentDetails, oldEntity, eventsList, false);
                 if (eventsList != null) {
                     List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
