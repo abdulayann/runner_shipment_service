@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.logging.log4j.util.Strings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -2873,14 +2874,7 @@ class AwbServiceTest extends CommonMocks {
         // mocking for populateCsdInfo
         testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
         testShipment.setSecurityStatus("SPX");
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        mockOrgAddressResponse.setAddresses(Map.ofEntries(
-            Map.entry("org#add", Map.ofEntries(
-                Map.entry(REGULATED_AGENT, true),
-                Map.entry(KCRA_NUMBER, 123),
-                Map.entry(KCRA_EXPIRY, LocalDateTime.now().plusDays(1))
-            )
-        )));
+        OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
 
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
@@ -2925,6 +2919,77 @@ class AwbServiceTest extends CommonMocks {
         } catch (Exception e){
             fail(e);
         }
+    }
+
+    @Test
+    void testPopulateCsdInfo() {
+        String expectedCsdInfo = "123/SPX/EDD+ETD+XRY/";
+
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
+        testShipment.setSecurityStatus("SPX");
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
+
+        String csdInfo = awbService.populateCsdInfo(testShipment);
+        assertEquals(expectedCsdInfo, csdInfo);
+    }
+
+    @Test
+    void testPopulateCsdInfo_WithoutScreeningStatus() {
+        String expectedCsdInfo = "123/SPX/";
+
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        testShipment.setSecurityStatus("SPX");
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
+
+        String csdInfo = awbService.populateCsdInfo(testShipment);
+        assertEquals(expectedCsdInfo, csdInfo);
+    }
+
+    @Test
+    void testPopulateCsdInfo_WithoutSecurityStatus() {
+        String expectedCsdInfo = "123/";
+
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
+
+        String csdInfo = awbService.populateCsdInfo(testShipment);
+        assertEquals(expectedCsdInfo, csdInfo);
+    }
+
+    @Test
+    void testPopulateCsdInfo_WithExpiredAgent() {
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        mockOrgAddressResponse.setAddresses(Map.ofEntries(
+                Map.entry("org#add", Map.ofEntries(
+                        Map.entry(REGULATED_AGENT, true),
+                        Map.entry(KCRA_NUMBER, 123),
+                        Map.entry(KCRA_EXPIRY, LocalDateTime.now().minusDays(1))
+                ))
+        ));
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        String csdInfo = awbService.populateCsdInfo(testShipment);
+        assertEquals(Strings.EMPTY, csdInfo);
+    }
+
+    private OrgAddressResponse createOrgAddressResponse() {
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+
+        mockOrgAddressResponse.setAddresses(Map.ofEntries(
+                Map.entry("org#add", Map.ofEntries(
+                        Map.entry(REGULATED_AGENT, true),
+                        Map.entry(KCRA_NUMBER, 123),
+                        Map.entry(KCRA_EXPIRY, LocalDateTime.now().plusDays(1))
+                ))
+        ));
+        return mockOrgAddressResponse;
     }
 
     @ParameterizedTest

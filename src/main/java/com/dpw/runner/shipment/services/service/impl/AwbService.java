@@ -1385,7 +1385,7 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private String populateCsdInfo(ShipmentDetails shipment) {
+    public String populateCsdInfo(ShipmentDetails shipment) {
         Parties originAgent = shipment.getAdditionalDetails().getExportBroker() != null ? shipment.getAdditionalDetails().getExportBroker() : null;
         OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(Arrays.asList(originAgent));
 
@@ -1432,10 +1432,26 @@ public class AwbService implements IAwbService {
                     );
                 }
 
-                csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, securityStatus, screeningStatus);
+                csdInfo = formatCSDInfo(raNumber, securityStatus, screeningStatus);
             }
         }
         return csdInfo;
+    }
+
+    private String formatCSDInfo(String raNumber, String securityStatus, String screeningStatus) {
+        StringBuilder csdInfo = new StringBuilder();
+
+        if (!Strings.isNullOrEmpty(raNumber)) {
+            csdInfo.append(raNumber).append("/");
+        }
+        if (!Strings.isNullOrEmpty(securityStatus)) {
+            csdInfo.append(securityStatus).append("/");
+        }
+        if (!Strings.isNullOrEmpty(screeningStatus)) {
+            csdInfo.append(screeningStatus).append("/");
+        }
+
+        return csdInfo.toString();
     }
 
     private String getCountryCode(String country) {
