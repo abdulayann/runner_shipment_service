@@ -437,7 +437,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime cfsCutOffDate;
 
     @Column(name = "open_for_attachment")
-    private Boolean openForAttachment = true;
+    private Boolean openForAttachment;
 
     @Column(name = "open_for_interbranch_attachment")
     private Boolean interBranchConsole = false;

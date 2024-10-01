@@ -688,7 +688,7 @@ class CommonUtilsTest {
 
         commonUtils.updateConsolOpenForAttachment(details);
 
-        assertEquals(details.getOpenForAttachment(), Boolean.TRUE);
+        assertNull(details.getOpenForAttachment());
     }
 
     @Test
@@ -699,7 +699,7 @@ class CommonUtilsTest {
 
         commonUtils.updateConsolOpenForAttachment(details);
 
-        assertEquals(details.getOpenForAttachment(), Boolean.TRUE);
+        assertNull(details.getOpenForAttachment());
     }
 
     @Test
