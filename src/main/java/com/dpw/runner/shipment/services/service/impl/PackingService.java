@@ -750,9 +750,9 @@ public class PackingService implements IPackingService {
             String containerCategory = request.getContainerCategory();
             BigDecimal weight = request.getWeight();
             String weightUnit = request.getWeightUnit();
+            calculateVolume(request, response);
             BigDecimal volume = request.getVolume();
             String volumeUnit = request.getVolumeUnit();
-            calculateVolume(request, response);
             VolumeWeightChargeable vwOb;
             if (weightUnit != null && volumeUnit != null) {
                 if (Objects.equals(transportMode, TRANSPORT_MODE_AIR)) {
