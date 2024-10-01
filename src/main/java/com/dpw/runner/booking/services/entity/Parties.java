@@ -47,6 +47,12 @@ public class Parties extends MultiTenancy {
     @Size(max=170, message = "max limit is 170 for address_code")
     private String addressCode;
 
+    @Column(name = "org_id")
+    private String orgId;
+
+    @Column(name = "address_id")
+    private String addressId;
+
     @Type(type = "jsonb")
     @Column(name = "org_data", columnDefinition = "jsonb")
     private Map<String, Object> orgData;
