@@ -390,6 +390,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "order_management_number")
     private String orderManagementNumber;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<ShipmentOrder> shipmentOrders;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_category")
     private CustomerCategoryRates customerCategory;
