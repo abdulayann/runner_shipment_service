@@ -630,6 +630,9 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.EXECUTED_ON, ConvertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
                 dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());
                 dictionary.put(ReportConstants.SIGN_OF_ISSUING_CARRIER, StringUtility.toUpperCase(otherInfoRows.getCarrier()));
+                dictionary.put(ReportConstants.SHIPPER_ACCOUNT_NUMBER, otherInfoRows.getShipperAccountNumber() != null ? otherInfoRows.getShipperAccountNumber() : null);
+                dictionary.put(ReportConstants.CONSIGNEE_ACCOUNT_NUMBER, otherInfoRows.getConsigneeAccountNumber() != null ? otherInfoRows.getConsigneeAccountNumber() : null);
+                dictionary.put(ReportConstants.ACCOUNT_NUMBER, otherInfoRows.getAccountNumber() != null ? otherInfoRows.getAccountNumber() : null);
             }
 
             List<AwbOtherChargesInfo> otherChargesInfoRows = hawbModel.awb.getAwbOtherChargesInfo();
