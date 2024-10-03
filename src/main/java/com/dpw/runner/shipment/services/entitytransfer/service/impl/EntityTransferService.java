@@ -250,17 +250,23 @@ public class EntityTransferService implements IEntityTransferService {
             var consolidationPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferConsolidationDetails.class);
             consolidationPayload.setSendToBranch(tenant);
             boolean reverseDirection = false;
+            boolean sendingToTriangulationPartner = false;
             if(Long.valueOf(tenant).equals(consol.getReceivingBranch())) {
                 consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
                 reverseDirection = true;
+            } else if (Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
+                consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
+                sendingToTriangulationPartner = true;
             }
 
             if(!consolidationPayload.getShipmentsList().isEmpty()) {
                 for(var entityTransferShipment : consolidationPayload.getShipmentsList()) {
                     var guid = entityTransferShipment.getGuid();
-                    if(reverseDirection) {
+                    if(reverseDirection)
                         entityTransferShipment.setDirection(reverseDirection(entityTransferShipment.getDirection()));
-                    }
+                    else if (sendingToTriangulationPartner)
+                        entityTransferShipment.setDirection(Constants.DIRECTION_CTS);
+
                     if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
@@ -1454,6 +1460,8 @@ public class EntityTransferService implements IEntityTransferService {
         taskCreateRequest.setEntityType(entityType);
         taskCreateRequest.setRoleId(StringUtility.convertToString(getShipmentConsoleImportApprovalRole(tenantId)));
         taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
+        taskCreateRequest.setUserName(UserContext.getUser().getUsername());
+        taskCreateRequest.setUserEmail(UserContext.getUser().getEmail());
         // can be moved as background task
         if(Constants.Consolidations.equalsIgnoreCase(entityType))
             taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
