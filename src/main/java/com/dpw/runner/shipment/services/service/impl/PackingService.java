@@ -767,15 +767,6 @@ public class PackingService implements IPackingService {
                     weight = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                     vwOb = consolidationService.calculateVolumeWeight(transportMode, Constants.WEIGHT_UNIT_KG, request.getVolumeUnit(), weight, request.getVolume());
                     response.setChargeable(vwOb.getChargeable());
-                    BigDecimal charge = response.getChargeable();
-                    BigDecimal half = new BigDecimal("0.50");
-                    BigDecimal floor = charge.setScale(0, BigDecimal.ROUND_FLOOR);
-                    if (charge.subtract(half).compareTo(floor) <= 0 && charge.compareTo(floor) != 0) {
-                        charge = floor.add(half);
-                    } else {
-                        charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
-                    }
-                    response.setChargeable(charge);
                 } else if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
                     // wtVol is set as wt (in kg) / 1000 - rounding off multiply by 10 then take ceiling then divide by 10
                     // wtVol unit M3
