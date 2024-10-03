@@ -1325,6 +1325,15 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCalculatePackSummaryDefault_Success() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).build());
+        mockShipmentSettings();
+        mockTenantSettings();
+        PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(null, Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
+        assertNotNull(packSummaryResponse);
+    }
+
+    @Test
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
         mockShipmentSettings();
