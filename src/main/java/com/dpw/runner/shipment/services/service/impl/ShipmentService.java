@@ -774,15 +774,15 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setPackingList(updatedPackings);
             }
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
-            if (routingsRequest != null)
+            if (ObjectUtils.isNotEmpty(routingsRequest))
                 shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-            if (referenceNumbersRequest != null)
+            if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
                 shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
 
             List<ShipmentOrderRequest> shipmentOrderRequestList = request.getShipmentOrders();
-            if(shipmentOrderRequestList != null) {
+            if(ObjectUtils.isNotEmpty(shipmentOrderRequestList)) {
                 shipmentDetails.setShipmentOrders(shipmentOrderDao.updateEntityFromShipment(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class), shipmentId));
             }
 
@@ -1280,6 +1280,10 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
         shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
         shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
+
+        if(!StringUtility.isEmpty(shipmentRequest.getOrderManagementId())) {
+            shipmentRequest.setShipmentOrders(Arrays.asList(ShipmentOrderRequest.builder().orderNumber(shipmentRequest.getOrderManagementNumber()).orderGuid(UUID.fromString(shipmentRequest.getOrderManagementId())).build()));
+        }
 
         if(shipmentRequest.getOrderManagementId()!=null){
             ShipmentDetails shipmentDetails = null;
@@ -7110,12 +7114,17 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setPackingList(updatedPackings);
             }
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
-            if (routingsRequest != null)
+            if (ObjectUtils.isNotEmpty(routingsRequest))
                 shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-            if (referenceNumbersRequest != null)
+            if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
                 shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
+
+            List<ShipmentOrderRequest> shipmentOrderRequestList = request.getShipmentOrders();
+            if(ObjectUtils.isNotEmpty(shipmentOrderRequestList)) {
+                shipmentDetails.setShipmentOrders(shipmentOrderDao.updateEntityFromShipment(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class), shipmentId));
+            }
 
             if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
                 hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);

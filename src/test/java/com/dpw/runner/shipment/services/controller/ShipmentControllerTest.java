@@ -28,10 +28,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateShipment
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -1322,6 +1319,22 @@ class ShipmentControllerTest {
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
         when(shipmentController.createShipmentForBooking(any())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> shipmentController.createShipmentForBooking(shipmentRequest));
+    }
+
+    @Test
+    void testAttachDetachOrderSuccess() {
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentService.attachDetachOrder(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachDetachOrderException(){
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }
