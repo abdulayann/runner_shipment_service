@@ -13,4 +13,7 @@ public class AwbOtherInfoResponse implements IRunnerResponse {
     private String carrier;
     private String executedAt;
     private LocalDateTime executedOn;
+    private String shipperAccountNumber;
+    private String consigneeAccountNumber;
+    private String accountNumber;
 }
