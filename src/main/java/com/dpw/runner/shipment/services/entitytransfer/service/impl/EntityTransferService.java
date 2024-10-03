@@ -186,9 +186,11 @@ public class EntityTransferService implements IEntityTransferService {
         for(int i = 0; i < destinationTenantList.size(); i++) {
             var tenant = destinationTenantList.get(i);
             var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
-            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch()))) {
+            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch())))
                 taskPayload.setDirection(reverseDirection(shipment.getDirection()));
-            }
+            else if (Long.valueOf(tenant).equals(shipment.getTriangulationPartner()))
+                taskPayload.setDirection(Constants.DIRECTION_CTS);
+
             taskPayload.setSendToBranch(tenant);
 
             createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
@@ -1460,8 +1462,7 @@ public class EntityTransferService implements IEntityTransferService {
         taskCreateRequest.setEntityType(entityType);
         taskCreateRequest.setRoleId(StringUtility.convertToString(getShipmentConsoleImportApprovalRole(tenantId)));
         taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
-        taskCreateRequest.setUserName(UserContext.getUser().getUsername());
-        taskCreateRequest.setUserEmail(UserContext.getUser().getEmail());
+        taskCreateRequest.setUserId(UserContext.getUser().getUserId());
         // can be moved as background task
         if(Constants.Consolidations.equalsIgnoreCase(entityType))
             taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
