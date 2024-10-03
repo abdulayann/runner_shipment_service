@@ -955,6 +955,7 @@ public abstract class IReport {
                 dict.put(IS_SECURITY, true);
             else
                 dict.put(IS_SECURITY, false);
+            dictionary.put(SCI, shipmentModel.getAdditionalDetails().getSci());
             populateRaKcData(dict, shipmentModel);
             if(awb != null) {
                 if(awb.getAwbSpecialHandlingCodesMappings() != null && !awb.getAwbSpecialHandlingCodesMappings().isEmpty())

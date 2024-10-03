@@ -38,6 +38,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
+    public List<ConsoleShipmentMapping> findByShipmentIds(Set<Long> shipmentIds) {
+        return consoleShipmentsMappingRepository.findByShipmentIdsByQuery(shipmentIds);
+    }
+
+    @Override
     public Integer countAllStateMappings(Long shipmentId) {
         return consoleShipmentsMappingRepository.countByShipmentIdAndIsAttachmentDoneNotTrue(shipmentId);
     }

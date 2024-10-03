@@ -392,7 +392,7 @@ class AwbDaoTest {
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
-
+        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
             awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
@@ -423,6 +423,7 @@ class AwbDaoTest {
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
             awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);

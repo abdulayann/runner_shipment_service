@@ -627,76 +627,20 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {
             TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
-            var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
-            ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
-            ForkJoinPool customThreadPool = new ForkJoinPool(4);
+            var trackingServiceApiResponse = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
+            trackingEventsResponse.setEventsList(generateEventsFromTrackingResponse(trackingServiceApiResponse));
+            // Set ATA and ATD date based on container journey details
+            var container = Optional.ofNullable(trackingServiceApiResponse.getContainers()) // Handle potential null list
+                    .orElse(Collections.emptyList()).stream().filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
 
-            try {
-                if (res.getContainers() != null && !res.getContainers().isEmpty()) {
-                    customThreadPool.submit(() ->
-                            res.getContainers().parallelStream().forEach(container -> {
-                                if (container == null || container.getEvents() == null || container.getPlaces() == null) {
-                                    return;
-                                }
-
-                                // Mapping container events to Events list without processing sources
-                                List<Events> rows = container.getEvents().stream()
-                                        .filter(Objects::nonNull)
-                                        .map(event -> {
-                                            // Start building the Events object
-                                            Events.EventsBuilder eventBuilder = Events.builder()
-                                                    .actual(Optional.ofNullable(event.getActualEventTime())
-                                                            .map(DateAndSources::getDateTime).orElse(null))
-                                                    .estimated(Optional.ofNullable(event.getProjectedEventTime())
-                                                            .map(DateAndSources::getDateTime).orElse(null))
-                                                    .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
-                                                    .description(event.getDescriptionFromSource())
-                                                    .containerNumber(container.getContainerNumber())
-                                                    .locationRole(event.getLocationRole());
-
-                                            // Populate fields from Places independently
-                                            Optional.ofNullable(event.getLocation())
-                                                    .flatMap(locationId -> container.getPlaces().stream()
-                                                            .filter(place -> place != null && locationId.equals(place.getId()))
-                                                            .findFirst())
-                                                    .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
-                                                            .longitude(place.getLongitude())
-                                                            .placeDescription(place.getFormattedDescription())
-                                                            .placeName(place.getName()));
-
-                                            // Populate fields from Transports independently
-                                            Optional.ofNullable(event.getDetails())
-                                                    .map(Details::getTransport)
-                                                    .flatMap(transportId -> container.getTransports().stream()
-                                                            .filter(transport -> transport != null && transportId.equals(transport.getId()))
-                                                            .findFirst())
-                                                    .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
-                                                            .flightName(String.valueOf(transport.getOperatorName())));
-
-                                            // Build and return the event
-                                            return eventBuilder.build();
-                                        })
-                                        .toList();
-
-                                eventsRows.addAll(rows);
-
-                            })
-                    ).join();
-
-                    // Set ATA and ATD date based on container journey details
-                    var container = res.getContainers().get(0);
-                    if (container.getJourney() != null) {
-                        trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
-                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
-                        trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
-                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
-                    }
-                }
-            } finally {
-                customThreadPool.shutdown();
+            if (container != null && container.getJourney() != null) {
+                trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
+                        .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
+                        .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
             }
-
-            trackingEventsResponse.setEventsList(eventsRows.stream().toList());
             return trackingEventsResponse;
 
         } catch (Exception e) {
@@ -704,9 +648,68 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
-    private List<TrackingServiceApiResponse.Source> getDefaultListValue (List<TrackingServiceApiResponse.Source> lst) {
-        if(lst == null)
-            return Collections.emptyList();
-        return lst;
+    @Override
+    public List<Events> generateEventsFromTrackingResponse(TrackingServiceApiResponse trackingServiceApiResponse) {
+        List<Events> trackingEvents = new ArrayList<>();
+        ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
+        ForkJoinPool customThreadPool = new ForkJoinPool(4);
+
+        try {
+            if (trackingServiceApiResponse.getContainers() != null && !trackingServiceApiResponse.getContainers().isEmpty()) {
+                customThreadPool.submit(() ->
+                        trackingServiceApiResponse.getContainers().parallelStream().forEach(container -> {
+                            if (container == null || container.getEvents() == null || container.getPlaces() == null) {
+                                return;
+                            }
+
+                            // Mapping container events to Events list without processing sources
+                            List<Events> rows = container.getEvents().stream()
+                                    .filter(Objects::nonNull)
+                                    .map(event -> {
+                                        // Start building the Events object
+                                        Events.EventsBuilder eventBuilder = Events.builder()
+                                                .actual(Optional.ofNullable(event.getActualEventTime())
+                                                        .map(DateAndSources::getDateTime).orElse(null))
+                                                .estimated(Optional.ofNullable(event.getProjectedEventTime())
+                                                        .map(DateAndSources::getDateTime).orElse(null))
+                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
+                                                .description(event.getDescriptionFromSource())
+                                                .containerNumber(container.getContainerNumber())
+                                                .locationRole(event.getLocationRole());
+
+                                        // Populate fields from Places independently
+                                        Optional.ofNullable(event.getLocation())
+                                                .flatMap(locationId -> container.getPlaces().stream()
+                                                        .filter(place -> place != null && locationId.equals(place.getId()))
+                                                        .findFirst())
+                                                .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
+                                                        .longitude(place.getLongitude())
+                                                        .placeDescription(place.getFormattedDescription())
+                                                        .placeName(place.getName()));
+
+                                        // Populate fields from Transports independently
+                                        Optional.ofNullable(event.getDetails())
+                                                .map(Details::getTransport)
+                                                .flatMap(transportId -> container.getTransports().stream()
+                                                        .filter(transport -> transport != null && transportId.equals(transport.getId()))
+                                                        .findFirst())
+                                                .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
+                                                        .flightName(String.valueOf(transport.getOperatorName())));
+
+                                        // Build and return the event
+                                        return eventBuilder.build();
+                                    })
+                                    .toList();
+
+                            eventsRows.addAll(rows);
+                        })
+                ).join();
+
+                trackingEvents.addAll(eventsRows.stream().toList());
+            }
+        } finally {
+            customThreadPool.shutdown();
+        }
+        return trackingEvents;
     }
 }

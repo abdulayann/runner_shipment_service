@@ -225,4 +225,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String emergencyContactNumber;
     @JsonProperty("EmergencyContactNumberCode")
     private String emergencyContactNumberCode;
+    @JsonProperty("Sci")
+    private String sci;
 }

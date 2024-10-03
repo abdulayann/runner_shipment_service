@@ -470,4 +470,49 @@ public class EventDao implements IEventDao {
             event.setConsolidationId(entityId);
         }
     }
+
+    @Override
+    public void updateEventDetails(List<Events> events) {
+        // Separate SHIPMENT and CONSOLIDATION events
+        List<Events> shipmentEvents = events.stream()
+                .filter(event -> Constants.SHIPMENT.equalsIgnoreCase(event.getEntityType()))
+                .toList();
+        List<Events> consolidationEvents = events.stream()
+                .filter(event -> Constants.CONSOLIDATION.equalsIgnoreCase(event.getEntityType()))
+                .toList();
+
+        // Collect all shipment entity IDs
+        Set<Long> shipmentIds = shipmentEvents.stream()
+                .map(Events::getEntityId)
+                .collect(Collectors.toSet());
+
+        // Batch fetch data for SHIPMENT events
+        Map<Long, List<ConsoleShipmentMapping>> consoleShipmentMappingMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
+                .collect(Collectors.groupingBy(ConsoleShipmentMapping::getShipmentId));
+        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(new ArrayList<>(shipmentIds)).stream()
+                .collect(Collectors.toMap(ShipmentDetails::getId, shipmentDetails -> shipmentDetails, (existing, duplicate) -> existing));
+
+        // Update SHIPMENT events with fetched data
+        shipmentEvents.forEach(event -> {
+            Long entityId = event.getEntityId();
+
+            // Set consolidationId from ConsoleShipmentMapping
+            List<ConsoleShipmentMapping> mappings = consoleShipmentMappingMap.get(entityId);
+            if (mappings != null && !mappings.isEmpty()) {
+                event.setConsolidationId(mappings.get(0).getConsolidationId());
+            }
+
+            // Set shipmentNumber from ShipmentDetails
+            ShipmentDetails shipmentDetails = shipmentDetailsMap.get(entityId);
+            if (shipmentDetails != null) {
+                event.setShipmentNumber(shipmentDetails.getShipmentId());
+            }
+        });
+
+        // Update CONSOLIDATION events
+        consolidationEvents.forEach(event -> {
+            event.setConsolidationId(event.getEntityId());
+        });
+    }
+
 }
