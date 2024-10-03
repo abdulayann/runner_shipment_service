@@ -1649,7 +1649,7 @@ public class ConsolidationService implements IConsolidationService {
                         BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         wtInTn = wtInTn.divide(BigDecimal.valueOf(1000));
                         BigDecimal wv = new BigDecimal(convertUnit(Constants.VOLUME, wtInTn, Constants.VOLUME_UNIT_M3, volumeUnit).toString());
-                        vwOb.setVolumeWeight(wv.multiply(BigDecimal.TEN).setScale(0, RoundingMode.CEILING).divide(BigDecimal.TEN));
+                        vwOb.setVolumeWeight(wv);
                         vwOb.setVolumeWeightUnit(volumeUnit);
                         break;
                     case Constants.TRANSPORT_MODE_AIR:
