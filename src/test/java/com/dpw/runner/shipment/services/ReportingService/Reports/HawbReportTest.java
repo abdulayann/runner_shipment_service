@@ -239,9 +239,9 @@ class HawbReportTest extends CommonMocks {
         hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
-        hawbModel.getAwb().getAwbOtherInfo().setAccountNumber("123");
-        hawbModel.getAwb().getAwbOtherInfo().setShipperAccountNumber("456");
-        hawbModel.getAwb().getAwbOtherInfo().setConsigneeAccountNumber("789");
+        hawbModel.getAwb().getAwbShipmentInfo().setAccountNumber("123");
+        hawbModel.getAwb().getAwbShipmentInfo().setShipperAccountNumber("456");
+        hawbModel.getAwb().getAwbShipmentInfo().setConsigneeAccountNumber("789");
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();

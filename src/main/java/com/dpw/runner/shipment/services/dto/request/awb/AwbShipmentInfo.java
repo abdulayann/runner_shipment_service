@@ -36,4 +36,7 @@ public class AwbShipmentInfo implements Serializable {
     private String firstCarrier;
     private Integer abrId;
     private String agentCASSCode;
+    private String shipperAccountNumber;
+    private String consigneeAccountNumber;
+    private String accountNumber;
 }
