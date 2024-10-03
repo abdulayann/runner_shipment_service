@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
-import org.apache.kafka.common.protocol.types.Field;
-
 import java.util.Set;
 
 public class ReportConstants {
