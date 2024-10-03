@@ -349,6 +349,7 @@ public class HawbReport extends IReport{
 
             if (awbGoodsDescriptionInfo != null && awbGoodsDescriptionInfo.size() > 0){
                 String finalNtrQtyGoods = NtrQtyGoods;
+                List<String> hsCodeList = new ArrayList<>();
                 List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
                 List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
                 List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(values, new TypeReference<>(){});
@@ -378,7 +379,15 @@ public class HawbReport extends IReport{
                     }
                     if(value.get(PIECES_NO) != null)
                         value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
+                    if(value.get(ReportConstants.HS_CODE_KEY) != null){
+                        String hsCode = value.get(ReportConstants.HS_CODE_KEY).toString();
+                        if (hsCode != null && !hsCode.isEmpty()) {
+                            hsCodeList.add(hsCode);
+                            dictionary.put(ReportConstants.HAS_HS_CODE,true);
+                        }
+                    }
                 });
+                dictionary.put(ReportConstants.HS_CODE, String.join(",", hsCodeList));
                 dictionary.put(ReportConstants.PACKING_LIST, values);
                 String finalFreightAmountText = FreightAmountText;
                 valuesFAT.forEach(value -> {

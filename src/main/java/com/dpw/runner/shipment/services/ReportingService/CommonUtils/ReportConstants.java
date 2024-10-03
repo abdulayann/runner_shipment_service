@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
+import org.apache.kafka.common.protocol.types.Field;
+
 import java.util.Set;
 
 public class ReportConstants {
@@ -174,6 +176,8 @@ public class ReportConstants {
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
+    public static final String HS_CODE_KEY = "HsCode";
+    public static final String HAS_HS_CODE = "hasHsCode";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
     public static final String PICKUPTIME_TYPE = "PickupTimeType";
