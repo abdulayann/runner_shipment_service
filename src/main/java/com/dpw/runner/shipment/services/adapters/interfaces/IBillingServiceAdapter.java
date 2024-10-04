@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
 public interface IBillingServiceAdapter {
@@ -34,12 +35,12 @@ public interface IBillingServiceAdapter {
 
     List<ChargeTypeBaseResponse> fetchChargeTypes(ChargeTypeFilterRequest request);
 
-    ResponseEntity<BillingEntityResponse> sendBillCreationRequest(ExternalBillPayloadRequest externalBillPayloadRequest);
-
-    ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
-            ShipmentDetailsResponse shipmentDetailsResponse);
+    ResponseEntity<BillingEntityResponse> sendBillCreationRequest(ExternalBillPayloadRequest externalBillPayloadRequest, HttpHeaders headers);
 
     List<BillingSummary> fetchBillingBulkSummary(BillingBulkSummaryRequest request);
+
+    ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
+            ShipmentDetailsResponse shipmentDetailsResponse, HttpHeaders headers);
 
     ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
 
