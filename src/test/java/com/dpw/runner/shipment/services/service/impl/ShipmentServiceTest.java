@@ -114,6 +114,7 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -8582,4 +8583,170 @@ ShipmentServiceTest extends CommonMocks {
         String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
         assertNotNull(shipmentResponse);
     }
+
+    @Test
+    void completeUpdateShipmentOrderTest() throws RunnerException {
+        shipmentDetails.setId(1L);
+        List<ShipmentOrder> shipmentOrderList = Collections.singletonList(ShipmentOrder.builder().build());
+        ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
+        mockShipment.setShipmentOrders(shipmentOrderList);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails.setConsolidationList(new ArrayList<>())
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(shipmentOrderList);
+        when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(shipmentOrderList);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void attachDetachOrderTest() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("ATTACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
+    }
+
+    @Test
+    void attachDetachOrderTest2() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("ATTACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+        when(shipmentOrderDao.save(any())).thenReturn(shipmentOrder);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
+    }
+
+    @Test
+    void attachDetachOrderTest3() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
+        doNothing().when(shipmentOrderDao).delete(any());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
+    }
+
+    @Test
+    void attachDetachOrderTest4() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
+    }
+
+
+    @Test
+    void attachDetachOrderTest5_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACHED");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void attachDetachOrderTest6_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACHED");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void attachDetachOrderTest7_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void attachDetachOrderTest8_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void attachDetachOrderTest9_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+
 }

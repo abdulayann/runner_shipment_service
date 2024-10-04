@@ -10,10 +10,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface IShipmentOrderDao {
-    ShipmentOrder save(ShipmentOrder ShipmentOrder);
+    ShipmentOrder save(ShipmentOrder shipmentOrder);
     Page<ShipmentOrder> findAll(Specification<ShipmentOrder> spec, Pageable pageable);
     Optional<ShipmentOrder> findById(Long id);
-    void delete(ShipmentOrder ShipmentOrder);
+    void delete(ShipmentOrder shipmentOrder);
     List<ShipmentOrder> findByShipmentId(Long shipmentId);
     Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid);
 

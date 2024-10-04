@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Repository
 public class ShipmentOrderDao implements IShipmentOrderDao {
@@ -55,7 +54,7 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
         List<Long> incomingIds = shipmentOrders.stream()
                 .map(ShipmentOrder::getId)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
 
         if (!incomingIds.isEmpty()) {
             shipmentOrderRepository.deleteByIdNotInAndShipmentId(incomingIds, shipmentId);
