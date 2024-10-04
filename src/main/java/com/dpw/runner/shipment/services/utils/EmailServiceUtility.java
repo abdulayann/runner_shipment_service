@@ -79,5 +79,4 @@ public class EmailServiceUtility {
         String sub = "ERROR in Syncing Entity : " + entity + " in ENV : " + currentEnvironment + " DateTime " + LocalDateTime.now();
         this.sendEmailDefault("ERROR in Syncing Entity : " + entity + "\n id : " + id + " guid : " + guid + "\n" + "Error Message: " + error, sub);
     }
-
 }
