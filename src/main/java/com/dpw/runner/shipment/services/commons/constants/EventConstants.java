@@ -68,6 +68,11 @@ public class EventConstants {
     public static final String SHPCMPLT = "SHPCMPLT";
     public static final String CONCRTD = "CONCRTD";
     public static final String SHPCRTD = "SHPCRTD";
+    public static final String FLAR = "FLAR";
+    public static final String FLDR = "FLDR";
+    public static final String TRCF = "TRCF";
+    public static final String TNFD = "TNFD";
+    public static final String TRCS = "TRCS";
     public static final String VESSEL_DEPARTURE = "Vessel Departure";
     public static final String VESSEL_DEPARTURE_FROM_POL = "Vessel Departure from POL";
     public static final String VESSEL_ARRIVAL_WITH_CONTAINER = "vesselArrivalWithContainer";
@@ -79,6 +84,9 @@ public class EventConstants {
     public static final String GATE_IN_WITH_CONTAINER_FULL = "gateInWithContainerFull";
     public static final String VESSEL_DEPARTURE_WITH_CONTAINER = "vesselDepartureWithContainer";
     public static final String GATE_OUT_WITH_CONTAINER_FULL = "gateOutWithContainerFull";
+    public static final String FLIGHT_ARRIVAL = "flightArrival";
+    public static final String FLIGHT_DEPARTURE = "flightDeparture";
+    public static final String LITERAL = "literal";
 
     public static final String DESTINATION = "destination";
     public static final String ORIGIN = "origin";

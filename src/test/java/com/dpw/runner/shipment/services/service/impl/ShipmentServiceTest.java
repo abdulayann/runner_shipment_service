@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -41,12 +41,56 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.TIContainerResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TIResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
+import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ServiceDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -69,6 +113,13 @@ import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -87,6 +138,7 @@ import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
+import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -194,7 +246,8 @@ ShipmentServiceTest extends CommonMocks {
     private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
-
+    @Mock
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Mock
     private IEventService eventService;
@@ -302,6 +355,21 @@ ShipmentServiceTest extends CommonMocks {
                 return "SHIPID1";
             }
 
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
+            }
+
         };
 
         ShipmentDetailsProjection projection2 = new ShipmentDetailsProjection() {
@@ -316,6 +384,21 @@ ShipmentServiceTest extends CommonMocks {
             @Override
             public String getShipmentId() {
                 return "SHIPID2";
+            }
+
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
             }
 
         };
@@ -407,6 +490,21 @@ ShipmentServiceTest extends CommonMocks {
             @Override
             public String getShipmentId() {
                 return "SHIPID2";
+            }
+
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
             }
         };
 
@@ -591,6 +689,27 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void fetchOrgInfoFromV1_Test() throws RunnerException {
+        PartiesOrgAddressRequest request = PartiesOrgAddressRequest.builder().party(PartiesRequest.builder()
+            .build()).OrgCode("og").AddressCode("ac").build();
+
+        Mockito.doNothing().when(bookingIntegrationsUtility)
+            .transformOrgAndAddressPayload(request.getParty(), request.getAddressCode(), request.getOrgCode());
+        AddressDataV1 addressDataV1 = AddressDataV1.builder().build();
+        OrgDataV1 orgDataV1 = OrgDataV1.builder().build();
+
+        when(jsonHelper.convertValue(request.getParty().getAddressData(), AddressDataV1.class)).thenReturn(addressDataV1);
+        when(jsonHelper.convertValue(request.getParty().getOrgData(), OrgDataV1.class)).thenReturn(orgDataV1);
+
+        when(jsonHelper.convertValue(addressDataV1, Map.class)).thenReturn(new HashMap());
+        when(jsonHelper.convertValue(orgDataV1, Map.class)).thenReturn(new HashMap());
+
+        PartiesRequest response = shipmentService.fetchOrgInfoFromV1(request);
+
+       assertNotNull(response);
+    }
+
+    @Test
     void testGetContainerListFromTrackingService_Success() throws RunnerException {
         Long shipmentId = 1L;
         ShipmentDetails shipmentDetails = new ShipmentDetails();
@@ -697,6 +816,7 @@ ShipmentServiceTest extends CommonMocks {
         trackingResponse.setContainers(List.of(Container.builder()
                 .containerNumber("containerNumber")
                 .journey(new Journey())
+                .places(List.of())
                 .events(List.of(Event.builder()
                         .eventType("eventType")
                         .actualEventTime(DateAndSources.builder()
@@ -877,6 +997,7 @@ ShipmentServiceTest extends CommonMocks {
         trackingResponse.setContainers(List.of(Container.builder()
                 .containerNumber("containerNumber")
                 .journey(new Journey())
+                .places(List.of())
                 .events(List.of(Event.builder()
                         .eventType("eventType")
                         .build())).build()));
@@ -8127,4 +8248,209 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(0, result.size());
     }
 
+    @Test
+    void createShipmentFromBookingTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        PartiesRequest importBrokerRequest = PartiesRequest.builder().build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
+        additionalDetailsRequest.setImportBroker(importBrokerRequest);
+        additionalDetailsRequest.setExportBroker(importBrokerRequest);
+
+        ContainerRequest containerRequest = ContainerRequest.builder().build();
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        consolidationDetailsRequest.setContainersList(Collections.singletonList(containerRequest));
+
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().build();
+        NotesRequest notesRequest = NotesRequest.builder().build();
+        PackingRequest packingRequest = PackingRequest.builder().build();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+        shipmentRequest.setRoutingsList(Collections.singletonList(routingsRequest));
+        shipmentRequest.setNotesList(Collections.singletonList(notesRequest));
+        shipmentRequest.setPackingList(Collections.singletonList(packingRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(Collections.singletonList(new ConsolidationDetails()));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(Collections.singletonList(new Containers()));
+        when(jsonHelper.convertValueToList(any(), eq(Routings.class))).thenReturn(Collections.singletonList(new Routings()));
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+        when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(new Notes());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
+        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest3() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(null);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest4() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
+
+    @Test
+    void createShipmentFromBookingTest5() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
+    }
 }

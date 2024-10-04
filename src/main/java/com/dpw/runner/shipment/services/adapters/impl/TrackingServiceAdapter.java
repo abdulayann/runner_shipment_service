@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -20,6 +21,8 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -39,12 +42,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nimbusds.jose.util.Pair;
-import java.io.File;
-import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,6 +57,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -535,59 +534,113 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 //        }
 //    }
 
+    /**
+     * Converts a tracking event code to a short code based on the location role.
+     * <p>
+     * This method translates specific tracking event codes to their corresponding short codes based on the location role. The conversion is based on predefined constants and
+     * specific conditions.
+     *
+     * @param locationRole the role of the location associated with the event
+     * @param eventCode    the original event code to be converted
+     * @param description
+     * @return the corresponding short code if a match is found, otherwise returns the original event code
+     */
+    @Override
+    public String convertTrackingEventCodeToShortCode(String locationRole, String eventCode, String description) {
+
+        String safeEventCode = StringUtils.defaultString(eventCode);
+        String safeLocationRole = StringUtils.defaultString(locationRole);
+        String safeDescription = StringUtils.defaultString(description);
+
+        log.debug("Converting event code '{}' with location role '{}'", safeEventCode, safeLocationRole);
+
+        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventCode)
+                && safeDescription.equalsIgnoreCase("Flight Arrival")) {
+            log.debug("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
+            return EventConstants.FLAR;
+        }
+
+        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventCode)
+                && safeDescription.equalsIgnoreCase("Flight Departure")) {
+            log.debug("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
+            return EventConstants.FLDR;
+        }
+
+        if (EventConstants.LITERAL.equalsIgnoreCase(safeEventCode)) {
+            String shortCode = null;
+
+            if (safeDescription.equalsIgnoreCase("Received from Flight")) {
+                shortCode = EventConstants.TRCF;
+            } else if (safeDescription.equalsIgnoreCase("Consignee notified")) {
+                shortCode = EventConstants.TNFD;
+            } else if (safeDescription.equalsIgnoreCase("Received from Shipper")) {
+                shortCode = EventConstants.TRCS;
+            }
+
+            if (shortCode != null) {
+                log.debug("Matched LITERAL and DESCRIPTION. Returning short code: {}", shortCode);
+                return shortCode;
+            }
+        }
+
+        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
+            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            return EventConstants.ECPK;
+        }
+
+        if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && "originPort".equalsIgnoreCase(safeLocationRole)) {
+            log.debug("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
+            return EventConstants.FCGI;
+        }
+
+        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && "originPort".equalsIgnoreCase(safeLocationRole)) {
+            log.debug("Matched VESSEL_DEPARTURE_WITH_CONTAINER and originPort. Returning short code: {}", EventConstants.VSDP);
+            return EventConstants.VSDP;
+        }
+
+        if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
+                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
+            log.debug("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
+            return EventConstants.ARDP;
+        }
+
+        if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
+                && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
+            log.debug("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
+            return EventConstants.FUGO;
+        }
+
+        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
+            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
+            return EventConstants.EMCR;
+        }
+
+        log.debug("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
+        return eventCode;
+    }
+
     @Override
     public TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException {
         try {
             TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
-            var res = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
-            ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
-            ForkJoinPool customThreadPool = new ForkJoinPool(4);
+            var trackingServiceApiResponse = fetchTrackingData(TrackingRequest.builder().referenceNumber(referenceNumber).build());
+            trackingEventsResponse.setEventsList(generateEventsFromTrackingResponse(trackingServiceApiResponse));
+            // Set ATA and ATD date based on container journey details
+            var container = Optional.ofNullable(trackingServiceApiResponse.getContainers()) // Handle potential null list
+                    .orElse(Collections.emptyList()).stream().filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
 
-            try {
-                if (res.getContainers() != null && !res.getContainers().isEmpty()) {
-                    customThreadPool.submit(() ->
-                            res.getContainers().parallelStream().forEach(container -> {
-                                if (container == null || container.getEvents() == null || container.getPlaces() == null) {
-                                    return;
-                                }
-
-                                // Mapping container events to Events list without processing sources
-                                List<Events> rows = container.getEvents().stream()
-                                        .filter(Objects::nonNull)
-                                        .flatMap(event -> container.getPlaces().stream()
-                                                .filter(place -> place != null && event.getLocation() != null && event.getLocation().equals(place.getId()))
-                                                .map(place -> Events.builder()
-                                                        .latitude(place.getLatitude())
-                                                        .longitude(place.getLongitude())
-                                                        .placeDescription(place.getFormattedDescription())
-                                                        .placeName(place.getName())
-                                                        .actual(event.getActualEventTime() != null ? event.getActualEventTime().getDateTime() : null)
-                                                        .estimated(event.getProjectedEventTime() != null ? event.getProjectedEventTime().getDateTime() : null)
-                                                        .eventCode(event.getEventType())
-                                                        .description(event.getDescriptionFromSource())
-                                                        .containerNumber(container.getContainerNumber())
-                                                        .locationRole(event.getLocationRole()).build()
-                                                )
-                                        ).toList();
-
-                                eventsRows.addAll(rows);
-                            })
-                    ).join();
-
-                    // Set ATA and ATD date based on container journey details
-                    var container = res.getContainers().get(0);
-                    if (container.getJourney() != null) {
-                        trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
-                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
-                        trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
-                                .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
-                    }
-                }
-            } finally {
-                customThreadPool.shutdown();
+            if (container != null && container.getJourney() != null) {
+                trackingEventsResponse.setShipmentAta(Optional.ofNullable(container.getJourney().getPortOfArrivalAta())
+                        .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
+                trackingEventsResponse.setShipmentAtd(Optional.ofNullable(container.getJourney().getPortOfDepartureAtd())
+                        .map(TrackingServiceApiResponse.DateAndSources::getDateTime).orElse(null));
             }
-
-            trackingEventsResponse.setEventsList(eventsRows.stream().toList());
             return trackingEventsResponse;
 
         } catch (Exception e) {
@@ -595,9 +648,68 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
     }
 
-    private List<TrackingServiceApiResponse.Source> getDefaultListValue (List<TrackingServiceApiResponse.Source> lst) {
-        if(lst == null)
-            return Collections.emptyList();
-        return lst;
+    @Override
+    public List<Events> generateEventsFromTrackingResponse(TrackingServiceApiResponse trackingServiceApiResponse) {
+        List<Events> trackingEvents = new ArrayList<>();
+        ConcurrentLinkedQueue<Events> eventsRows = new ConcurrentLinkedQueue<>();
+        ForkJoinPool customThreadPool = new ForkJoinPool(4);
+
+        try {
+            if (trackingServiceApiResponse.getContainers() != null && !trackingServiceApiResponse.getContainers().isEmpty()) {
+                customThreadPool.submit(() ->
+                        trackingServiceApiResponse.getContainers().parallelStream().forEach(container -> {
+                            if (container == null || container.getEvents() == null || container.getPlaces() == null) {
+                                return;
+                            }
+
+                            // Mapping container events to Events list without processing sources
+                            List<Events> rows = container.getEvents().stream()
+                                    .filter(Objects::nonNull)
+                                    .map(event -> {
+                                        // Start building the Events object
+                                        Events.EventsBuilder eventBuilder = Events.builder()
+                                                .actual(Optional.ofNullable(event.getActualEventTime())
+                                                        .map(DateAndSources::getDateTime).orElse(null))
+                                                .estimated(Optional.ofNullable(event.getProjectedEventTime())
+                                                        .map(DateAndSources::getDateTime).orElse(null))
+                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
+                                                .description(event.getDescriptionFromSource())
+                                                .containerNumber(container.getContainerNumber())
+                                                .locationRole(event.getLocationRole());
+
+                                        // Populate fields from Places independently
+                                        Optional.ofNullable(event.getLocation())
+                                                .flatMap(locationId -> container.getPlaces().stream()
+                                                        .filter(place -> place != null && locationId.equals(place.getId()))
+                                                        .findFirst())
+                                                .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
+                                                        .longitude(place.getLongitude())
+                                                        .placeDescription(place.getFormattedDescription())
+                                                        .placeName(place.getName()));
+
+                                        // Populate fields from Transports independently
+                                        Optional.ofNullable(event.getDetails())
+                                                .map(Details::getTransport)
+                                                .flatMap(transportId -> container.getTransports().stream()
+                                                        .filter(transport -> transport != null && transportId.equals(transport.getId()))
+                                                        .findFirst())
+                                                .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
+                                                        .flightName(String.valueOf(transport.getOperatorName())));
+
+                                        // Build and return the event
+                                        return eventBuilder.build();
+                                    })
+                                    .toList();
+
+                            eventsRows.addAll(rows);
+                        })
+                ).join();
+
+                trackingEvents.addAll(eventsRows.stream().toList());
+            }
+        } finally {
+            customThreadPool.shutdown();
+        }
+        return trackingEvents;
     }
 }

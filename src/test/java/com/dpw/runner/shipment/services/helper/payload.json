@@ -13424,5 +13424,784 @@
         "937": "EGYPT_TEST QA"
       }
     }
+  },
+
+  "TRACKING_CONTAINER": {
+    "containerNumber": "607-34879246",
+    "identifierType": "airWayBillNumber",
+    "identifierValue": "607-34879246",
+    "journey": {
+      "serviceType": "unknown",
+      "carrierName": "AirCargo",
+      "portOfDeparture": 4,
+      "portOfArrival": 5,
+      "portOfDepartureAtd": {
+        "dateTime": "2024-07-05T22:00:00",
+        "sources": [
+          {
+            "dateTime": "2024-07-05T22:00:00",
+            "source": "AirCargo"
+          }
+        ]
+      },
+      "portOfArrivalAta": {
+        "dateTime": "2024-07-10T03:25:00",
+        "sources": [
+          {
+            "dateTime": "2024-07-10T03:25:00",
+            "source": "AirCargo"
+          }
+        ]
+      },
+      "segments": [
+        {
+          "source": 4,
+          "destination": 2,
+          "transport": 2,
+          "atd": {
+            "dateTime": "2024-07-05T22:00:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-05T22:00:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-06T06:00:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-06T06:00:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        },
+        {
+          "source": 2,
+          "destination": 1,
+          "transport": 3,
+          "atd": {
+            "dateTime": "2024-07-07T12:03:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-07T12:03:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-07T19:55:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-07T19:55:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        },
+        {
+          "source": 1,
+          "destination": 5,
+          "transport": 4,
+          "atd": {
+            "dateTime": "2024-07-09T21:27:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-09T21:27:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-10T03:25:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-10T03:25:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "places": [
+      {
+        "id": 1,
+        "type": "unknown",
+        "code": "AUH",
+        "name": "Abu Dhabi International Airport",
+        "country": "AE",
+        "latitude": "24.433",
+        "longitude": "54.6511",
+        "rawDescription": "AEAUH",
+        "formattedDescription": "Aeauh"
+      },
+      {
+        "id": 2,
+        "type": "unknown",
+        "code": "MUC",
+        "name": "Munich Airport",
+        "country": "DE",
+        "latitude": "48.3538",
+        "longitude": "11.7861",
+        "rawDescription": "DEMUC",
+        "formattedDescription": "Demuc"
+      },
+      {
+        "id": 3,
+        "type": "unknown",
+        "code": "FRA",
+        "name": "Frankfurt Airport",
+        "country": "DE",
+        "latitude": "50.0333",
+        "longitude": "8.57056",
+        "rawDescription": "DEFRA",
+        "formattedDescription": "Defra"
+      },
+      {
+        "id": 4,
+        "type": "unknown",
+        "code": "NUE",
+        "name": "Nuremberg Airport",
+        "country": "DE",
+        "latitude": "49.4987",
+        "longitude": "11.0781",
+        "rawDescription": "DENUE",
+        "formattedDescription": "Denue"
+      },
+      {
+        "id": 5,
+        "type": "unknown",
+        "code": "BLR",
+        "name": "Kempegowda International Airport",
+        "country": "IN",
+        "latitude": "13.1979",
+        "longitude": "77.7063",
+        "rawDescription": "INBLR",
+        "formattedDescription": "Inblr"
+      }
+    ],
+    "transports": [
+      {
+        "id": 1,
+        "type": "flight"
+      },
+      {
+        "id": 2,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY7126T"
+      },
+      {
+        "id": 3,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY0126"
+      },
+      {
+        "id": 4,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY0216"
+      }
+    ],
+    "events": [
+      {
+        "id": 1,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-01T11:39:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-01T11:39:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 2,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-04T13:04:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-04T13:04:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 3,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T01:10:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T01:10:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 4,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 3,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T08:43:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T08:43:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 5,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T10:49:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T10:49:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 6,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:34:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:34:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 7,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Freight on Hand",
+        "descriptionFromSource": "FOH",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 8,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Shipper",
+        "descriptionFromSource": "RCS",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 9,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T20:26:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T20:26:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 2,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 10,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T20:26:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T20:26:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 11,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-06T03:01:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-06T03:01:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 12,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T04:56:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T04:56:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 13,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Prepared for Loading",
+        "descriptionFromSource": "FAL",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T11:45:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T11:45:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 14,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T13:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T13:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 15,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T19:47:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T19:47:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 16,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T19:55:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T19:55:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 17,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T22:11:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T22:11:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 18,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T01:10:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T01:10:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 19,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T18:25:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T18:25:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 20,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T23:20:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T23:20:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 21,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T10:12:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T10:12:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 22,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T16:34:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T16:34:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 23,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T21:27:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T21:27:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 24,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T03:08:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T03:08:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 25,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T03:25:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T03:25:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 26,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T06:38:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T06:38:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 27,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Shipment notified for delivery",
+        "descriptionFromSource": "NAN",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T06:50:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T06:50:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 28,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Delivered",
+        "descriptionFromSource": "DLV",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T16:50:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T16:50:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      }
+    ],
+    "container": {
+      "bolNumber": "",
+      "clientBookingNumber": "DBAR-9391923-605569",
+      "numberOfPackages": "3",
+      "shipmentReference": "SHP00012345"
+    }
   }
+
 }

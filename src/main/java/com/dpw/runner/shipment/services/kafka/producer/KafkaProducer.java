@@ -1,6 +1,6 @@
-package com.dpw.runner.shipment.services.Kafka.Producer;
+package com.dpw.runner.shipment.services.kafka.producer;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonProcessingException;

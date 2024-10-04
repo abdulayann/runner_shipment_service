@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -499,8 +499,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Transactional
     @Override
-    public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel) {
-
+    public ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel){
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -521,7 +520,14 @@ public class ConsolidationService implements IConsolidationService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class));
+        return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<IRunnerResponse> createFromBooking(CommonRequestModel commonRequestModel) {
+
+        return ResponseHelper.buildSuccessResponse(this.createConsolidationForBooking(commonRequestModel));
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
