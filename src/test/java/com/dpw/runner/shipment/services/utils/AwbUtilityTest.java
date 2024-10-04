@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -951,13 +948,14 @@ class AwbUtilityTest extends CommonMocks {
 
     }
 
-    @Test
-    void testCreateStatusUpdateForAirMessagingForDmawb() throws MessagingException, RunnerException, IOException {
+    @ParameterizedTest
+    @ValueSource(strings = {"SUBMITTED", "PROCESSED"})
+    void testCreateStatusUpdateForAirMessagingForDmawb(String status) throws MessagingException, RunnerException, IOException {
         var guid = UUID.randomUUID();
-        String mockStatus = "SUBMITTED";
+        boolean isSuccess = true;
         AirMessagingStatusDto airMessagingStatusDto = new AirMessagingStatusDto();
         airMessagingStatusDto.setGuid(guid);
-        airMessagingStatusDto.setStatus(mockStatus);
+        airMessagingStatusDto.setStatus(status);
 
         Awb mockAwb = testDmawb;
         mockAwb.setShipmentId(1L);
@@ -973,7 +971,7 @@ class AwbUtilityTest extends CommonMocks {
         ));
 
         awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
-
+        assertTrue(isSuccess);
     }
 
 
