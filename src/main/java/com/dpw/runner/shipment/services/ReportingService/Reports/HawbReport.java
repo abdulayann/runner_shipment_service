@@ -379,12 +379,10 @@ public class HawbReport extends IReport{
                     }
                     if(value.get(PIECES_NO) != null)
                         value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
-                    if(value.get(ReportConstants.HS_CODE_KEY) != null){
-                        String hsCode = value.get(ReportConstants.HS_CODE_KEY).toString();
-                        if (hsCode != null && !hsCode.isEmpty()) {
-                            hsCodeList.add(hsCode);
-                            dictionary.put(ReportConstants.HAS_HS_CODE,true);
-                        }
+                    String hsCode = (String) value.get(ReportConstants.HS_CODE_KEY);
+                    if (hsCode != null && !hsCode.isEmpty()) {
+                        hsCodeList.add(hsCode);
+                        dictionary.put(ReportConstants.HAS_HS_CODE, true);
                     }
                 });
                 dictionary.put(ReportConstants.HS_CODE, String.join(",", hsCodeList));
