@@ -19,14 +19,11 @@ import com.dpw.runner.booking.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.booking.services.dto.request.*;
 import com.dpw.runner.booking.services.dto.request.platform.*;
 import com.dpw.runner.booking.services.entity.*;
-import com.dpw.runner.booking.services.dto.request.*;
-import com.dpw.runner.booking.services.dto.request.platform.*;
 import com.dpw.runner.booking.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.booking.services.dto.response.ListContractResponse;
 import com.dpw.runner.booking.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.booking.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.booking.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.booking.services.entity.*;
 import com.dpw.runner.booking.services.entity.enums.BookingStatus;
 import com.dpw.runner.booking.services.entity.enums.IntegrationType;
 import com.dpw.runner.booking.services.entity.enums.ShipmentStatus;
@@ -55,6 +52,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -357,6 +355,10 @@ public class BookingIntegrationsUtility {
                             packing.setWidthUnit(packing.getLengthUnit());
                             packing.setHeightUnit(packing.getLengthUnit());
                         }
+                        if(packing.getWeight() != null)
+                            packing.setWeight(packing.getWeight().multiply(new BigDecimal(packing.getPacks())));
+                        if(packing.getVolume() != null)
+                            packing.setVolume(packing.getVolume().multiply(new BigDecimal(packing.getPacks())));
                     }).collect(Collectors.toList()) : null).
                     fileRepoList(customerBookingRequest.getFileRepoList()  != null
                             ? customerBookingRequest.getFileRepoList().stream().peek(filerepo -> {
