@@ -365,6 +365,7 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.HS_CODE_KEY, 123456);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -603,6 +604,7 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.HS_CODE_KEY, 123456);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -841,6 +843,7 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.HS_CODE_KEY, 123456);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
