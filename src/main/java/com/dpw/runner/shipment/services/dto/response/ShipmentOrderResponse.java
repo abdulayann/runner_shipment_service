@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
