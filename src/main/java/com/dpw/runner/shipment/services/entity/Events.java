@@ -111,6 +111,12 @@ public class Events extends MultiTenancy {
     @MasterData(type = MasterDataType.LOCATION_ROLE)
     private String locationRole;
 
+    @Column(name = "flight_number")
+    private String flightNumber;
+
+    @Column(name = "flight_name")
+    private String flightName;
+
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
