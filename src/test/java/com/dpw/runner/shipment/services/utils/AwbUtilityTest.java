@@ -2,9 +2,6 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingEventDto;
-import com.dpw.runner.shipment.services.Kafka.Dto.AirMessagingStatusDto;
-import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
