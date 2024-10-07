@@ -347,6 +347,15 @@ public class AwbService implements IAwbService {
                 ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                        if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
+                            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId()).orElse(null);
+                            if(Objects.isNull(consolidationDetails.getScreeningStatus()) || List.of(consolidationDetails.getScreeningStatus()).isEmpty()) {
+                                throw new ValidationException("Screening Status is mandatory to generate MAWB");
+                            }
+                            if(Objects.isNull(consolidationDetails.getSecurityStatus()) || consolidationDetails.getSecurityStatus().isEmpty()) {
+                                throw new ValidationException("Security Status is mandatory to generate MAWB");
+                            }
+                        }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
                                 && tenantSettings.getRestrictAWBEdit()) || (tenantSettings.getAutoUpdateShipmentAWB() != null && tenantSettings.getAutoUpdateShipmentAWB()))) {
@@ -361,6 +370,15 @@ public class AwbService implements IAwbService {
                         getMawnLinkPacks(awb);
 
                     } else {
+                        if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
+                            ShipmentDetails shipmentDetails = shipmentDao.findById(awb.getShipmentId()).orElse(null);
+                            if(Objects.isNull(shipmentDetails.getAdditionalDetails().getScreeningStatus()) || List.of(shipmentDetails.getAdditionalDetails().getScreeningStatus()).isEmpty()) {
+                                throw new ValidationException("Screening Status is mandatory to generate HAWB");
+                            }
+                            if(Objects.isNull(shipmentDetails.getSecurityStatus()) || shipmentDetails.getSecurityStatus().isEmpty()) {
+                                throw new ValidationException("Security Status is mandatory to generate HAWB");
+                            }
+                        }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
                                 && tenantSettings.getRestrictAWBEdit()) || (tenantSettings.getAutoUpdateShipmentAWB() != null && tenantSettings.getAutoUpdateShipmentAWB()))) {
