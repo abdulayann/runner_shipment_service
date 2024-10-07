@@ -6,5 +6,6 @@ import lombok.Getter;
 public enum AirMessagingStatus {
     FAILED,
     SUCCESS,
-    SUBMITTED
+    SUBMITTED,
+    SUCCESS_BY_CARRIER
 }
