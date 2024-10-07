@@ -657,7 +657,7 @@ public class AwbService implements IAwbService {
             if (tenantSettings != null && Constants.VOLUME_UNIT_M3.equalsIgnoreCase(tenantSettings.getVolumeChargeableUnit()) && Constants.WEIGHT_UNIT_KG.equalsIgnoreCase(tenantSettings.getWeightChargeableUnit())) {
                 grossWeightUnit = Constants.WEIGHT_UNIT_KG;
                 chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
-                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
+                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.AIR_FACTOR_FOR_VOL_WT));
                 chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
                 totalVolumetricWeight = volumetricWeightOfMawbGood;
             }
@@ -863,12 +863,8 @@ public class AwbService implements IAwbService {
                 updateSci = true;
             }
         }
-        if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED)) {
-            if (updateSci) {
-                awb.getAwbCargoInfo().setSci(AwbConstants.T1);
-            } else {
-                awb.getAwbCargoInfo().setSci(null);
-            }
+        if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED) && (updateSci)) {
+            awb.getAwbCargoInfo().setSci(AwbConstants.T1);
         }
     }
 
@@ -2393,7 +2389,7 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            Double factor = Constants.FACTOR_VOL_WT;
+            Double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
             totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
         }
         return hawbPacksLinkedToMawb;
@@ -2602,7 +2598,7 @@ public class AwbService implements IAwbService {
                 res = res + "\n";
             else
                 res = "";
-            res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString() + (packs > 1 ? " packages" : " package");
+            res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
         }
         return res;
     }

@@ -239,6 +239,9 @@ class HawbReportTest extends CommonMocks {
         hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
+        hawbModel.getAwb().getAwbShipmentInfo().setAccountNumber("123");
+        hawbModel.getAwb().getAwbShipmentInfo().setShipperAccountNumber("456");
+        hawbModel.getAwb().getAwbShipmentInfo().setConsigneeAccountNumber("789");
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -385,6 +388,248 @@ class HawbReportTest extends CommonMocks {
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
         assertNotNull(hawbReport.populateDictionary(hawbModel));
+    }
+
+    @Test
+    void populateDictionary3() {
+        HawbModel hawbModel = new HawbModel();
+        hawbModel.setEntityType(HAWB);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(ReportConstants.AIR);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+
+        List<ReferenceNumbersModel>  referenceNumbersModels = new ArrayList<>();
+        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ERN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(CEN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(FRN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        shipmentModel.setReferenceNumbersList(referenceNumbersModels);
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setShippingLine("AIR lINE");
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("RFS");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setCommodity("AIR");
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setEstimatedPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        hawbModel.setShipmentDetails(shipmentModel);
+        String csdInfo = "some info";
+        hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
+        hawb.setOriginalPrintedAt(LocalDateTime.now());
+        hawbModel.setAwb(hawb);
+        hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name(null).build()));
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+
+        List<EntityTransferMasterLists> masterDataList = new ArrayList<>();
+        EntityTransferMasterLists masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.PAYMENT.getId());
+        masterData.setItemValue("PPT");
+        masterData.setItemDescription("PPT");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.SERVICE_MODE.getId());
+        masterData.setItemValue("TXT");
+        masterData.setItemDescription("TXT");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.TRANSPORT_MODE.getId());
+        masterData.setItemValue(SEA);
+        masterData.setItemDescription(SEA);
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId());
+        masterData.setItemValue(EXP);
+        masterData.setItemDescription(EXP);
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.PACKS_UNIT.getId());
+        masterData.setItemValue("PKG");
+        masterData.setItemDescription("PKG");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.VOLUME_UNIT.getId());
+        masterData.setItemValue("M3");
+        masterData.setItemDescription("M3");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.WEIGHT_UNIT.getId());
+        masterData.setItemValue("KG");
+        masterData.setItemDescription("KG");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.RELEASE_TYPE.getId());
+        masterData.setItemValue("ORG");
+        masterData.setItemDescription("ORG");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.COUNTRIES.getId());
+        masterData.setItemValue("IND");
+        masterData.setItemDescription("IND");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.PAYMENT_CODES.getId());
+        masterData.setItemValue(hawbModel.getAwb().getAwbCargoInfo().getChargeCode());
+        masterData.setItemDescription("IND");
+        masterData.setIdentifier1("true");
+        masterData.setIdentifier2("true");
+        masterData.setIdentifier3("true");
+        masterData.setIdentifier4("true");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.MAWB_CHARGE_TEXT.getId());
+        masterData.setItemValue(AwbConstants.FREIGHT_AMOUNT);
+        masterData.setItemDescription("IND");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.MAWB_CHARGE_TEXT.getId());
+        masterData.setItemValue(AwbConstants.OTHER_AMOUNT);
+        masterData.setItemDescription("IND");
+        masterDataList.add(masterData);
+
+        masterData = new EntityTransferMasterLists();
+        masterData.setItemType(MasterDataType.COUNTRIES.getId());
+        masterData.setItemValue("IND");
+        masterData.setItemDescription("IND");
+        masterDataList.add(masterData);
+
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class)).thenReturn(masterDataList);
+
+        AwbGoodsDescriptionInfoModel awbGoodsDescriptionInfoModel = new AwbGoodsDescriptionInfoModel();
+        List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModelList = new ArrayList<>();
+        awbGoodsDescriptionInfoModelList.add(awbGoodsDescriptionInfoModel);
+        when(modelMapper.map(any(), eq(AwbGoodsDescriptionInfoModel.class))).thenReturn(awbGoodsDescriptionInfoModel);
+
+        EntityTransferCarrier entityTransferCarrier = new EntityTransferCarrier();
+        entityTransferCarrier.setIATACode("123");
+        entityTransferCarrier.setItemDescription("123");
+        entityTransferCarrier.setItemValue("Turkish Airlines");
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
+        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
+
+        Map<String,Object> packingValueMap = new HashMap<>();
+        packingValueMap.put(ReportConstants.RATE_CLASS, 1);
+        packingValueMap.put(ReportConstants.GROSS_WT, 0);
+        packingValueMap.put(ReportConstants.CHARGEABLE_WT, 0);
+        packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
+        packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
+        packingValueMap.put(ReportConstants.PIECES_NO, 0);
+
+        List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
+        doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        doReturn(Arrays.asList(new HashMap<>(packingValueMap))).when(jsonHelper).convertValue(eq(dataMap), any(TypeReference.class));
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
+        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
+        mockTenantSettings();
+        UserContext.getUser().setEnableTimeZone(false);
+        UserContext.getUser().setTimeZoneId("12");
+
+        Map<String, Object> dictionary = hawbReport.populateDictionary(hawbModel);
+
+        assertEquals("", dictionary.get(AWB_NOTIFY_PARTY_NAME));
+        assertNotNull(dictionary);
     }
 
     @Test

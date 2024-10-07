@@ -76,6 +76,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -162,17 +163,18 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
      * POST request to the specified URL. It then processes the response, logging the status and any errors encountered.
      *
      * @param externalBillPayloadRequest The request payload containing the bill details. This should not be {@code null}.
+     * @param headers   V1 headers for bearer token
      * @return {@link ResponseEntity} containing the response from the billing service.
      * @throws BillingException if the response contains errors or if an exception occurs during the request process.
      */
     @Override
-    public ResponseEntity<BillingEntityResponse> sendBillCreationRequest(ExternalBillPayloadRequest externalBillPayloadRequest) {
+    public ResponseEntity<BillingEntityResponse> sendBillCreationRequest(ExternalBillPayloadRequest externalBillPayloadRequest, HttpHeaders headers) {
         // Construct the URL for the bill creation or update endpoint
         String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getExternalCreateOrUpdate();
         log.info("Sending bill creation request to URL: {}", url);
 
         // Create an HttpEntity object with the payload and authentication headers
-        HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, V1AuthHelper.getHeaders());
+        HttpEntity<ExternalBillPayloadRequest> httpEntity = new HttpEntity<>(externalBillPayloadRequest, headers);
         log.debug(REQUEST_PAYLOAD, externalBillPayloadRequest);
         double start = System.currentTimeMillis();
         try {
@@ -361,20 +363,20 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     @Override
     public ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
-            ShipmentDetailsResponse shipmentDetailsResponse) {
+            ShipmentDetailsResponse shipmentDetailsResponse, HttpHeaders headers) {
 
         CreateBookingModuleInV1 bookingRequestForV1 = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled,
                 shipmentDetailsResponse.getGuid());
 
         BookingEntity entity = bookingRequestForV1.getEntity();
-        TenantModel tenantModel = getTenantModel();
+        TenantModel tenantModel = getTenantModel(headers);
         ExternalBillPayloadRequest externalBillPayloadRequest = new ExternalBillPayloadRequest();
         List<ExternalBillRequest> externalBillRequests = new ArrayList<>();
         List<ExternalBillChargeRequest> externalBillChargeRequests = new ArrayList<>();
 
-        List<EntityTransferOrganizations> organizationList = getOrganizationsListForBillCreationRequest(entity);
+        List<EntityTransferOrganizations> organizationList = getOrganizationsListForBillCreationRequest(entity, headers);
 
-        List<EntityTransferAddress> addressList = getAddressListForBillCreationRequest(organizationList);
+        List<EntityTransferAddress> addressList = getAddressListForBillCreationRequest(organizationList, headers);
 
         EntityTransferOrganizations clientDetails = organizationList.stream()
                 .filter(org -> org.getOrganizationCode().equalsIgnoreCase(entity.getClientCode()))
@@ -397,7 +399,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
         externalBillPayloadRequest.setExternalBillRequestList(externalBillRequests);
 
-        return sendBillCreationRequest(externalBillPayloadRequest);
+        return sendBillCreationRequest(externalBillPayloadRequest, headers);
     }
 
     private void processExternalBillRequest(UUID shipmentGuid, BookingEntity entity, List<ExternalBillRequest> externalBillRequests,
@@ -611,18 +613,18 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     }
 
-    private TenantModel getTenantModel() {
+    private TenantModel getTenantModel(HttpHeaders headers) {
         TenantModel tenantModel = new TenantModel();
         try {
             log.info("Fetching Tenant Model");
-            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            tenantModel = modelMapper.map(v1Service.retrieveTenant(headers).getEntity(), TenantModel.class);
         } catch (Exception e) {
             throw new BillingException("Failed in fetching tenant data from V1 with error : {}", e);
         }
         return tenantModel;
     }
 
-    private List<EntityTransferOrganizations> getOrganizationsListForBillCreationRequest(BookingEntity entity) {
+    private List<EntityTransferOrganizations> getOrganizationsListForBillCreationRequest(BookingEntity entity, HttpHeaders headers) {
         List<String> clientCodeList = getClientCodeListForBillCreationRequest(entity);
         List<EntityTransferOrganizations> organizationList = new ArrayList<>();
         if (ObjectUtils.isNotEmpty(clientCodeList)) {
@@ -641,13 +643,13 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             orgRequest.setCriteriaRequests(finalCriteria);
             orgRequest.setTake(clientCodeList.size());
-            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest, headers);
             organizationList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
         }
         return organizationList;
     }
 
-    private List<EntityTransferAddress> getAddressListForBillCreationRequest(List<EntityTransferOrganizations> organizations) {
+    private List<EntityTransferAddress> getAddressListForBillCreationRequest(List<EntityTransferOrganizations> organizations, HttpHeaders headers) {
         List<EntityTransferAddress> addressList = new ArrayList<>();
         if (ObjectUtils.isNotEmpty(organizations)) {
             List<Object> finalCriteria = new ArrayList<>();
@@ -666,7 +668,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             addressRequest.setCriteriaRequests(finalCriteria);
             addressRequest.setTake(orgIdList.size());
-            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest, headers);
             addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
         }
         return addressList;

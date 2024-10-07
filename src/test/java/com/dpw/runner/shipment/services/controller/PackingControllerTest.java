@@ -306,9 +306,9 @@ class PackingControllerTest {
     @Test
     void autoCalculateVolumetricWeight() {
         // Mock
-        when(packingService.autoCalculateVolumetricWeight(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(packingService.autoCalculatePacksData(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = packingController.autoCalculateVolumetricWeight(new AutoCalculatePackingRequest());
+        var responseEntity = packingController.autoCalculatePacksData(new AutoCalculatePackingRequest());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -316,9 +316,9 @@ class PackingControllerTest {
     @Test
     void autoCalculateVolumetricWeight2() {
         // Mock
-        when(packingService.autoCalculateVolumetricWeight(any())).thenThrow(new RuntimeException());
+        when(packingService.autoCalculatePacksData(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = packingController.autoCalculateVolumetricWeight(new AutoCalculatePackingRequest());
+        var responseEntity = packingController.autoCalculatePacksData(new AutoCalculatePackingRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -326,102 +326,11 @@ class PackingControllerTest {
     @Test
     void autoCalculateVolumetricWeight3() {
         // Mock
-        when(packingService.autoCalculateVolumetricWeight(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(packingService.autoCalculatePacksData(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = packingController.autoCalculateVolumetricWeight(new AutoCalculatePackingRequest());
+        var responseEntity = packingController.autoCalculatePacksData(new AutoCalculatePackingRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
-
-    @Test
-    void autoCalculateChargable() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateChargable(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = packingController.autoCalculateChargable(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void autoCalculateChargable2() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateChargable(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = packingController.autoCalculateChargable(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void autoCalculateChargable3() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateChargable(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = packingController.autoCalculateChargable(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void autoCalculateVolume() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateVolume(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = packingController.autoCalculateVolume(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void autoCalculateVolume2() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateVolume(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = packingController.autoCalculateVolume(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void autoCalculateVolume3() throws RunnerException {
-        // Mock
-        when(packingService.autoCalculateVolume(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = packingController.autoCalculateVolume(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void calculateVolumetricWeight() throws RunnerException {
-        // Mock
-        when(packingService.calculateVolumetricWeightForAirAndChargeable(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = packingController.calculateVolumetricWeight(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void calculateVolumetricWeight2() throws RunnerException {
-        // Mock
-        when(packingService.calculateVolumetricWeightForAirAndChargeable(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = packingController.calculateVolumetricWeight(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void calculateVolumetricWeight3() throws RunnerException {
-        // Mock
-        when(packingService.calculateVolumetricWeightForAirAndChargeable(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = packingController.calculateVolumetricWeight(new AutoCalculatePackingRequest());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
 
 }

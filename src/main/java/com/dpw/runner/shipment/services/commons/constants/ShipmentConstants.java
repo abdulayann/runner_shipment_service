@@ -115,6 +115,7 @@ public class ShipmentConstants {
 
 
     public static final String OCEAN_DG_APPROVAL_REQUEST_RESPONSE = "Ocean DG Approval Request Response";
+    public static final String ATTACH_DETACH_ORDER_RESPONSE = "Order attached/detached successfully";
     public static final String PADDING_10_PX = "padding: 10px;";
     public static final String STYLE = "style";
 

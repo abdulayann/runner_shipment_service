@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -19,7 +20,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -190,7 +190,7 @@ public class BookingIntegrationsUtility {
             }
             try {
                 try {
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.SECONDS.sleep(5);
                 } catch (Exception ex) {
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
@@ -210,7 +210,7 @@ public class BookingIntegrationsUtility {
 
         if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
             billingServiceAdapter.createBillV2(customerBooking, isShipmentEnabled,
-                    isBillingEnabled, shipmentDetailsResponse);
+                    isBillingEnabled, shipmentDetailsResponse, headers);
         } else {
             this.createShipmentInV1(customerBooking, false, true, shipmentDetailsResponse.getGuid(), headers);
         }

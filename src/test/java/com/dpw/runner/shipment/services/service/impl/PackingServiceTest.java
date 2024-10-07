@@ -1325,6 +1325,15 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCalculatePackSummaryDefault_Success() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).build());
+        mockShipmentSettings();
+        mockTenantSettings();
+        PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(null, Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
+        assertNotNull(packSummaryResponse);
+    }
+
+    @Test
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
         mockShipmentSettings();
@@ -1335,33 +1344,8 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculateVolumetricWeightForAir_Success() throws RunnerException {
-        VolumeWeightChargeable vwObj = packingService.calculateVolumetricWeightForAir(new BigDecimal(1), new BigDecimal(1), Constants.TRANSPORT_MODE_SEA, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3);
-        assertNotNull(vwObj);
-        assertEquals(vwObj.getChargeable(), jsonTestUtility.getTestVolWtChargeable().getChargeable());
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_SEA_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
     void testCalculateVolume_Success() throws RunnerException {
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingResponse);
     }
 
@@ -1370,7 +1354,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1379,7 +1363,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.CM, Constants.CM, Constants.CM, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1389,7 +1373,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        packingService.calculateVolume(Constants.FT, Constants.FT, Constants.FT, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1398,7 +1382,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.IN, Constants.IN, Constants.IN, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1407,7 +1391,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MTR, Constants.MTR, Constants.MTR, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1416,7 +1400,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1425,14 +1409,14 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MILLIMETER, Constants.MILLIMETER, Constants.MILLIMETER, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
     @Test
     void testAutoCalculateVolumetricWeight_Success() {
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
     }
 
@@ -1441,7 +1425,7 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
     }
 
@@ -1451,54 +1435,8 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getTestVolWtChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_AIR_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateVolume_Success() throws RunnerException {
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolume(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateChargeableForAir_Success() throws RunnerException {
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForAir_ChWt_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setWeight(new BigDecimal(9));
-        testAutoCalculatePackingRequest.setVolume(new BigDecimal(99999));
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForSEA_LCL_Success() throws RunnerException {
-        packingService.calculateChargeableForSEA_LCL(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
