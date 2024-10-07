@@ -29,13 +29,7 @@ public interface IPackingService extends ICommonService {
 
     PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws RunnerException;
-
-    ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws RunnerException;
-
-    ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> autoCalculatePacksData(CommonRequestModel commonRequestModel);
     PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest calculatePackUtilizationRequest) throws RunnerException;
     void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest);
 }

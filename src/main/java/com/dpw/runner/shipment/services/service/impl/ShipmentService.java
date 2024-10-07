@@ -1145,6 +1145,10 @@ public class ShipmentService implements IShipmentService {
                         obj.setWidthUnit(obj.getLengthUnit());
                         obj.setHeightUnit(obj.getLengthUnit());
                     }
+                    if(obj.getWeight() != null)
+                        obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
+                    if(obj.getVolume() != null)
+                        obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
                     return obj;
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
@@ -1613,9 +1617,9 @@ public class ShipmentService implements IShipmentService {
                 || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
             response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            if(request.getTransportMode() != null && ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)
-            && request.getShipmentType() != null && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-            || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))) {
+            if((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) &&
+                    Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) ||
+                    Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 response.setInnerPacks(dto.getInnerPacks());
                 response.setInnerPackUnit(dto.getInnerPackUnit());
             }
@@ -2144,8 +2148,6 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
-
         if(checkIfLCLConsolidationEligible(shipmentDetails))
             updateShipmentGateInDateAndStatusFromPacks(packingRequest, shipmentDetails);
         CompletableFuture.allOf(carrierDetailsFuture).join();
@@ -2467,6 +2469,9 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        shipmentRequest.setId(id);
+        dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
+
         if (bookingCarriageRequestList != null) {
             List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(commonUtils.convertToEntityList(bookingCarriageRequestList, BookingCarriage.class, isCreate), id);
             shipmentDetails.setBookingCarriagesList(updatedBookingCarriages);
@@ -2480,17 +2485,7 @@ public class ShipmentService implements IShipmentService {
             List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(elDetailsRequestList, ELDetails.class, isCreate), id);
             shipmentDetails.setElDetailsList(updatedELDetails);
         }
-        if (eventsRequestList != null) {
-            eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
-            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
-            updateActualFromTracking(eventsList, shipmentDetails);
-            eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
-            if (eventsList != null) {
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
-                shipmentDetails.setEventsList(updatedEvents);
-                eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
-            }
-        }
+
         // create Shipment event on the bases of auto create event flag
         if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
             autoGenerateCreateEvent(shipmentDetails);
@@ -2517,6 +2512,18 @@ public class ShipmentService implements IShipmentService {
         }
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             consolidationService.checkSciForAttachConsole(consolidationId);
+        }
+
+        if (eventsRequestList != null) {
+            eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
+            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
+            updateActualFromTracking(eventsList, shipmentDetails);
+            eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
+            if (eventsList != null) {
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
+                shipmentDetails.setEventsList(updatedEvents);
+                eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+            }
         }
 
         // Create events on basis of shipment status Confirmed/Created
@@ -3059,7 +3066,7 @@ public class ShipmentService implements IShipmentService {
             if(StringUtility.isNotEmpty(shipmentDetails.getMasterBill())) {
                 consolidationDetails.setBol(shipmentDetails.getMasterBill());
             }
-            if(Objects.equals(TRANSPORT_MODE_SEA, shipmentDetails.getTransportMode()))
+            if(Objects.equals(TRANSPORT_MODE_SEA, shipmentDetails.getTransportMode()) || Objects.equals(TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))
                 consolidationDetails.setHazardous(shipmentDetails.getContainsHazardous());
             consolidationService.generateConsolidationNumber(consolidationDetails);
             if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
@@ -3095,7 +3102,7 @@ public class ShipmentService implements IShipmentService {
                 createRoutes = createConsoleRoutePayload(createRoutes);
                 consolidationDetails.setRoutingsList(createRoutes);
             }
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
             if(createRoutes != null && !createRoutes.isEmpty()) {
                 routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
             }
@@ -3441,10 +3448,7 @@ public class ShipmentService implements IShipmentService {
                 boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
                 for (Containers container : containersList) {
                     boolean isPart = container.getIsPart() != null && container.getIsPart().booleanValue();
-                    if ((shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) || isPart) && container.getShipmentsList() != null && container.getShipmentsList().size() > 0) {
-
-                    }
-                    else {
+                    if ((!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && isPart) || listIsNullOrEmpty(container.getShipmentsList())) {
                         containerIds.add(container.getId());
                     }
                     if (isFCL) {
@@ -5191,7 +5195,7 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setSci(AwbConstants.T1);
             else if(Objects.equals(consolidationDetails.getSci(), AwbConstants.T1) && !makeConsoleSciT1.get() && oldEntity != null && !Objects.equals(shipment.getAdditionalDetails().getSci(), oldEntity.getAdditionalDetails().getSci()))
                 consolidationDetails.setSci(null);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipment.getContainsHazardous()));
             return consolidationDetails;
         }
         else // only execute when above logic execution not required (i.e. saving all shipments not required)
@@ -5252,7 +5256,7 @@ public class ShipmentService implements IShipmentService {
         if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
             || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
             consolidationDetails.setHazardous(dgFlag);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, dgFlag);
             return consolidationDetails;
         }
         return null;

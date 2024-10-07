@@ -84,7 +84,7 @@ public class ApiConstants {
     public static final String ASSIGN_PACKS_SHIPMENTS = "/assign/shipments";
     public static final String DETACH_PACKS_SHIPMENTS = "/detach/shipments";
     public static final String GET_ALL_MASTER_DATA = "/get/master-data";
-    public static final String AUTO_CALCULATE_VOLUMETRIC_WEIGHT = "/auto-calc-volumetric-weight";
+    public static final String AUTO_CALCULATE_PACKS_DATA = "/auto-calc-packs-data";
     public static final String AUTO_CALCULATE_CHARGABLE = "/auto-calc-chargable";
     public static final String AUTO_CALCULATE_VOLUME = "/auto-calc-volume";
     public static final String GET_AUTO_UPDATE_DESC_GOODS = "/get/auto-update/goods";

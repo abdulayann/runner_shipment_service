@@ -1221,6 +1221,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse fetchOrganization(Object request, HttpHeaders headers) {
+        ResponseEntity orgResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_API, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in getOrganization() function {}", (System.currentTimeMillis() - time));
+            return (V1DataResponse) orgResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public V1DataResponse updateOrganizationData(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1595,6 +1612,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse addressList(Object request, HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public List<String> getTenantName(List<Integer> tenantIds) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of(Constants.TENANTID));
@@ -1754,6 +1788,23 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
+            return (V1RetrieveResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1RetrieveResponse retrieveTenant(HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(headers);
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
             log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
             return (V1RetrieveResponse) masterDataResponse.getBody();

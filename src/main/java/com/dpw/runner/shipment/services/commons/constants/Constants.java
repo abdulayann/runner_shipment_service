@@ -144,6 +144,7 @@ public class Constants {
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
+    public static final String DIRECTION_CTS = "CTS";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
@@ -169,7 +170,8 @@ public class Constants {
     public static final String FAG = "FAG";
 
     public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
-    public static final double FACTOR_VOL_WT = 166.667;
+    public static final double AIR_FACTOR_FOR_VOL_WT = 166.667;
+    public static final double ROAD_FACTOR_FOR_VOL_WT = 333.0;
 
     /**
      * Enum Constants

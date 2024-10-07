@@ -131,6 +131,9 @@ public class RoutingsService implements IRoutingsService {
             Long shipmentId = routings.stream().findFirst()
                     .map(Routings::getShipmentId).orElse(null);
 
+            // clear Routing Timestamps
+            routings.forEach(this::clearRoutingTimestamps);
+
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
@@ -365,6 +368,13 @@ public class RoutingsService implements IRoutingsService {
         } else {
             log.warn("No routings found for place code: {}", tsPlaceCode);
         }
+    }
+
+    private void clearRoutingTimestamps(Routings routing) {
+        routing.setAta(null);
+        routing.setEta(null);
+        routing.setAtd(null);
+        routing.setEtd(null);
     }
 
     /**

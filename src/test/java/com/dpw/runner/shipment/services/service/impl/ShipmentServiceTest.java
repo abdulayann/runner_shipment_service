@@ -2574,7 +2574,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
@@ -2612,7 +2612,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
@@ -3573,7 +3573,13 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2Test() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
+        packingRequest.setWeight(BigDecimal.valueOf(11.5));
+        packingRequest.setVolume(BigDecimal.valueOf(11));
+        packingRequest.setPacks("1");
+        packingRequest.setLengthUnit("M");
         CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
@@ -3598,6 +3604,8 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(packingDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(new Packing()));
 
         when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
@@ -4794,7 +4802,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
 
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());
@@ -4847,7 +4855,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), eq(false))).thenReturn(Arrays.asList(Containers.builder().build()));
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
-        when(consolidationDetailsDao.save(any(), eq(false))).thenReturn(ConsolidationDetails.builder().build());
+        when(consolidationDetailsDao.save(any(), eq(false), anyBoolean())).thenReturn(ConsolidationDetails.builder().build());
 
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         mockShipmentSettings();
@@ -6157,7 +6165,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
@@ -6283,7 +6291,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2TestNotesNotNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
         CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         customerBookingRequest.setCustomer(PartiesRequest.builder().addressCode("code").orgCode("org").addressData(new HashMap<>()).orgData(new HashMap<>()).build());
 
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
