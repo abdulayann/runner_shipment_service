@@ -1589,7 +1589,14 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
             log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
-            return (PartyRequestV2) masterDataResponse.getBody();
+            PartyRequestV2 partyRequestV2 = (PartyRequestV2) masterDataResponse.getBody();
+            if(partyRequestV2 != null) {
+                if (partyRequestV2.getOrgData() != null && partyRequestV2.getOrgData().containsKey("Id"))
+                    partyRequestV2.setOrgId(String.valueOf(partyRequestV2.getOrgData().get("Id")));
+                if (partyRequestV2.getAddressData() != null && partyRequestV2.getAddressData().containsKey("Id"))
+                    partyRequestV2.setAddressId(String.valueOf(partyRequestV2.getAddressData().get("Id")));
+            }
+            return partyRequestV2;
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
