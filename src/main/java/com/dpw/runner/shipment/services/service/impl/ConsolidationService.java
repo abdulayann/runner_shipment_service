@@ -1657,7 +1657,7 @@ public class ConsolidationService implements IConsolidationService {
                     case Constants.TRANSPORT_MODE_ROA:
                         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        BigDecimal factor = new BigDecimal(AIR_FACTOR_FOR_VOL_WT);
+                        BigDecimal factor = BigDecimal.valueOf(AIR_FACTOR_FOR_VOL_WT);
                         if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
                             factor = BigDecimal.valueOf(ROAD_FACTOR_FOR_VOL_WT);
                         }
