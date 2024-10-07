@@ -3454,7 +3454,13 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2Test() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
+        packingRequest.setWeight(BigDecimal.valueOf(11.5));
+        packingRequest.setVolume(BigDecimal.valueOf(11));
+        packingRequest.setPacks("1");
+        packingRequest.setLengthUnit("M");
         CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
@@ -6128,7 +6134,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2TestNotesNotNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
         CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         customerBookingRequest.setCustomer(PartiesRequest.builder().addressCode("code").orgCode("org").addressData(new HashMap<>()).orgData(new HashMap<>()).build());
 
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));

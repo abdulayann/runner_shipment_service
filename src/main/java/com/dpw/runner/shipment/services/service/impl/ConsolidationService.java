@@ -121,7 +121,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -1649,7 +1649,7 @@ public class ConsolidationService implements IConsolidationService {
                         BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         wtInTn = wtInTn.divide(BigDecimal.valueOf(1000));
                         BigDecimal wv = new BigDecimal(convertUnit(Constants.VOLUME, wtInTn, Constants.VOLUME_UNIT_M3, volumeUnit).toString());
-                        vwOb.setVolumeWeight(wv.multiply(BigDecimal.TEN).setScale(0, RoundingMode.CEILING).divide(BigDecimal.TEN));
+                        vwOb.setVolumeWeight(wv);
                         vwOb.setVolumeWeightUnit(volumeUnit);
                         break;
                     case Constants.TRANSPORT_MODE_AIR:
@@ -1657,9 +1657,9 @@ public class ConsolidationService implements IConsolidationService {
                     case Constants.TRANSPORT_MODE_ROA:
                         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        BigDecimal factor = new BigDecimal(166.667);
+                        BigDecimal factor = BigDecimal.valueOf(AIR_FACTOR_FOR_VOL_WT);
                         if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
-                            factor = BigDecimal.valueOf(333.0);
+                            factor = BigDecimal.valueOf(ROAD_FACTOR_FOR_VOL_WT);
                         }
                         BigDecimal wvInKG = vlInM3.multiply(factor);
                         if (wtInKG.compareTo(wvInKG) < 0) {
