@@ -180,6 +180,54 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void saveTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
+        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveTest3() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
+        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveTest4() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setStatus(ShipmentStatus.GenerateHAWB.getValue());
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
     void applyShipmentValidationsTest() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
 
