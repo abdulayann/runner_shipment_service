@@ -732,6 +732,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(List.of(testShipment));
         testConsol.setRoutingsList(null);
+        testHawb.getAwbCargoInfo().setSci(AwbConstants.T1);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 

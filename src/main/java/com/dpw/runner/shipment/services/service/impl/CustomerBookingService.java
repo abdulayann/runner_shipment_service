@@ -1266,14 +1266,17 @@ public class CustomerBookingService implements ICustomerBookingService {
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
+        var userContext = UserContext.getUser();
         return () -> {
             try {
                 MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext);
                 runnable.run();
             } finally {
                 RequestAuthContext.removeToken();
                 MDC.clear();
+                UserContext.removeUser();
             }
         };
     }

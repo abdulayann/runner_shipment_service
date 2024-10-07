@@ -129,6 +129,8 @@ public interface IV1Service {
 
     V1DataResponse createOrganizationData(Object request);
 
+    V1DataResponse fetchOrganization(Object request, HttpHeaders httpHeaders);
+
     V1DataResponse updateOrganizationData(Object request);
 
     V1DataResponse createUnlocationData(Object request);
@@ -168,6 +170,8 @@ public interface IV1Service {
 
     V1DataResponse addressList(Object request);
 
+    V1DataResponse addressList(Object request, HttpHeaders headers);
+
     List<String> getTenantName(List<Integer> tenantIds);
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
@@ -178,6 +182,7 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTenantSettings();
     CompanySettingsResponse retrieveCompanySettings();
     V1RetrieveResponse retrieveTenant();
+    V1RetrieveResponse retrieveTenant(HttpHeaders headers);
     PartyRequestV2 getDefaultOrg();
 
     V1DataResponse fetchOwnType(Object request);
