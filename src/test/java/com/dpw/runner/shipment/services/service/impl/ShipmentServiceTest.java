@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -246,6 +247,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -4373,6 +4375,34 @@ ShipmentServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.list(commonRequestModel);
         assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void listShipmentsWithOrderCounts() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentOrders(Collections.singletonList(ShipmentOrder.builder().build()));
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        ResponseEntity<?> httpResponse = shipmentService.list(commonRequestModel);
+        assertEquals(expectedResponse, httpResponse);
+        var data  = (ShipmentListResponse) (((RunnerListResponse<?>) Objects.requireNonNull(httpResponse.getBody())).getData()).get(0);
+        assertEquals(1, data.getOrdersCount());
     }
 
     @Test

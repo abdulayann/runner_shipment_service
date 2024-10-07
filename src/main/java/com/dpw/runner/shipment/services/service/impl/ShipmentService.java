@@ -720,6 +720,8 @@ public class ShipmentService implements IShipmentService {
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
             response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).map(List::size).orElse(null));
+            if(ObjectUtils.isNotEmpty(shipmentDetail.getShipmentOrders()))
+                response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
             responseList.add(response);
         });
         try {
