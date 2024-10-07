@@ -42,4 +42,6 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private String locationRole;
     private Long consolidationId;
     private String shipmentNumber;
+    private String flightNumber;
+    private String flightName;
 }

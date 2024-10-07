@@ -38,6 +38,8 @@ public class EventsResponse implements IRunnerResponse {
     private String longitude;
     private String source;
     private String event_estimate_update_reasons;
+    private String flightNumber;
+    private String flightName;
 
     // Conditional response from TrackingEvents
     private String containerNumber;
