@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -40,6 +41,7 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,6 +50,7 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection.NullShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
@@ -100,6 +103,8 @@ class ShipmentDaoTest extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private IMawbStocksDao mawbStocksDao;
+    @Mock
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Test
     void testFindByHblNumberAndExcludeShipmentId() {
@@ -169,6 +174,55 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
+        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveTest3() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
+        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveTest4() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setStatus(ShipmentStatus.GenerateHAWB.getValue());
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -418,6 +472,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, true);
         assertNotNull(response);
@@ -441,6 +496,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         consolidationDetailsList.add(consolidationDetails);
@@ -555,6 +611,7 @@ class ShipmentDaoTest extends CommonMocks {
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
        assertNotNull(response);
@@ -591,6 +648,7 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).build();
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
@@ -654,6 +712,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         MawbStocks mawbStocks = MawbStocks.builder().build();
         mawbStocks.setId(1L);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
@@ -717,6 +776,7 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -861,6 +921,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         mawbStocksLinkList.add(MawbStocksLink.builder().status("CONSUMED").build());
         when(mawbStocksLinkDao.findByMawbNumber(any())).thenReturn(mawbStocksLinkList);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         when(mawbStocksDao.findById(any())).thenReturn(Optional.of(MawbStocks.builder().build()));
         mockShipmentSettings();
@@ -1087,6 +1148,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         assertEquals(shipmentDetailsList, shipmentDao.saveAll(shipmentDetailsList));
     }
@@ -1102,6 +1164,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -1113,6 +1176,24 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
+        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
+        mockShipmentSettings();
+        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void testSaveWithCancelledShipment() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setStatus(ShipmentStatus.Cancelled.getValue());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
         mockShipmentSettings();
