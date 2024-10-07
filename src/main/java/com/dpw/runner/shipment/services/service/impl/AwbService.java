@@ -349,11 +349,14 @@ public class AwbService implements IAwbService {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
                             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId()).orElse(null);
-                            if(Objects.isNull(consolidationDetails.getScreeningStatus()) || List.of(consolidationDetails.getScreeningStatus()).isEmpty()) {
+                            if(Objects.isNull(consolidationDetails.getScreeningStatus()) || consolidationDetails.getScreeningStatus().isEmpty()) {
                                 throw new ValidationException("Screening Status is mandatory to generate MAWB");
                             }
                             if(Objects.isNull(consolidationDetails.getSecurityStatus()) || consolidationDetails.getSecurityStatus().isEmpty()) {
                                 throw new ValidationException("Security Status is mandatory to generate MAWB");
+                            }
+                            if(consolidationDetails.getScreeningStatus() != null && consolidationDetails.getScreeningStatus().size() == 1 && consolidationDetails.getScreeningStatus().get(0).equals("VCK")){
+                                throw new ValidationException("Please select an additional screening status along with VCK.");
                             }
                         }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
@@ -372,11 +375,14 @@ public class AwbService implements IAwbService {
                     } else {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
                             ShipmentDetails shipmentDetails = shipmentDao.findById(awb.getShipmentId()).orElse(null);
-                            if(Objects.isNull(shipmentDetails.getAdditionalDetails().getScreeningStatus()) || List.of(shipmentDetails.getAdditionalDetails().getScreeningStatus()).isEmpty()) {
+                            if(Objects.isNull(shipmentDetails.getAdditionalDetails().getScreeningStatus()) || shipmentDetails.getAdditionalDetails().getScreeningStatus().isEmpty()) {
                                 throw new ValidationException("Screening Status is mandatory to generate HAWB");
                             }
                             if(Objects.isNull(shipmentDetails.getSecurityStatus()) || shipmentDetails.getSecurityStatus().isEmpty()) {
                                 throw new ValidationException("Security Status is mandatory to generate HAWB");
+                            }
+                            if(shipmentDetails.getAdditionalDetails().getScreeningStatus() != null && shipmentDetails.getAdditionalDetails().getScreeningStatus().size() == 1 && shipmentDetails.getAdditionalDetails().getScreeningStatus().get(0).equals("VCK")) {
+                                throw new ValidationException("Please select an additional screening status along with VCK.");
                             }
                         }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
