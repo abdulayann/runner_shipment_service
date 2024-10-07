@@ -666,11 +666,11 @@ public class PackingService implements IPackingService {
                 chargeableWeight = Math.max(volumetricWeight, totalVolInM3);
             }
             else {
-                BigDecimal factor = BigDecimal.valueOf(166.667);
+                double factor = AIR_FACTOR_FOR_VOL_WT;
                 if (transportMode.equals(Constants.TRANSPORT_MODE_ROA)) {
-                    factor = BigDecimal.valueOf(333.0);
+                    factor = ROAD_FACTOR_FOR_VOL_WT;
                 }
-                volumetricWeight = totalVolInM3 * factor.doubleValue();
+                volumetricWeight = totalVolInM3 * factor;
                 chargeableWeight = Math.max(volumetricWeight, totalWtInKG);
             }
             List<String> sortedKeys = new ArrayList<>(map.keySet());

@@ -657,7 +657,7 @@ public class AwbService implements IAwbService {
             if (tenantSettings != null && Constants.VOLUME_UNIT_M3.equalsIgnoreCase(tenantSettings.getVolumeChargeableUnit()) && Constants.WEIGHT_UNIT_KG.equalsIgnoreCase(tenantSettings.getWeightChargeableUnit())) {
                 grossWeightUnit = Constants.WEIGHT_UNIT_KG;
                 chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
-                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
+                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.AIR_FACTOR_FOR_VOL_WT));
                 chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
                 totalVolumetricWeight = volumetricWeightOfMawbGood;
             }
@@ -2389,7 +2389,7 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            Double factor = Constants.FACTOR_VOL_WT;
+            Double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
             totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
         }
         return hawbPacksLinkedToMawb;

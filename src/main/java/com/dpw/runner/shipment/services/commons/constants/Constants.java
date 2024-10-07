@@ -170,7 +170,8 @@ public class Constants {
     public static final String FAG = "FAG";
 
     public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
-    public static final double FACTOR_VOL_WT = 166.667;
+    public static final double AIR_FACTOR_FOR_VOL_WT = 166.667;
+    public static final double ROAD_FACTOR_FOR_VOL_WT = 333.0;
 
     /**
      * Enum Constants
