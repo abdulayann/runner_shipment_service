@@ -380,7 +380,7 @@ public class V1PermissionMapUtil {
     );
 
 
-    private static final Map<String, List<String>> updatedPermissionMapping = Map.ofEntries(
+    private static final Map<String, List<String>> updatedPermissionMapping = Map.<String, List<String>>ofEntries(
             // SHIPMENT PERMISSION MAPPINGS
             Map.entry("Operations:Shipments:AIR:Export:View", List.of("air-exp-shipmentList", "air-exp-shipmentRetrieve")),
             Map.entry("Operations:Shipments:AIR:Export:Create", List.of("air-exp-shipmentCreate")),
@@ -491,15 +491,15 @@ public class V1PermissionMapUtil {
         Set<String> res = new HashSet<>();
         for(String permission : v1PermisionList) {
             var v1UpdatedPermission = updatedPermissionMapping.get(permission);
-            if(Objects.isNull(v1UpdatedPermission))
-                continue;
-            res.addAll(v1UpdatedPermission);
+            if(!Objects.isNull(v1UpdatedPermission)) {
+                res.addAll(v1UpdatedPermission);
+            }
 
             var v1OldPermission = getPermissionName(permission);
-            if(Objects.isNull(v1OldPermission))
-                continue;
+            if(!Objects.isNull(v1OldPermission)) {
+                res.add(v1OldPermission);
+            }
 
-            res.add(v1OldPermission);
         }
 
         return res.stream().toList();

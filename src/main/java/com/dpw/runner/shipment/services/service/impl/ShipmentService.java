@@ -7278,4 +7278,18 @@ public class ShipmentService implements IShipmentService {
 
     }
 
+
+    @Override
+    public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
+        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+
+        Optional<ShipmentDetails> shipmentOptional = retrieveByIdOrGuid(shipmentRequest);
+        ShipmentDetails shipment = shipmentOptional.get();
+
+        // update shipment status by calling a dao method
+        shipmentDao.updateStatus(shipment.getId(), ShipmentStatus.Cancelled.getValue());
+
+        return ResponseHelper.buildSuccessResponse();
+    }
+
 }

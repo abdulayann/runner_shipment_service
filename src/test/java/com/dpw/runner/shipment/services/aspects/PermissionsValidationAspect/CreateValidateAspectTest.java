@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,14 +49,16 @@ class CreateValidateAspectTest {
     }
 
 
-    @Test
-    void testCreateShipmentAspect() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(strings = {"Shipments:Creation:All Shipment:AllShipmentCreate", "Operations:Shipments:SEA:Export:Create"})
+    // Should work for both older and new permissions
+    void testCreateShipmentAspect(String permission) throws RunnerException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Creation:All Shipment:AllShipmentCreate")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList(permission)));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());

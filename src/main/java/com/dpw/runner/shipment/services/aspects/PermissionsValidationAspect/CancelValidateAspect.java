@@ -44,7 +44,7 @@ public class CancelValidateAspect {
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
-                        .filter(e -> !e.contains("update"))
+                        .filter(e -> !e.contains("cancel"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);
@@ -76,7 +76,7 @@ public class CancelValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.cancel(..)) && args(commonRequestModel)")
     public void validateConsolidationCancel(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
-        //
+        // empty since we don't have cancel status in consolidation yet !
     }
 
 }

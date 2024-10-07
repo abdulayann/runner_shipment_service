@@ -41,7 +41,7 @@ public class CreateValidateAspect {
             List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+                // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
@@ -94,10 +94,11 @@ public class CreateValidateAspect {
             List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+                // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
+                        .filter(e -> !e.contains("create"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);
