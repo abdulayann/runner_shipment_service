@@ -77,14 +77,8 @@ import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -3429,6 +3423,40 @@ class V1ServiceImplTest {
         var mock = mock(ResponseEntity.class);
         var mockResponse = new PartyRequestV2();
         mockResponse.setOrgCode("DPW");
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(mock.getBody()).thenReturn(mockResponse);
+        // Act
+        var responseEntity = v1ServiceImpl.getDefaultOrg();
+        // Assert
+        assertEquals("DPW", responseEntity.getOrgCode());
+    }
+
+    @Test
+    void testGetDefaultOrg_OrgData() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new PartyRequestV2();
+        mockResponse.setOrgCode("DPW");
+        mockResponse.setOrgData(Map.of("Id", 213));
+        mockResponse.setAddressData(Map.of("Id", 432));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(mock.getBody()).thenReturn(mockResponse);
+        // Act
+        var responseEntity = v1ServiceImpl.getDefaultOrg();
+        // Assert
+        assertEquals("DPW", responseEntity.getOrgCode());
+    }
+
+    @Test
+    void testGetDefaultOrg_OrgData_Without_Id() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new PartyRequestV2();
+        mockResponse.setOrgCode("DPW");
+        mockResponse.setOrgData(Map.of());
+        mockResponse.setAddressData(Map.of());
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
         when(mock.getBody()).thenReturn(mockResponse);
