@@ -70,10 +70,10 @@ public class TrackingConsumer {
     public void processError(ServiceBusErrorContext context) {
         // Process error
         if (context.getException() instanceof ServiceBusException exception) {
-            log.error("Tracking Consumer - Error source: {}, reason {}", context.getErrorSource(), exception.getReason());
+            log.error("Tracking Consumer - Error source: {}, reason {}", context.getErrorSource(), exception.getReason(), exception.getCause());
         }
         else {
-            log.error("Tracking Consumer - Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
+            log.error("Tracking Consumer - Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage(), context.getException().getCause());
         }
     }
 
