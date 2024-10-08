@@ -36,3 +36,4 @@ build/
 logs/
 mvnw
 mvnw.cmd
+.DS_Store
