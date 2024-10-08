@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
+import com.dpw.runner.shipment.services.dto.request.CustomerStatusUpdateRequest;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -335,6 +336,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        CustomerStatusUpdateRequest customerStatusUpdateRequest = (CustomerStatusUpdateRequest) commonRequestModel.getData();
+        CustomerBookingRequest request = jsonHelper.convertValue(customerStatusUpdateRequest, CustomerBookingRequest.class);
+        return update(CommonRequestModel.buildRequest(request));
     }
 
     @Override
