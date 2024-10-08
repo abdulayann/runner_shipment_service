@@ -45,10 +45,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.util.Strings;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -544,6 +541,87 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+            "null, SECURITY_STATUS",       // Test with null ScreeningStatus list
+            "'', SECURITY_STATUS",         // Test with empty ScreeningStatus list
+            "VALID_STATUS, null",          // Test with valid ScreeningStatus and null SecurityStatus
+            "VALID_STATUS, ''",            // Test with valid ScreeningStatus and empty SecurityStatus
+            "VCK, SECURITY_STATUS"         // Test with ScreeningStatus containing only "VCK"
+    })
+    void listConsolidationAwb_withValidationFailureResponse(String screeningStatus, String securityStatus) {
+        Long consolidationId = 1L;
+        Awb mockAwb = testMawb;
+        mockAwb.setConsolidationId(consolidationId);
+
+        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id", 1L, "=");
+        listCommonRequest.setFromGenerateAwbButton(true);
+
+        Page<Awb> resultPage = new PageImpl<>(List.of(mockAwb));
+        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+
+        if ("null".equals(screeningStatus)) {
+            consolidationDetails.setScreeningStatus(null);
+        } else if ("".equals(screeningStatus)) {
+            consolidationDetails.setScreeningStatus(new ArrayList<>());
+        } else {
+            consolidationDetails.setScreeningStatus(List.of(screeningStatus));
+        }
+
+        consolidationDetails.setSecurityStatus("null".equals(securityStatus) ? null : securityStatus);
+
+        Mockito.when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+        ResponseEntity<IRunnerResponse> response = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+
+        assertNotNull(response);
+        assertFalse(response.getStatusCode().is2xxSuccessful());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "null, SECURITY_STATUS",       // Test with null ScreeningStatus list
+            "'', SECURITY_STATUS",         // Test with empty ScreeningStatus list
+            "VALID_STATUS, null",          // Test with valid ScreeningStatus and null SecurityStatus
+            "VALID_STATUS, ''",            // Test with valid ScreeningStatus and empty SecurityStatus
+            "VCK, SECURITY_STATUS"         // Test with ScreeningStatus containing only "VCK"
+    })
+    void listShipmentAwb_withValidationFailureResponse(String screeningStatus, String securityStatus) {
+        Long shipmentId = 1L;
+        Awb mockAwb = testHawb;
+        mockAwb.setShipmentId(shipmentId);
+
+        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id", 1L, "=");
+        listCommonRequest.setFromGenerateAwbButton(true);
+
+        Page<Awb> resultPage = new PageImpl<>(List.of(mockAwb));
+        Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        shipmentDetails.setAdditionalDetails(additionalDetails);
+
+        if ("null".equals(screeningStatus)) {
+            shipmentDetails.getAdditionalDetails().setScreeningStatus(null);
+        } else if ("".equals(screeningStatus)) {
+            shipmentDetails.getAdditionalDetails().setScreeningStatus(new ArrayList<>());
+        } else {
+            shipmentDetails.getAdditionalDetails().setScreeningStatus(List.of(screeningStatus));
+        }
+
+        shipmentDetails.setSecurityStatus("null".equals(securityStatus) ? null : securityStatus);
+
+        Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        ResponseEntity<IRunnerResponse> response = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+
+        assertNotNull(response);
+        assertFalse(response.getStatusCode().is2xxSuccessful());
     }
 
     @Test
