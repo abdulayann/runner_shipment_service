@@ -759,6 +759,8 @@ public class PackingService implements IPackingService {
             BigDecimal weight = request.getWeight();
             String weightUnit = request.getWeightUnit();
             calculateVolume(request, response);
+            response.setVolume(request.getVolume());
+            response.setVolumeUnit(request.getVolumeUnit());
             BigDecimal volume = request.getVolume();
             String volumeUnit = request.getVolumeUnit();
             VolumeWeightChargeable vwOb;
