@@ -46,7 +46,7 @@ public class RetrieveValidateAspect {
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
-                        .filter(e -> !e.contains("retrieve") || !e.contains("list"))
+                        .filter(e -> !(e.contains("retrieve") || e.contains("list")))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);

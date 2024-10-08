@@ -33,16 +33,28 @@ public class PermissionsContext {
 
         for (String permission : UserPermissions) {
             // Shipment permissions grouping
-            if(permission.endsWith(SHIPMENT_LIST_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
+            if(permission.endsWith(SHIPMENT_LIST_PERMISSION) || (permission.endsWith(VIEW_PERMISSION) && permission.contains(SHIPMENTS))) {
                 shipmentListPermission.add(permission);
-            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
+            }
+            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION) || (permission.endsWith(VIEW_PERMISSION) && permission.contains(SHIPMENTS))) {
                 shipmentRetrievePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION) || permission.endsWith(CREATE_PERMISSION))
-                shipmentCreatePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION) || permission.endsWith(MODIFY_PERMISSION))
+            }
+            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION) || (permission.endsWith(MODIFY_PERMISSION) && permission.contains(SHIPMENTS))) {
                 shipmentUpdatePermission.add(permission);
-            if(permission.endsWith(CANCEL_PERMISSION) && permission.contains(SHIPMENTS))
+                shipmentListPermission.add(permission);
+                shipmentRetrievePermission.add(permission);
+            }
+            if(permission.endsWith(CANCEL_PERMISSION) && permission.contains(SHIPMENTS)) {
                 shipmentCancelPermission.add(permission);
+                shipmentListPermission.add(permission);
+                shipmentRetrievePermission.add(permission);
+            }
+            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION) || (permission.endsWith(CREATE_PERMISSION)) && permission.contains(SHIPMENTS)) {
+                shipmentCreatePermission.add(permission);
+                shipmentUpdatePermission.add(permission);
+                shipmentListPermission.add(permission);
+                shipmentRetrievePermission.add(permission);
+            }
 
             // Consolidation permission grouping
             if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
