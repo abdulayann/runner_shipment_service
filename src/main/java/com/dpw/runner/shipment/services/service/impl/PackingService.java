@@ -783,6 +783,8 @@ public class PackingService implements IPackingService {
                 response.setVolumeWeight(vwOb.getVolumeWeight());
                 response.setVolumeWeightUnit(vwOb.getVolumeWeightUnit());
                 response.setChargeableUnit(vwOb.getChargeableUnit());
+                response.setVolume(volume);
+                response.setVolumeUnit(volumeUnit);
             }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
