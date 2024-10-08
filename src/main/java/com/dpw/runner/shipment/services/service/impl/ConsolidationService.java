@@ -3458,10 +3458,6 @@ public class ConsolidationService implements IConsolidationService {
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
-        // assign consolidation bol to mawb field as well
-        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            consolidationDetails.setMawb(consolidationDetails.getBol());
-        }
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
