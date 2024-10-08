@@ -1,0 +1,1 @@
+update shipment_details set house_bill = 'MILS24090073' where shipment_id = 'MILS24090073';
