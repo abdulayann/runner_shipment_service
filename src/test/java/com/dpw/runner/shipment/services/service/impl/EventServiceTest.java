@@ -1010,5 +1010,43 @@ class EventServiceTest extends CommonMocks {
         assertFalse(response);
     }
 
+    @Test
+    void testListEventsV2ForInputShipmentId() throws RunnerException {
+        Long shipmentId = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void testListEventsV2ForInputConsolidationId() throws RunnerException {
+        Long consolidation = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidation);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
 
 }

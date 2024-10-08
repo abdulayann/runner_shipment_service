@@ -564,6 +564,8 @@ public class EventService implements IEventService {
 
     private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription) {
         try {
+            if(Objects.isNull(eventsList) || eventsList.isEmpty())
+                return;
             // Define criteria for fetching event codes master data
             List<String> eventCodes = eventsList.stream().map(getEventCode).toList();
             List<Object> subCriteria1 = Arrays.asList(
@@ -1076,4 +1078,46 @@ public class EventService implements IEventService {
         shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel) {
+        TrackingEventsRequest request = (TrackingEventsRequest) commonRequestModel.getData();
+
+        Long shipmentId = request.getShipmentId();
+        Long consolidationId = request.getConsolidationId();
+
+        List<EventsResponse> allEventResponses = new ArrayList<>();
+        ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
+
+        if (shipmentId != null) {
+            List<Events> shipmentEvents = getEventsListForCriteria(shipmentId, true, listRequest);
+            allEventResponses = jsonHelper.convertValueToList(shipmentEvents, EventsResponse.class);
+        }
+        else if (consolidationId != null) {
+            List<Events> consolEvents = getEventsListForCriteria(consolidationId, false, listRequest);
+            allEventResponses = jsonHelper.convertValueToList(consolEvents, EventsResponse.class);
+        }
+
+        // set MasterData
+        setEventCodesMasterData(
+                allEventResponses,
+                EventsResponse::getEventCode,
+                EventsResponse::setDescription
+        );
+
+        return ResponseHelper.buildSuccessResponse(allEventResponses);
+    }
+
+    private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest) {
+        if(isShipment) {
+            listRequest = CommonUtils.andCriteria("entityId", id, "=", listRequest);
+            listRequest = CommonUtils.andCriteria("entityType", Constants.SHIPMENT, "=", listRequest);
+        }
+        else {
+            listRequest = CommonUtils.andCriteria("consolidationId", id, "=", listRequest);
+        }
+        Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
+        List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+        log.info("EventsList - fetched {} events", allEvents.size());
+        return allEvents;
+    }
 }
