@@ -1037,7 +1037,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -1077,7 +1077,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
@@ -2313,7 +2313,7 @@ import static org.mockito.Mockito.*;
         when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
         mockShipmentSettings();
         mockTenantSettings();
-        assertThrows(RunnerException.class, () -> spyService.completeUpdate(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> spyService.completeUpdate(commonRequestModel));
     }
 
     @Test
