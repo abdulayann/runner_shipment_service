@@ -245,4 +245,40 @@ class EventsControllerTest {
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+
+    @Test
+    void listEventsV2() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.listV2(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = eventsController.listEventsV2(request);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listEventsV2ReturnBadRequest() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.listV2(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = eventsController.listEventsV2(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listEventsV2ReturnBadRequestWithErrorMessage() throws RunnerException {
+        TrackingEventsRequest request = new TrackingEventsRequest();
+        request.setShipmentId(123L);
+        // Mock
+        when(eventService.listV2(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = eventsController.listEventsV2(request);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

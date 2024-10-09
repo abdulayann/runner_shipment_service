@@ -91,6 +91,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -145,6 +147,9 @@ class V1ServiceImplTest {
 
     @MockBean
     private TokenUtility tokenUtility;
+
+    @MockBean
+    private CacheManager cacheManager;
 
     private V1UsersEmailRequest request;
     private UsersRoleListResponse userRole;
@@ -5550,7 +5555,35 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testGenerateToken_Success() {
+    void testGenerateTokenReturnsNullCache() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+
+        Cache mockCache = null;
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+
+        // Call the method and verify the result
+        assertThrows(V1ServiceException.class, () -> v1ServiceImpl.generateToken());
+
+    }
+
+    @Test
+    void testGenerateTokenGetsTokenFromCache() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> token);
+
+        // Call the method and verify the result
+        String resultToken = v1ServiceImpl.generateToken();
+        assertEquals(token, resultToken);
+
+    }
+
+    @Test
+    void testGenerateToken_Success() {
         // Mock the token generation API response
         String token = "sampleToken";
         String v1GenerateTokenUrl = "https://qa-runner.cargoes.com/Api/Account/GenerateToken";
@@ -5571,6 +5604,10 @@ class V1ServiceImplTest {
                 any(),
                 eq(responseType)) // Ensure the ParameterizedTypeReference matches
         ).thenReturn(responseEntity);
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> null);
 
         // Call the method and verify the result
         String resultToken = v1ServiceImpl.generateToken();
