@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -56,6 +57,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -74,6 +76,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -89,6 +93,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
 
 @Service
 //@EnableAsync
@@ -415,16 +420,21 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
-            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility) {
+            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
         this.getUserServiceFactory = getUserServiceFactory;
         this.tokenUtility = tokenUtility;
+        this.cacheManager = cacheManager;
     }
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
+    private final CacheManager cacheManager;
+
+    @Value("${env.name}-${v1service.serviceAccount.username}")
+    private String serviceTokenCacheKey;
 
     @Override
     public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
@@ -590,22 +600,32 @@ public class V1ServiceImpl implements IV1Service {
             // Create HttpEntity with headers and body
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
-            // Call the API to get the token
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {});
+            // Search cache for the token of service account
+            Cache userCache = cacheManager.getCache(CacheConstants.CACHE_KEY_USER);
+            Objects.requireNonNull(userCache);
+            Cache.ValueWrapper cachedToken = userCache.get(serviceTokenCacheKey);
+            if (Objects.isNull(cachedToken) || Objects.isNull(cachedToken.get())) {
+                // Call the API to get the token
+                ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {
+                });
 
-            long timeTaken = System.currentTimeMillis() - startTime;
-            log.info("Time taken to fetch token: {} ms", timeTaken);
+                long timeTaken = System.currentTimeMillis() - startTime;
+                log.info("Time taken to fetch token: {} ms", timeTaken);
 
-            // Extract token from the API response
-            Map<String, Object> responseBody = response.getBody();
-            if (responseBody != null && responseBody.containsKey("token")) {
-                String token = (String) responseBody.get("token");
-                log.info("Token successfully retrieved from API.");
-                return token;
-            } else {
-                log.error("Token not found in response.");
-                throw new V1ServiceException("Token not found in response");
+                // Extract token from the API response
+                Map<String, Object> responseBody = response.getBody();
+                if (responseBody != null && responseBody.containsKey("token")) {
+                    String token = (String) responseBody.get("token");
+                    log.info("Token successfully retrieved from API.");
+                    userCache.put(serviceTokenCacheKey, token);
+                    return token;
+                }
+                else {
+                    log.error("Token not found in response.");
+                    throw new V1ServiceException("Token not found in response");
+                }
             }
+            return StringUtility.convertToString(cachedToken.get());
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             log.error("HTTP error during token generation: {}", ex.getMessage());
