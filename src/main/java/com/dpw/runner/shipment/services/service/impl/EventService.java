@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
@@ -1001,6 +1002,7 @@ public class EventService implements IEventService {
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
+            TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
