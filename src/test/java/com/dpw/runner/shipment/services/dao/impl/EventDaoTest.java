@@ -7,16 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -63,7 +54,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -366,7 +356,7 @@ class EventDaoTest {
         request.placeName = "test";
         request.placeDesc = "test";
 
-        var spyBean = Mockito.spy(eventDao);
+        var spyBean = spy(eventDao);
 
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
@@ -405,6 +395,7 @@ class EventDaoTest {
     @Test
     void createEventForAirMessagingEvent() {
         Events events = new Events();
+        events.setEntityType(Constants.CONSOLIDATION);
 
         Query queryMock = mock(Query.class);
 
@@ -412,6 +403,7 @@ class EventDaoTest {
         when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
 
         eventDao.createEventForAirMessagingEvent(events);
+        verify(queryMock, times(1)).executeUpdate();
     }
 
     @Test
@@ -427,6 +419,7 @@ class EventDaoTest {
         events.setScheduledDate(LocalDateTime.now());
         events.setEstimated(LocalDateTime.now());
         events.setActual(LocalDateTime.now());
+        events.setEntityType(Constants.CONSOLIDATION);
         Query queryMock = mock(Query.class);
 
         when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
