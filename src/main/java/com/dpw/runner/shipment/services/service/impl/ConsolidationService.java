@@ -1228,7 +1228,7 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
+            throw new RuntimeException(e.getMessage());
         }
     }
 
