@@ -398,6 +398,7 @@ public class EventDao implements IEventDao {
 
 
     @Override
+    @Transactional
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         Events events = new Events();
         events.setGuid(guid);
