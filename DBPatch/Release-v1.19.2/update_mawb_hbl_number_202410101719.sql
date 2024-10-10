@@ -1,0 +1,1 @@
+update consolidation_details set mawb = '618-35331715', bol = '618-35331715' where id = 10890;
