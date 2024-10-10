@@ -398,6 +398,7 @@ public class EventDao implements IEventDao {
 
 
     @Override
+    @Transactional
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
         Events events = new Events();
         events.setGuid(guid);
@@ -429,8 +430,8 @@ public class EventDao implements IEventDao {
                         "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
                                 "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
                                 "created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude, " +
-                                "consolidation_id, shipment_number) " +
-                                "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                                "consolidation_id, shipment_number, status) " +
+                                "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .setParameter(1, events.getGuid())
                 .setParameter(2, events.getEntityId())
                 .setParameter(3, events.getEntityType())
@@ -449,8 +450,8 @@ public class EventDao implements IEventDao {
                 .setParameter(20, events.getPlaceDescription())
                 .setParameter(21, events.getLongitude())
                 .setParameter(22, events.getLatitude())
-                .setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, events.getConsolidationId()))
-                .setParameter(24, events.getShipmentNumber());
+                .setParameter(24, events.getShipmentNumber())
+                .setParameter(25, events.getStatus());
 
         if(events.getReceivedDate() != null) {
             query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getReceivedDate())));
@@ -471,6 +472,11 @@ public class EventDao implements IEventDao {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getActual())));
         } else {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
+        }
+        if(events.getConsolidationId() != null) {
+            query.setParameter(23, events.getConsolidationId());
+        } else {
+            query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
         }
         log.info("Air-messaging : executing event save native query");
         query.executeUpdate();
