@@ -449,7 +449,6 @@ public class EventDao implements IEventDao {
                 .setParameter(20, events.getPlaceDescription())
                 .setParameter(21, events.getLongitude())
                 .setParameter(22, events.getLatitude())
-                .setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, events.getConsolidationId()))
                 .setParameter(24, events.getShipmentNumber());
 
         if(events.getReceivedDate() != null) {
@@ -472,6 +471,12 @@ public class EventDao implements IEventDao {
         } else {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
+        if(events.getConsolidationId() != null) {
+            query.setParameter(23, events.getConsolidationId());
+        } else {
+            query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
+        }
+
         log.info("Air-messaging : executing event save native query");
         query.executeUpdate();
         log.info("Air-messaging : native query execution complete");
