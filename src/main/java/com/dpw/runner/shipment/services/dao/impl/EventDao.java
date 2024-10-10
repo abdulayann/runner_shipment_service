@@ -399,15 +399,31 @@ public class EventDao implements IEventDao {
 
     @Override
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        Events dummyEvent = Events.builder().entityId(entityId).entityType(entityType).build();
-        updateEventDetails(dummyEvent);
-        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt, dummyEvent.getConsolidationId(), dummyEvent.getShipmentNumber());
+        Events events = new Events();
+        events.setGuid(guid);
+        events.setEntityId(entityId);
+        events.setEntityType(entityType);
+        events.setEventCode(eventCode);
+        events.setDescription(description);
+        events.setEstimated(estimated);
+        events.setActual(actual);
+        events.setSource(source);
+        events.setTenantId(tenantId);
+        events.setStatus(status);
+        events.setCreatedAt(createdAt);
+        events.setUpdatedAt(updatedAt);
+        updateEventDetails(events);
+        saveEventByEntityManager(events);
     }
 
     @Override
     @Transactional
     public void createEventForAirMessagingEvent(Events events) {
         updateEventDetails(events);
+        saveEventByEntityManager(events);
+    }
+
+    private void saveEventByEntityManager(Events events) {
         log.info("Air-messaging : preparing event save native query");
         Query query = entityManager.createNativeQuery(
                 "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
@@ -426,14 +442,14 @@ public class EventDao implements IEventDao {
                 .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getTotalPieces()))
                 .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getWeight()))
                 .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getTotalWeight()))
-                .setParameter(12, events.getIsPartial())
+                .setParameter(12, new TypedParameterValue(StandardBasicTypes.BOOLEAN, events.getIsPartial()))
                 .setParameter(15, events.getCreatedAt())
                 .setParameter(16, events.getUpdatedAt())
                 .setParameter(19, events.getPlaceName())
                 .setParameter(20, events.getPlaceDescription())
                 .setParameter(21, events.getLongitude())
                 .setParameter(22, events.getLatitude())
-                .setParameter(23, events.getConsolidationId())
+                .setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, events.getConsolidationId()))
                 .setParameter(24, events.getShipmentNumber());
 
         if(events.getReceivedDate() != null) {
@@ -459,7 +475,6 @@ public class EventDao implements IEventDao {
         log.info("Air-messaging : executing event save native query");
         query.executeUpdate();
         log.info("Air-messaging : native query execution complete");
-//        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
     }
 
     @Override
