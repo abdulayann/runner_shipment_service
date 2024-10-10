@@ -732,11 +732,15 @@ public class PackingService implements IPackingService {
         if (IsStringNullOrEmpty(request.getPacks()) || request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
             return;
 
-        double vol = calculateVolume(request);
+        BigDecimal volume = BigDecimal.valueOf(calculateVolume(request));
+        Integer volumeDecimalValue = commonUtils.getShipmentSettingFromContext().getVolumeDecimalPlace();
+        if(volumeDecimalValue == null)
+            volumeDecimalValue = 3;
+        volume = volume.setScale(volumeDecimalValue, RoundingMode.HALF_UP);
         pack.setVolumeUnit("M3");
-        pack.setVolume(BigDecimal.valueOf(vol));
+        pack.setVolume(volume);
         request.setVolumeUnit("M3");
-        request.setVolume(BigDecimal.valueOf(vol));
+        request.setVolume(volume);
     }
 
     private double calculateVolume(AutoCalculatePackingRequest request) throws RunnerException {
