@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.tomcat.util.bcel.Const;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -387,6 +388,7 @@ class EventDaoTest {
     @Test
     void createEventForAirMessagingEvent() {
         Events events = new Events();
+        events.setEntityType(Constants.CONSOLIDATION);
 
         Query queryMock = mock(Query.class);
 
@@ -399,7 +401,7 @@ class EventDaoTest {
     @Test
     void createEventForAirMessagingStatus() {
         eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), 1L, "type", "code", "desc", LocalDateTime.now(), LocalDateTime.now(),  "source", 1, "status", LocalDateTime.now(), LocalDateTime.now());
-        verify(eventRepository, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(eventRepository, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -409,6 +411,7 @@ class EventDaoTest {
         events.setScheduledDate(LocalDateTime.now());
         events.setEstimated(LocalDateTime.now());
         events.setActual(LocalDateTime.now());
+        events.setEntityType(Constants.CONSOLIDATION);
         Query queryMock = mock(Query.class);
 
         when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
