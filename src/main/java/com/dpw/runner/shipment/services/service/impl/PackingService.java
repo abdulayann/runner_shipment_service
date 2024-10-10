@@ -733,7 +733,7 @@ public class PackingService implements IPackingService {
             return;
 
         BigDecimal volume = BigDecimal.valueOf(calculateVolume(request));
-        Integer volumeDecimalValue = commonUtils == null ? null : commonUtils.getShipmentSettingFromContext().getVolumeDecimalPlace();
+        Integer volumeDecimalValue = commonUtils.getShipmentSettingFromContext().getVolumeDecimalPlace();
         if(volumeDecimalValue == null)
             volumeDecimalValue = 3;
         volume = volume.setScale(volumeDecimalValue, RoundingMode.HALF_UP);

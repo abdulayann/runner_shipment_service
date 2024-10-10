@@ -1385,7 +1385,8 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeDecimalPlace(3);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
