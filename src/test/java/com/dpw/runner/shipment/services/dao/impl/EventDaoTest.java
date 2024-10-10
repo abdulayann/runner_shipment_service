@@ -400,8 +400,13 @@ class EventDaoTest {
 
     @Test
     void createEventForAirMessagingStatus() {
-        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), 1L, "type", "code", "desc", LocalDateTime.now(), LocalDateTime.now(),  "source", 1, "status", LocalDateTime.now(), LocalDateTime.now());
-        verify(eventRepository, times(1)).createEventForAirMessagingStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        Query queryMock = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
+        when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
+
+        eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), 1L, Constants.CONSOLIDATION, "code", "desc", LocalDateTime.now(), LocalDateTime.now(),  "source", 1, "status", LocalDateTime.now(), LocalDateTime.now());
+
+        verify(queryMock).executeUpdate();
     }
 
     @Test
