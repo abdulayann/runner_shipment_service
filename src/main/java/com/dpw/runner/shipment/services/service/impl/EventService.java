@@ -976,7 +976,7 @@ public class EventService implements IEventService {
         log.info("Starting persistTrackingEvents with trackingEvents: {}", trackingEvents);
 
         boolean isSuccess = true;
-        v1Service.setAuthContext();
+        //Moving this from here to tracking consumer-> v1Service.setAuthContext()
 
         if (ObjectUtils.isEmpty(trackingEvents)) {
             log.error("Tracking events are null or empty. Skipping event persistence.");
@@ -1008,8 +1008,7 @@ public class EventService implements IEventService {
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
         }
 
-        v1Service.clearAuthContext();
-        log.info("Auth context cleared after processing.");
+        //moving this from here to tracking consumer -> v1Service.clearAuthContext()
 
         return isSuccess;
     }

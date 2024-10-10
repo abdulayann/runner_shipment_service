@@ -525,6 +525,7 @@ public class AwbUtility {
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
+        log.info("Air-messaging : entered createStatusUpdateForAirMessaging; guid {}", guid);
         Optional<Awb> awb = Optional.ofNullable(awbDao.findAwbByGuidByQuery(guid));
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);
@@ -662,6 +663,7 @@ public class AwbUtility {
 
     public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {
         var guid = airMessageEvent.getGuid();
+        log.info("Air-messaging : entered createEventUpdateForAirMessaging; guid : {}", guid);
         var awb = awbDao.findByGuid(guid);
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);

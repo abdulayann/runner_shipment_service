@@ -399,13 +399,16 @@ public class EventDao implements IEventDao {
 
     @Override
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt);
+        Events dummyEvent = Events.builder().entityId(entityId).entityType(entityType).build();
+        updateEventDetails(dummyEvent);
+        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt, dummyEvent.getConsolidationId(), dummyEvent.getShipmentNumber());
     }
 
     @Override
     @Transactional
     public void createEventForAirMessagingEvent(Events events) {
         updateEventDetails(events);
+        log.info("Air-messaging : preparing event save native query");
         Query query = entityManager.createNativeQuery(
                 "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
                         "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
@@ -453,13 +456,15 @@ public class EventDao implements IEventDao {
         } else {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
+        log.info("Air-messaging : executing event save native query");
         query.executeUpdate();
-
+        log.info("Air-messaging : native query execution complete");
 //        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
     }
 
     @Override
     public void updateEventDetails(Events event) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available...");
         Long entityId = event.getEntityId();
         String entityType = event.getEntityType();
         if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
