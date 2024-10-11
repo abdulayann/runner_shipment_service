@@ -727,6 +727,10 @@ public class EventService implements IEventService {
             return true;
         }
 
+        if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
+            return true;
+        }
+
         log.debug("Event code {} does not match any processing criteria", eventCode);
         return false;
     }
