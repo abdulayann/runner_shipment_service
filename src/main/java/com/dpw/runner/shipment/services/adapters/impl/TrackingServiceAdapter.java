@@ -552,7 +552,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         String safeLocationRole = StringUtils.defaultString(locationRole);
         String safeDescription = StringUtils.defaultString(description);
 
-        log.debug("Converting event code '{}' with location role '{}'", safeEventCode, safeLocationRole);
+        log.info("Converting event code '{}' with location role '{}'", safeEventCode, safeLocationRole);
 
         if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventCode)
                 && safeDescription.equalsIgnoreCase("Flight Arrival")) {
@@ -578,7 +578,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             }
 
             if (shortCode != null) {
-                log.debug("Matched LITERAL and DESCRIPTION. Returning short code: {}", shortCode);
+                log.info("Matched LITERAL and DESCRIPTION. Returning short code: {}", shortCode);
                 return shortCode;
             }
         }
@@ -619,7 +619,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return EventConstants.EMCR;
         }
 
-        log.debug("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
+        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
         return eventCode;
     }
 

@@ -51,6 +51,8 @@ public class EventsResponse implements IRunnerResponse {
     private BigDecimal weight;
     private BigDecimal totalWeight;
     private Boolean isPartial;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime receivedDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime scheduledDate;
 }

@@ -693,7 +693,7 @@ public class EventService implements IEventService {
         String transportMode = shipmentDetails.getTransportMode();
 
         // Log the input values for debugging
-        log.debug("Evaluating event with code: {}, shipmentType: {}, transportMode: {}", eventCode, shipmentType, transportMode);
+        log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {}", eventCode, shipmentType, transportMode);
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
             log.debug("Event code {} matches FCL shipment criteria", eventCode);
@@ -727,7 +727,12 @@ public class EventService implements IEventService {
             return true;
         }
 
-        log.debug("Event code {} does not match any processing criteria", eventCode);
+        if (EventConstants.AIR_TRACKING_CODE_LIST.contains(eventCode) && isAirShipment(transportMode)) {
+            log.info("Event code {} matches air transport shipment criteria", eventCode);
+            return true;
+        }
+
+        log.info("Event code {} does not match any processing criteria", eventCode);
         return false;
     }
 
