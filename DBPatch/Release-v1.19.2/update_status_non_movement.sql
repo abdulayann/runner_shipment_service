@@ -1,0 +1,1 @@
+update shipment_details set status = 10 where shipment_id = 'DETS24070382';
