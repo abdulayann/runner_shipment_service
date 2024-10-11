@@ -987,6 +987,30 @@ class EventServiceTest extends CommonMocks {
     }
 
     @Test
+    void processUpstreamTrackingMessageForAirShipment() {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        String refNum = container.getContainerBase().getShipmentReference();
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTransportMode("AIR");
+
+        Events mockEvent = Events.builder().eventCode(EventConstants.TRCF).build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(mockEvent));
+        when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        var response = eventService.processUpstreamTrackingMessage(container);
+        assertTrue(response);
+    }
+
+    @Test
     void processUpstreamTrackingMessageReturnsFalseIfShipmentSaveFails() throws RunnerException {
         var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
 
