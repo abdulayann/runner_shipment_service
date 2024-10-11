@@ -74,6 +74,7 @@ public class EventConstants {
     public static final String TRCF = "TRCF";
     public static final String TNFD = "TNFD";
     public static final String TRCS = "TRCS";
+    public static final List<String> AIR_TRACKING_CODE_LIST = List.of(FLAR, FLDR, TRCF, TNFD, TRCS);
     public static final String VESSEL_DEPARTURE = "Vessel Departure";
     public static final String VESSEL_DEPARTURE_FROM_POL = "Vessel Departure from POL";
     public static final String VESSEL_ARRIVAL_WITH_CONTAINER = "vesselArrivalWithContainer";
