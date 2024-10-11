@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.utils;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
+import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
@@ -15,18 +17,9 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -56,13 +49,8 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.NonNull;
@@ -104,6 +92,8 @@ public class BookingIntegrationsUtility {
     private MasterDataFactory masterDataFactory;
     @Autowired
     private EmailServiceUtility emailServiceUtility;
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -650,6 +640,8 @@ public class BookingIntegrationsUtility {
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            if(organizationRow.containsKey("Id"))
+                request.setOrgId(String.valueOf(organizationRow.get("Id")));
             request.setOrgData(organizationRow);
 
             CommonV1ListRequest addressRequest = createCriteriaForThreeFields("OrgId", organizationRow.get("Id"), "AddressShortCode", addressCode, "Active", Boolean.TRUE);
@@ -659,6 +651,8 @@ public class BookingIntegrationsUtility {
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            if(addressRow.containsKey("Id"))
+                request.setAddressId(String.valueOf(addressRow.get("Id")));
             request.setAddressData(addressRow);
         }
         catch (Exception ex) {
@@ -715,5 +709,50 @@ public class BookingIntegrationsUtility {
             case "ROR" -> lclBusinessCode;
             default -> null;
         };
+    }
+
+    /**
+     * This method will be used to send shipment document to platform
+     * @param payload
+     */
+    public void documentUploadEvent(DocumentDto payload) {
+
+        if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payload.getAction())
+                && Objects.equals(payload.getData().getEntityType(), Constants.SHIPMENTS_CAPS)
+                && Boolean.TRUE.equals(payload.getData().getCustomerPortalVisibility())) {
+
+            var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
+            var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
+
+            // Sending document to Logistics Platform in case of online booking
+            if (Objects.equals(shipment.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipment.getBookingReference())) {
+                this.sendDocumentsToPlatform(shipment, payload);
+            }
+        }
+    }
+
+    private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
+        var request = createPlatformDocumentRequest(shipmentDetails.getBookingReference(), payload.getData());
+        try {
+            platformServiceAdapter.updateAtPlaform(request);
+        } catch (Exception ex) {
+            log.error("Document Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), ex.getMessage());
+            sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(ex.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
+        }
+    }
+
+    private CommonRequestModel createPlatformDocumentRequest(String bookingReference, DocumentDto.Document document) {
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(bookingReference)
+                .document_meta(List.of(
+                        DocumentMetaDTO.builder()
+                                .name(document.getFileName())
+                                .document_type(document.getDocType())
+                                .document_link(document.getSecureDownloadLink())
+                                .uploaded_by_user_id(document.getUploadedBy())
+                                .build()))
+                .build();
+
+        return CommonRequestModel.buildRequest(platformUpdateRequest);
     }
 }

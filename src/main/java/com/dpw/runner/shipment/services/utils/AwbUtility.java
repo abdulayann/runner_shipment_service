@@ -1,7 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.*;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
@@ -524,6 +525,7 @@ public class AwbUtility {
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
+        log.info("Air-messaging : entered createStatusUpdateForAirMessaging; guid {}", guid);
         Optional<Awb> awb = Optional.ofNullable(awbDao.findAwbByGuidByQuery(guid));
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);
@@ -661,6 +663,7 @@ public class AwbUtility {
 
     public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {
         var guid = airMessageEvent.getGuid();
+        log.info("Air-messaging : entered createEventUpdateForAirMessaging; guid : {}", guid);
         var awb = awbDao.findByGuid(guid);
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);

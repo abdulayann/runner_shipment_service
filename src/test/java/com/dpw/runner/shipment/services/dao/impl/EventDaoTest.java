@@ -1,5 +1,14 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -24,7 +33,19 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.tomcat.util.bcel.Const;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +54,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -41,19 +61,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -349,13 +356,13 @@ class EventDaoTest {
         request.placeName = "test";
         request.placeDesc = "test";
 
-        var spyBean = Mockito.spy(eventDao);
+        var spyBean = spy(eventDao);
 
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
 
         when(eventRepository.save(testData)).thenReturn(testData);
-        doNothing().when(spyBean).updateEventDetails(any());
+        doNothing().when(spyBean).updateEventDetails(any(Events.class));
 
         spyBean.autoGenerateEvents(request);
 
@@ -396,6 +403,7 @@ class EventDaoTest {
         when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
 
         eventDao.createEventForAirMessagingEvent(events);
+        verify(queryMock, times(1)).executeUpdate();
     }
 
     @Test
@@ -479,4 +487,101 @@ class EventDaoTest {
 
         assertEquals(1L, events.getConsolidationId());
     }
+
+    @Test
+    void updateEventDetailsForShipmentEvents() {
+        // Create a list of shipment events
+        Events event1 = new Events();
+        event1.setEntityId(1L);
+        event1.setEntityType(Constants.SHIPMENT);
+
+        Events event2 = new Events();
+        event2.setEntityId(2L);
+        event2.setEntityType(Constants.SHIPMENT);
+
+        List<Events> eventsList = List.of(event1, event2);
+
+        // Mocking the results for each event's entityId
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setShipmentId("SHP01");
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setShipmentId("SHP02");
+
+        List<ConsoleShipmentMapping> consoleShipmentMappings1 = List.of(
+                ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build(),
+                ConsoleShipmentMapping.builder().shipmentId(2L).consolidationId(2L).build());
+
+        // Stubbing the findByShipmentId calls
+        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L,2L))).thenReturn(consoleShipmentMappings1);
+
+        // Mocking a single call for getShipmentNumberFromId with a list containing both IDs
+        when(shipmentDao.getShipmentNumberFromId(List.of(1L, 2L)))
+                .thenReturn(List.of(shipment1, shipment2));
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the first event
+        assertEquals(1L, event1.getConsolidationId());
+        assertEquals(shipment1.getShipmentId(), event1.getShipmentNumber());
+
+        // Asserting for the second event
+        assertEquals(2L, event2.getConsolidationId());
+        assertEquals(shipment2.getShipmentId(), event2.getShipmentNumber());
+    }
+
+    @Test
+    void updateEventDetailsForConsolidationEvents() {
+        // Create a list of consolidation events
+        Events event1 = new Events();
+        event1.setEntityId(1L);
+        event1.setEntityType(Constants.CONSOLIDATION);
+
+        Events event2 = new Events();
+        event2.setEntityId(2L);
+        event2.setEntityType(Constants.CONSOLIDATION);
+
+        List<Events> eventsList = List.of(event1, event2);
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the first event
+        assertEquals(1L, event1.getConsolidationId());
+
+        // Asserting for the second event
+        assertEquals(2L, event2.getConsolidationId());
+    }
+
+    @Test
+    void updateEventDetailsForMixedEvents() {
+        // Create a mix of shipment and consolidation events
+        Events shipmentEvent = new Events();
+        shipmentEvent.setEntityId(1L);
+        shipmentEvent.setEntityType(Constants.SHIPMENT);
+
+        Events consolidationEvent = new Events();
+        consolidationEvent.setEntityId(2L);
+        consolidationEvent.setEntityType(Constants.CONSOLIDATION);
+
+        List<Events> eventsList = Arrays.asList(shipmentEvent, consolidationEvent);
+
+        // Mocking for shipment event
+        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
+        List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
+
+        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L))).thenReturn(consoleShipmentMappings);
+        when(shipmentDao.getShipmentNumberFromId(List.of(1L))).thenReturn(List.of(shipment));
+
+        eventDao.updateEventDetails(eventsList);
+
+        // Asserting for the shipment event
+        assertEquals(1L, shipmentEvent.getConsolidationId());
+
+        // Asserting for the consolidation event
+        assertEquals(2L, consolidationEvent.getConsolidationId());
+    }
+
+
 }

@@ -347,6 +347,10 @@ public class AwbService implements IAwbService {
                 ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
                 for (Awb awb : awbList) {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
+                        if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
+                            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId()).orElse(null);
+                            consolidationService.validateRaKcForConsol(consolidationDetails);
+                        }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
                                 && tenantSettings.getRestrictAWBEdit()) || (tenantSettings.getAutoUpdateShipmentAWB() != null && tenantSettings.getAutoUpdateShipmentAWB()))) {
@@ -361,6 +365,10 @@ public class AwbService implements IAwbService {
                         getMawnLinkPacks(awb);
 
                     } else {
+                        if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
+                            ShipmentDetails shipmentDetails = shipmentDao.findById(awb.getShipmentId()).orElse(null);
+                            shipmentService.validateRaKcDetails(shipmentDetails);
+                        }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
                                 && tenantSettings.getRestrictAWBEdit()) || (tenantSettings.getAutoUpdateShipmentAWB() != null && tenantSettings.getAutoUpdateShipmentAWB()))) {
@@ -657,7 +665,7 @@ public class AwbService implements IAwbService {
             if (tenantSettings != null && Constants.VOLUME_UNIT_M3.equalsIgnoreCase(tenantSettings.getVolumeChargeableUnit()) && Constants.WEIGHT_UNIT_KG.equalsIgnoreCase(tenantSettings.getWeightChargeableUnit())) {
                 grossWeightUnit = Constants.WEIGHT_UNIT_KG;
                 chargeableWeightOfMawbGood = totalGrossWeightOfMawbGood;
-                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.FACTOR_VOL_WT));
+                BigDecimal volumetricWeightOfMawbGood = totalGrossVolumeOfMawbGood.multiply(BigDecimal.valueOf(Constants.AIR_FACTOR_FOR_VOL_WT));
                 chargeableWeightOfMawbGood = chargeableWeightOfMawbGood.max(volumetricWeightOfMawbGood);
                 totalVolumetricWeight = volumetricWeightOfMawbGood;
             }
@@ -1381,7 +1389,7 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private String populateCsdInfo(ShipmentDetails shipment) {
+    public String populateCsdInfo(ShipmentDetails shipment) {
         Parties originAgent = shipment.getAdditionalDetails().getExportBroker() != null ? shipment.getAdditionalDetails().getExportBroker() : null;
         OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(Arrays.asList(originAgent));
 
@@ -1428,10 +1436,26 @@ public class AwbService implements IAwbService {
                     );
                 }
 
-                csdInfo = String.format(AwbConstants.CSD_INFO_FORMAT,raNumber, securityStatus, screeningStatus);
+                csdInfo = formatCSDInfo(raNumber, securityStatus, screeningStatus);
             }
         }
         return csdInfo;
+    }
+
+    private String formatCSDInfo(String raNumber, String securityStatus, String screeningStatus) {
+        StringBuilder csdInfo = new StringBuilder();
+
+        if (!Strings.isNullOrEmpty(raNumber)) {
+            csdInfo.append(raNumber).append("/");
+        }
+        if (!Strings.isNullOrEmpty(securityStatus)) {
+            csdInfo.append(securityStatus).append("/");
+        }
+        if (!Strings.isNullOrEmpty(screeningStatus)) {
+            csdInfo.append(screeningStatus).append("/");
+        }
+
+        return csdInfo.toString();
     }
 
     private String getCountryCode(String country) {
@@ -2373,7 +2397,7 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            Double factor = Constants.FACTOR_VOL_WT;
+            Double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
             totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
         }
         return hawbPacksLinkedToMawb;
@@ -2582,7 +2606,7 @@ public class AwbService implements IAwbService {
                 res = res + "\n";
             else
                 res = "";
-            res = res + "Dangerous Goods as per attached Shipper’s Declaration " + packs.toString();
+            res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
         }
         return res;
     }

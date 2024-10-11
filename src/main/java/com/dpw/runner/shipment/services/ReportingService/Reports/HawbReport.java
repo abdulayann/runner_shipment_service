@@ -116,6 +116,9 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.AGENT_IATA_CODE , upperCase(shipmentInfo.getIataCode()));
             dictionary.put(ReportConstants.CASSCODE , upperCase(shipmentInfo.getAgentCASSCode()));
             dictionary.put(ReportConstants.FIRST_CARRIER, shipmentInfo.getFirstCarrier());
+            dictionary.put(ReportConstants.SHIPPER_ACCOUNT_NUMBER, shipmentInfo.getShipperAccountNumber());
+            dictionary.put(ReportConstants.CONSIGNEE_ACCOUNT_NUMBER, shipmentInfo.getConsigneeAccountNumber());
+            dictionary.put(ReportConstants.ACCOUNT_NUMBER, shipmentInfo.getAccountNumber());
 
             Set<String> locCodes = new HashSet<>();
 
@@ -149,6 +152,8 @@ public class HawbReport extends IReport{
                 {
                     masterDataQuery.add(MasterDataType.PAYMENT.getDescription() + "#" + consolRow.getPayment());
                 }
+                dictionary.put(ReportConstants.IS_DMAWB, false);
+                dictionary.put(ReportConstants.IS_B2BMAWB, true);
                 //dictionary["PrintUserName"] = consolRow.InsertUserIdUsername;
             }
             else
@@ -158,6 +163,8 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.JOB_NUMBER, shipmentRow.getShipmentId());
                 if(hawbModel.getEntityType().equalsIgnoreCase(AwbConstants.DMAWB))
                 {
+                    dictionary.put(ReportConstants.IS_DMAWB, true);
+                    dictionary.put(ReportConstants.IS_B2BMAWB, false);
                     dictionary.put(ReportConstants.MAWB_NO, shipmentInfo.getAwbNumber());
                     AwbNumber = shipmentInfo.getAwbNumber();
                 }
@@ -661,8 +668,10 @@ public class HawbReport extends IReport{
 
         var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();
 
-        if(!CommonUtils.listIsNullOrEmpty(awbNotifParty))
+        if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
             dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName(), hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getAddress()));
+            dictionary.put(AWB_NOTIFY_PARTY_NAME, hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() != null ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
+        }
 
         return dictionary;
     }

@@ -91,4 +91,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {
         return findAll(spec, pageable);
     }
+
+    @ExcludeTenantFilter
+    List<ShipmentDetails> findByShipmentId(String shipmentNumber);
 }

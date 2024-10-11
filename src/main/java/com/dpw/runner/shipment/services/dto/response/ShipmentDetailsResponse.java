@@ -149,6 +149,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private List<ShipmentOrderResponse> shipmentOrders;
     private String createdBy;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;

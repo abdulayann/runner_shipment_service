@@ -18,6 +18,7 @@ public interface IShipmentDao {
     ShipmentDetails update(ShipmentDetails shipmentDetails, boolean fromV1Sync);
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
+    List<ShipmentDetails> findByShipmentId(String shipmentNumber);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
     Optional<ShipmentDetails> findByGuid(UUID id);

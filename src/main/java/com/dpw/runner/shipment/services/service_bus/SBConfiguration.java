@@ -48,6 +48,20 @@ public class SBConfiguration {
                 .buildProcessorClient();
     }
 
+    public ServiceBusProcessorClient getSessionProcessorClient(String connectionString, String topicName, String subName, Consumer<ServiceBusReceivedMessageContext> onMessage, Consumer<ServiceBusErrorContext> onError) {
+        return new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .processor()
+                .disableAutoComplete()
+                .maxConcurrentCalls(1)
+                .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
+                .topicName(topicName)
+                .subscriptionName(subName)
+                .processMessage(onMessage)
+                .processError(onError)
+                .buildProcessorClient();
+    }
+
     public SubscriptionRuntimeProperties getSubscriptionRuntimeProperties(ISBProperties isbProperties, String topicName,
                                                                           String subscriptionName) {
         String connectionString = isbProperties.getConnectionString();

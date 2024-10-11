@@ -427,11 +427,11 @@ public class EventDao implements IEventDao {
     private void saveEventByEntityManager(Events events) {
         log.info("Air-messaging : preparing event save native query");
         Query query = entityManager.createNativeQuery(
-                        "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
-                                "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
-                                "created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude, " +
-                                "consolidation_id, shipment_number, status) " +
-                                "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
+                        "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
+                        "created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude, " +
+                        "consolidation_id, shipment_number, status) " +
+                        "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .setParameter(1, events.getGuid())
                 .setParameter(2, events.getEntityId())
                 .setParameter(3, events.getEntityType())
@@ -478,6 +478,7 @@ public class EventDao implements IEventDao {
         } else {
             query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
         }
+
         log.info("Air-messaging : executing event save native query");
         query.executeUpdate();
         log.info("Air-messaging : native query execution complete");
@@ -485,6 +486,7 @@ public class EventDao implements IEventDao {
 
     @Override
     public void updateEventDetails(Events event) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available...");
         Long entityId = event.getEntityId();
         String entityType = event.getEntityType();
         if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
@@ -503,4 +505,49 @@ public class EventDao implements IEventDao {
             event.setConsolidationId(entityId);
         }
     }
+
+    @Override
+    public void updateEventDetails(List<Events> events) {
+        // Separate SHIPMENT and CONSOLIDATION events
+        List<Events> shipmentEvents = events.stream()
+                .filter(event -> Constants.SHIPMENT.equalsIgnoreCase(event.getEntityType()))
+                .toList();
+        List<Events> consolidationEvents = events.stream()
+                .filter(event -> Constants.CONSOLIDATION.equalsIgnoreCase(event.getEntityType()))
+                .toList();
+
+        // Collect all shipment entity IDs
+        Set<Long> shipmentIds = shipmentEvents.stream()
+                .map(Events::getEntityId)
+                .collect(Collectors.toSet());
+
+        // Batch fetch data for SHIPMENT events
+        Map<Long, List<ConsoleShipmentMapping>> consoleShipmentMappingMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
+                .collect(Collectors.groupingBy(ConsoleShipmentMapping::getShipmentId));
+        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(new ArrayList<>(shipmentIds)).stream()
+                .collect(Collectors.toMap(ShipmentDetails::getId, shipmentDetails -> shipmentDetails, (existing, duplicate) -> existing));
+
+        // Update SHIPMENT events with fetched data
+        shipmentEvents.forEach(event -> {
+            Long entityId = event.getEntityId();
+
+            // Set consolidationId from ConsoleShipmentMapping
+            List<ConsoleShipmentMapping> mappings = consoleShipmentMappingMap.get(entityId);
+            if (mappings != null && !mappings.isEmpty()) {
+                event.setConsolidationId(mappings.get(0).getConsolidationId());
+            }
+
+            // Set shipmentNumber from ShipmentDetails
+            ShipmentDetails shipmentDetails = shipmentDetailsMap.get(entityId);
+            if (shipmentDetails != null) {
+                event.setShipmentNumber(shipmentDetails.getShipmentId());
+            }
+        });
+
+        // Update CONSOLIDATION events
+        consolidationEvents.forEach(event -> {
+            event.setConsolidationId(event.getEntityId());
+        });
+    }
+
 }

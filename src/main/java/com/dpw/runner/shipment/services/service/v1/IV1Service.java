@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1;
 
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
@@ -40,10 +41,21 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 public interface IV1Service {
     ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
     ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
+
+    void setAuthContext();
+
+    void setAuthContext(String token, UsersDto user);
+
+    List<SimpleGrantedAuthority> getAuthorities(List<String> permissions);
+
+    void clearAuthContext();
+
+    String generateToken();
 
     V1DataResponse fetchMasterData(Object request);
 

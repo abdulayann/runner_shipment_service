@@ -1,21 +1,34 @@
 package com.dpw.runner.shipment.services.adapters;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -26,6 +39,11 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,12 +58,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -299,6 +311,15 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void getTrackingEventsThrowsException() {
+        String refNumber = "refNum";
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(TrackingServiceApiResponse.class))).
+                thenThrow(new RuntimeException());
+
+        assertThrows(RunnerException.class, () -> trackingServiceAdapter.getTrackingEventsResponse(refNumber));
+    }
+
+    @Test
     void getTrackingEventsShouldNotFailForEmptyTrackingResponse() {
         String refNumber = "refNum";
         TrackingServiceApiResponse mockResponse = jsonTestUtility.getJson("TRACKING_SERVICE_SHIPMENT_RESPONSE", TrackingServiceApiResponse.class);
@@ -315,5 +336,90 @@ class TrackingServiceAdapterTest {
         }
     }
 
+    @Test
+    void convertTrackingEventCodeToShortCode_FlightArrival() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                "someRole", EventConstants.FLIGHT_ARRIVAL, "Flight Arrival");
+
+        assertEquals(EventConstants.FLAR, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_FlightDeparture() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                "someRole", EventConstants.FLIGHT_DEPARTURE, "Flight Departure");
+
+        assertEquals(EventConstants.FLDR, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_Literal_ReceivedFromFlight() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                "someRole", EventConstants.LITERAL, "Received from Flight");
+
+        assertEquals(EventConstants.TRCF, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_Literal_ConsigneeNotified() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                "someRole", EventConstants.LITERAL, "Consignee notified");
+
+        assertEquals(EventConstants.TNFD, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_GateInWithContainerEmpty_Origin() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                EventConstants.ORIGIN, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "some description");
+
+        assertEquals(EventConstants.ECPK, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_NoMatch() {
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
+                "someRole", "UNKNOWN_EVENT", "some description");
+
+        assertEquals("UNKNOWN_EVENT", result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_TRCS() {
+        // Scenario: EventCode is LITERAL and description is "Received from Shipper"
+        String eventCode = EventConstants.LITERAL;
+        String locationRole = "";
+        String description = "Received from Shipper";
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+
+        assertEquals(EventConstants.TRCS, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_FUGO() {
+        // Scenario: EventCode is GATE_OUT_WITH_CONTAINER_FULL and locationRole is "destinationPort"
+        String eventCode = EventConstants.GATE_OUT_WITH_CONTAINER_FULL;
+        String locationRole = "destinationPort";
+        String description = "";
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+
+        // Expect FUGO to be returned
+        assertEquals(EventConstants.FUGO, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_EMCR() {
+        // Scenario: EventCode is GATE_IN_WITH_CONTAINER_EMPTY and locationRole starts with "DESTINATION"
+        String eventCode = EventConstants.GATE_IN_WITH_CONTAINER_EMPTY;
+        String locationRole = EventConstants.DESTINATION;
+        String description = "";
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+
+        // Expect EMCR to be returned
+        assertEquals(EventConstants.EMCR, result);
+    }
 
 }
