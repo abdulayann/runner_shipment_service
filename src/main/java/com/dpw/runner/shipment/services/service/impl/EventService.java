@@ -845,10 +845,12 @@ public class EventService implements IEventService {
 
         if (shipmentAta != null) {
             carrierDetails.setAta(shipmentAta);
+            createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
             isShipmentUpdateRequired = true;
         }
         if (shipmentAtd != null) {
             carrierDetails.setAtd(shipmentAtd);
+            createDateTimeChangeLog(DateType.ATA, shipmentAtd, shipment.getId());
             isShipmentUpdateRequired = true;
         }
 
