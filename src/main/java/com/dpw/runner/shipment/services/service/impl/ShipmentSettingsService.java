@@ -368,7 +368,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             request.setId(oldEntity.get().getId());
             request.setGuid(oldEntity.get().getGuid());
-            request.setHideManifest(oldEntity.get().getHideManifest());
+            if(request.getHideManifest() == null) {
+                request.setHideManifest(oldEntity.get().getHideManifest());
+            }
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
                 request.getHawbLockSettings().setGuid(oldEntity.get().getHawbLockSettings().getGuid());
