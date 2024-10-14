@@ -699,4 +699,8 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findAllWithoutTenantFilter(spec, pageable);
     }
 
+    @Override
+    public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
+        return shipmentRepository.save(shipmentDetails);
+    }
 }
