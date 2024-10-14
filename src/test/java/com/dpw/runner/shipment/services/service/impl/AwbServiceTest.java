@@ -2898,7 +2898,8 @@ class AwbServiceTest extends CommonMocks {
             "true, 1",
             "true, 2",
             "false, 1",
-            "false, 2"
+            "false, 2",
+            "true, 0"
     })
     void createAwb_success_Dg(boolean hazardous, int packs) throws RunnerException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
