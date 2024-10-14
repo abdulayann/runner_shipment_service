@@ -236,12 +236,6 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
 
-        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
-        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldShipment)
-                && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
-            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
-        }
     }
 
     @Override
