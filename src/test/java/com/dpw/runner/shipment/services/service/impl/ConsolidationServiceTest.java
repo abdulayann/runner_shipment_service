@@ -3849,7 +3849,7 @@ import static org.mockito.Mockito.*;
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
@@ -3926,7 +3926,7 @@ import static org.mockito.Mockito.*;
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
 
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
@@ -3967,7 +3967,7 @@ import static org.mockito.Mockito.*;
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
@@ -4045,7 +4045,7 @@ import static org.mockito.Mockito.*;
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
@@ -4088,7 +4088,7 @@ import static org.mockito.Mockito.*;
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
@@ -4171,7 +4171,7 @@ import static org.mockito.Mockito.*;
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         mockTenantSettings();
-        String errorMessage = "Screening Status and Security Status is mandatory for RA consignor.";
+        String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
             spyService.validateRaKcForConsol(consolidationDetails);
         });
