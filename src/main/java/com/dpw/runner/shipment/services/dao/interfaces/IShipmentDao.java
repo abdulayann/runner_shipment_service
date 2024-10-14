@@ -40,4 +40,5 @@ public interface IShipmentDao {
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
+    ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
 }
