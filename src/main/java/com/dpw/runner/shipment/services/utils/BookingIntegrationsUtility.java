@@ -252,13 +252,13 @@ public class BookingIntegrationsUtility {
                 .destination_code(carrierDetails.getDestination())
                 .pol(carrierDetails.getOriginPort())
                 .pod(carrierDetails.getDestinationPort())
-                .contract_id(customerBooking.getContractId())
+                .contract_id(StringUtility.isEmpty(customerBooking.getContractId()) ? null : customerBooking.getContractId())
                 .created_at(customerBooking.getCreatedAt())
                 .customer_org_id(customerBooking.getCustomer().getOrgCode())
                 .customer_email(customerBooking.getCustomerEmail())
                 .business_code(StringUtility.isNotEmpty(customerBooking.getBusinessCode()) ? customerBooking.getBusinessCode() : getBusinessCode(customerBooking.getCargoType()))
                 .bill_to_party(Collections.singletonList(createOrgRequest(customerBooking.getCustomer())))
-                .parent_contract_id(customerBooking.getParentContractId())
+                .parent_contract_id(StringUtility.isEmpty(customerBooking.getParentContractId()) ? null : customerBooking.getParentContractId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
                         id(customerBooking.getSalesBranch()).
                         sales_agent_primary_email(customerBooking.getPrimarySalesAgentEmail()).
