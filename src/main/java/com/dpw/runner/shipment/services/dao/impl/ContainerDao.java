@@ -239,7 +239,7 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
-    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws RunnerException {
+    public List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long carrierBookingId, Long shipmentId, boolean fromConsolidation) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
@@ -258,6 +258,7 @@ public class ContainerDao implements IContainerDao {
 //                    }
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
+                        containers.setCarrierBookingId(carrierBookingId);
                         Long id = containers.getId();
                         if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
                             containers.setAllocationDate(LocalDateTime.now());
@@ -290,6 +291,7 @@ public class ContainerDao implements IContainerDao {
                 {
                     for (Containers container: containerList) {
                         container.setConsolidationId(consolidationId);
+                        container.setCarrierBookingId(carrierBookingId);
                         if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
                             container.setAllocationDate(LocalDateTime.now());
                         String operation = DBOperationType.CREATE.name();

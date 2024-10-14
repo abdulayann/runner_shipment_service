@@ -46,4 +46,7 @@ public class BookingPayment extends MultiTenancy {
     @UnlocationData
     private String paymentLocation;
 
+    @Column(name = "carrier_booking_id")
+    private Long carrierBookingId;
+
 }

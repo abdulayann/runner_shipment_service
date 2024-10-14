@@ -183,7 +183,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     }
 
     @Override
-    public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId) throws RunnerException {
+    public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, Long carrierBookingId) throws RunnerException {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
@@ -206,7 +206,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     }
                     referenceNumbersRequests.add(request);
                 }
-                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId, copyHashMap);
+                responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId, carrierBookingId, copyHashMap);
             }
             deleteReferenceNumbers(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseReferenceNumbers;
@@ -294,7 +294,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         return res;
     }
     @Override
-    public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Map<Long, ReferenceNumbers> hashMap) {
+    public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Long carrierBookingId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
@@ -310,6 +310,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 req.setCreatedBy(hashMap.get(id).getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
+            req.setCarrierBookingId(carrierBookingId);
             res.add(req);
         }
         res = saveAll(res);

@@ -1193,11 +1193,11 @@ public class ConsolidationService implements IConsolidationService {
             List<PartiesRequest> consolidationAddressRequest = consolidationDetailsRequest.getConsolidationAddresses();
 
             if(containerRequestList != null) {
-                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), id, (Long) null, true);
+                List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), id, entity.getCarrierBookingId(), (Long) null, true);
                 entity.setContainersList(updatedContainers);
             }
             if (packingRequestList != null) {
-                List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class), id);
+                List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class), id, entity.getCarrierBookingId());
                 entity.setPackingList(updatedPackings);
             }
             if (eventsRequestList != null) {
@@ -1205,7 +1205,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setEventsList(updatedEvents);
             }
             if (referenceNumbersRequestList != null) {
-                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id);
+                List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class), id, entity.getCarrierBookingId());
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (truckDriverDetailsRequestList != null) {
@@ -3637,11 +3637,11 @@ public class ConsolidationService implements IConsolidationService {
 
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
             && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, (Long) null, true);
+            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, consolidationDetails.getCarrierBookingId(), (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
+            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id, consolidationDetails.getCarrierBookingId());
             consolidationDetails.setPackingList(updatedPackings);
         }
         if (eventsRequestList != null) {
@@ -3652,7 +3652,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setEventsList(eventsList);
         }
         if (referenceNumbersRequestList != null) {
-            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id, consolidationDetails.getCarrierBookingId());
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (truckDriverDetailsRequestList != null) {

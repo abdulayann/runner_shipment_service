@@ -22,7 +22,7 @@ public interface IContainerDao {
 
     void delete(Containers containers);
 
-    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws RunnerException;
+    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long carrierBookingId, Long shipmentId, boolean fromConsolidation) throws RunnerException;
 
     List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws RunnerException;
 

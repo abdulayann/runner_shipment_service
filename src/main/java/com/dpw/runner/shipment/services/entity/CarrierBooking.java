@@ -122,7 +122,7 @@ public class CarrierBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CARRIER_BOOKING_ADDRESSES'")
     @BatchSize(size = 50)
-    private List<Parties> consolidationAddresses;
+    private List<Parties> consolidationAddresses; // TODO- entity type?
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
     private List<BookingCarriage> bookingCarriagesList;
@@ -133,7 +133,7 @@ public class CarrierBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CARRIER_BOOKING'")
     @BatchSize(size = 50)
-    private List<Events> eventsList;
+    private List<Events> eventsList; // TODO- entity type?
 
     @Column(name = "is_override")
     private boolean isOverride;

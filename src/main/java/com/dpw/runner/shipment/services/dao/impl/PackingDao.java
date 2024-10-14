@@ -148,7 +148,7 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException {
+    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, Long carrierBookingId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -171,7 +171,7 @@ public class PackingDao implements IPackingDao {
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, hashMapCopy);
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, carrierBookingId, hashMapCopy);
             }
             deletePackings(hashMap, null, null);
             return responsePackings;
@@ -374,7 +374,7 @@ public class PackingDao implements IPackingDao {
         }
         return res;
     }
-    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap) {
+    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Long carrierBookingId, Map<Long, Packing> oldEntityMap) {
         List<Packing> res = new ArrayList<>();
         for (Packing req : packings) {
             if (req.getId() != null) {
@@ -387,6 +387,7 @@ public class PackingDao implements IPackingDao {
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
+            req.setCarrierBookingId(carrierBookingId);
             res.add(req);
         }
         res = saveAll(res);
