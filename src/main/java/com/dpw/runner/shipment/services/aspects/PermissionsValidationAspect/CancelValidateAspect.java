@@ -38,7 +38,7 @@ public class CancelValidateAspect {
             if(shipmentRequest.getIsDomestic() != null)
                 domesticType = shipmentRequest.getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
                 if(v1MappedPermission == null)

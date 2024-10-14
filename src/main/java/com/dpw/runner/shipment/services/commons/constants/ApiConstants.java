@@ -131,4 +131,6 @@ public class ApiConstants {
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 
+    public static final String CANCEL = "/cancel";
+
 }

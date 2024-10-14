@@ -6671,11 +6671,6 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    @Override
-    public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
-        return null;
-    }
-
     private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
@@ -7281,13 +7276,19 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
-        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
 
-        Optional<ShipmentDetails> shipmentOptional = retrieveByIdOrGuid(shipmentRequest);
+        Optional<ShipmentDetails> shipmentOptional = shipmentDao.findById(commonGetRequest.getId());
+        if (shipmentOptional.isEmpty()) {
+            throw new RunnerException(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG);
+        }
+
         ShipmentDetails shipment = shipmentOptional.get();
 
         // update shipment status by calling a dao method
-        shipmentDao.updateStatus(shipment.getId(), ShipmentStatus.Cancelled.getValue());
+        shipment.setStatus(ShipmentStatus.Cancelled.getValue());
+        shipmentDao.save(shipment, false);
+        syncShipment(shipment, null, null, null, null, false);
 
         return ResponseHelper.buildSuccessResponse();
     }

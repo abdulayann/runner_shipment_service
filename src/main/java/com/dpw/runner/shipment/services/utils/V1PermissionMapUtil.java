@@ -618,7 +618,8 @@ public class V1PermissionMapUtil {
         return v1PermissionMapping.get(v1Permission);
     }
 
-    public static List<String> getUpdatedPermissions(List<String> v1PermisionList) {
+    public static List<String> getPermissionNames(List<String> v1PermisionList) {
+        List<String> olderPermission = new ArrayList<>();
         Set<String> res = new HashSet<>();
         for(String permission : v1PermisionList) {
             var v1UpdatedPermission = updatedPermissionMapping.get(permission);
@@ -628,11 +629,12 @@ public class V1PermissionMapUtil {
 
             var v1OldPermission = getPermissionName(permission);
             if(!Objects.isNull(v1OldPermission)) {
-                res.add(v1OldPermission);
+                olderPermission.add(v1OldPermission);
             }
 
         }
 
-        return res.stream().toList();
+        olderPermission.addAll(res.stream().toList());
+        return olderPermission;
     }
 }

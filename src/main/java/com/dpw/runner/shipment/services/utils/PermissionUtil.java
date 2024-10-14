@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructCriteria;
-import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPermissionName;
 
 /**
  * Util class for leveraging common methods related to permissions
@@ -29,18 +28,13 @@ public class PermissionUtil {
         List<FilterCriteria> criterias = new ArrayList<>();
         HashSet<String> permissionSet = new HashSet<>();
 
-        List<String> mappedPermission = V1PermissionMapUtil.getUpdatedPermissions(permissionList);
+        List<String> mappedPermission = V1PermissionMapUtil.getPermissionNames(permissionList);
 
         for (String v1MappedPermission : mappedPermission) {
-            // skipping the retrieve entries as they are duplicate in here form of List
-            if(v1MappedPermission.endsWith("Retrieve"))
-                continue;
             List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
-
-//            String v1MappedPermission = getPermissionName(permission);
-//            if(v1MappedPermission == null)
-//                continue;
+            if(v1MappedPermission == null)
+                continue;
 
             // De-construct permission string into individual elements and strip the last element
             List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))

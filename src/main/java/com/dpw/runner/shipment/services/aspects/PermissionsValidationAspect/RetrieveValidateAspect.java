@@ -13,7 +13,6 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameterFromPermission;
-import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPermissionName;
 
 @Aspect
 @Component
@@ -39,14 +38,13 @@ public class RetrieveValidateAspect {
             if(shipment.get().getIsDomestic() != null)
                 domesticType = shipment.get().getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
-                        .filter(e -> !(e.contains("retrieve") || e.contains("list")))
+                        .filter(e -> !e.contains("retrieve"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);
@@ -93,14 +91,13 @@ public class RetrieveValidateAspect {
             if(consolidation.get().getIsDomestic() != null)
                 domesticType = consolidation.get().getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
-                        .filter(e -> !e.contains("retrieve") || !e.contains("list"))
+                        .filter(e -> !e.contains("retrieve"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
                 String validDirection = getParameterFromPermission(DIRECTION_INDEX, parameterList);

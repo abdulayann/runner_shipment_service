@@ -32,47 +32,36 @@ public class PermissionsContext {
         List<String> carrierBookingView = new ArrayList<>();
 
         for (String permission : UserPermissions) {
-            // Shipment permissions grouping
-            if(permission.endsWith(SHIPMENT_LIST_PERMISSION) || (permission.endsWith(VIEW_PERMISSION) && permission.contains(SHIPMENTS))) {
+            // Older permission context setting
+            if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
                 shipmentListPermission.add(permission);
-            }
-            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION) || (permission.endsWith(VIEW_PERMISSION) && permission.contains(SHIPMENTS))) {
+            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
                 shipmentRetrievePermission.add(permission);
-            }
-            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION) || (permission.endsWith(MODIFY_PERMISSION) && permission.contains(SHIPMENTS))) {
-                shipmentUpdatePermission.add(permission);
-                shipmentListPermission.add(permission);
-                shipmentRetrievePermission.add(permission);
-            }
-            if(permission.endsWith(CANCEL_PERMISSION) && permission.contains(SHIPMENTS)) {
-                shipmentCancelPermission.add(permission);
-                shipmentListPermission.add(permission);
-                shipmentRetrievePermission.add(permission);
-            }
-            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION) || (permission.endsWith(CREATE_PERMISSION)) && permission.contains(SHIPMENTS)) {
+            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION))
                 shipmentCreatePermission.add(permission);
+            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
                 shipmentUpdatePermission.add(permission);
-                shipmentListPermission.add(permission);
-                shipmentRetrievePermission.add(permission);
-            }
-
-            // Consolidation permission grouping
-            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
                 consolidationListPermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION) || permission.endsWith(VIEW_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
                 consolidationRetrievePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION) || permission.endsWith(CREATE_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
                 consolidationCreatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION) || permission.endsWith(MODIFY_PERMISSION))
+            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
                 consolidationUpdatePermission.add(permission);
-            if(permission.endsWith(CANCEL_PERMISSION) && permission.contains(CONSOLIDATION))
-                consolidationCancelPermission.add(permission);
-
-            // CarrierBooking permission grouping
             if(permission.equals(CARRIER_BOOKING_CREATE))
                 carrierBookingCreate.add(CARRIER_BOOKING_CREATE);
             if(permission.equals(CARRIER_BOOKING_VIEW))
                 carrierBookingView.add(CARRIER_BOOKING_VIEW);
+
+
+            // context setup for new permissions
+            if(permission.startsWith("Operation")) {
+                // Shipment permissions grouping
+                populatePermissionList(shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission, shipmentCancelPermission, permission, SHIPMENTS);
+                // Consolidation permissions grouping
+                populatePermissionList(consolidationListPermission, consolidationRetrievePermission, consolidationCreatePermission, consolidationUpdatePermission, consolidationCancelPermission, permission, CONSOLIDATION);
+            }
         }
 
         Permissions.set(Map.ofEntries(
@@ -92,6 +81,40 @@ public class PermissionsContext {
                 Map.entry(CARRIER_BOOKING_VIEW, carrierBookingView)
         ));
     }
+
+    /**
+     *
+     * @param listPermissionList : ListPermission Collection
+     * @param retrievePermissionList : RetrievePermission Collection
+     * @param createPermissionList : CreatePermission Collection
+     * @param updatePermissionList : UpdatePermission Collection
+     * @param cancelPermissionList : CancelPermission Collection
+     * @param userPermission : current permission that needs to be evaluated
+     * @param entity : SHIPMENT or CONSOLIDATION
+     */
+    private static void populatePermissionList(List<String> listPermissionList, List<String> retrievePermissionList, List<String> createPermissionList, List<String> updatePermissionList, List<String> cancelPermissionList, String userPermission, String entity) {
+        if(userPermission.endsWith(VIEW_PERMISSION) && userPermission.contains(entity)) {
+            listPermissionList.add(userPermission);
+            retrievePermissionList.add(userPermission);
+        }
+        if(userPermission.endsWith(MODIFY_PERMISSION) && userPermission.contains(entity)) {
+            updatePermissionList.add(userPermission);
+            listPermissionList.add(userPermission);
+            retrievePermissionList.add(userPermission);
+        }
+        if(userPermission.endsWith(CANCEL_PERMISSION) && userPermission.contains(entity)) {
+            cancelPermissionList.add(userPermission);
+            listPermissionList.add(userPermission);
+            retrievePermissionList.add(userPermission);
+        }
+        if(userPermission.endsWith(CREATE_PERMISSION) && userPermission.contains(entity)) {
+            createPermissionList.add(userPermission);
+            updatePermissionList.add(userPermission);
+            listPermissionList.add(userPermission);
+            retrievePermissionList.add(userPermission);
+        }
+    }
+
     public static void removePermissions(){
         Permissions.remove();
     }

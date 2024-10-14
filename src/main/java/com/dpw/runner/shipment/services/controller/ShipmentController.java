@@ -795,4 +795,18 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CANCELLED, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.CANCEL)
+    public ResponseEntity<IRunnerResponse> cancelShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return shipmentService.cancel(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

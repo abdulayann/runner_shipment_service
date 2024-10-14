@@ -1337,6 +1337,22 @@ class ShipmentControllerTest {
         ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
         when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
         var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+    }
+
+    @Test
+    void testCancelShipment() throws RunnerException {
+        Long shipmentId = 1L;
+        when(shipmentService.cancel(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.cancelShipment(shipmentId);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCancelShipmentThrowsException() throws RunnerException {
+        Long shipmentId = 1L;
+        String errorMessage = "Error";
+        when(shipmentService.cancel(any())).thenThrow(new RuntimeException(errorMessage));
+        var responseEntity = shipmentController.cancelShipment(shipmentId);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 

@@ -17,7 +17,6 @@ import java.util.Set;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameterFromPermission;
-import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPermissionName;
 
 @Aspect
 @Component
@@ -41,7 +40,7 @@ public class UpdateValidateAspect {
             if(shipment.getIsDomestic() != null)
                 domesticType = shipment.getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
 //                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
@@ -94,7 +93,7 @@ public class UpdateValidateAspect {
             if(consolidation.getIsDomestic() != null)
                 domesticType = consolidation.getIsDomestic();
 
-            List<String> mappedPermissionList = V1PermissionMapUtil.getUpdatedPermissions(userPermissions);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
 //                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
