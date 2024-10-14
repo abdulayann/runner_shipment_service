@@ -60,4 +60,7 @@ public class BookingCarriage extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
+    @Column(name = "carrier_booking_id")
+    private Long carrierBookingId;
+
 }

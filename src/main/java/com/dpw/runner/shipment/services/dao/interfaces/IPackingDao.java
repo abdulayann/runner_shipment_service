@@ -32,11 +32,11 @@ public interface IPackingDao {
 
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws RunnerException;
 
-    List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException;
+    List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, Long carrierBookingId) throws RunnerException;
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException;
 
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
-    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap);
+    List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Long carrierBookingId, Map<Long, Packing> oldEntityMap);
 
     List<Packing> getAllPackings();
 
