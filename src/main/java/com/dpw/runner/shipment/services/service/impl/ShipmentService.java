@@ -2580,6 +2580,13 @@ public class ShipmentService implements IShipmentService {
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         }
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldEntity)
+                && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
+        }
         // Syncing shipment to V1
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
