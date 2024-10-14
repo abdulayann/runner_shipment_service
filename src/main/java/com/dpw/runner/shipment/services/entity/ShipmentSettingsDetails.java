@@ -542,4 +542,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "csd")
     private String csd;
+
+    @Column(name = "hide_manifest")
+    private Boolean hideManifest = true;
 }

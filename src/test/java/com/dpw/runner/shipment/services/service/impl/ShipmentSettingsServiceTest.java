@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -37,6 +39,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -49,6 +53,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -112,6 +117,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
+        TenantContext.setCurrentTenant(1);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
     }
@@ -564,6 +570,20 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void hideManifest(boolean hideManifest) {
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        shipmentSettingsService.hideManifest(hideManifest);
+        Assertions.assertTrue(true);
+    }
+
+    @Test
+    void hideManifestWithNull() {
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.hideManifest(true));
     }
 
 }
