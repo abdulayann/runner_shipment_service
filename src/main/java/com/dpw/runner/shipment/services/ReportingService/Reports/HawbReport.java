@@ -107,8 +107,8 @@ public class HawbReport extends IReport{
 
 
         if(shipmentInfo != null){
-            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress());
-            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress());
+            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
+            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
             dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
             dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
             dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, StringUtility.toUpperCase(shipmentInfo.getIssuingAgentName()));
@@ -235,8 +235,8 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.MAWB_NO3 , AwbNumber.substring(0, Math.min(3, AwbNumber.length())));
                 if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
             }
-
-            dictionary.put(ISSUING_AGENT_ADDRESS, hawbModel.getAwb().getAwbShipmentInfo().getIssuingAgentAddress());
+            var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
+            dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
 
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
@@ -669,11 +669,52 @@ public class HawbReport extends IReport{
         var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();
 
         if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
-            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName(), hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getAddress()));
+            var party = hawbModel.getAwb().getAwbNotifyPartyInfo().get(0);
+            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
             dictionary.put(AWB_NOTIFY_PARTY_NAME, hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() != null ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }
 
         return dictionary;
+    }
+
+    public static String constructAddressForAwb(String address, String country, String state, String city, String zipCode, String phone) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+        if(address != null) {
+            sb.append(address);
+        }
+
+        StringBuilder tempAddress = new StringBuilder();
+        if (!Strings.isNullOrEmpty(state)){
+            tempAddress.append(state);
+        }
+        if (!Strings.isNullOrEmpty(city)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(city);
+        }
+        if (!Strings.isNullOrEmpty(country)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(country);
+        }
+        if(!tempAddress.isEmpty()) {
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(tempAddress);
+        }
+
+        if (!Strings.isNullOrEmpty(zipCode)){
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(zipCode);
+        }
+        if (!Strings.isNullOrEmpty(phone)){
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(phone);
+        }
+        return sb.toString();
     }
 
     public static OtherChargesResponse getOtherChargesDetails(List<AwbOtherChargesInfo> otherChargesRows, Awb siData, AwbCargoInfo cargoInfoRows, V1TenantSettingsResponse v1TenantSettingsResponse)
