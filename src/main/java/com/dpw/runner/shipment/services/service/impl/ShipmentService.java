@@ -6378,14 +6378,25 @@ public class ShipmentService implements IShipmentService {
                 .isAttachmentDone(false)
                 .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
                 .build();
-        consoleShipmentMappingDao.save(entity);
-        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
-        sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
-        String warning = null;
-        if(!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        boolean isInterBranchImportShipment = false;
+        if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
+            isInterBranchImportShipment = true;
+            entity.setIsAttachmentDone(true);
+            entity.setRequestedType(null);
         }
-        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        consoleShipmentMappingDao.save(entity);
+        if(!isInterBranchImportShipment) {
+            Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
+            sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
+            String warning = null;
+            if (!shipmentRequestedTypes.isEmpty()) {
+                warning = "Template not found, please inform the region users manually";
+            }
+            return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        }
+        return ResponseHelper.buildSuccessResponse();
     }
 
     @Override
