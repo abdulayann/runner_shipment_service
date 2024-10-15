@@ -72,6 +72,8 @@ public interface IV1Service {
     V1DataResponse fetchOrganization(Object request);
 
     V1DataResponse fetchUnlocation(Object request);
+    V1DataResponse stateBasedList(Object request);
+
 
     V1DataResponse fetchContainerTypeData(Object request);
 
