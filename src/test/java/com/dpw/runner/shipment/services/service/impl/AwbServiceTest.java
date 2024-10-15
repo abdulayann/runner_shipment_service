@@ -245,6 +245,70 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void createAwbSuccessWithUpdatedNatureAndQuantityOfGoods() throws RunnerException {
+        AwbPackingInfo testAwbPackingInfo = new AwbPackingInfo();
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        List<AwbPackingInfo> awbPackingInfoList = new ArrayList<>();
+        testAwbPackingInfo.setVolume(new BigDecimal("1230.450"));
+        awbPackingInfoList.add(testAwbPackingInfo);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setSecurityStatus(Constants.SHR);
+        testShipment.setGoodsDescription("ShipmentDescription");
+        Packing packing = new Packing();
+        packing.setPacks("1");
+        packing.setVolume(new BigDecimal("1230.450"));
+        List<Packing> packingList = new ArrayList<>();
+        packingList.add(packing);
+        testShipment.setPackingList(packingList);
+        addShipmentDataForAwbGeneration(testShipment);
+        testDmawb.setAwbPackingInfo(awbPackingInfoList);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(awbDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class)))
+                .thenAnswer(invocation -> {
+                    Object arg = invocation.getArgument(0);
+                    return objectMapper.convertValue(arg, AwbResponse.class);
+                });
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> response = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
+        assertEquals("SHIPMENTDESCRIPTION\r\nVOL 1230.450 M3", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbCargoInfo().getNtrQtyGoods());
+    }
+
+    @Test
     void createAwb_throwsRaKcException() throws RunnerException {
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
@@ -799,6 +863,66 @@ class AwbServiceTest extends CommonMocks {
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void createMawbSuccessWithUpdatedNatureAndQuantityOfGoods() throws RunnerException {
+        AwbPackingInfo testAwbPackingInfo = new AwbPackingInfo();
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        List<AwbPackingInfo> awbPackingInfoList = new ArrayList<>();
+        testAwbPackingInfo.setVolume(new BigDecimal("1230.450"));
+        awbPackingInfoList.add(testAwbPackingInfo);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        Long shipmentId = 1L;
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setSecurityStatus(Constants.SCO);
+        testConsol.setInterBranchConsole(true);
+
+        testMawb.setAwbPackingInfo(awbPackingInfoList);
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testMawb));
+
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+        when(awbDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class)))
+                .thenAnswer(invocation -> {
+                    Object arg = invocation.getArgument(0);
+                    return objectMapper.convertValue(arg, AwbResponse.class);
+                });
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> response = awbService.createMawb(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
+        assertEquals("CONSOLIDATION AS PER ATTACHED LIST\r\nVOL 1230.450 M3", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbCargoInfo().getNtrQtyGoods());
     }
 
     @Test
