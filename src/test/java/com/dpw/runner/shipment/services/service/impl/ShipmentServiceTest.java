@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -39,11 +40,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -8786,6 +8782,38 @@ ShipmentServiceTest extends CommonMocks {
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testUpdateThrowsValidatonExceptionIfStaleShipmentIsSavedAgain() throws RunnerException {
+        Long shipmentId = 1L;
+        Long linkedConsolidationId = 1L;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .jobType(Constants.SHIPMENT_TYPE_DRT)
+                .consignee(Parties.builder().orgCode("org1").build())
+                .consigner(Parties.builder().orgCode("org2").build())
+                .build();
+        shipmentDetails.setId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder()
+                .shipmentId(shipmentId)
+                .consolidationId(linkedConsolidationId)
+                .isAttachmentDone(true)
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(consoleShipmentMapping));
+
+        String errorMessage = ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR;
+        Exception e = assertThrows(RunnerException.class, () -> shipmentService.partialUpdate(commonRequestModel, false));
+        assertEquals(errorMessage, e.getMessage());
     }
 
 

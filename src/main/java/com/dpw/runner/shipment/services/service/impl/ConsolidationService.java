@@ -3895,7 +3895,7 @@ public class ConsolidationService implements IConsolidationService {
         Page<ConsoleShipmentMapping> pushRequestedConsol = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
 
         if(pushRequestedConsol != null && pushRequestedConsol.getTotalElements() > 0) {
-            throw new ValidationException("Existing Shipment Push Request already in place, Cannot initiate a new request.");
+            throw new ValidationException(PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE);
         }
 
         var tenantSettings = commonUtils.getCurrentTenantSettings();
