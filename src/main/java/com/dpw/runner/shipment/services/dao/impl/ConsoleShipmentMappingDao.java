@@ -1,10 +1,16 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -13,10 +19,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+
 @Repository
 public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Autowired
     private IConsoleShipmentsMappingRepository consoleShipmentsMappingRepository;
+
+    @Autowired
+    @Lazy
+    private ShipmentDao shipmentDao;
 
     @Override
     public Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable) {
@@ -81,7 +94,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
+    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -96,7 +109,9 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 }
             }
         }
+        HashSet<Long> importShipmentIds = new HashSet<>();
         if (!shipmentIds.isEmpty()) {
+
             for (Long id : shipmentIds) {
                 ConsoleShipmentMapping entity;
                 if(shipmentRequestedType != null && consoleShipmentMappingMap.containsKey(id))
@@ -105,7 +120,13 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
-                if(interBranchShipIds.contains(id)) {
+
+                if(interBranchImportShipmentMap.containsKey(id)) {
+                    importShipmentIds.add(interBranchImportShipmentMap.get(id).getId());
+                }
+
+                if(interBranchShipIds.contains(id) && !interBranchImportShipmentMap.containsKey(id))
+                {
                     entity.setIsAttachmentDone(false);
                     entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
                 } else {
@@ -117,6 +138,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 save(entity);
             }
         }
+        shipmentIds.removeAll(importShipmentIds);
         return shipmentIds;
     }
 
