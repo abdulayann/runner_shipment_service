@@ -465,6 +465,8 @@ public class EntityTransferService implements IEntityTransferService {
         }
         // Packing got created with shipment
         entityTransferConsolidationDetails.setPackingList(null);
+        // Setting this to true to bypass condition - no dg shipment available
+        entityTransferConsolidationDetails.setCreatingFromDgShipment(entityTransferConsolidationDetails.getHazardous());
 
         // Create or update console
         ConsolidationDetailsResponse consolidationDetailsResponse = this.createOrUpdateConsolidation(entityTransferConsolidationDetails, oldConsolidationDetailsList);
