@@ -1721,6 +1721,7 @@ public class EntityTransferService implements IEntityTransferService {
         tagDetails.put("GS_ConsolidationBranch", consolidationBranch);
     }
 
+    //todo: get email template
     private List<EmailTemplatesRequest> getEmailTemplates(String templateType) {
         List<String> requests = new ArrayList<>(List.of(templateType));
         CommonV1ListRequest request = new CommonV1ListRequest();
