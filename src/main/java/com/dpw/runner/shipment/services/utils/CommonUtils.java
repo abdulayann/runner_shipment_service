@@ -195,7 +195,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.imageio.ImageIO;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
@@ -846,48 +845,6 @@ public class CommonUtils {
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
                 replaceTagsFromData(dictionary, emailTemplatesRequest.getSubject()), new ArrayList<>(toEmailIds), new ArrayList<>(ccEmailIds));
     }
-
-    public void populateShipmentImportAttachmentTemplate(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, EmailTemplatesRequest template) {
-
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
-        dictionary.put(SHIPMENT_ASSIGNED_USER, shipmentDetails.getAssignedTo());
-        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
-        dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
-        dictionary.put(CONSOL_BRANCH_CODE, UserContext.getUser().getCode());
-        dictionary.put(CONSOL_BRANCH_NAME, UserContext.getUser().getTenantDisplayName());
-        dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
-        dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
-        dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
-        dictionary.put(ETA_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
-
-        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
-        getCarriersData(Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap);
-        if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getShippingLine()) && carrierMasterDataMap.containsKey(consolidationDetails.getCarrierDetails().getShippingLine())) {
-            String carrierCode = carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getIataCode();
-            if(IsStringNullOrEmpty(carrierCode))
-                carrierCode = carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getItemValue();
-            dictionary.put(CARRIER_CODE, carrierCode);
-            dictionary.put(CARRIER_NAME, carrierMasterDataMap.get(consolidationDetails.getCarrierDetails().getShippingLine()).getItemDescription());
-        }
-        dictionary.put(FLIGHT_NUMBER1, consolidationDetails.getCarrierDetails().getFlightNumber());
-        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
-        getUnLocationsData(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(), consolidationDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap);
-        if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getOriginPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
-            dictionary.put(ReportConstants.POL, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getLocCode());
-            dictionary.put(POL_NAME, unLocMap.get(consolidationDetails.getCarrierDetails().getOriginPort()).getName());
-        }
-        if(!IsStringNullOrEmpty(consolidationDetails.getCarrierDetails().getDestinationPort()) && unLocMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort())) {
-            dictionary.put(ReportConstants.POD, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getLocCode());
-            dictionary.put(POD_NAME, unLocMap.get(consolidationDetails.getCarrierDetails().getDestinationPort()).getName());
-        }
-        dictionary.put(BRANCH_TIME_ZONE, MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME));
-        dictionary.put(USER_NAME, consolidationDetails.getCreatedBy());
-
-
-    }
-
 
     public void sendEmailShipmentPullReject(SendEmailDto sendEmailDto) {
         Set<String> toEmailIds = new HashSet<>();
