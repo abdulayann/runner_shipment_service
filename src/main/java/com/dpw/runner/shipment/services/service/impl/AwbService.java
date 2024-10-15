@@ -166,7 +166,7 @@ public class AwbService implements IAwbService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-    private static final String errorMessage = "You cannot generate the AWB without adding the screening/ Security status for RA KC shipments";
+    private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -843,7 +843,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
@@ -1210,7 +1210,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception ex){
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, "Shipments"));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
