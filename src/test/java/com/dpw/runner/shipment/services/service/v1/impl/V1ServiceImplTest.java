@@ -2184,6 +2184,57 @@ class V1ServiceImplTest {
     }
 
     /**
+     * Method under test: {@link V1ServiceImpl#stateBasedList(Object)} (Object)}
+     */
+    @Test
+    void testStateBasedList() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.stateBasedList("Request");
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testStateBasedList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testStateBasedList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testStateBasedList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    /**
      * Method under test: {@link V1ServiceImpl#updateUnlocationData(Object)} (Object)}
      */
     @Test
