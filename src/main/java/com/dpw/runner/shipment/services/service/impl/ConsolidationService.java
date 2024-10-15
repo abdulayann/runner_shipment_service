@@ -793,7 +793,7 @@ public class ConsolidationService implements IConsolidationService {
         // Filter and collect inter-branch shipment details into a separate list
         List<ShipmentDetails> interBranchShipmentDetailsList = shipmentDetailsList.stream()
                 .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId)) // Filter inter-branch shipments
-                .collect(Collectors.toList());
+                .toList();
 
         Map<Long, ShipmentDetails> interBranchImportShipmentMap = interBranchShipmentDetailsList.stream()
                 .filter(shipment -> DIRECTION_IMP.equalsIgnoreCase(shipment.getDirection()))
