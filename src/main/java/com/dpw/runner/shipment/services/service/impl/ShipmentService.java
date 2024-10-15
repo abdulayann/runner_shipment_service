@@ -1278,15 +1278,16 @@ public class ShipmentService implements IShipmentService {
                 currentLocation++;
                 nextLocation++;
             } else {
+                String mode = transportMode;
                 RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
 
                 if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
-                    transportMode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
+                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
                     carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
 
                 // Create and add a new routing request to the list
-                routingsRequests.add(createRoutingsRequest(legCounter++, transportMode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage));
+                routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage));
                 currentLocation = nextLocation;
                 nextLocation++;
             }
