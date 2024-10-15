@@ -2524,7 +2524,7 @@ public class AwbService implements IAwbService {
                             var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
                             awbParty.setName(name == null ? name : name.toUpperCase());
                         }
-                        if(!mawbLockSettings.getNotifyOrganizationAddressLock()) {
+                        if(Boolean.FALSE.equals(mawbLockSettings.getNotifyOrganizationAddressLock())) {
                             awbParty.setAddress(AwbUtility.constructAddressForAwb(party.getAddressData()).toUpperCase());
                             constructNotifyPartyAddress(awbParty, party.getAddressData());
                         }
