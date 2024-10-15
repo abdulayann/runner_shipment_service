@@ -28,10 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -133,7 +130,7 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>());
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashMap<>());
         assertEquals(new HashSet<>(shipIds), response);
     }
 
@@ -143,7 +140,7 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(shipmentId);
-        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)));
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)), new HashMap<>());
         assertEquals(new HashSet<>(shipIds), response);
     }
 
@@ -152,7 +149,7 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>());
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashMap<>());
         assertEquals(new HashSet<>(shipIds), response);
     }
 
@@ -161,7 +158,7 @@ class ConsoleShipmentMappingDaoTest {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>());
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashMap<>());
         assertEquals(new HashSet<>(shipIds), response);
     }
 
@@ -169,7 +166,7 @@ class ConsoleShipmentMappingDaoTest {
     void assignShipments_Branches() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         List<Long> shipIds = new ArrayList<>();
-        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, new ArrayList<>(), consoleShipmentMappingList, new HashSet<Long>());
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, new ArrayList<>(), consoleShipmentMappingList, new HashSet<Long>(), new HashMap<>());
         assertEquals(new HashSet<>(shipIds), response);
     }
 
