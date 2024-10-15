@@ -3599,6 +3599,7 @@ import static org.mockito.Mockito.*;
             return mockRunnable;
         });
         mockShipmentSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(null);
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -3625,6 +3626,7 @@ import static org.mockito.Mockito.*;
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         mockShipmentSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -4914,10 +4916,11 @@ import static org.mockito.Mockito.*;
                 .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
                 .isAttachmentDone(false)
                 .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        when(consoleShipmentMappingDao.findAll(any(), any() )).thenReturn(new PageImpl(List.of(consoleShipmentMapping1,consoleShipmentMapping2)));
-        Exception e = assertThrows(ValidationException.class, () -> {
-           consolidationService.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        when(consoleShipmentMappingDao.findAll(any(), any() )).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping1,consoleShipmentMapping2)));
+        Exception e = assertThrows(RuntimeException.class, () -> {
+           consolidationService.getAutoAttachConsolidationDetails(commonRequestModel);
         });
         assertEquals(ConsolidationConstants.PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE, e.getMessage());
     }

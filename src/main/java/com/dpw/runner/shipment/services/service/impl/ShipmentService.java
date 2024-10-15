@@ -2294,7 +2294,7 @@ public class ShipmentService implements IShipmentService {
 
         // Check the shipment for attached consolidation, if the user is updating stale shipment
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
-        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
+        if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
             consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
             if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()) {
                 throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
