@@ -39,6 +39,9 @@ public class Packing extends MultiTenancy {
     @Column(name = "carrier_booking_id")
     private Long carrierBookingId;
 
+    @Column(name = "shipping_instruction_id")
+    private Long shippingInstructionId;
+
     @Column(name = "dg_goods_id")
     private Integer DGGoodsId;
 

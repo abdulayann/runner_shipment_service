@@ -21,16 +21,11 @@ import javax.persistence.*;
 @NoArgsConstructor
 public class BookingPayment extends MultiTenancy {
 
-//    @OneToOne(targetEntity = CarrierBooking.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    @JoinColumn(name = "booking_id", referencedColumnName = "id")
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "booking_id")
-    private CarrierBooking carrierBooking; // todo: doubt here, one to one map question mapped
-
     @Enumerated(EnumType.STRING)
     @Column(name = "ocean_charge_type")
     private OceanChargeType oceanChargeType;
 
-    @Column(name = "charges_type")
+    @Column(name = "charge_type")
     @DedicatedMasterData(type = Constants.CHARGE_TYPE_MASTER_DATA)
     private String chargeType; //charge type master data
 

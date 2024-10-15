@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierBookingDao;
 import com.dpw.runner.shipment.services.entity.CarrierBooking;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -57,6 +58,11 @@ public class CarrierBookingDao implements ICarrierBookingDao {
     @Override
     public Optional<CarrierBooking> findById(Long id) {
         return carrierBookingRepository.findById(id);
+    }
+
+    @Override
+    public Optional<CarrierBooking> findByGuid(UUID id) {
+        return carrierBookingRepository.findByGuid(id);
     }
 
     @Override

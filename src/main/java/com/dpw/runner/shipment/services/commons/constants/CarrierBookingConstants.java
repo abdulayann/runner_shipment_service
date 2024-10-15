@@ -9,4 +9,8 @@ public class CarrierBookingConstants {
     public static final String LIST_SUCCESSFUL = "Successful Carrier Booking List";
     public static final String RESPONSE_CONTAINER_LIST = "List";
     public static final String UPDATE_SUCCESSFUL = "Successful Carrier Booking Data Update";
+    public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
+    public static final String BOOKING_ID = "Booking Id";
+    public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Carrier Booking Data Retrieval By Id";
+    public static final String BOOKING_GUID = "Booking Guid";
 }

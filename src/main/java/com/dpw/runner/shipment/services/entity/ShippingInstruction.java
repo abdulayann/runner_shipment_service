@@ -123,14 +123,14 @@ public class ShippingInstruction extends MultiTenancy {
     @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String totalShipmentVolumeUnit;
 
-    @Column(name = "chec")
-    private String shipperTaxId; // check
-
-    @Column(name = "chec")
-    private String consigneeTaxId; // check
-
-    @Column(name = "chec")
-    private String notifyPartyTaxId; // check
+//    @Column(name = "chec")
+//    private String shipperTaxId; // check
+//
+//    @Column(name = "chec")
+//    private String consigneeTaxId; // check
+//
+//    @Column(name = "chec")
+//    private String notifyPartyTaxId; // check
 
     @Column(name = "hbl_filling_info")
     @MasterData(type = MasterDataType.HBL_FILING_INFO)
@@ -203,6 +203,7 @@ public class ShippingInstruction extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private SIStatus status;
 
@@ -210,9 +211,9 @@ public class ShippingInstruction extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Packing> packingList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId") // check
-    @BatchSize(size = 50)
-    private List<Events> eventsList;
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId") // check
+//    @BatchSize(size = 50)
+//    private List<Events> eventsList;
 
     @Column(name = "b_l_object_status")
     private String bLObjectStatus;

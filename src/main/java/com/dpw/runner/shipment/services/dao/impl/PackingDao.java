@@ -6,10 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -142,6 +139,35 @@ public class PackingDao implements IPackingDao {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public List<Packing> updateEntityFromCarrierBooking(List<Packing> packingList, Long carrierBookingId) throws RunnerException {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Packing> hashMap = packings.stream()
+                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && !packingList.isEmpty()) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromCarrierBooking(packingRequestList, carrierBookingId);
+            }
+            deletePackings(hashMap, "CarrierBooking", carrierBookingId);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
@@ -343,6 +369,44 @@ public class PackingDao implements IPackingDao {
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
                                 .parentId(bookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Packing> saveEntityFromCarrierBooking(List<Packing> packings, Long carrierBookingId) {
+        List<Packing> res = new ArrayList<>();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+        Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+        Page<Packing> packingPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, Packing> hashMap = packingPage.stream().collect(Collectors.toMap(Packing::getId, Function.identity()));
+        for (Packing req : packings) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (hashMap.get(id) == null) {
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
                                 .operation(operation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |

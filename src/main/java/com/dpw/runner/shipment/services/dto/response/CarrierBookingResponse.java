@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -17,13 +18,13 @@ import java.util.UUID;
 @AllArgsConstructor
 public class CarrierBookingResponse implements IRunnerResponse {
     private Long id;
-    private Integer status;
+    private CarrierBookingStatus status;
     private ShippingInstructionResponse shippingInstruction;
     private String bookingId;
     private String bookingNumber;
     private String bol;
     private String forwarderRefNumber;
-    private Long sourceTenantId;
+    private Integer sourceTenantId;
     private String transportMode;
     private String serviceType;
     private String bookingOffice;
@@ -66,6 +67,6 @@ public class CarrierBookingResponse implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquToCarrier;
     private LocalDateTime earliestEmptyEquPickUp;
     private List<EventsResponse> eventsList;
-    private String lockedBy;
+    private Integer lockedBy;
     private boolean isLocked;
 }

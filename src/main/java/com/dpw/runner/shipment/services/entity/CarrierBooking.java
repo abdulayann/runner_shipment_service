@@ -30,13 +30,13 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "source_tenant_id")
     @TenantIdData
-    private Long sourceTenantId;
+    private Integer sourceTenantId;
 
     @Column(name = "shipment_guid")
     public UUID shipmentGuid;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "booking_id")
-    private ShippingInstruction shippingInstruction; // todo: doubt here, one to one map question mapped
+//    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "booking_id")
+//    private ShippingInstruction shippingInstruction; // todo: doubt here, one to one map question mapped
 
     @Column(name = "booking_number")
     @Size(max = 50, message = "max size is 50 for booking number")
@@ -174,7 +174,7 @@ public class CarrierBooking extends MultiTenancy {
     @Column(name = "earliest_drop_off_full_equ_to_carrier")
     private LocalDateTime earliestDropOffFullEquToCarrier;
 
-    @Column(name = "earliest_empty_equ_pickUp")
+    @Column(name = "earliest_empty_equ_pick_up")
     private LocalDateTime earliestEmptyEquPickUp;
 
     @Column(name = "requested_transshipment")
@@ -195,16 +195,16 @@ public class CarrierBooking extends MultiTenancy {
     private String referenceNo;
 
     @Column(name = "locked_by")
-    private String lockedBy;
+    private Integer lockedBy;
 
     @Column(name = "is_locked")
     private boolean isLocked;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
-    private List<OrderInfo> orderIds; // TODO: doubt here
+//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
+//    private List<OrderInfo> orderIds; // TODO: doubt here
 
     @Column(name = "tenant_department_id")
-    private boolean tenantDepartmentId; // TODO: doubt here
+    private Integer tenantDepartmentId; // TODO: doubt here
 
     @Column(name = "order_id")
     private String orderId;

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -219,6 +220,38 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     }
 
     @Override
+    public List<ReferenceNumbers> updateEntityFromCarrierBooking(List<ReferenceNumbers> referenceNumbersList, Long carrierBookingId) throws RunnerException {
+        String responseMsg;
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
+        try {
+            // TODO- Handle Transactions here
+            Map<Long, ReferenceNumbers> hashMap;
+            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+            hashMap = routings.stream().collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
+            List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
+            if (!referenceNumbersList.isEmpty()) {
+                for (ReferenceNumbers request : referenceNumbersList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    referenceNumbersRequests.add(request);
+                }
+                responseReferenceNumbers = saveEntityFromCarrierBooking(referenceNumbersRequests, carrierBookingId, copyHashMap);
+            }
+            deleteReferenceNumbers(hashMap, CarrierBooking.class.getSimpleName(), carrierBookingId);
+            return responseReferenceNumbers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
     public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
@@ -293,6 +326,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
         return res;
     }
+
     @Override
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Long carrierBookingId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
@@ -328,6 +362,88 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
                                 .parent(ConsolidationDetails.class.getSimpleName())
                                 .parentId(consolidationId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public List<ReferenceNumbers> saveEntityFromCarrierBooking(List<ReferenceNumbers> referenceNumbersRequests, Long carrierBookingId) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        for(ReferenceNumbers req : referenceNumbersRequests){
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(req.getId() != null){
+                long id = req.getId();
+                Optional<ReferenceNumbers> oldEntity = findById(id);
+                if (oldEntity.isEmpty()) {
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+                operation = DBOperationType.UPDATE.name();
+                req.setCreatedAt(oldEntity.get().getCreatedAt());
+                req.setCreatedBy(oldEntity.get().getCreatedBy());
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(ConsolidationDetails.class.getSimpleName())
+                                .parentId(carrierBookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<ReferenceNumbers> saveEntityFromCarrierBooking(List<ReferenceNumbers> referenceNumbersRequests, Long carrierBookingId, Map<Long, ReferenceNumbers> hashMap) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for(ReferenceNumbers req : referenceNumbersRequests){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!hashMap.containsKey(id)) {
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+                req.setCreatedAt(hashMap.get(id).getCreatedAt());
+                req.setCreatedBy(hashMap.get(id).getCreatedBy());
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
                                 .operation(operation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |

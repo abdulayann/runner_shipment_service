@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.BookingPayment;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface IBookingPaymentDao {
@@ -15,4 +18,8 @@ public interface IBookingPaymentDao {
     Optional<BookingPayment> findById(Long id);
 
     void delete(BookingPayment bookingPayment);
+
+    List<BookingPayment> saveEntityFromCarrierBooking(List<BookingPayment> bookingPayments, Long carrierBookingId);
+
+    List<BookingPayment> updateEntityFromCarrierBooking(List<BookingPayment> packings, Long carrierBookingId) throws RunnerException;
 }

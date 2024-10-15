@@ -11,14 +11,17 @@ import com.dpw.runner.shipment.services.dto.request.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -77,5 +80,14 @@ public class CarrierBookingController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = CarrierBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CarrierBookingConstants.BOOKING_ID) @RequestParam Optional<Long> id, @ApiParam(value = CarrierBookingConstants.BOOKING_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
+        return carrierBookingService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.PayerParties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -14,7 +15,7 @@ import lombok.*;
 public class BookingPaymentRequest extends CommonRequest implements IRunnerRequest {
     private String chargeType;
     private String paymentTerms;
-    private Integer payer;
+    private PayerParties payer;
     private String paymentLocation;
 }
 

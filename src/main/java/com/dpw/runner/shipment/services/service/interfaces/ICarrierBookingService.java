@@ -16,4 +16,6 @@ public interface ICarrierBookingService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
+
+    ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
 }

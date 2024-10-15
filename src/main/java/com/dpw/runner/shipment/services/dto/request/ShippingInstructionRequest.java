@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.SIStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -20,7 +21,7 @@ import java.util.List;
 @NoArgsConstructor
 public class ShippingInstructionRequest extends CommonRequest implements IRunnerRequest {
     private Long bookingId;
-    private Integer status;
+    private SIStatus status;
     private String shipperDeclaredValue;
     private String shipperDeclaredValueCurrency;
     private String blReleaseOffice;
