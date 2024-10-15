@@ -9,9 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
@@ -7205,6 +7203,39 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId(1L).consolidationId(2L).build()));
         var response = shipmentService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consoleShipmentMappingDao).save(argThat(entity ->
+                entity.getIsAttachmentDone() != null && entity.getIsAttachmentDone()
+        ));
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_NonInterBranchShipment_EmailSent() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction("EXP")
+                .build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consoleShipmentMappingDao).save(argThat(entity ->
+                entity.getIsAttachmentDone() != null && !entity.getIsAttachmentDone()
+        ));
+        verify(spyService).sendEmailForPushRequested(any(), any(), any());
     }
 
     @Test

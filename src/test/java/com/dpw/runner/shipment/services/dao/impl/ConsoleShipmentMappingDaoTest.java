@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -141,6 +142,19 @@ class ConsoleShipmentMappingDaoTest {
         doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(shipmentId);
         Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
+    }
+
+    @Test
+    void assignShipmentsWithImportInterBranchShipments() {
+        Long shipmentId = 2L;
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
+        List<Long> shipIds = List.of(shipmentId);
+        Map<Long, ShipmentDetails> interBranchImportShipmentMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        interBranchImportShipmentMap.put(shipmentId, shipmentDetails);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)), interBranchImportShipmentMap);
         assertEquals(new HashSet<>(shipIds), response);
     }
 
