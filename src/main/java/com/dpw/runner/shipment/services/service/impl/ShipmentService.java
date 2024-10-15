@@ -2292,6 +2292,15 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
         }
 
+        // Check the shipment for attached consolidation, if the user is updating stale shipment
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+        if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+            consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
+            if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()) {
+                throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
+            }
+        }
+
     }
 
     public void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException {
