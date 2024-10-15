@@ -1285,7 +1285,7 @@ import static org.mockito.Mockito.*;
         doNothing().when(containerService).afterSaveList(anyList(),anyBoolean());
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1335,7 +1335,7 @@ import static org.mockito.Mockito.*;
         mockShipmentSettings();
         mockTenantSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableLclConsolidation(true);
-        assertThrows(RunnerException.class, () -> consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds));
+        assertThrows(RunnerException.class, () -> consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds, true));
     }
 
     @Test
@@ -1393,7 +1393,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1711,6 +1711,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(false);
         consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setTenantId(UserContext.getUser().TenantId);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1732,7 +1733,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1753,7 +1754,7 @@ import static org.mockito.Mockito.*;
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
 
         RunnerException exception = assertThrows(RunnerException.class, () -> {
-            consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds);
+            consolidationService.attachShipments(ShipmentRequestedType.REJECT, 1L, shipmentIds, true);
         });
 
         assertEquals("Multiple consolidations are attached to the shipment, please verify.", exception.getMessage());
@@ -1801,7 +1802,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         verify(packingService, times(1)).savePackUtilisationCalculationInConsole(any());
@@ -4994,7 +4995,7 @@ import static org.mockito.Mockito.*;
                 .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build()))));
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
-        spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)));
+        spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)), true);
         verify(consolidationSync).sync(any(), any(), anyBoolean());
     }
 
