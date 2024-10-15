@@ -479,6 +479,7 @@ public class Constants {
     public static final String USER_NAME = "User_name";
     public static final String USER_BRANCH = "User_Branch";
     public static final String USER_COUNTRY = "User_Country";
+    public static final String IMPORT_SHIPMENT_ATTACHMENT_EMAIL = "Import_Shipment_Attachment_Email_Template";
 
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
