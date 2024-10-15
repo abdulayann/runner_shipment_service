@@ -1021,28 +1021,28 @@ public class AwbService implements IAwbService {
             awbCargoInfo = new AwbCargoInfo();
         }
 
-        List<String> shipmentDescriptions = new ArrayList<>();
-        for (ShipmentDetails consoleShipment : consolidationDetails.getShipmentsList()) {
-            if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
-                shipmentDescriptions.add(consoleShipment.getGoodsDescription());
-            }
-        }
-        String concatenatedGoodsDesc = "";
-        if (shipmentDescriptions.size() > 0) {
-            concatenatedGoodsDesc = String.join(",", shipmentDescriptions);
-        }
+//        List<String> shipmentDescriptions = new ArrayList<>();
+//        for (ShipmentDetails consoleShipment : consolidationDetails.getShipmentsList()) {
+//            if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
+//                shipmentDescriptions.add(consoleShipment.getGoodsDescription());
+//            }
+//        }
+//        String concatenatedGoodsDesc = "";
+//        if (shipmentDescriptions.size() > 0) {
+//            concatenatedGoodsDesc = String.join(",", shipmentDescriptions);
+//        }
 
         String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
         String newLine = "\r\n";
 
-        awbCargoInfo.setNtrQtyGoods(concatenatedGoodsDesc);
+//        awbCargoInfo.setNtrQtyGoods(concatenatedGoodsDesc);
         GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
         generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
         generateAwbPaymentInfoRequest.setAwbPackingInfo(awbPackingList);
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(false);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getDims(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + Constants.VOL + " " + getVolume(generateAwbPaymentInfoRequest));
         awbCargoInfo.setEntityId(consolidationDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -1367,7 +1367,7 @@ public class AwbService implements IAwbService {
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(true);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(getDims(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(Constants.VOL + " " + getVolume(generateAwbPaymentInfoRequest));
         awbCargoInfo.setEntityId(shipmentDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -3019,110 +3019,108 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(getDims(request));
     }
 
+    private String getVolume(GenerateAwbPaymentInfoRequest request) {
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        if (request.getAwbPackingInfo() != null && !request.getAwbPackingInfo().isEmpty()) {
+            for (AwbPackingInfo packing : request.getAwbPackingInfo()) {
+                BigDecimal volume = packing.getVolume();
+                if (volume != null) {
+                    totalVolume = totalVolume.add(volume);
+                }
+            }
+        }
+        return totalVolume.setScale(3, RoundingMode.HALF_UP).toString() + " " + request.getAwbPackingInfo().get(0).getVolumeUnit();
+    }
+
     private String getDims(GenerateAwbPaymentInfoRequest request) {
-        try {
-            String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
-            String packsDescriptionValue = "";
-            String dimensionText = Constants.DEFAULT_DIMN_TEXT;
-            Set<String> uniqueDimension = new HashSet<>();
-            String newLine = "\r\n";
+        String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
+        String packsDescriptionValue = "";
+        String dimensionText = Constants.DEFAULT_DIMN_TEXT;
+        Set<String> uniqueDimension = new HashSet<>();
+        String newLine = "\r\n";
 
-            if (request.getAwbPackingInfo() != null && request.getAwbPackingInfo().size() > 0) {
-                if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
-                    natureAndQuantGoodsValue += newLine;
-                }
-                int counter = 0;
-                for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
-                    String pcs = " ";
-                    String len = " ";
-                    String width = " ";
-                    String height = " ";
-                    String equals = Constants.EQ;
-                    String cross = Constants.CROSS;
+        if (request.getAwbPackingInfo() != null && request.getAwbPackingInfo().size() > 0) {
+            if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
+                natureAndQuantGoodsValue += newLine;
+            }
+            int counter = 0;
+            for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
+                String pcs = " ";
+                String len = " ";
+                String width = " ";
+                String height = " ";
+                String equals = Constants.EQ;
+                String cross = Constants.CROSS;
 
-                    if (packings.getPacks() != null) {
-                        pcs = packings.getPacks() + equals;
-                    } else {
-                        pcs += equals;
-                    }
-
-                    if (packings.getLength() != null) {
-                        len = packings.getLength().toString() + cross;
-                    } else {
-                        len += cross;
-                    }
-
-                    if (packings.getWidth() != null) {
-                        width = packings.getWidth().toString() + cross;
-                    } else {
-                        width += cross;
-                    }
-
-                    if (packings.getHeight() != null) {
-                        height = packings.getHeight().toString();
-                    }
-                    if (StringUtility.isNotEmpty(packings.getLengthUnit()) && StringUtility.isNotEmpty(packings.getWidthUnit()) && StringUtility.isNotEmpty(packings.getHeightUnit())) {
-                        uniqueDimension.add(packings.getLengthUnit());
-                        uniqueDimension.add(packings.getWidthUnit());
-                        uniqueDimension.add(packings.getHeightUnit());
-                    }
-
-                    packsDescriptionValue += pcs + len + width + height + ",";
-                    if (counter == request.getAwbPackingInfo().size() - 1) {
-                        packsDescriptionValue = packsDescriptionValue.substring(0, packsDescriptionValue.length() - 1);
-                    }
-
-                    counter++;
-                    if (counter % 2 == 0) {
-                        packsDescriptionValue += newLine;
-                    }
-                }
-
-                if (uniqueDimension.size() == 1) {
-                    String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
-                    if (dimentionUnit != null) {
-                        if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
-                            dimentionUnit = Constants.CMS;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.IN)) {
-                            dimentionUnit = Constants.INCH;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.M)) {
-                            dimentionUnit = Constants.MTR;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.FT)) {
-                            dimentionUnit = Constants.FEET;
-                        } else {
-                            dimentionUnit = "";
-                        }
-                    }
-                    dimensionText += dimentionUnit + newLine;
+                if (packings.getPacks() != null) {
+                    pcs = packings.getPacks() + equals;
                 } else {
-                    dimensionText += newLine;
+                    pcs += equals;
                 }
 
-                if (counter % 2 != 0) {
+                if (packings.getLength() != null) {
+                    len = packings.getLength().toString() + cross;
+                } else {
+                    len += cross;
+                }
+
+                if (packings.getWidth() != null) {
+                    width = packings.getWidth().toString() + cross;
+                } else {
+                    width += cross;
+                }
+
+                if (packings.getHeight() != null) {
+                    height = packings.getHeight().toString();
+                }
+                if (StringUtility.isNotEmpty(packings.getLengthUnit()) && StringUtility.isNotEmpty(packings.getWidthUnit()) && StringUtility.isNotEmpty(packings.getHeightUnit())) {
+                    uniqueDimension.add(packings.getLengthUnit());
+                    uniqueDimension.add(packings.getWidthUnit());
+                    uniqueDimension.add(packings.getHeightUnit());
+                }
+
+                packsDescriptionValue += pcs + len + width + height + ",";
+                if (counter == request.getAwbPackingInfo().size() - 1) {
+                    packsDescriptionValue = packsDescriptionValue.substring(0, packsDescriptionValue.length() - 1);
+                }
+
+                counter++;
+                if (counter % 2 == 0) {
                     packsDescriptionValue += newLine;
                 }
-
-                BigDecimal totalVW = updateGoodsDescriptionInfoFromPacks(request);
-                BigDecimal totalVWt = totalVW.setScale(2, RoundingMode.HALF_UP);
-
-                packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " ";
-
-                ShipmentSettingsDetails tenantSettingsList = commonUtils.getShipmentSettingFromContext();
-
-                if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
-                    packsDescriptionValue += Constants.KGS;
-                }
-
-            } else {
-                return natureAndQuantGoodsValue;
             }
 
-            StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
-            responseBuilder.append(dimensionText).append(packsDescriptionValue);
-            return responseBuilder.toString();
-        } catch (RunnerException ex){
-            return "";
+            if (uniqueDimension.size() == 1) {
+                String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
+                if (dimentionUnit != null) {
+                    if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
+                        dimentionUnit = Constants.CMS;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.IN)) {
+                        dimentionUnit = Constants.INCH;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.M)) {
+                        dimentionUnit = Constants.MTR;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.FT)) {
+                        dimentionUnit = Constants.FEET;
+                    } else {
+                        dimentionUnit = "";
+                    }
+                }
+                dimensionText += dimentionUnit + newLine;
+            } else {
+                dimensionText += newLine;
+            }
+
+            if (counter % 2 != 0) {
+                packsDescriptionValue += newLine;
+            }
+
+        } else {
+            return natureAndQuantGoodsValue;
         }
+
+        StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
+        responseBuilder.append(dimensionText).append(packsDescriptionValue);
+        return responseBuilder.toString();
     }
 
     @Override

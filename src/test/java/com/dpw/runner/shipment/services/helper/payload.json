@@ -1468,7 +1468,7 @@
       "entityId": 2246,
       "entityType": "MAWB",
       "handlingInfo": "Attached : Commercial Invoice & P/List",
-      "ntrQtyGoods": "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED\r\n",
+      "ntrQtyGoods": "CONSOLIDATION AS PER ATTACHED LIST\r\n",
       "currency": "EGP",
       "customsValue": 0,
       "customOriginCode": "EG"
