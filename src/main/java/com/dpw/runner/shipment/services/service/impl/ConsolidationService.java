@@ -268,12 +268,6 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-//    @Autowired
-//    private IV1Service iv1Service;
-//
-//    @Autowired
-//    private INotificationService notificationService;
-
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
     private SecureRandom rnd = new SecureRandom();
@@ -903,12 +897,6 @@ public class ConsolidationService implements IConsolidationService {
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
 
-//        if(!interBranchImportShipmentMap.isEmpty()) {
-//            for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
-//                sendImportShipmentAttachmentEmail(shipmentDetails, consolidationDetails);
-//            }
-//        }
-
         if(!interBranchShipIds.isEmpty()) // send email for pull requested when called from controller directly
             sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
@@ -928,91 +916,6 @@ public class ConsolidationService implements IConsolidationService {
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
-
-//    public void sendImportShipmentAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-//
-//        var emailTemplatesRequests = getEmailTemplates(IMPORT_SHIPMENT_ATTACHMENT_EMAIL);
-//        var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
-//
-//        // No CC emails are used
-//        List<String> ccEmails = new ArrayList<>();
-////        // Fetching role ids corresponding to console destination branches
-////        var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
-////        if(shipmentGuidSendToBranch == null)
-////            shipmentGuidSendToBranch = new HashMap<>();
-////        for (var keySet : shipmentGuidSendToBranch.entrySet())
-////            shipDestinationBranchIds.addAll(keySet.getValue());
-////        shipDestinationBranchIds.add(TenantContext.getCurrentTenant());
-////        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(shipDestinationBranchIds));
-//
-//        for (int i = 0; i < destinationBranches.size(); i++) {
-//            List<String> toEmailList = new ArrayList<>();
-//            toEmailList.add(shipmentDetails.getCreatedBy() != null ? shipmentDetails.getCreatedBy() : "");
-//            toEmailList.add(shipmentDetails.getAssignedTo() != null ? shipmentDetails.getAssignedTo() : "");
-//
-//            Set<String> toEmailIds = new HashSet<>();
-//            Set<String> ccEmailIds = new HashSet<>();
-//            Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
-//            Set<Integer> tenantIds = new HashSet<>();
-//            tenantIds.add(shipmentDetails.getTenantId());
-//            commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
-//
-//            if(toEmailList.isEmpty()) {
-//               commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
-//
-//            }
-//
-//
-//            populateShipmentImportAttachmentTemplate(shipmentDetails, emailTemplateModel);
-//            sendEmailNotification(emailTemplateModel, toEmailList, ccEmails);
-//        }
-//    }
-//
-//    public void populateShipmentImportAttachmentTemplate(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
-//        UsersDto user = UserContext.getUser();
-//
-//        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
-//        // Subject
-//        String subject = (template.getSubject() == null) ?
-//                Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT : template.getSubject();
-//        subject = subject.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
-//        subject = subject.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
-//
-//        // Body
-//        String body = (template.getBody() == null) ?
-//                Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
-//        body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
-//        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
-//        body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
-//        body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
-//        body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-//        body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
-//
-//        template.setSubject(subject);
-//        template.setBody(body);
-//    }
-//
-//    private void sendEmailNotification(EmailTemplatesRequest emailTemplateModel, List<String> to, List<String> cc) {
-//        if(!to.isEmpty()) {
-//            try {
-//                notificationService.sendEmail(emailTemplateModel.getBody(),
-//                        emailTemplateModel.getSubject(), to, cc);
-//            } catch (Exception ex) {
-//                log.error(ex.getMessage());
-//            }
-//        }
-//    }
-//
-//    private List<EmailTemplatesRequest> getEmailTemplates(String templateType) {
-//        List<String> requests = new ArrayList<>(List.of(templateType));
-//        CommonV1ListRequest request = new CommonV1ListRequest();
-//        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-//        String operator = Operators.IN.getValue();
-//        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-//        request.setCriteriaRequests(criteria);
-//        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
-//        return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-//    }
 
     private void setInterBranchContext(Boolean isInterBranchConsole) {
         if (Boolean.TRUE.equals(isInterBranchConsole))
