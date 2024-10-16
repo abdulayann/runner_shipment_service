@@ -305,7 +305,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void testCompleteCreateFromV1_RequestNull() throws RunnerException{
-        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        //when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
     }
