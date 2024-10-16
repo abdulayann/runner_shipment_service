@@ -123,8 +123,7 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -801,6 +800,8 @@ public class ConsolidationService implements IConsolidationService {
                         ShipmentDetails::getId,   // Key: ID of the shipment
                         shipment -> shipment      // Value: ShipmentDetails object itself
                 ));
+        if(!interBranchImportShipmentMap.isEmpty())
+            shipmentRequestedType = APPROVE;
 
         Set<Long> interBranchShipIds = new HashSet<>();
         List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted

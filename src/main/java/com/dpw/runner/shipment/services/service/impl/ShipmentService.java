@@ -6383,11 +6383,10 @@ public class ShipmentService implements IShipmentService {
         boolean isInterBranchImportShipment = false;
         if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
             isInterBranchImportShipment = true;
-            entity.setIsAttachmentDone(true);
-            entity.setRequestedType(null);
+            consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
         }
-        consoleShipmentMappingDao.save(entity);
         if(!isInterBranchImportShipment) {
+            consoleShipmentMappingDao.save(entity);
             Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
             String warning = null;

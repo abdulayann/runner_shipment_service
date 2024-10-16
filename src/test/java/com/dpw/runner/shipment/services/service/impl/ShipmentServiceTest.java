@@ -7215,9 +7215,6 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         var response = spyService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        verify(consoleShipmentMappingDao).save(argThat(entity ->
-                entity.getIsAttachmentDone() != null && entity.getIsAttachmentDone()
-        ));
         verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
     }
 
