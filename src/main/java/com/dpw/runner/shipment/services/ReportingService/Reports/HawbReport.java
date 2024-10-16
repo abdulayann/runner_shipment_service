@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -105,7 +106,7 @@ public class HawbReport extends IReport{
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
         V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
 
-        List<CompanyDto> companyDetailsList = jsonHelper.convertValue(v1Response.getEntities(), new TypeReference<List<CompanyDto>>() {});
+        List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
         CompanyDto companyDetails = companyDetailsList.isEmpty() ? null : companyDetailsList.get(0);
         dictionary.put(ReportConstants.COMPANY_ADDRESS, companyDetails);
 

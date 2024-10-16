@@ -275,9 +275,11 @@ class HawbReportTest extends CommonMocks {
         companyDto.setAddress1("Address1");
         companyDto.setAddress2("Address2");
         companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -532,9 +534,11 @@ class HawbReportTest extends CommonMocks {
         companyDto.setAddress1("Address1");
         companyDto.setAddress2("Address2");
         companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -790,9 +794,11 @@ class HawbReportTest extends CommonMocks {
         companyDto.setAddress1("Address1");
         companyDto.setAddress2("Address2");
         companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -1010,9 +1016,11 @@ class HawbReportTest extends CommonMocks {
         companyDto.setAddress1("Address1");
         companyDto.setAddress2("Address2");
         companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -1237,9 +1245,11 @@ class HawbReportTest extends CommonMocks {
         companyDto.setAddress1("Address1");
         companyDto.setAddress2("Address2");
         companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
