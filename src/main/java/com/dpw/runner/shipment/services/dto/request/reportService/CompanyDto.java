@@ -15,27 +15,27 @@ import java.io.Serializable;
 @JsonIgnoreProperties
 public class CompanyDto implements Serializable {
     @JsonProperty("Id")
-    private Integer Id;
+    private Integer id;
     @JsonProperty("CompanyName")
-    private String CompanyName;
+    private String companyName;
     @JsonProperty("Guid")
-    private String Guid;
+    private String guid;
     @JsonProperty("Code")
-    private String Code;
+    private String code;
     @JsonProperty("OrganizationCategory")
-    private String OrganizationCategory;
+    private String organizationCategory;
     @JsonProperty("Address1")
-    private String Address1;
+    private String address1;
     @JsonProperty("Address2")
-    private String Address2;
+    private String address2;
     @JsonProperty("Country")
-    private String Country;
+    private String country;
     @JsonProperty("TimeZoneId")
-    private String TimeZoneId;
+    private String timeZoneId;
     @JsonProperty("City")
-    private String City;
+    private String city;
     @JsonProperty("State")
-    private String State;
+    private String state;
     @JsonProperty("ZipPostCode")
-    private String ZipPostCode;
+    private String zipPostCode;
 }

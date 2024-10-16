@@ -5769,7 +5769,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
         // Act
-        var responseEntity = v1ServiceImpl.listTask("Request");
+        var responseEntity = v1ServiceImpl.getCompaniesDetails("Request");
 
         // Assert
         assertEquals(mockResponse, responseEntity);
@@ -5781,7 +5781,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
         // Act
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listTask("Request"));
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
 
         // Assert
         assertNotNull(throwable);
@@ -5793,7 +5793,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new RuntimeException());
         // Act
-        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listTask("Request"));
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
 
         // Assert
         assertNotNull(throwable);
