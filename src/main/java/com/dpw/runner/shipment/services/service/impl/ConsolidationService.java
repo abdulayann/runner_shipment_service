@@ -826,11 +826,9 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-            Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
-            List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent();
 
-            validationsBeforeAttachShipments(consolidationDetails, oldConsoleShipmentMappings, consoleShipmentMappings,
-                    shipmentIds, consolidationId, shipmentDetailsList, fromConsolidation);
+            validationsBeforeAttachShipments(consolidationDetails, consoleShipmentMappings, shipmentIds, consolidationId, shipmentDetailsList, fromConsolidation);
 
             attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds, interBranchImportShipmentMap);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
@@ -951,17 +949,15 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-
-    private void validationsBeforeAttachShipments(ConsolidationDetails consolidationDetails, Page<ConsoleShipmentMapping> oldConsoleShipmentMappings, List<ConsoleShipmentMapping> consoleShipmentMappings,
+    public void validationsBeforeAttachShipments(ConsolidationDetails consolidationDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
                                                   List<Long> shipmentIds, Long consolidationId, List<ShipmentDetails> shipmentDetailsList, boolean fromConsolidation) throws RunnerException {
         int existingShipments = consolidationDetails.getShipmentsList() != null ? consolidationDetails.getShipmentsList().size() : 0;
         if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
                 && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&  existingShipments + shipmentIds.size() > 1) {
             throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
         }
-        if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
-            consoleShipmentMappings.addAll(oldConsoleShipmentMappings.getContent());
-            for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
+        if(!listIsNullOrEmpty(consoleShipmentMappings)) {
+            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
                 if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
                     throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
             }

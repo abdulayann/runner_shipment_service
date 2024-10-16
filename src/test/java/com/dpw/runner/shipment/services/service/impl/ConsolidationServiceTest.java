@@ -5255,5 +5255,10 @@ import static org.mockito.Mockito.*;
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
+    
+    @Test
+    void testValidationsBeforeAttachShipments() throws RunnerException {
+        consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(testShipment), true);
+    }
 
 }
