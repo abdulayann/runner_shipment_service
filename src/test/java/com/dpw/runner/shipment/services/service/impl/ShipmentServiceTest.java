@@ -8225,18 +8225,6 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
-    @Test
-    void testGetCustomerBookingRequestRoutingList_ExistingRoutingList() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        List<RoutingsRequest> existingRoutingList = new ArrayList<>();
-        existingRoutingList.add(new RoutingsRequest());
-        customerBookingRequest.setRoutingList(existingRoutingList);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(existingRoutingList, result);
-    }
 
     @Test
     void testGetCustomerBookingRequestRoutingList_NoExistingRoutingList() {
@@ -8248,7 +8236,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), customerBookingRequest.getTransportType());
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -8259,7 +8247,7 @@ ShipmentServiceTest extends CommonMocks {
         CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
         customerBookingRequest.setCarrierDetails(null);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "AIR");
 
         assertNotNull(result);
         assertEquals(0, result.size());
@@ -8275,7 +8263,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8291,7 +8279,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8307,7 +8295,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8323,7 +8311,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination(null);
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8339,7 +8327,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8355,7 +8343,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8371,7 +8359,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -8387,7 +8375,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(1, result.size());
@@ -8403,7 +8391,7 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Origin");
         customerBookingRequest.setCarrierDetails(carrierDetails);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), "SEA");
 
         assertNotNull(result);
         assertEquals(0, result.size());
