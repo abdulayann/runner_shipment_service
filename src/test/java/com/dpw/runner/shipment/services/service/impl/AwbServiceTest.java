@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -83,6 +84,8 @@ class AwbServiceTest extends CommonMocks {
 
     @Mock
     private IConsolidationService consolidationService;
+    @Mock
+    private PackingService packingService;
     @Mock
     private IAwbDao awbDao;
     @Mock
@@ -262,6 +265,7 @@ class AwbServiceTest extends CommonMocks {
         List<Packing> packingList = new ArrayList<>();
         packingList.add(packing);
         testShipment.setPackingList(packingList);
+        testShipment.setVolume(new BigDecimal("1230.450"));
         addShipmentDataForAwbGeneration(testShipment);
         testDmawb.setAwbPackingInfo(awbPackingInfoList);
 
@@ -822,6 +826,10 @@ class AwbServiceTest extends CommonMocks {
         testConsol.setShipmentsList(List.of(testShipment));
         testConsol.setSecurityStatus(Constants.SCO);
         testConsol.setInterBranchConsole(true);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
@@ -866,6 +874,69 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void createMawbSuccessWithUpdatedNatureAndQuantityOfGoods() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setSecurityStatus(Constants.SCO);
+        testConsol.setInterBranchConsole(true);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setPacksVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+
+        when(awbDao.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class)))
+                .thenAnswer(invocation -> {
+                    Object arg = invocation.getArgument(0);
+                    return objectMapper.convertValue(arg, AwbResponse.class);
+                });
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> response = awbService.createMawb(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
+        assertEquals("CONSOLIDATION AS PER ATTACHED LIST\r\nVOL 1000.567 M3", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbCargoInfo().getNtrQtyGoods());
+    }
+
+    @Test
     void createMawbGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
@@ -875,6 +946,10 @@ class AwbServiceTest extends CommonMocks {
         testConsol.setShipmentsList(List.of(testShipment));
         testConsol.setRoutingsList(null);
         testHawb.getAwbCargoInfo().setSci(AwbConstants.T1);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
@@ -989,10 +1064,9 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateGoodsAndPacksForMawb4() {
+    void testUpdateGoodsAndPacksForMawb4() throws RunnerException {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CreateAwbRequest.builder().ShipmentId(id).ConsolidationId(id).build());
-
         AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
         ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         mockShipmentSettingDetails.setConsolidationLite(true);
@@ -1220,7 +1294,10 @@ class AwbServiceTest extends CommonMocks {
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(List.of(testShipment));
-
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
@@ -1759,6 +1836,10 @@ class AwbServiceTest extends CommonMocks {
         createAwbRequest.setConsolidationId(consolidationId);
         createAwbRequest.setAwbType(Constants.MAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_TRUE", MawbLockSettings.class);
 
@@ -1879,7 +1960,10 @@ class AwbServiceTest extends CommonMocks {
         createAwbRequest.setConsolidationId(consolidationId);
         createAwbRequest.setAwbType(Constants.MAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
-
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -1917,7 +2001,10 @@ class AwbServiceTest extends CommonMocks {
         createAwbRequest.setConsolidationId(consolidationId);
         createAwbRequest.setAwbType(Constants.MAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
-
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -1961,7 +2048,10 @@ class AwbServiceTest extends CommonMocks {
         createAwbRequest.setConsolidationId(consolidationId);
         createAwbRequest.setAwbType(Constants.MAWB);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
-
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume("1000.567");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2108,14 +2198,11 @@ class AwbServiceTest extends CommonMocks {
                 "{\"awbShipmentInfo\":{\"entityId\":152616,\"entityType\":\"DMAWB\",\"shipperName\":\"TEST VG CREDIT LIMIT\",\"shipperAddress\":\"\\r\\nADDRESS 1\\r\\nMH\\r\\nPUNE\\r\\nIND\",\"consigneeName\":\"NATIONWIDE PAPER LTD\",\"consigneeAddress\":\"\\r\\nABC CO LLC\\nAEJEA\\r\\nARE\",\"consigneeReferenceNumber\":\"2436215\",\"iataCode\":\"5678\",\"awbNumber\":\"235-88998641\",\"originAirport\":\"Kempegowda International Airport BLR\",\"destinationAirport\":\"George Bush Intercontinental Airport IAH, TX\",\"firstCarrier\":\"Turkish Airlines\",\"agentCASSCode\":\"8975\"},\"awbNotifyPartyInfo\":[{}],\"awbRoutingInfo\":[{\"entityId\":152616,\"entityType\":\"DMAWB\",\"byCarrier\":\"Turkish Airlines\",\"flightNumber\":\"6457\",\"flightDate\":\"2024-02-02T01:00:00\",\"destinationPortName\":\"USIAH_AIR\",\"originPortName\":\"INBLR_AIR\",\"isShipmentCreated\":true}],\"awbCargoInfo\":{\"entityId\":152616,\"entityType\":\"DMAWB\",\"ntrQtyGoods\":\"\",\"currency\":\"EGP\",\"customsValue\":0},\"awbOtherInfo\":{\"entityId\":152616,\"entityType\":\"DMAWB\",\"shipper\":\"TEST VG CREDIT LIMIT\",\"carrier\":\"carrier for mawb from master\",\"executedOn\":\"2024-03-07T12:56:16\"},\"awbGoodsDescriptionInfo\":[{\"entityId\":152616,\"entityType\":\"DMAWB\",\"piecesNo\":6,\"guid\":\"d305bff6-72f9-4435-acf2-c10f9b729310\",\"awbPackingInfo\":[{\"guid\":\"38bc225a-fa41-40a5-afae-71a11a524dfa\",\"packs\":\"5\",\"packsType\":\"BAG\",\"weight\":25,\"weightUnit\":\"KG\",\"volume\":1.2,\"volumeUnit\":\"M3\",\"commodity\":\"530521\",\"length\":400,\"lengthUnit\":\"CM\",\"width\":300,\"widthUnit\":\"CM\",\"height\":2,\"heightUnit\":\"CM\",\"hsCode\":\"530521\",\"volumeWeight\":200.0004,\"volumeWeightUnit\":\"KG\",\"awbNumber\":\"235-88998641\",\"awbGoodsDescriptionInfoGuid\":\"d305bff6-72f9-4435-acf2-c10f9b729310\"},{\"guid\":\"4fbd511c-26cc-48ae-a2ae-5fe5d9baf803\",\"packs\":\"1\",\"packsType\":\"BAG\",\"weight\":100,\"weightUnit\":\"KG\",\"volume\":0.2,\"volumeUnit\":\"M3\",\"commodity\":\"530529\",\"length\":100,\"lengthUnit\":\"CM\",\"width\":200,\"widthUnit\":\"CM\",\"height\":10,\"heightUnit\":\"CM\",\"minTempUnit\":\"CEL\",\"hsCode\":\"530529\",\"goodsDescription\":\"DESC\",\"netWeightUnit\":\"KG\",\"volumeWeight\":33.3334,\"volumeWeightUnit\":\"KG\",\"awbNumber\":\"235-88998641\",\"awbGoodsDescriptionInfoGuid\":\"d305bff6-72f9-4435-acf2-c10f9b729310\"}],\"isShipmentCreated\":true}],\"prepaid\":{\"weightCharges\":\"\",\"valuationCharge\":\"\",\"tax\":\"\",\"dueAgentCharges\":\"\",\"dueCarrierCharges\":\"\"},\"collect\":{\"weightCharges\":\"\",\"valuationCharge\":\"\",\"tax\":\"\",\"dueAgentCharges\":\"\",\"dueCarrierCharges\":\"\"},\"awbOciInfo\":[],\"awbPackingInfo\":[{\"guid\":\"38bc225a-fa41-40a5-afae-71a11a524dfa\",\"packs\":\"5\",\"packsType\":\"BAG\",\"weight\":25,\"weightUnit\":\"KG\",\"volume\":1.2,\"volumeUnit\":\"M3\",\"commodity\":\"530521\",\"length\":400,\"lengthUnit\":\"CM\",\"width\":300,\"widthUnit\":\"CM\",\"height\":2,\"heightUnit\":\"CM\",\"hsCode\":\"530521\",\"volumeWeight\":200.0004,\"volumeWeightUnit\":\"KG\",\"awbNumber\":\"235-88998641\",\"awbGoodsDescriptionInfoGuid\":\"d305bff6-72f9-4435-acf2-c10f9b729310\"},{\"guid\":\"4fbd511c-26cc-48ae-a2ae-5fe5d9baf803\",\"packs\":\"1\",\"packsType\":\"BAG\",\"weight\":100,\"weightUnit\":\"KG\",\"volume\":0.2,\"volumeUnit\":\"M3\",\"commodity\":\"530529\",\"length\":100,\"lengthUnit\":\"CM\",\"width\":200,\"widthUnit\":\"CM\",\"height\":10,\"heightUnit\":\"CM\",\"minTempUnit\":\"CEL\",\"hsCode\":\"530529\",\"goodsDescription\":\"DESC\",\"netWeightUnit\":\"KG\",\"volumeWeight\":33.3334,\"volumeWeightUnit\":\"KG\",\"awbNumber\":\"235-88998641\",\"awbGoodsDescriptionInfoGuid\":\"d305bff6-72f9-4435-acf2-c10f9b729310\"}],\"awbOtherChargesInfo\":[],\"shcIdList\":[],\"chargeDetails\":{\"Id\":\"\",\"ItemType\":\"\",\"ItemValue\":\"\",\"ItemDescription\":\"\",\"ValuenDesc\":\"\",\"Identifier1\":\"\",\"Identifier2\":\"\",\"Identifier3\":\"\",\"Identifier4\":\"\",\"TenantId\":\"\",\"IsActive\":\"\",\"AirLinePrefixValue\":\"\",\"DPAManifestMaster\":\"\",\"label\":\"\",\"value\":\"\"},\"awbPaymentInfo\":{\"weightCharges\":\"\",\"valuationCharge\":\"\",\"tax\":\"\",\"dueAgentCharges\":\"\",\"totalPrepaid\":\"\",\"totalCollect\":\"\"},\"id\":68,\"guid\":\"4545424c-fe16-48c4-b1e9-230589324dba\",\"awbNumber\":\"235-88998641\",\"shipmentId\":152616}",
                 GenerateAwbPaymentInfoRequest.class);
 
-        Mockito.when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build()));
-
-        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> response = awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
         assertEquals(
-                "DIMS: In CMS\r\n" + "5=400X300X2,1=100X200X10\r\n" + "Total Volumetric Weight 233.33 KGS",
+                "DIMS: In CMS\r\n" + "5=400X300X2,1=100X200X10\r\n",
                 runnerResponse.getData());
       }
 

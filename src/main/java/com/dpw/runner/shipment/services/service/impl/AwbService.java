@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -86,6 +88,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private IConsolidationService consolidationService;
+
+    @Autowired
+    private PackingService packingService;
 
     @Autowired
     private IAwbDao awbDao;
@@ -1080,7 +1085,8 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) {
+    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) throws RunnerException {
+        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
         }
@@ -1093,7 +1099,7 @@ public class AwbService implements IAwbService {
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(false);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolume(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolumeFromConsolidationPackSummary(packSummary));
         awbCargoInfo.setEntityId(consolidationDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -1424,7 +1430,7 @@ public class AwbService implements IAwbService {
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(true);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolume(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
         awbCargoInfo.setEntityId(shipmentDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -2322,7 +2328,7 @@ public class AwbService implements IAwbService {
             generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awb.getAwbGoodsDescriptionInfo());
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
-            awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolume(generateAwbPaymentInfoRequest));
+            awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
             awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         }
 
@@ -2420,7 +2426,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) {
+    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
 
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
         attachedShipmentDescriptions = new ArrayList<>();
@@ -2591,7 +2597,8 @@ public class AwbService implements IAwbService {
             awb.getAwbRoutingInfo().add(routingInfo);
         }
     }
-    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) throws RunnerException {
+        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
         if(!mawbLockSettings.getNtrQtyGoodsLock()) {
             String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
@@ -2602,7 +2609,7 @@ public class AwbService implements IAwbService {
             generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awb.getAwbGoodsDescriptionInfo());
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
-            awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolume(generateAwbPaymentInfoRequest));
+            awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolumeFromConsolidationPackSummary(packSummary));
             awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         }
 
@@ -3083,17 +3090,13 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(getDims(request));
     }
 
-    private String getVolume(GenerateAwbPaymentInfoRequest request) {
-        BigDecimal totalVolume = BigDecimal.ZERO;
-        if (request.getAwbPackingInfo() != null && !request.getAwbPackingInfo().isEmpty()) {
-            for (AwbPackingInfo packing : request.getAwbPackingInfo()) {
-                BigDecimal volume = packing.getVolume();
-                if (volume != null) {
-                    totalVolume = totalVolume.add(volume);
-                }
-            }
-        }
-        return Constants.VOL + " " + totalVolume.setScale(3, RoundingMode.HALF_UP).toString() + " " + Constants.VOLUME_UNIT_M3;
+    private String getVolumeFromConsolidationPackSummary(PackSummaryResponse packSummaryResponse) {
+        return Constants.VOL + " " + packSummaryResponse.getPacksVolume() + " " + packSummaryResponse.getPacksVolumeUnit();
+    }
+
+    private String getVolumeFromShipmentDetails(ShipmentDetails shipmentDetails) {
+        BigDecimal totalVolume = Optional.ofNullable(shipmentDetails.getVolume()).orElse(BigDecimal.ZERO);
+        return Constants.VOL + " " + totalVolume.setScale(3, RoundingMode.HALF_UP).toString() + " " + shipmentDetails.getVolumeUnit();
     }
 
     private String getDims(GenerateAwbPaymentInfoRequest request) {
