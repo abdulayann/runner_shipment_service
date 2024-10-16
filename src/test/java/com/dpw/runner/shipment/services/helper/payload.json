@@ -4282,6 +4282,10 @@
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "chargeableWeight" : "119,646",
+    "packsChargeableWeightUnit" : "M3",
+    "packsVolume" : "119,646",
+    "packsVolumeUnit" : "M3",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0
@@ -4295,6 +4299,10 @@
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "chargeableWeight" : "19,941,040",
+    "packsChargeableWeightUnit" : "KG",
+    "packsVolume" : "119,646",
+    "packsVolumeUnit" : "M3",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0
