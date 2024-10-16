@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IConsoleShipmentMappingDao {
@@ -20,7 +22,7 @@ public interface IConsoleShipmentMappingDao {
 
     Integer countAllStateMappings(Long shipmentId);
 
-    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds);
+    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap);
 
     List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 

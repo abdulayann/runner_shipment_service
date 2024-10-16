@@ -1306,7 +1306,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1356,7 +1356,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1403,7 +1403,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1452,7 +1452,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1521,7 +1521,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
