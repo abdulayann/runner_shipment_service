@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -1344,14 +1343,14 @@ class ShipmentControllerTest {
     @Test
     void testGetFilteredShipment(){
         when(shipmentService.fetchSimilarShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        var responseEntity = shipmentController.getFilteredShipments("guid");
+        var responseEntity = shipmentController.listFilteredSimilarShipments("guid", null, null );
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void testGetFilteredShipmentException() {
-        when(shipmentController.getFilteredShipments(any())).thenThrow(new RuntimeException());
-        var responseEntity = shipmentController.getFilteredShipments("guid");
+        when(shipmentController.listFilteredSimilarShipments(any(), null, null)).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.listFilteredSimilarShipments("guid", null, null );
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 

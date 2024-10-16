@@ -555,13 +555,12 @@ public class ShipmentService implements IShipmentService {
     );
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry(Constants.ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
-            Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
-            Map.entry("consignerAddressCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
-            Map.entry("consigneeAddressCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNEE_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CLIENT_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNER_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
+            Map.entry(Constants.CONSIGNEE_ADDRESS_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
             Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("houseBill").isContainsText(true).build()),
             Map.entry("houseBillType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("houseBillType").isContainsText(true).build()),
             Map.entry(Constants.TRANSPORT_MODE, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.TRANSPORT_MODE).isContainsText(true).build()),
@@ -3350,77 +3349,50 @@ public class ShipmentService implements IShipmentService {
         ListCommonRequest defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE,
                 shipmentDetails.getTransportMode(), "=", request);
 
-        addCriteriaForDirection(defaultRequest, shipmentDetails);
-        addCriteriaForShipmentType(defaultRequest, shipmentDetails);
-        addCriteriaForJobType(defaultRequest, shipmentDetails);
-        addCriteriaForIncoterms(defaultRequest, shipmentDetails);
-        addCriteriaForPorts(defaultRequest, shipmentDetails);
-        addCriteriaForOrgCode(defaultRequest, shipmentDetails);
-        addCriteriaToExcludeShipment(defaultRequest);
+        Map<String, Object> shipmentFieldNameValueMap = new HashMap<>();
+        shipmentFieldNameValueMap.put(Constants.DIRECTION, shipmentDetails.getDirection());
+        shipmentFieldNameValueMap.put(Constants.SHIPMENT_TYPE, shipmentDetails.getShipmentType());
+        shipmentFieldNameValueMap.put(Constants.JOB_TYPE, shipmentDetails.getJobType());
+        shipmentFieldNameValueMap.put(Constants.INCOTERMS, shipmentDetails.getIncoterms());
+
+        if(!Objects.isNull(shipmentDetails.getCarrierDetails())){
+            shipmentFieldNameValueMap.put(Constants.ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort());
+            shipmentFieldNameValueMap.put(Constants.DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort());
+        }
+
+        if (!Objects.isNull(shipmentDetails.getClient())) {
+            shipmentFieldNameValueMap.put(Constants.CLIENT_ORG_CODE, shipmentDetails.getClient().getOrgCode());
+            shipmentFieldNameValueMap.put(Constants.CLIENT_ADDRESS_CODE, shipmentDetails.getClient().getAddressCode());
+        }
+        if (!Objects.isNull(shipmentDetails.getConsigner())) {
+            shipmentFieldNameValueMap.put(Constants.CONSIGNER_ORG_CODE, shipmentDetails.getConsigner().getOrgCode());
+            shipmentFieldNameValueMap.put(Constants.CONSIGNER_ADDRESS_CODE, shipmentDetails.getConsigner().getAddressCode());
+        }
+        if (!Objects.isNull(shipmentDetails.getConsignee())) {
+            shipmentFieldNameValueMap.put(Constants.CONSIGNEE_ORG_CODE, shipmentDetails.getConsignee().getOrgCode());
+            shipmentFieldNameValueMap.put(Constants.CONSIGNEE_ADDRESS_CODE, shipmentDetails.getConsignee().getAddressCode());
+        }
+        addCriteriaToFilter(request, shipmentFieldNameValueMap);
+        addCriteriaToExclude(defaultRequest, shipmentDetails);
+
         return defaultRequest;
     }
 
-    private void addCriteriaForDirection(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if (!Objects.isNull(shipmentDetails.getDirection())) {
-            CommonUtils.andCriteria(Constants.DIRECTION, shipmentDetails.getDirection(), "=", request);
-        } else {
-            CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, request);
+    private void addCriteriaToFilter(ListCommonRequest request, Map<String, Object> shipmentFieldNameValueMap) {
+        for (Map.Entry<String, Object> entry : shipmentFieldNameValueMap.entrySet()) {
+            if (!Objects.isNull(entry.getValue())) {
+                CommonUtils.andCriteria(entry.getKey(), entry.getValue(), "=", request);
+            }
         }
     }
 
-    private void addCriteriaForShipmentType(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if (!Objects.isNull(shipmentDetails.getShipmentType())) {
-            CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, shipmentDetails.getShipmentType(), "=", request);
-        } else {
-            CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, "", "=", request);
-        }
-    }
-
-    private void addCriteriaForJobType(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if (!Objects.isNull(shipmentDetails.getJobType())) {
-            CommonUtils.andCriteria(Constants.JOB_TYPE, shipmentDetails.getJobType(), "=", request);
-        } else {
-            CommonUtils.andCriteria(Constants.JOB_TYPE, "", "=", request);
-        }
-    }
-
-    private void addCriteriaForIncoterms(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if (!Objects.isNull(shipmentDetails.getIncoterms())) {
-            CommonUtils.andCriteria(Constants.INCOTERMS, shipmentDetails.getIncoterms(), "=", request);
-        } else {
-            CommonUtils.andCriteria(Constants.INCOTERMS, "", "=", request);
-        }
-    }
-
-    private void addCriteriaToExcludeShipment(ListCommonRequest request) {
+    private void addCriteriaToExclude(ListCommonRequest request, ShipmentDetails shipmentDetails) {
         CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.NonMovement.getValue(), "!=", request);
         CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.Cancelled.getValue(), "!=", request);
+        CommonUtils.andCriteria(Constants.GUID, shipmentDetails.getGuid(), "!=", request);
     }
 
-    private void addCriteriaForPorts(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if(!Objects.isNull(shipmentDetails.getCarrierDetails())){
-            if (!Objects.isNull(shipmentDetails.getCarrierDetails().getOriginPort())) {
-                CommonUtils.andCriteria(Constants.ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort(), "=", request);
-            } else {
-                CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, request);
-            }
-
-            if (!Objects.isNull(shipmentDetails.getCarrierDetails().getDestinationPort())) {
-                CommonUtils.andCriteria(Constants.DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort(), "=", request);
-            } else {
-                CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, request);
-            }
-        }
-    }
-
-    private void addCriteriaForOrgCode(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        if (!Objects.isNull(shipmentDetails.getClient()) && !Objects.isNull(shipmentDetails.getClient().getOrgCode())) {
-            CommonUtils.andCriteria(Constants.ORG_CODE, shipmentDetails.getClient().getOrgCode(), "=", request);
-        } else {
-            CommonUtils.andCriteria(Constants.ORG_CODE, "", Constants.IS_NULL, request);
-        }
-    }
-
+    @Override
     public ResponseEntity<IRunnerResponse> fetchSimilarShipmentList(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -3435,8 +3407,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-            ListCommonRequest request = ListCommonRequest.builder().build();
-
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             request.setIncludeTbls(Arrays.asList(Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS, Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
             ListCommonRequest listRequest = setCriteriaToFetchSimilarShipment(request, shipmentDetails);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);

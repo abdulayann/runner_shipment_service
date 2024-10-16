@@ -783,10 +783,13 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL)})
     @GetMapping(ApiConstants.FETCH_SIMILAR_LIST)
-    public ResponseEntity<?> getFilteredShipments(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid) {
+    public ResponseEntity<?> listFilteredSimilarShipments(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid,
+                                                          @RequestParam(defaultValue = "1") Integer pageNo ,
+                                                          @RequestParam(required = false) Integer pageSize) {
         try {
-
-            return shipmentService.fetchSimilarShipmentList(CommonRequestModel.buildRequest(guid));
+            pageSize = (pageSize!=null) ? pageSize : Integer.MAX_VALUE;
+            ListCommonRequest request = ListCommonRequest.builder().pageNo(pageNo).pageSize(pageSize).build();
+            return shipmentService.fetchSimilarShipmentList(CommonRequestModel.buildRequest(guid, request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }

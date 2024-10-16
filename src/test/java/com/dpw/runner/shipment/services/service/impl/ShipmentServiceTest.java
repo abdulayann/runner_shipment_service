@@ -8818,7 +8818,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void fetchSimilarShipmentList_SuccessTest(){
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
+                "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -8834,8 +8836,10 @@ ShipmentServiceTest extends CommonMocks {
         carrierDetails.setDestination("Destination");
         shipmentDetails.setCarrierDetails(carrierDetails);
 
-        Parties client = Parties.builder().orgCode("1").build();
+        Parties client = Parties.builder().orgCode("1").addressCode("add").build();
         shipmentDetails.setClient(client);
+        shipmentDetails.setConsigner(client);
+        shipmentDetails.setConsignee(client);
 
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
@@ -8858,7 +8862,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void fetchSimilarShipmentList_SuccessTest2(){
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
+                "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -8866,6 +8872,35 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(carrierDetails);
         Parties client = Parties.builder().build();
         shipmentDetails.setClient(client);
+        shipmentDetails.setConsigner(client);
+        shipmentDetails.setConsignee(client);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.of(shipmentDetails));
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void fetchSimilarShipmentList_SuccessTest3(){
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
+                "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);

@@ -543,6 +543,16 @@ public class Constants {
     public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
+
+    public static final String CLIENT_ORG_CODE = "clientOrgCode";
+    public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
+    public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
+    public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
+    public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
+    public static final String GUID = "guid";
+
+
     private Constants() {
     }
 
