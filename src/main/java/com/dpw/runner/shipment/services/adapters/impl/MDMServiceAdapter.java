@@ -63,11 +63,13 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     public ResponseEntity<IRunnerResponse> getCreditInfo(CommonRequestModel commonRequestModel) throws RunnerException {
         String url = baseUrl + creditConfigUrl;
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
+        log.info("Request id {} MDM Request {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
+            log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){
-            log.error("MDM Credit Details Failed due to : {}" , jsonHelper.convertToJson(ex.getMessage()));
+            log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(ex.getMessage()));
             throw new RunnerException("Error from MDM while fetching credit limit: " + ex.getMessage());
         }
     }
@@ -86,8 +88,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                         return CustomerBookingConstants.MDM_FINAL_STATUS_NO_APPROVAL_NEEDED;
                     finalStatus = (String) firstDataObject.get("finalStatus");
                 }
-                log.info("MDM Request {}" , jsonHelper.convertToJson(commonRequestModel));
-                log.info("MDM Response {}", jsonHelper.convertToJson(responseBody));
+                log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseBody));
                 return finalStatus;
             }catch (Exception ex){
                 log.error("Error getting the approval status for the parties : {}", commonRequestModel.getData());
