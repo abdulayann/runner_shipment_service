@@ -2,19 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -179,7 +167,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -6387,10 +6374,12 @@ public class ShipmentService implements IShipmentService {
                 .build();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         boolean isImportShipment = false;
-        if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
+        if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
             isImportShipment = true;
             consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
+            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get());
         }
         if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);
@@ -6403,6 +6392,32 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildSuccessResponseWithWarning(warning);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    public void sendImportShipmentPushAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+
+        var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
+        var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
+
+        List<String> toEmailList = new ArrayList<>();
+        toEmailList.add(shipmentDetails.getCreatedBy());
+        toEmailList.add(shipmentDetails.getAssignedTo());
+
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(shipmentDetails.getTenantId());
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
+
+        if(toEmailList.isEmpty()) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+            toEmailIds.addAll(new ArrayList<>(toEmailIds));
+        }
+
+        Map<String, Object> dictionary = new HashMap<>();
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, emailTemplateModel);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
     }
 
     @Override

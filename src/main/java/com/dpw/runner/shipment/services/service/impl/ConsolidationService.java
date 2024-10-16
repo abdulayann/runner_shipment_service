@@ -267,6 +267,12 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
+    @Autowired
+    private IV1Service iv1Service;
+
+    @Autowired
+    private INotificationService notificationService;
+
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
     private SecureRandom rnd = new SecureRandom();
@@ -897,6 +903,11 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
+        if(!interBranchImportShipmentMap.isEmpty()) {
+            for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
+                sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails);
+            }
+        }
 
         if(!interBranchShipIds.isEmpty()) // send email for pull requested when called from controller directly
             sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
@@ -917,6 +928,33 @@ public class ConsolidationService implements IConsolidationService {
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
+
+    public void sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+
+        var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
+        var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
+
+        List<String> toEmailList = new ArrayList<>();
+        toEmailList.add(shipmentDetails.getCreatedBy());
+        toEmailList.add(shipmentDetails.getAssignedTo());
+
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(consolidationDetails.getTenantId());
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
+
+        if(toEmailList.isEmpty()) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+            toEmailIds.addAll(new ArrayList<>(toEmailIds));
+        }
+
+        Map<String, Object> dictionary = new HashMap<>();
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, emailTemplateModel);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
+    }
+
 
     private void setInterBranchContext(Boolean isInterBranchConsole) {
         if (Boolean.TRUE.equals(isInterBranchConsole))
