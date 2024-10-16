@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -34,6 +36,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
@@ -91,6 +94,9 @@ class HawbReportTest extends CommonMocks {
 
     @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private IMasterDataService iMasterDataService;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
@@ -238,6 +244,10 @@ class HawbReportTest extends CommonMocks {
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
         hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        hawbModel.setUsersDto(usersDto);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
         hawbModel.getAwb().getAwbShipmentInfo().setAccountNumber("123");
         hawbModel.getAwb().getAwbShipmentInfo().setShipperAccountNumber("456");
@@ -252,9 +262,22 @@ class HawbReportTest extends CommonMocks {
         unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
         unlocationsResponse.setCountry("IND");
         unlocationsResponses.add(unlocationsResponse);
-
+        TenantModel tenantModel = new TenantModel();
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -377,6 +400,8 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
@@ -480,6 +505,10 @@ class HawbReportTest extends CommonMocks {
         hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name(null).build()));
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        hawbModel.setUsersDto(usersDto);
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -490,9 +519,22 @@ class HawbReportTest extends CommonMocks {
         unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
         unlocationsResponse.setCountry("IND");
         unlocationsResponses.add(unlocationsResponse);
-
+        TenantModel tenantModel = new TenantModel();
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -615,6 +657,8 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
@@ -718,6 +762,10 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setDeliveryDetails(delivertDetails);
         hawbModel.setShipmentDetails(shipmentModel);
         hawbModel.setAwb(hawb);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        hawbModel.setUsersDto(usersDto);
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -728,9 +776,23 @@ class HawbReportTest extends CommonMocks {
         unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
         unlocationsResponse.setCountry("IND");
         unlocationsResponses.add(unlocationsResponse);
+        TenantModel tenantModel = new TenantModel();
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -853,6 +915,8 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
@@ -903,6 +967,10 @@ class HawbReportTest extends CommonMocks {
 
         hawbModel.setAwb(hawb);
         hawbModel.setMawb(mawb);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        hawbModel.setUsersDto(usersDto);
 
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setPayment("PPM");
@@ -928,9 +996,23 @@ class HawbReportTest extends CommonMocks {
         unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
         unlocationsResponse.setCountry("IND");
         unlocationsResponses.add(unlocationsResponse);
+        TenantModel tenantModel = new TenantModel();
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -1029,6 +1111,10 @@ class HawbReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
@@ -1123,6 +1209,10 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setDeliveryDetails(delivertDetails);
         hawbModel.setShipmentDetails(shipmentModel);
         hawbModel.setAwb(hawb);
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        hawbModel.setUsersDto(usersDto);
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -1133,9 +1223,23 @@ class HawbReportTest extends CommonMocks {
         unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
         unlocationsResponse.setCountry("IND");
         unlocationsResponses.add(unlocationsResponse);
+        TenantModel tenantModel = new TenantModel();
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValue(any(), eq(CompanyDto.class))).thenReturn(companyDto);
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
@@ -1229,6 +1333,8 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
+        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
