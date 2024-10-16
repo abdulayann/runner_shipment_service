@@ -460,7 +460,8 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     private void validateRoutingForDocumentSelection(Routings routings) {
-        if (Boolean.TRUE.equals(routings.getIsSelectedForDocument()) && !RoutingCarriage.MAIN_CARRIAGE.equals(routings.getCarriage())) {
+        if (Boolean.TRUE.equals(routings.getIsSelectedForDocument()) &&
+            (RoutingCarriage.PRE_CARRIAGE.equals(routings.getCarriage()) || RoutingCarriage.ON_CARRIAGE.equals(routings.getCarriage()))) {
             throw new ValidationException(Constants.ROUTING_VALIDATION);
         }
     }
