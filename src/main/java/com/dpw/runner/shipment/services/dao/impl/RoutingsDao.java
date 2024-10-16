@@ -507,15 +507,11 @@ public class RoutingsDao implements IRoutingsDao {
         long legCounter = 1L;   // A counter for leg numbers
         // Loop through the locations to generate routing requests
         while (currentLocation < 4 && nextLocation < 4) {
-            // Skip null locations
-            if (locations.get(currentLocation).getLeft() == null) {
+            // Skip null locations or If locations are the same, move to the next pair
+            if (locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
                 currentLocation++;
                 nextLocation++;
             } else if (locations.get(nextLocation).getLeft() == null) {
-                nextLocation++;
-            } else if (locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
-                // If locations are the same, move to the next pair
-                currentLocation++;
                 nextLocation++;
             } else {
                 String mode = transportMode;
