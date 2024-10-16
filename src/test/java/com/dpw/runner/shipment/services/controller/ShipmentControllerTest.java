@@ -1341,4 +1341,18 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testGetFilteredShipment(){
+        when(shipmentService.fetchSimilarShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.getFilteredShipments("guid");
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFilteredShipmentException() {
+        when(shipmentController.getFilteredShipments(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.getFilteredShipments("guid");
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

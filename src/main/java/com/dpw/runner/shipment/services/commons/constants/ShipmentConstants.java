@@ -32,6 +32,7 @@ public class ShipmentConstants {
     public static final String HBL_NUMBER = "HBL Number";
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
+    public static final String FETCH_SUCCESSFUL = "Fetch Successful";
 
     public static final String UPDATE_SUCCESSFUL = "Successful Shipment Data Update";
     public static final String IMPORT_SUCCESSFUL = "Import Successful";
@@ -119,5 +120,9 @@ public class ShipmentConstants {
     public static final String PADDING_10_PX = "padding: 10px;";
     public static final String STYLE = "style";
     public static final String STALE_SHIPMENT_UPDATE_ERROR= "Consolidation request has been accepted, Please refresh the shipment for latest details.";
+
+    public static final String SHIPMENT_LIST_SIMILAR_RESPONSE_SUCCESS = "Shipment similar list retrieved successfully for Request Id {} ";
+    public static final String REQUIRED_PARAMETER_MISSING_ERROR = "Required parameter missing: {} for Request Id {} ";
+    public static final String SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR = "Shipment Details is not present for Guid {} with Request Id {}";
 
 }

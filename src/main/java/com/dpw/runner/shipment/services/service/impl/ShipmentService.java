@@ -178,7 +178,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteC
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest.OrgAddressCode;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -557,6 +556,7 @@ public class ShipmentService implements IShipmentService {
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("clientOrgCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("consigneeOrgCode", RunnerEntityMapping.builder().tableName(Constants.CONSIGNEE).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry("clientAddressCode", RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(Integer.class).fieldName(Constants.ADDRESS_CODE).isContainsText(true).build()),
@@ -3337,6 +3337,128 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+
+    private ListCommonRequest setCriteriaToFetchSimilarShipment(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()) {
+            request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
+        }
+        ListCommonRequest defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE,
+                shipmentDetails.getTransportMode(), "=", request);
+
+        addCriteriaForDirection(defaultRequest, shipmentDetails);
+        addCriteriaForShipmentType(defaultRequest, shipmentDetails);
+        addCriteriaForJobType(defaultRequest, shipmentDetails);
+        addCriteriaForIncoterms(defaultRequest, shipmentDetails);
+        addCriteriaForPorts(defaultRequest, shipmentDetails);
+        addCriteriaForOrgCode(defaultRequest, shipmentDetails);
+        addCriteriaToExcludeShipment(defaultRequest);
+        return defaultRequest;
+    }
+
+    private void addCriteriaForDirection(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (!Objects.isNull(shipmentDetails.getDirection())) {
+            CommonUtils.andCriteria(Constants.DIRECTION, shipmentDetails.getDirection(), "=", request);
+        } else {
+            CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, request);
+        }
+    }
+
+    private void addCriteriaForShipmentType(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (!Objects.isNull(shipmentDetails.getShipmentType())) {
+            CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, shipmentDetails.getShipmentType(), "=", request);
+        } else {
+            CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, "", "=", request);
+        }
+    }
+
+    private void addCriteriaForJobType(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (!Objects.isNull(shipmentDetails.getJobType())) {
+            CommonUtils.andCriteria(Constants.JOB_TYPE, shipmentDetails.getJobType(), "=", request);
+        } else {
+            CommonUtils.andCriteria(Constants.JOB_TYPE, "", "=", request);
+        }
+    }
+
+    private void addCriteriaForIncoterms(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (!Objects.isNull(shipmentDetails.getIncoterms())) {
+            CommonUtils.andCriteria(Constants.INCOTERMS, shipmentDetails.getIncoterms(), "=", request);
+        } else {
+            CommonUtils.andCriteria(Constants.INCOTERMS, "", "=", request);
+        }
+    }
+
+    private void addCriteriaToExcludeShipment(ListCommonRequest request) {
+        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.NonMovement.getValue(), "!=", request);
+        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.Cancelled.getValue(), "!=", request);
+    }
+
+    private void addCriteriaForPorts(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if(!Objects.isNull(shipmentDetails.getCarrierDetails())){
+            if (!Objects.isNull(shipmentDetails.getCarrierDetails().getOriginPort())) {
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, shipmentDetails.getCarrierDetails().getOriginPort(), "=", request);
+            } else {
+                CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, request);
+            }
+
+            if (!Objects.isNull(shipmentDetails.getCarrierDetails().getDestinationPort())) {
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, shipmentDetails.getCarrierDetails().getDestinationPort(), "=", request);
+            } else {
+                CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, request);
+            }
+        }
+    }
+
+    private void addCriteriaForOrgCode(ListCommonRequest request, ShipmentDetails shipmentDetails) {
+        if (!Objects.isNull(shipmentDetails.getClient()) && !Objects.isNull(shipmentDetails.getClient().getOrgCode())) {
+            CommonUtils.andCriteria(Constants.ORG_CODE, shipmentDetails.getClient().getOrgCode(), "=", request);
+        } else {
+            CommonUtils.andCriteria(Constants.ORG_CODE, "", Constants.IS_NULL, request);
+        }
+    }
+
+    public ResponseEntity<IRunnerResponse> fetchSimilarShipmentList(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            if (commonRequestModel.getGuid() == null) {
+                log.error(ShipmentConstants.REQUIRED_PARAMETER_MISSING_ERROR, ShipmentConstants.SHIPMENT_GUID, LoggerHelper.getRequestIdFromMDC());
+            }
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findByGuid(UUID.fromString(commonRequestModel.getGuid()));
+            if (!optionalShipmentDetails.isPresent()) {
+                log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, commonRequestModel.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+            ListCommonRequest request = ListCommonRequest.builder().build();
+
+            request.setIncludeTbls(Arrays.asList(Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS, Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
+            ListCommonRequest listRequest = setCriteriaToFetchSimilarShipment(request, shipmentDetails);
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, tableNames);
+            Specification<ShipmentDetails> spec = tuple.getLeft();
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(spec , tuple.getRight());
+            log.info(ShipmentConstants.SHIPMENT_LIST_SIMILAR_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                        shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
+            else {
+                List<IRunnerResponse>filteredList=new ArrayList<>();
+                for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(partialFetchUtils.fetchPartialListData(curr, request.getIncludeColumns()));
+                    filteredList.add( res);
+                }
+                return ResponseHelper.buildListSuccessResponse(filteredList, shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }

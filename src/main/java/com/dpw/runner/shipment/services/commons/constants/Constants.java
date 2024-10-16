@@ -354,6 +354,7 @@ public class Constants {
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
     public static final String STATUS = "status";
     public static final String JOB_TYPE = "jobType";
+    public static final String INCOTERMS = "incoterms";
     public static final String DELIVERY_DETAILS = "deliveryDetails";
     public static final String PICKUP_DETAILS = "pickupDetails";
     public static final String FLIGHT_NUMBER = "flightNumber";

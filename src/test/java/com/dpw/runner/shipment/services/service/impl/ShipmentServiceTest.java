@@ -8816,5 +8816,88 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(errorMessage, e.getMessage());
     }
 
+    @Test
+    void fetchSimilarShipmentList_SuccessTest(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setJobType(Constants.JOB_TYPE_CLB);
+        shipmentDetails.setIncoterms("CFR");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("OriginPort");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        Parties client = Parties.builder().orgCode("1").build();
+        shipmentDetails.setClient(client);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.of(shipmentDetails));
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+
+        assertEquals(expectedResponse, result);
+    }
+
+
+    @Test
+    void fetchSimilarShipmentList_SuccessTest2(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        CarrierDetails carrierDetails = new CarrierDetails();
+        shipmentDetails.setCarrierDetails(carrierDetails);
+        Parties client = Parties.builder().build();
+        shipmentDetails.setClient(client);
+
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.of(shipmentDetails));
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
+                shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+
+        assertEquals(expectedResponse, result);
+    }
+
+    @Test
+    void fetchSimilarShipmentList_GuidMissingTest(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void fetchSimilarShipmentList_EmptyDataTest(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
+        when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
 
 }

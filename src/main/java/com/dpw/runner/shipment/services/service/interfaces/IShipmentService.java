@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -61,6 +62,8 @@ public interface IShipmentService extends ICommonService {
     void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired, List<Containers> oldContainers);
 
     ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> fetchSimilarShipmentList(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException;
 

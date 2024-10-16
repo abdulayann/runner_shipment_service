@@ -781,4 +781,15 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL)})
+    @GetMapping(ApiConstants.FETCH_SIMILAR_LIST)
+    public ResponseEntity<?> getFilteredShipments(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid) {
+        try {
+
+            return shipmentService.fetchSimilarShipmentList(CommonRequestModel.buildRequest(guid));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
 }
