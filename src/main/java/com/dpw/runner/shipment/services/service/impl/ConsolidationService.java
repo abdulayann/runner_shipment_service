@@ -2349,18 +2349,6 @@ public class ConsolidationService implements IConsolidationService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
             ConsolidationDetailsResponse response = modelMapper.map(consolidationDetails, ConsolidationDetailsResponse.class);
-            try {
-                response.setPackSummary(
-                        packingService.calculatePackSummary(
-                                consolidationDetails.getPackingList(),
-                                consolidationDetails.getTransportMode(),
-                                consolidationDetails.getContainerCategory(),
-                                new ShipmentMeasurementDetailsDto()
-                        )
-                );
-            } catch (RunnerException ex) {
-                throw new RuntimeException(ex);
-            }
             responseList.add(response);
         });
         return responseList;
