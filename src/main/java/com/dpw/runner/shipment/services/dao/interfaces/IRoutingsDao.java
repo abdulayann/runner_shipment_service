@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
