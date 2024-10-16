@@ -6380,12 +6380,12 @@ public class ShipmentService implements IShipmentService {
                 .build();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
-        boolean isInterBranchImportShipment = false;
+        boolean isImportShipment = false;
         if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
-            isInterBranchImportShipment = true;
+            isImportShipment = true;
             consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
         }
-        if(!isInterBranchImportShipment) {
+        if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);
             Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);

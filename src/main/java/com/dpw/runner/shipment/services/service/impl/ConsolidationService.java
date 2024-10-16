@@ -788,6 +788,8 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationId))
             awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+        if(!shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection()))
+            shipmentRequestedType = APPROVE;
 
         // Filter and collect inter-branch shipment details into a separate list
         List<ShipmentDetails> interBranchShipmentDetailsList = shipmentDetailsList.stream()
@@ -800,8 +802,6 @@ public class ConsolidationService implements IConsolidationService {
                         ShipmentDetails::getId,   // Key: ID of the shipment
                         shipment -> shipment      // Value: ShipmentDetails object itself
                 ));
-        if(!interBranchImportShipmentMap.isEmpty())
-            shipmentRequestedType = APPROVE;
 
         Set<Long> interBranchShipIds = new HashSet<>();
         List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted
