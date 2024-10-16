@@ -212,4 +212,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
     private OceanDGStatus oceanDGStatus;
+    private Boolean syncRoutingFromConsolidation;
 }

@@ -115,6 +115,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1377,6 +1378,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
                     throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i);
             }
 
             shipmentDao.saveAll(shipments);
@@ -1385,6 +1387,60 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         return shipments;
+    }
+
+    private void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
+        if(CollectionUtils.isEmpty(consolidationRoutings))
+            return;
+        if(!Boolean.TRUE.equals(shipmentDetails.getSyncRoutingFromConsolidation()))
+            return;
+
+        List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
+
+        // sync consolidation routings to linked shipment
+        consolidationRoutings.stream()
+                .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
+                .forEach(consolRoute -> {
+                    // Look for this POL POD main carriage routing in shipment routings list
+                    // update/create
+                    var syncedRoute = jsonHelper.convertValue(consolRoute, Routings.class);
+                    shipmentMainCarriageRouting.add(syncedRoute);
+                });
+
+        // Logic to regroup all shipment routings with updated leg sequence
+        // Assumption -> order of routes is as follows; Otherwise legs will have a chaotic order for user
+        // 1. PRE_CARRIAGE
+        // 2. MAIN_CARRIAGE
+        // 3. ON_CARRIAGE
+        AtomicLong legCount = new AtomicLong(1);
+        List<Routings> finalShipmentRouteList = new ArrayList<>();
+        List<Routings> preCarriageShipmentRoutes = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.PRE_CARRIAGE.equals(i.getCarriage())).toList();
+        List<Routings> onCarriageShipmentRoutes = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.ON_CARRIAGE.equals(i.getCarriage())).toList();
+
+        // Merge routings list
+        mergeRoutingList(preCarriageShipmentRoutes, finalShipmentRouteList, legCount);
+        mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
+        mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
+
+        // Assign routing list to shipment routing
+        shipmentDetails.setRoutingsList(finalShipmentRouteList);
+    }
+
+    /**
+     * Merges carriage routes back into shipment routing list
+     * @param carriageRoute input routing list
+     * @param shipmentRoutingsList shipment routing list to be merged into
+     * @param legCount
+     */
+    private void mergeRoutingList(List<Routings> carriageRoute, List<Routings> shipmentRoutingsList, AtomicLong legCount) {
+        if(carriageRoute.isEmpty())
+            return;
+
+        carriageRoute.forEach(i -> {
+            i.setLeg(legCount.get());
+            legCount.incrementAndGet();
+            shipmentRoutingsList.add(i);
+        });
     }
 
     private void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId) {

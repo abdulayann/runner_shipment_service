@@ -517,4 +517,7 @@ public class ShipmentDetails extends MultiTenancy {
      @Enumerated(EnumType.STRING)
      private OceanDGStatus oceanDGStatus;
 
+     @Column(name = "sync_routing_from_consolidation")
+     private Boolean syncRoutingFromConsolidation;
+
 }

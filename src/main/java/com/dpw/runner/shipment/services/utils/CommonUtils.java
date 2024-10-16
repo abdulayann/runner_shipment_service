@@ -1658,4 +1658,8 @@ public class CommonUtils {
         );
     }
 
+    public static String getKey(String... args) {
+        return String.join("-", args);
+    }
+
 }
