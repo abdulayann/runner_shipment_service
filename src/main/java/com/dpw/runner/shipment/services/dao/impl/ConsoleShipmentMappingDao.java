@@ -103,9 +103,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 }
             }
         }
-        HashSet<Long> importShipmentIds = new HashSet<>();
         if (!shipmentIds.isEmpty()) {
-
             for (Long id : shipmentIds) {
                 ConsoleShipmentMapping entity;
                 if(shipmentRequestedType != null && consoleShipmentMappingMap.containsKey(id))
@@ -114,11 +112,6 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
-
-                if(interBranchImportShipmentMap.containsKey(id)) {
-                    importShipmentIds.add(interBranchImportShipmentMap.get(id).getId());
-                }
-
                 if(interBranchShipIds.contains(id) && !interBranchImportShipmentMap.containsKey(id))
                 {
                     entity.setIsAttachmentDone(false);
@@ -132,7 +125,6 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 save(entity);
             }
         }
-        shipmentIds.removeAll(importShipmentIds);
         return shipmentIds;
     }
 
