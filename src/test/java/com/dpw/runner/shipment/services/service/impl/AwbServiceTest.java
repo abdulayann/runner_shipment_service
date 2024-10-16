@@ -802,6 +802,59 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void createMawb_success1() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration1(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setSecurityStatus(Constants.SCO);
+        testConsol.setInterBranchConsole(true);
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+
+        when(awbDao.save(any())).thenReturn(testMawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
     void createMawbGeneratesRoutingInfoFromCarrierDetails() throws RunnerException {
         CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
@@ -2454,6 +2507,13 @@ class AwbServiceTest extends CommonMocks {
                 Map.entry("Id", 1),
                 Map.entry("Type", "Notify Part 1")
         ));
+        consolidationAddress1.setAddressData(Map.ofEntries(
+                Map.entry("Country", "EGY"),
+                Map.entry("City", "Cairo"),
+                Map.entry("State", "Cairo"),
+                Map.entry("ZipPostCode", "99999"),
+                Map.entry("ContactPhone", "20-202-27962043")
+        ));
         consolidationAddress1.setGuid(UUID.fromString(guids.get(0)));
         Parties consolidationAddress2 = Parties.builder().type("Notify Part 2").build();
         consolidationAddress2.setOrgData(Map.ofEntries(Map.entry("Id", 2)));
@@ -2463,6 +2523,13 @@ class AwbServiceTest extends CommonMocks {
         consolidationAddress3.setGuid(UUID.fromString(guids.get(2)));
         Parties consolidationAddress4 = Parties.builder().type(Constants.FAG).build();
         consolidationAddress4.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test-country")));
+        consolidationAddress4.setAddressData(Map.ofEntries(
+                Map.entry("Country", "EGY"),
+                Map.entry("City", "Cairo"),
+                Map.entry("State", "Cairo"),
+                Map.entry("ZipPostCode", "99999"),
+                Map.entry("ContactPhone", "20-202-27962043")
+        ));
 
 
         consolidationDetails.setConsolidationAddresses(List.of(
@@ -2471,6 +2538,33 @@ class AwbServiceTest extends CommonMocks {
         ));
     }
 
+    private void addConsolDataForMawbGeneration1(ConsolidationDetails consolidationDetails) {
+        consolidationDetails.getSendingAgent().setAddressData(Map.ofEntries());
+        consolidationDetails.getReceivingAgent().setAddressData(Map.ofEntries());
+        List<String> guids = List.of("12522638-fb00-44c9-8c3f-f8c85c2d387d","fdbe4ba4-3a20-4e2c-ba83-9390a027b940","7e719d65-8a45-4537-a5ad-f675e91d641d");
+        Parties consolidationAddress1 = Parties.builder().type("Notify Part 1").build();
+        consolidationAddress1.setOrgData(Map.ofEntries(
+                Map.entry("Id", 1),
+                Map.entry("Type", "Notify Part 1")
+        ));
+        consolidationAddress1.setAddressData(Map.ofEntries());
+        consolidationAddress1.setGuid(UUID.fromString(guids.get(0)));
+        Parties consolidationAddress2 = Parties.builder().type("Notify Part 2").build();
+        consolidationAddress2.setOrgData(Map.ofEntries(Map.entry("Id", 2)));
+        consolidationAddress2.setGuid(UUID.fromString(guids.get(1)));
+        Parties consolidationAddress3 = Parties.builder().type("Notify Part 3").build();
+        consolidationAddress3.setOrgData(Map.ofEntries(Map.entry("Id", 3)));
+        consolidationAddress3.setGuid(UUID.fromString(guids.get(2)));
+        Parties consolidationAddress4 = Parties.builder().type(Constants.FAG).build();
+        consolidationAddress4.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test-country")));
+        consolidationAddress4.setAddressData(Map.ofEntries());
+
+
+        consolidationDetails.setConsolidationAddresses(List.of(
+                consolidationAddress1, consolidationAddress2, consolidationAddress3,
+                consolidationAddress4
+        ));
+    }
 
     @Test
     void getAllMasterDataForHawb() {

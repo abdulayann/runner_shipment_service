@@ -428,6 +428,16 @@ class MasterDataImplTest {
     }
 
     @Test
+    void stateBasedList() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().stateBasedList(Mockito.any())).thenReturn(new DependentServiceResponse());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.stateBasedList(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void listUsers() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);

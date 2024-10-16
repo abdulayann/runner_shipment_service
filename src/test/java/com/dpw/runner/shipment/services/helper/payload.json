@@ -329,8 +329,18 @@
       "entityType": "HAWB",
       "shipperName": "TEST VG CREDIT LIMIT",
       "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "shipperCity": "PUNE",
+      "shipperCountry": "IND",
+      "shipperState": "MH",
+      "shipperZipCode": "344221",
+      "shipperPhone": "9876554476",
       "consigneeName": "NATIONWIDE PAPER LTD",
       "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeCity": "PUNE",
+      "consigneeCountry": "IND",
+      "consigneeState": "MH",
+      "consigneeZipCode": "344221",
+      "consigneePhone": "9876554476",
       "consigneeReferenceNumber": "2436215",
       "iataCode": "5678",
       "awbNumber": "235-88998641",
@@ -338,7 +348,13 @@
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
       "agentCASSCode": "8975",
-      "issuingAgentName": "ABB EGYPT"
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\nABC CO LLC\nAEJEA",
+      "issuingAgentCity": "PUNE",
+      "issuingAgentCountry": "IND",
+      "issuingAgentState": "MH",
+      "issuingAgentZipCode": "344221",
+      "issuingAgentPhone": "9876554476"
     },
     "awbRoutingInfo": [
       {
@@ -1453,7 +1469,15 @@
       "firstCarrier": "Air Transat",
       "agentCASSCode": "123"
     },
-    "awbNotifyPartyInfo": [],
+    "awbNotifyPartyInfo": [
+      {
+        "city": "Pune",
+        "state": "MH",
+        "country": "IND",
+        "zipCode": "383767",
+        "phone": "8976666553"
+      }
+    ],
     "awbRoutingInfo": [
       {
         "entityId": 2246,
@@ -1684,7 +1708,9 @@
         "IsObsolete": false,
         "AddressType": "General",
         "CompanyName": "RA Branch",
-        "AddressShortCode": "Def RA Address"
+        "AddressShortCode": "Def RA Address",
+        "ZipPostCode": "324332",
+        "ContactPhone": "9866334674"
       }
     },
     "receivingAgent": {

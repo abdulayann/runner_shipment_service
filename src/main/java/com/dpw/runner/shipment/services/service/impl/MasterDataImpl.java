@@ -216,6 +216,11 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationData(commonRequestModel.getDependentData()));
     }
+    @Override
+    public ResponseEntity<IRunnerResponse> stateBasedList(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().stateBasedList(commonRequestModel.getDependentData()));
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel) {
