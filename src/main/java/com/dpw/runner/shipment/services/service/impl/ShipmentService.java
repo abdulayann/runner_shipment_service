@@ -1934,21 +1934,25 @@ public class ShipmentService implements IShipmentService {
         return syncConsole;
     }
 
-    public void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int IsNewConsoleAttached) throws RunnerException {
+    public void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {
         if( ((Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()) && SHIPMENT_TYPE_LCL.equals(consolidationDetails1.getContainerCategory()))
                 || checkForAirDGFlag(consolidationDetails1))
                 && (Boolean.TRUE.equals(consolidationDetails1.getHazardous()) || Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))) {
             List<ConsoleShipmentMapping> consoleShipmentMapping = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails1.getId());
-            if(!listIsNullOrEmpty(consoleShipmentMapping) && consoleShipmentMapping.size() + IsNewConsoleAttached > 1) {
-                if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()))
-                    throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, and can have only 1 shipment");
-                else {
-                    if(IsNewConsoleAttached == 1)
-                        throw new RunnerException(String.format(ONE_SHIPMENT_IN_AIR_DG_CONSOLIDATION_VALIDATION, consolidationDetails1.getConsolidationNumber()));
-                    else
-                        throw new RunnerException(ONE_SHIPMENT_IN_AIR_DG_CONSOLIDATION_UPDATE_VALIDATION);
-                }
+            if(!listIsNullOrEmpty(consoleShipmentMapping) && consoleShipmentMapping.size() + isNewConsoleAttached > 1) {
+                throwErrorMaxOneShipmentAllowedInDgConsolidation(consolidationDetails1, isNewConsoleAttached);
             }
+        }
+    }
+
+    private void throwErrorMaxOneShipmentAllowedInDgConsolidation(ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {
+        if(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails1.getTransportMode()))
+            throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, and can have only 1 shipment");
+        else {
+            if(isNewConsoleAttached == 1)
+                throw new RunnerException(String.format(CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL, consolidationDetails1.getConsolidationNumber()));
+            else
+                throw new RunnerException(CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS);
         }
     }
 
@@ -6186,14 +6190,14 @@ public class ShipmentService implements IShipmentService {
             }
         }
         awbDao.validateAirMessaging(consoleId);
-        ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).get();
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).get();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consoleId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
         if(checkForAirDGFlag(consolidationDetails)) {
             if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-                return ResponseHelper.buildFailedResponse(String.format(AIR_DG_SHIPMENT_INTER_BRANCH_VALIDATION, consolidationDetails.getConsolidationNumber()));
+                return ResponseHelper.buildFailedResponse(String.format(AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
             }
             if(Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
-                return ResponseHelper.buildFailedResponse(String.format(AIR_DG_CONSOLIDATION_INTER_BRANCH_VALIDATION, shipmentDetails.getShipmentId()));
+                return ResponseHelper.buildFailedResponse(String.format(AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT, shipmentDetails.getShipmentId()));
             }
         }
         ConsoleShipmentMapping entity = ConsoleShipmentMapping.builder()
@@ -6203,11 +6207,10 @@ public class ShipmentService implements IShipmentService {
                 .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
                 .build();
 
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
         boolean isImportShipment = false;
-        if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
+        if(Constants.DIRECTION_IMP.equalsIgnoreCase(shipmentDetails.getDirection())) {
             isImportShipment = true;
-            consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
+            consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)), false);
         }
         if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);

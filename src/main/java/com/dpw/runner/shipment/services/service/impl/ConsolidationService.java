@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -53,6 +51,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingExce
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -825,6 +825,7 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
             List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+
             validationsBeforeAttachShipments(consolidationDetails, oldConsoleShipmentMappings, consoleShipmentMappings,
                     shipmentIds, consolidationId, shipmentDetailsList, fromConsolidation);
 
@@ -926,9 +927,9 @@ public class ConsolidationService implements IConsolidationService {
                 anyInterBranchShipment = true;
                 if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                     if(fromConsolidation)
-                        throw new RunnerException(String.format(AIR_CONSOLIDATION_DG_SHIPMENT_INTER_BRANCH_VALIDATION, shipmentDetails.getShipmentId()));
+                        throw new RunnerException(String.format(AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT, shipmentDetails.getShipmentId()));
                     else
-                        throw new RunnerException(String.format(AIR_DG_SHIPMENT_INTER_BRANCH_VALIDATION, consolidationDetails.getConsolidationNumber()));
+                        throw new RunnerException(String.format(AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
 
                 }
             }
@@ -937,12 +938,12 @@ public class ConsolidationService implements IConsolidationService {
         if(checkForAirDGFlag(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
             if(existingShipments + shipmentIds.size() > 1) {
                 if(fromConsolidation)
-                    throw new RunnerException(AIR_DG_CONSOLIDATION_ONE_SHIPMENT_VALIDATION);
+                    throw new RunnerException(AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT);
                 else
-                    throw new RunnerException(String.format(ONE_SHIPMENT_IN_AIR_DG_CONSOLIDATION_VALIDATION, consolidationDetails.getConsolidationNumber()));
+                    throw new RunnerException(String.format(CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL, consolidationDetails.getConsolidationNumber()));
             }
             if(anyInterBranchShipment)
-                throw new RunnerException(String.format(AIR_SHIPMENT_DG_CONSOLIDATION_INTER_BRANCH_VALIDATION, consolidationDetails.getConsolidationNumber()));
+                throw new RunnerException(String.format(AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
         }
     }
 
