@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -98,6 +99,26 @@ class RoutingsDaoTest {
         Routings savedRoutings = routingsDao.save(routings);
 
         assertEquals(routings, savedRoutings);
+    }
+
+    @Test
+    void testSave_CarriageValidationFailure() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        routings.setCarriage(RoutingCarriage.ON_CARRIAGE);
+        routings.setIsSelectedForDocument(Boolean.TRUE);
+
+        assertThrows(ValidationException.class, () -> routingsDao.save(routings));
+    }
+
+    @Test
+    void testSave_CarriageValidationFailurePreCarriage() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        routings.setIsSelectedForDocument(Boolean.TRUE);
+
+        assertThrows(ValidationException.class, () -> routingsDao.save(routings));
     }
 
     @Test

@@ -16,6 +16,7 @@ public class Constants {
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
     public static final String CARGO_TYPE = "cargoType";
+    public static final String VOL = "VOL";
     public static final String CONTAINER_CATEGORY = "containerCategory";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
@@ -169,7 +170,7 @@ public class Constants {
     public static final String FORWARDING_AGENT = "Forwarding Agent";
     public static final String FAG = "FAG";
 
-    public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
+    public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATION AS PER ATTACHED LIST";
     public static final double AIR_FACTOR_FOR_VOL_WT = 166.667;
     public static final double ROAD_FACTOR_FOR_VOL_WT = 333.0;
 
@@ -551,7 +552,7 @@ public class Constants {
     public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
     public static final String GUID = "guid";
-
+    public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
 
     private Constants() {
     }
