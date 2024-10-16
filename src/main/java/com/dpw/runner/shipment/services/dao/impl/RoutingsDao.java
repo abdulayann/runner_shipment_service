@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -55,6 +56,7 @@ public class RoutingsDao implements IRoutingsDao {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
+        validateRoutingForDocumentSelection(routings);
         return routingsRepository.save(routings);
     }
     @Override
@@ -63,6 +65,7 @@ public class RoutingsDao implements IRoutingsDao {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
+            validateRoutingForDocumentSelection(routings);
         }
         return routingsRepository.saveAll(routingsList);
     }
@@ -453,6 +456,13 @@ public class RoutingsDao implements IRoutingsDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void validateRoutingForDocumentSelection(Routings routings) {
+        if (Boolean.TRUE.equals(routings.getIsSelectedForDocument()) &&
+            (RoutingCarriage.PRE_CARRIAGE.equals(routings.getCarriage()) || RoutingCarriage.ON_CARRIAGE.equals(routings.getCarriage()))) {
+            throw new ValidationException(Constants.ROUTING_VALIDATION);
         }
     }
 }

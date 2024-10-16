@@ -542,6 +542,8 @@ public class Constants {
     public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
+
+    public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
     private Constants() {
     }
 
