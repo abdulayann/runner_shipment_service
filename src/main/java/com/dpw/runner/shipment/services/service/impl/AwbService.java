@@ -1020,21 +1020,8 @@ public class AwbService implements IAwbService {
             awbCargoInfo = new AwbCargoInfo();
         }
 
-//        List<String> shipmentDescriptions = new ArrayList<>();
-//        for (ShipmentDetails consoleShipment : consolidationDetails.getShipmentsList()) {
-//            if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
-//                shipmentDescriptions.add(consoleShipment.getGoodsDescription());
-//            }
-//        }
-//        String concatenatedGoodsDesc = "";
-//        if (shipmentDescriptions.size() > 0) {
-//            concatenatedGoodsDesc = String.join(",", shipmentDescriptions);
-//        }
-
         String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
         String newLine = "\r\n";
-
-//        awbCargoInfo.setNtrQtyGoods(concatenatedGoodsDesc);
         GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
         generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
         generateAwbPaymentInfoRequest.setAwbPackingInfo(awbPackingList);
