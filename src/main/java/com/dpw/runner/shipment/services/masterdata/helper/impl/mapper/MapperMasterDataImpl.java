@@ -223,6 +223,11 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse stateBasedList(Object request) {
+        return null;
+    }
+
+    @Override
     public DependentServiceResponse createUnlocationData(Object request) {
         return null;
     }

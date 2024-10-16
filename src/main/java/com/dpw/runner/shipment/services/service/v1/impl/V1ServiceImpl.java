@@ -223,6 +223,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.unlocation}")
     private String UNLOCATION_URL;
 
+    @Value("${v1service.url.base}${v1service.url.stateBasedList}")
+    private String stateBasedListUrl;
+
     @Value("${v1service.url.base}${v1service.url.organization}")
     private String ORGANIZATION_API;
 
@@ -1307,6 +1310,24 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+    @Override
+    public V1DataResponse stateBasedList(Object request) {
+        ResponseEntity<V1DataResponse> locationResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            locationResponse = this.restTemplate.postForEntity(this.stateBasedListUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in stateBasedList() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
+            return locationResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+
 
     @Override
     public V1DataResponse updateUnlocationData(Object request) {

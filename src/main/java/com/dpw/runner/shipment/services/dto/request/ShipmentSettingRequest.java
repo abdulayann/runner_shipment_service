@@ -179,4 +179,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private String transportInstructionDeliveryOrder;
     private Boolean enablePartyCheckForConsolidation;
     private String csd;
+    private Boolean hideManifest;
 }

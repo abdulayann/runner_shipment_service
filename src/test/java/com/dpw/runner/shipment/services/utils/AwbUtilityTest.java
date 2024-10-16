@@ -165,35 +165,35 @@ class AwbUtilityTest extends CommonMocks {
 
 
     @Test
-    void testConstructAddressBasic() {
+    void testConstructAddressForAwbBasic() {
         Map<String, Object> addressData = new HashMap<>();
         addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
         addressData.put(PartiesConstants.CITY, "City");
         addressData.put(PartiesConstants.COUNTRY, "Country");
 
-        String expectedAddress = "\r\n123 Main St\r\nCity\r\nCountry";
-        String constructedAddress = awbUtility.constructAddress(addressData);
+        String expectedAddress = "123 Main St";
+        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
 
         assertEquals(expectedAddress, constructedAddress);
     }
 
     @Test
-    void testConstructAddressEmpty() {
+    void testConstructAddressForAwbEmpty() {
         Map<String, Object> addressData = new HashMap<>();
-        String constructedAddress = awbUtility.constructAddress(addressData);
+        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
 
         assertEquals("", constructedAddress);
     }
 
     @Test
-    void testConstructAddressNull() {
-        String constructedAddress = awbUtility.constructAddress(null);
+    void testConstructAddressForAwbNull() {
+        String constructedAddress = awbUtility.constructAddressForAwb(null);
 
         assertEquals("", constructedAddress);
     }
 
     @Test
-    void testConstructAddressComplete() {
+    void testConstructAddressForAwbComplete() {
         Map<String, Object> addressData = new HashMap<>();
         addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
         addressData.put(PartiesConstants.ADDRESS2, "Apt 101");
@@ -203,8 +203,8 @@ class AwbUtilityTest extends CommonMocks {
         addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
         addressData.put(PartiesConstants.CONTACT_PHONE, "123-456-7890");
 
-        String expectedAddress = "\r\n123 Main St\r\nApt 101\r\nState\r\nCity\r\nCountry\r\n12345\r\n123-456-7890";
-        String constructedAddress = awbUtility.constructAddress(addressData);
+        String expectedAddress = "123 Main St\r\nApt 101";
+        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
 
         assertEquals(expectedAddress, constructedAddress);
     }

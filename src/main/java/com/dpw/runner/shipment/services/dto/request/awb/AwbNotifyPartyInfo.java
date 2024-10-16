@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -14,7 +17,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbNotifyPartyInfo implements Serializable {
+public class AwbNotifyPartyInfo implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String type;
@@ -25,6 +28,13 @@ public class AwbNotifyPartyInfo implements Serializable {
     private String name;
     private String address;
     private Integer addressId;
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String country;
+    @MasterData(type = MasterDataType.COUNTRY_STATES)
+    private String state;
+    private String city;
+    private String zipCode;
+    private String phone;
     private Boolean isShipmentCreated;
     private UUID guid;
 }

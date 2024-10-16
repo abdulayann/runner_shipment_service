@@ -45,6 +45,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmp
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -1085,7 +1086,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), customerBookingRequest.getTransportType());
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
                 carrierDetails(CarrierDetailRequest.builder()
                         .origin(customerBookingRequest.getCarrierDetails().getOrigin())
@@ -1239,24 +1240,17 @@ public class ShipmentService implements IShipmentService {
      * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
      */
     @Override
-    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
-        // Retrieve existing routing list from the customer booking request
-        List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
-
-        // If the routing list already exists, return it immediately
-        if (ObjectUtils.isNotEmpty(customerBookingRequestRoutingList)) {
-            return customerBookingRequestRoutingList;
-        }
+    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode) {
 
         // Initialize the list to hold routing requests
         List<RoutingsRequest> routingsRequests = new ArrayList<>();
 
-        if(ObjectUtils.isEmpty(customerBookingRequest.getCarrierDetails())) {
+        if(ObjectUtils.isEmpty(carrierDetailRequest)) {
             return routingsRequests;
         }
 
         // Get carrier details from the customer booking request
-        CarrierDetailRequest carrierDetails = Optional.ofNullable(customerBookingRequest.getCarrierDetails())
+        CarrierDetailRequest carrierDetails = Optional.ofNullable(carrierDetailRequest)
                 .orElse(new CarrierDetailRequest());
 
         // Define origin, ports, and destination with their respective transport modes
@@ -1284,13 +1278,16 @@ public class ShipmentService implements IShipmentService {
                 currentLocation++;
                 nextLocation++;
             } else {
-                // Determine the transport mode for the routing request
-                String mode = customerBookingRequest.getTransportType();
+                String mode = transportMode;
+                RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
+
                 if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
                     mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
+                    carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
+
                 // Create and add a new routing request to the list
-                routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft()));
+                routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage));
                 currentLocation = nextLocation;
                 nextLocation++;
             }
@@ -1309,13 +1306,14 @@ public class ShipmentService implements IShipmentService {
      * @param pod   the Port of Discharge for the routing request
      * @return a new {@link RoutingsRequest} object with the specified parameters
      */
-    private RoutingsRequest createRoutingsRequest(Long leg, String mode, String pol, String pod) {
+    private RoutingsRequest createRoutingsRequest(Long leg, String mode, String pol, String pod, RoutingCarriage carriage) {
         // Build and return the RoutingsRequest object with the given parameters
         return RoutingsRequest.builder()
                 .leg(leg)
                 .mode(mode)
                 .pol(pol)
                 .pod(pod)
+                .carriage(carriage)
                 .isSelectedForDocument(false)
                 .isDomestic(false)
                 .build();
@@ -2290,6 +2288,15 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
             }
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
+        }
+
+        // Check the shipment for attached consolidation, if the user is updating stale shipment
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+        if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+            consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
+            if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()) {
+                throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
+            }
         }
 
     }

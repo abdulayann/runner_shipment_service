@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -3598,6 +3599,7 @@ import static org.mockito.Mockito.*;
             return mockRunnable;
         });
         mockShipmentSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(null);
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -3624,6 +3626,7 @@ import static org.mockito.Mockito.*;
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         mockShipmentSettings();
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -4893,6 +4896,33 @@ import static org.mockito.Mockito.*;
 
         var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testGetAutoAttachConsolidationDetailsThrowsExceptionForExistingPushRequestedShipment() {
+        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
+        request.setShipId(1L);
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = ConsoleShipmentMapping.builder()
+                .shipmentId(1L)
+                .consolidationId(1L)
+                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
+                .isAttachmentDone(false)
+                .build();
+
+        ConsoleShipmentMapping consoleShipmentMapping2 = ConsoleShipmentMapping.builder()
+                .shipmentId(1L)
+                .consolidationId(2L)
+                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
+                .isAttachmentDone(false)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(consoleShipmentMappingDao.findAll(any(), any() )).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping1,consoleShipmentMapping2)));
+        Exception e = assertThrows(RuntimeException.class, () -> {
+           consolidationService.getAutoAttachConsolidationDetails(commonRequestModel);
+        });
+        assertEquals(ConsolidationConstants.PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE, e.getMessage());
     }
 
 }
