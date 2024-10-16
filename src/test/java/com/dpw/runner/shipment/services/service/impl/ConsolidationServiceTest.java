@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -11,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
@@ -4953,6 +4952,11 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
+    }
+    
+    @Test
+    void testValidationsBeforeAttachShipments() throws RunnerException {
+        consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(testShipment), true);
     }
 
 }
