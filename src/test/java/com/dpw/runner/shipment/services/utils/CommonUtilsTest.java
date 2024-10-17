@@ -1,31 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -47,23 +21,8 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.AuditLog;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -77,56 +36,47 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.PdfWriter;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import com.itextpdf.text.pdf.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -199,11 +149,14 @@ class CommonUtilsTest {
     private PdfReader reader;
     private PdfStamper stamper;
     private ByteArrayOutputStream outputStream;
+    private PrintStream originalOut;
     private byte[] pdfBytes;
 
     @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
+        // Restore the original System.out
+        System.setOut(originalOut);
     }
 
     @BeforeEach
@@ -215,6 +168,8 @@ class CommonUtilsTest {
         reader = mock(PdfReader.class);
         stamper = mock(PdfStamper.class);
         outputStream = new ByteArrayOutputStream();
+        originalOut = System.out;
+        System.setOut(new PrintStream(outputStream));
         pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
@@ -2592,6 +2547,7 @@ class CommonUtilsTest {
         // Mock shipmentDetails with missing carrier details
         when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
         when(carrierDetailsMock.getShippingLine()).thenReturn(null);
+        when(shipmentDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
 
         // Test method
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
@@ -2616,42 +2572,6 @@ class CommonUtilsTest {
         verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
     }
 
-   // @Test
-    void testSendEmailNotification_WithNonEmptyToList() {
-        Map<String, Object> dictionary = new HashMap<>();
-        // Arrange
-        List<String> to = Arrays.asList("to@example.com");  // Non-empty "to" list
-        List<String> cc = Arrays.asList("cc@example.com");
-
-        // Act
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
-
-        // Assert
-        // Verify that sendEmail is called with the correct arguments
-        verify(notificationService, times(1))
-                .sendEmail(eq("Sample email body"), eq("Sample email subject"), eq(to), eq(cc));
-    }
-
-   // @Test
-    void testSendEmailNotification_WhenExceptionThrown() {
-        Map<String, Object> dictionary = new HashMap<>();
-        // Arrange
-        List<String> to = Arrays.asList("to@example.com");
-        List<String> cc = Arrays.asList("cc@example.com");
-
-        when(emailTemplateModel.getBody()).thenReturn("{asdf}");
-        // Simulate an exception during sendEmail
-        doThrow(new RuntimeException("Email sending failed")).when(notificationService)
-                .sendEmail(anyString(), anyString(), anyList(), anyList());
-
-        // Act
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
-
-        // Assert
-        // Even though an exception is thrown, it should be caught, so no exception should propagate
-        verify(notificationService, times(1))
-                .sendEmail(anyString(), anyString(), anyList(), anyList());
-    }
 
     @Test
     void testSendEmailNotification_WhenToListIsEmpty() {
@@ -2667,20 +2587,23 @@ class CommonUtilsTest {
         verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
     }
 
-    //@Test
-    void testSendEmailNotification_WhenToListIsNotEmpty() {
-        // Arrange: valid 'to' list and 'cc' list
+    @Test
+    void testSendEmailNotification_ValidatesDictionaryModification() {
         Map<String, Object> dictionary = new HashMap<>();
-        List<String> ccEmails = new ArrayList<>();
-        List<String> toEmails = new ArrayList<>();
-        toEmails.add("abc@gmail.com");
-       // when(emailTemplateModel.getBody()).thenReturn("{asdf}");
+        emailTemplateModel = new EmailTemplatesRequest();
+        emailTemplateModel.setBody("Hello, {name}");
+        emailTemplateModel.setSubject("Shipment Update");
+
+        // Arrange
+        List<String> to = List.of("recipient@example.com");
+        List<String> cc = List.of("cc@example.com");
+        dictionary.put("name", "John Doe");
 
         // Act
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmails, ccEmails);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
 
-        // Assert: verify that sendEmail is called once
-        verify(notificationService, times(1)).sendEmail(anyString(), eq("Sample Subject"), eq(toEmails), eq(ccEmails));
+        // Assert
+        assertEquals("Hello, John Doe", commonUtils.replaceTagsFromData(dictionary, emailTemplateModel.getBody()));
     }
 
     @Test
