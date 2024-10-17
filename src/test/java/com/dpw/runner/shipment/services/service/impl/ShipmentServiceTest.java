@@ -6154,6 +6154,8 @@ ShipmentServiceTest extends CommonMocks {
         routings.setMode(Constants.TRANSPORT_MODE_SEA);
         routings.setLeg(1L);
 
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
+
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
