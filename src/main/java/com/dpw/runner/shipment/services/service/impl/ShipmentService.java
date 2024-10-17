@@ -522,6 +522,7 @@ public class ShipmentService implements IShipmentService {
     private IShipmentOrderDao shipmentOrderDao;
 
     public static final String CONSOLIDATION_ID = "consolidationId";
+    public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -6064,7 +6065,7 @@ public class ShipmentService implements IShipmentService {
         }
         String warning = null;
         if(!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+            warning = TEMPLATE_NOT_FOUND_MESSAGE;
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -6308,6 +6309,7 @@ public class ShipmentService implements IShipmentService {
                 .build();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+//        shipmentDetails.get().setDirection("IMP");
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         boolean isImportShipment = false;
         if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
@@ -6321,7 +6323,7 @@ public class ShipmentService implements IShipmentService {
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
             String warning = null;
             if (!shipmentRequestedTypes.isEmpty()) {
-                warning = "Template not found, please inform the region users manually";
+                warning = TEMPLATE_NOT_FOUND_MESSAGE;
             }
             return ResponseHelper.buildSuccessResponseWithWarning(warning);
         }
@@ -6332,7 +6334,7 @@ public class ShipmentService implements IShipmentService {
 
         var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
         if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
-            return ResponseHelper.buildSuccessResponseWithWarning("Template not found, please inform the region users manually");
+            return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
 
         List<String> toEmailList = new ArrayList<>();
