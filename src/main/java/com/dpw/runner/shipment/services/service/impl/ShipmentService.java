@@ -1074,10 +1074,9 @@ public class ShipmentService implements IShipmentService {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
             // Generate default routes based on O-D pairs         
-            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
-                var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
-                consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
-            }
+            var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
+            consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
+
 
             ResponseEntity<?> consolidationDetailsResponse = consolidationService.createFromBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
@@ -3030,17 +3029,9 @@ public class ShipmentService implements IShipmentService {
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             // Generate default Routes if Route Master is enabled
-            if (Boolean.TRUE.equals(shipmentSettings.getEnableRouteMaster())) {
-                createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
-                consolidationDetails.setRoutingsList(createRoutes);
-            }
-            else {
-                if(routeRequest.isPresent()) {
-                    createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
-                    createRoutes = createConsoleRoutePayload(createRoutes);
-                    consolidationDetails.setRoutingsList(createRoutes);
-                }
-            }
+            createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
+            consolidationDetails.setRoutingsList(createRoutes);
+
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
             if(createRoutes != null && !createRoutes.isEmpty()) {
                 routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
