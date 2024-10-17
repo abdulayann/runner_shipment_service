@@ -455,4 +455,9 @@ public class RoutingsDao implements IRoutingsDao {
             throw new RunnerException(e.getMessage());
         }
     }
+
+    @Override
+    public List<Routings> findRoutingsByConsolidationId(Long consolidationId) {
+        return routingsRepository.findByConsolidationId(consolidationId);
+    }
 }

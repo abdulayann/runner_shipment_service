@@ -3763,6 +3763,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    //TODO - send routings in response
     @Override
     public ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId) {
         ConsolidationDetailsResponse consol;
@@ -3786,22 +3787,6 @@ public class ConsolidationService implements IConsolidationService {
         boolean isMawb = tenantSettings.get().getShipmentLite()
                 && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && shipment.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT);
-
-
-        RoutingsResponse customRouting = RoutingsResponse.builder()
-                .leg(1L)
-                .pod(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestination() : null)
-                .pol(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOrigin() : null)
-                .routingStatus(Constants.ROUTING_CFD)
-                .mode(shipment.getTransportMode())
-                .vesselName(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
-                .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
-                .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
-                .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
-                .carrier(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null)
-                .flightNumber(shipmentCarrierDetails != null ? shipmentCarrierDetails.getFlightNumber() : null)
-                .build();
-
 
         String transportMode = shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode();
         String sci = null;
@@ -3854,7 +3839,6 @@ public class ConsolidationService implements IConsolidationService {
                 .bol(shipment.getMasterBill() != null && !shipment.getMasterBill().isEmpty() ? shipment.getMasterBill() : ((transportMode == null || !transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null))
                 .referenceNumber(shipment.getBookingReference())
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
-                .routingsList(List.of(customRouting))
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
@@ -3862,6 +3846,18 @@ public class ConsolidationService implements IConsolidationService {
                 .openForAttachment(true)
                 //.isLinked(true)
                 .build();
+
+        if(shipment.getRoutingsList() != null && !shipment.getRoutingsList().isEmpty()) {
+            List<RoutingsResponse> customRouting = shipment.getRoutingsList().stream().
+                    map(item -> {
+                        RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
+                        newItem.setId(null);
+                        newItem.setGuid(null);
+                        return newItem;
+                    }).
+                    toList();
+            consol.setRoutingsList(customRouting);
+        }
 
         if(additionalDetails != null) {
             PartiesResponse parties;

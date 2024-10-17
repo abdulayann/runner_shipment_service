@@ -39,4 +39,5 @@ public interface IRoutingsDao {
     List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId, Map<Long, Routings> oldEntityMap);
 
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException;
+    List<Routings> findRoutingsByConsolidationId(Long consolidationId);
 }
