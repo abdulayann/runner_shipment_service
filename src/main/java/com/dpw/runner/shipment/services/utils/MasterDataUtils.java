@@ -1316,7 +1316,8 @@ public class MasterDataUtils{
             CommonV1ListRequest orgRequest = new CommonV1ListRequest();
             List<Object> orgField = new ArrayList<>(List.of(field));
             String operator = "=";
-            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator));
+            orgCriteria.add(value);
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
