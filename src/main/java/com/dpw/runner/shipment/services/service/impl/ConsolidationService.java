@@ -267,12 +267,6 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-    @Autowired
-    private IV1Service iv1Service;
-
-    @Autowired
-    private INotificationService notificationService;
-
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
     private SecureRandom rnd = new SecureRandom();
