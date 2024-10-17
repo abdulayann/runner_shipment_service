@@ -354,18 +354,18 @@ public class ReportHelper {
     }
 
     public static List<String> getCompanyAddress(String address1, String address2, String city_country, String city_zipcode, String state_country){
-        List<String> list = new ArrayList<>();
+        List<String> addressList = new ArrayList<>();
         if(address1 != null)
-            list.add(address1);
+            addressList.add(address1);
         if(address2 != null)
-            list.add(address2);
+            addressList.add(address2);
         if(city_country != null)
-            list.add(city_country);
+            addressList.add(city_country);
         if(city_zipcode != null)
-            list.add(city_zipcode);
+            addressList.add(city_zipcode);
         if(state_country != null)
-            list.add(state_country);
-        return list;
+            addressList.add(state_country);
+        return addressList;
     }
 
 }
