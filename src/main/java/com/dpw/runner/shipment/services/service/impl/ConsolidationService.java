@@ -1410,10 +1410,10 @@ public class ConsolidationService implements IConsolidationService {
     public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
         if(CollectionUtils.isEmpty(consolidationRoutings))
             return;
-        if(!Boolean.TRUE.equals(shipmentDetails.getSyncRoutingFromConsolidation()))
-            return;
 
         List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
+        List<Routings> shipmentRoutingList = Optional.ofNullable(shipmentDetails.getRoutingsList()).orElse(new ArrayList<>());
+        shipmentDetails.setRoutingsList(shipmentRoutingList);
 
         // sync consolidation routings to linked shipment
         consolidationRoutings.stream()
