@@ -72,7 +72,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
-    private String bookingType;
     private boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
