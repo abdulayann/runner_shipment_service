@@ -155,8 +155,6 @@ class CommonUtilsTest {
     @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
-        // Restore the original System.out
-        System.setOut(originalOut);
     }
 
     @BeforeEach
@@ -168,8 +166,6 @@ class CommonUtilsTest {
         reader = mock(PdfReader.class);
         stamper = mock(PdfStamper.class);
         outputStream = new ByteArrayOutputStream();
-        originalOut = System.out;
-        System.setOut(new PrintStream(outputStream));
         pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
@@ -2505,10 +2501,6 @@ class CommonUtilsTest {
     void testPopulateShipmentImportPushAttachmentTemplate_withValidData() {
 
         Map<String, Object> dictionary = new HashMap<>();
-        // Mock user context
-        //when(UserContext.getUser()).thenReturn(new UsersDto("branchCode", "tenantDisplayName", "username"));
-        //when(UserContext.getUser().getUsername()).thenReturn("username");
-       // when(UserContext.getUser().getCode()).thenReturn("username");
         when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
 
@@ -2557,9 +2549,6 @@ class CommonUtilsTest {
     void testPopulateShipmentImportPushAttachmentTemplate_withMissingCarrierDetails() {
 
         Map<String, Object> dictionary = new HashMap<>();
-        // Mock user context
-//        when(userContext.getUser()).thenReturn(new User("branchCode", "tenantDisplayName", "username"));
-//        when(userContext.getUsername()).thenReturn("username");
         when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
 
