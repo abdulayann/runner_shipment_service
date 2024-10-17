@@ -2474,8 +2474,18 @@ class CommonUtilsTest {
         when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
         when(carrierDetailsMock.getFlightNumber()).thenReturn("FL123");
 
+        when(consolidationDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(consolidationDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(consolidationDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
+
         // Call the method
-        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
 
         // Verify dictionary population
         assertEquals("creator", dictionary.get(SHIPMENT_CREATE_USER));
@@ -2518,9 +2528,18 @@ class CommonUtilsTest {
         when(carrierDetailsMock.getFlightNumber()).thenReturn("FLIGHT001");
         when(carrierDetailsMock.getOriginPort()).thenReturn("ORIG001");
         when(carrierDetailsMock.getDestinationPort()).thenReturn("DEST001");
+        when(shipmentDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(shipmentDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(shipmentDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
 
         // Test method
-        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
 
         // Assert dictionary contents
         assertEquals("createdByUser", dictionary.get(CONSOLIDATION_CREATE_USER));
@@ -2547,10 +2566,12 @@ class CommonUtilsTest {
         // Mock shipmentDetails with missing carrier details
         when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
         when(carrierDetailsMock.getShippingLine()).thenReturn(null);
-        when(shipmentDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
 
         // Test method
-        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
 
         // Assert dictionary does not contain carrier details
         assertNull(dictionary.get("CARRIER_CODE"));

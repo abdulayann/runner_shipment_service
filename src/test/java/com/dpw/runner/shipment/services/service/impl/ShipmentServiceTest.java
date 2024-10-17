@@ -7238,6 +7238,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         var response = spyService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
@@ -7270,6 +7271,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         var response = spyService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());

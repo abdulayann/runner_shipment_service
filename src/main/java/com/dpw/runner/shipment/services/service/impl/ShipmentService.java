@@ -6314,7 +6314,10 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
             isImportShipment = true;
             consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
-            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get());
+            var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
+            if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
+                return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
+            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get(), emailTemplatesRequests);
         }
         if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);
@@ -6329,11 +6332,7 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private ResponseEntity<IRunnerResponse> sendImportShipmentPushAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-
-        var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
-        if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
-            return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPushAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequests) {
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
 
         List<String> toEmailList = new ArrayList<>();
@@ -6347,15 +6346,25 @@ public class ShipmentService implements IShipmentService {
         Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(shipmentDetails.getTenantId());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(shipmentDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
+
         commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
 
         if(toEmailList.isEmpty()) {
             commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
-            toEmailIds.addAll(new ArrayList<>(toEmailIds));
+            toEmailList.addAll(new ArrayList<>(toEmailIds));
         }
 
-        Map<String, Object> dictionary = new HashMap<>();
-        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
         commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
         return ResponseHelper.buildSuccessResponse();
     }

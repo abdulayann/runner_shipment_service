@@ -908,7 +908,10 @@ public class ConsolidationService implements IConsolidationService {
         interBranchShipIds.retainAll(attachedShipmentIds);
         if(!interBranchImportShipmentMap.isEmpty() && isConsolePullCall) {
             for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
-                sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails);
+                var emailTemplatesRequestsModel = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
+                if(Objects.isNull(emailTemplatesRequestsModel) || emailTemplatesRequestsModel.isEmpty())
+                    return ResponseHelper.buildSuccessResponseWithWarning("Template not found, please inform the region users manually");
+                sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
             }
         }
 
@@ -932,13 +935,9 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
 
-        var emailTemplatesRequestsModel = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
-        if(Objects.isNull(emailTemplatesRequestsModel) || emailTemplatesRequestsModel.isEmpty())
-            return ResponseHelper.buildSuccessResponseWithWarning("Template not found, please inform the region users manually");
         var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
-
         List<String> toEmailsList = new ArrayList<>();
         if(shipmentDetails.getCreatedBy() != null)
             toEmailsList.add(shipmentDetails.getCreatedBy());
@@ -950,15 +949,23 @@ public class ConsolidationService implements IConsolidationService {
         Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(consolidationDetails.getTenantId());
-        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
+
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(), consolidationDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
 
         if(toEmailsList.isEmpty()) {
             commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
-            toEmailIds.addAll(new ArrayList<>(toEmailIds));
+            toEmailsList.addAll(new ArrayList<>(toEmailIds));
         }
 
-        Map<String, Object> dictionary = new HashMap<>();
-        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
         commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailsList, new ArrayList<>(ccEmailIds));
 
         return ResponseHelper.buildSuccessResponse();
