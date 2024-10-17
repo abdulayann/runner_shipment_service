@@ -1890,8 +1890,19 @@ public class ShipmentService implements IShipmentService {
     }
     private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException{
         CarrierDetails oldCarrierDetails = null;
-        if(!isCreate)
+        if(!isCreate) {
             oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
+
+            // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+            if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+                consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
+                if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()
+                        && !Objects.isNull(consoleShipmentMappings.get(0).getRequestedType()) ) {
+                    throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
+                }
+            }
+        }
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
         var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)));
         List<Long> tempConsolIds = new ArrayList<>();
@@ -2212,15 +2223,6 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(console)));
             }
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().get(0).getReferenceNumber());
-        }
-
-        // Check the shipment for attached consolidation, if the user is updating stale shipment
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
-        if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-            consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
-            if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()) {
-                throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
-            }
         }
 
     }

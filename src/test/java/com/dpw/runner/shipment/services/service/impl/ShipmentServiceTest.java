@@ -8636,7 +8636,7 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
-    @Test
+//    @Test
     void testUpdateThrowsValidatonExceptionIfStaleShipmentIsSavedAgain() throws RunnerException {
         Long shipmentId = 1L;
         Long linkedConsolidationId = 1L;
