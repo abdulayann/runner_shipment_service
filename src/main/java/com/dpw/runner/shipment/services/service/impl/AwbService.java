@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
@@ -37,6 +38,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -86,6 +88,9 @@ public class AwbService implements IAwbService {
 
     @Autowired
     private IConsolidationService consolidationService;
+
+    @Autowired
+    private PackingService packingService;
 
     @Autowired
     private IAwbDao awbDao;
@@ -166,7 +171,7 @@ public class AwbService implements IAwbService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-    private static final String errorMessage = "You cannot generate the AWB without adding the screening/ Security status for RA KC shipments";
+    private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -789,7 +794,6 @@ public class AwbService implements IAwbService {
     }
 
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) throws RunnerException {
-
         if(request.getIsReset() == null || request.getIsReset() == false) {
             List<Awb> existingAwbs = awbDao.findByConsolidationId(request.getConsolidationId());
             if(existingAwbs.size() > 0)
@@ -843,7 +847,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
@@ -1081,33 +1085,21 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) {
+    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) throws RunnerException {
+        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
         }
 
-        List<String> shipmentDescriptions = new ArrayList<>();
-        for (ShipmentDetails consoleShipment : consolidationDetails.getShipmentsList()) {
-            if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
-                shipmentDescriptions.add(consoleShipment.getGoodsDescription());
-            }
-        }
-        String concatenatedGoodsDesc = "";
-        if (shipmentDescriptions.size() > 0) {
-            concatenatedGoodsDesc = String.join(",", shipmentDescriptions);
-        }
-
         String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
         String newLine = "\r\n";
-
-        awbCargoInfo.setNtrQtyGoods(concatenatedGoodsDesc);
         GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
         generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
         generateAwbPaymentInfoRequest.setAwbPackingInfo(awbPackingList);
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(false);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getDims(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolumeFromConsolidationPackSummary(packSummary));
         awbCargoInfo.setEntityId(consolidationDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -1275,7 +1267,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception ex){
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, "Shipments"));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
@@ -1428,17 +1420,17 @@ public class AwbService implements IAwbService {
     }
 
     private AwbCargoInfo generateAwbCargoInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) {
+        String newLine = "\r\n";
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
         }
-        awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription());
         GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
         generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
         generateAwbPaymentInfoRequest.setAwbPackingInfo(awbPackingList);
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(true);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(getDims(generateAwbPaymentInfoRequest));
+        awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
         awbCargoInfo.setEntityId(shipmentDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -2323,20 +2315,20 @@ public class AwbService implements IAwbService {
         }
     }
     private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        String newLine = "\r\n";
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAccountingInfoLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAccountingInfoLock()))
             awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNtrQtyGoodsLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNtrQtyGoodsLock())) {
-            awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription());
             GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
             generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
             generateAwbPaymentInfoRequest.setAwbPackingInfo(awb.getAwbPackingInfo());
             generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awb.getAwbGoodsDescriptionInfo());
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
-            awbCargoInfo.setNtrQtyGoods(getDims(generateAwbPaymentInfoRequest));
+            awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
             awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         }
 
@@ -2434,7 +2426,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) {
+    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
 
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
         attachedShipmentDescriptions = new ArrayList<>();
@@ -2605,23 +2597,19 @@ public class AwbService implements IAwbService {
             awb.getAwbRoutingInfo().add(routingInfo);
         }
     }
-    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) throws RunnerException {
+        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
-        String concatenatedGoodsDesc = ""; //TODO from consoleshipment mapping
-        if (attachedShipmentDescriptions.size() > 0) {
-            concatenatedGoodsDesc = String.join(",", attachedShipmentDescriptions);
-        }
         if(!mawbLockSettings.getNtrQtyGoodsLock()) {
             String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
             String newLine = "\r\n";
-            awbCargoInfo.setNtrQtyGoods(concatenatedGoodsDesc);
             GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
             generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
             generateAwbPaymentInfoRequest.setAwbPackingInfo(awb.getAwbPackingInfo());
             generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awb.getAwbGoodsDescriptionInfo());
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
-            awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine+ getDims(generateAwbPaymentInfoRequest));
+            awbCargoInfo.setNtrQtyGoods(defaultTextForQuantAndGoods + newLine + getVolumeFromConsolidationPackSummary(packSummary));
             awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         }
 
@@ -2683,11 +2671,13 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            if(!IsStringNullOrEmpty(res))
-                res = res + "\n";
-            else
-                res = "";
-            res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
+            if(packs != 0) {
+                if(!IsStringNullOrEmpty(res))
+                    res = res + "\n";
+                else
+                    res = "";
+                res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
+            }
         }
         return res;
     }
@@ -3102,110 +3092,104 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(getDims(request));
     }
 
+    private String getVolumeFromConsolidationPackSummary(PackSummaryResponse packSummaryResponse) {
+        return Constants.VOL + " " + packSummaryResponse.getPacksVolume() + " " + packSummaryResponse.getPacksVolumeUnit();
+    }
+
+    private String getVolumeFromShipmentDetails(ShipmentDetails shipmentDetails) {
+        BigDecimal totalVolume = Optional.ofNullable(shipmentDetails.getVolume()).orElse(BigDecimal.ZERO);
+        return Constants.VOL + " " + totalVolume.setScale(3, RoundingMode.HALF_UP).toString() + " " + shipmentDetails.getVolumeUnit();
+    }
+
     private String getDims(GenerateAwbPaymentInfoRequest request) {
-        try {
-            String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
-            String packsDescriptionValue = "";
-            String dimensionText = Constants.DEFAULT_DIMN_TEXT;
-            Set<String> uniqueDimension = new HashSet<>();
-            String newLine = "\r\n";
+        String natureAndQuantGoodsValue = request.getAwbCargoInfo() == null || request.getAwbCargoInfo().getNtrQtyGoods() == null ? null : request.getAwbCargoInfo().getNtrQtyGoods();
+        String packsDescriptionValue = "";
+        String dimensionText = Constants.DEFAULT_DIMN_TEXT;
+        Set<String> uniqueDimension = new HashSet<>();
+        String newLine = "\r\n";
 
-            if (request.getAwbPackingInfo() != null && request.getAwbPackingInfo().size() > 0) {
-                if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
-                    natureAndQuantGoodsValue += newLine;
-                }
-                int counter = 0;
-                for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
-                    String pcs = " ";
-                    String len = " ";
-                    String width = " ";
-                    String height = " ";
-                    String equals = Constants.EQ;
-                    String cross = Constants.CROSS;
+        if (request.getAwbPackingInfo() != null && request.getAwbPackingInfo().size() > 0) {
+            if (StringUtility.isNotEmpty(natureAndQuantGoodsValue)) {
+                natureAndQuantGoodsValue += newLine;
+            }
+            int counter = 0;
+            for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
+                String pcs = " ";
+                String len = " ";
+                String width = " ";
+                String height = " ";
+                String equals = Constants.EQ;
+                String cross = Constants.CROSS;
 
-                    if (packings.getPacks() != null) {
-                        pcs = packings.getPacks() + equals;
-                    } else {
-                        pcs += equals;
-                    }
-
-                    if (packings.getLength() != null) {
-                        len = packings.getLength().toString() + cross;
-                    } else {
-                        len += cross;
-                    }
-
-                    if (packings.getWidth() != null) {
-                        width = packings.getWidth().toString() + cross;
-                    } else {
-                        width += cross;
-                    }
-
-                    if (packings.getHeight() != null) {
-                        height = packings.getHeight().toString();
-                    }
-                    if (StringUtility.isNotEmpty(packings.getLengthUnit()) && StringUtility.isNotEmpty(packings.getWidthUnit()) && StringUtility.isNotEmpty(packings.getHeightUnit())) {
-                        uniqueDimension.add(packings.getLengthUnit());
-                        uniqueDimension.add(packings.getWidthUnit());
-                        uniqueDimension.add(packings.getHeightUnit());
-                    }
-
-                    packsDescriptionValue += pcs + len + width + height + ",";
-                    if (counter == request.getAwbPackingInfo().size() - 1) {
-                        packsDescriptionValue = packsDescriptionValue.substring(0, packsDescriptionValue.length() - 1);
-                    }
-
-                    counter++;
-                    if (counter % 2 == 0) {
-                        packsDescriptionValue += newLine;
-                    }
-                }
-
-                if (uniqueDimension.size() == 1) {
-                    String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
-                    if (dimentionUnit != null) {
-                        if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
-                            dimentionUnit = Constants.CMS;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.IN)) {
-                            dimentionUnit = Constants.INCH;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.M)) {
-                            dimentionUnit = Constants.MTR;
-                        } else if (dimentionUnit.equalsIgnoreCase(Constants.FT)) {
-                            dimentionUnit = Constants.FEET;
-                        } else {
-                            dimentionUnit = "";
-                        }
-                    }
-                    dimensionText += dimentionUnit + newLine;
+                if (packings.getPacks() != null) {
+                    pcs = packings.getPacks() + equals;
                 } else {
-                    dimensionText += newLine;
+                    pcs += equals;
                 }
 
-                if (counter % 2 != 0) {
+                if (packings.getLength() != null) {
+                    len = packings.getLength().toString() + cross;
+                } else {
+                    len += cross;
+                }
+
+                if (packings.getWidth() != null) {
+                    width = packings.getWidth().toString() + cross;
+                } else {
+                    width += cross;
+                }
+
+                if (packings.getHeight() != null) {
+                    height = packings.getHeight().toString();
+                }
+                if (StringUtility.isNotEmpty(packings.getLengthUnit()) && StringUtility.isNotEmpty(packings.getWidthUnit()) && StringUtility.isNotEmpty(packings.getHeightUnit())) {
+                    uniqueDimension.add(packings.getLengthUnit());
+                    uniqueDimension.add(packings.getWidthUnit());
+                    uniqueDimension.add(packings.getHeightUnit());
+                }
+
+                packsDescriptionValue += pcs + len + width + height + ",";
+                if (counter == request.getAwbPackingInfo().size() - 1) {
+                    packsDescriptionValue = packsDescriptionValue.substring(0, packsDescriptionValue.length() - 1);
+                }
+
+                counter++;
+                if (counter % 2 == 0) {
                     packsDescriptionValue += newLine;
                 }
-
-                BigDecimal totalVW = updateGoodsDescriptionInfoFromPacks(request);
-                BigDecimal totalVWt = totalVW.setScale(2, RoundingMode.HALF_UP);
-
-                packsDescriptionValue += "Total Volumetric Weight " + totalVWt.toString() + " ";
-
-                ShipmentSettingsDetails tenantSettingsList = commonUtils.getShipmentSettingFromContext();
-
-                if (tenantSettingsList != null && tenantSettingsList.getWeightChargeableUnit().equalsIgnoreCase(Constants.WEIGHT_UNIT_KG)) {
-                    packsDescriptionValue += Constants.KGS;
-                }
-
-            } else {
-                return natureAndQuantGoodsValue;
             }
 
-            StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
-            responseBuilder.append(dimensionText).append(packsDescriptionValue);
-            return responseBuilder.toString();
-        } catch (RunnerException ex){
-            return "";
+            if (uniqueDimension.size() == 1) {
+                String dimentionUnit = new ArrayList<>(uniqueDimension).get(0);
+                if (dimentionUnit != null) {
+                    if (dimentionUnit.equalsIgnoreCase(Constants.CM)) {
+                        dimentionUnit = Constants.CMS;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.IN)) {
+                        dimentionUnit = Constants.INCH;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.M)) {
+                        dimentionUnit = Constants.MTR;
+                    } else if (dimentionUnit.equalsIgnoreCase(Constants.FT)) {
+                        dimentionUnit = Constants.FEET;
+                    } else {
+                        dimentionUnit = "";
+                    }
+                }
+                dimensionText += dimentionUnit + newLine;
+            } else {
+                dimensionText += newLine;
+            }
+
+            if (counter % 2 != 0) {
+                packsDescriptionValue += newLine;
+            }
+
+        } else {
+            return natureAndQuantGoodsValue;
         }
+
+        StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(natureAndQuantGoodsValue) ? StringUtility.getEmptyString() : natureAndQuantGoodsValue);
+        responseBuilder.append(dimensionText).append(packsDescriptionValue);
+        return responseBuilder.toString();
     }
 
     @Override

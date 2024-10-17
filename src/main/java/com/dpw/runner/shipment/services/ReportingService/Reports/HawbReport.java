@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
@@ -12,6 +13,8 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -87,6 +90,7 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
         CarrierDetailModel carrierDetailModel;
+        String tenantName = getTenant().tenantName;
         if(hawbModel.shipmentDetails != null ) {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
@@ -95,7 +99,21 @@ public class HawbReport extends IReport{
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        dictionary.put(ReportConstants.BRANCH_NAME, tenantName);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, v1TenantSettingsResponse.getLegalEntityCode());
+        Integer companyId = ((HawbModel) documentModel).usersDto.getCompanyId();
+        List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
+        V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
+
+        List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
+        if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
+            CompanyDto companyDetails = companyDetailsList.get(0);
+            List<String> companyAddress = ReportHelper.getOrgAddress(null, companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getCity(), companyDetails.getZipPostCode(), companyDetails.getCountry());
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+        }
+
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
 //        dictionary[ReportConstants.AGENT] = tenantDetails;
