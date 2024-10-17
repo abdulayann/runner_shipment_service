@@ -62,7 +62,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -1395,7 +1394,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
                     throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
-                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i);
+                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i, true);
             }
 
             shipmentDao.saveAll(shipments);
@@ -1407,7 +1406,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
         if(CollectionUtils.isEmpty(consolidationRoutings))
             return;
 
@@ -1421,7 +1420,10 @@ public class ConsolidationService implements IConsolidationService {
                 .forEach(consolRoute -> {
                     // Look for this POL POD main carriage routing in shipment routings list
                     // update/create
-                    var syncedRoute = jsonHelper.convertValue(consolRoute, Routings.class);
+                    var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
+                    syncedRoute.setConsolidationId(null);
+                    syncedRoute.setShipmentId(shipmentDetails.getId());
+                    syncedRoute.setBookingId(null);
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
 
@@ -1439,6 +1441,9 @@ public class ConsolidationService implements IConsolidationService {
         mergeRoutingList(preCarriageShipmentRoutes, finalShipmentRouteList, legCount);
         mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
         mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
+
+        if(saveRoutes)
+            routingsDao.updateEntityFromShipment(finalShipmentRouteList, shipmentDetails.getId());
 
         // Assign routing list to shipment routing
         shipmentDetails.setRoutingsList(finalShipmentRouteList);
@@ -3550,6 +3555,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
+        consolidationDetails.setShipmentsList(shipmentDetails);
         if(consolidationDetails.getCarrierDetails() != null) {
             if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
                 consolidationDetails.getCarrierDetails().setVoyage(null);
