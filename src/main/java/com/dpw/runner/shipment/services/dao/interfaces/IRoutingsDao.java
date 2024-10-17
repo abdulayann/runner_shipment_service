@@ -41,4 +41,5 @@ public interface IRoutingsDao {
 
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException;
     List<Routings> generateDefaultRouting(CarrierDetails carrierDetails, String transportMode);
+    List<Routings> findRoutingsByConsolidationId(Long consolidationId);
 }

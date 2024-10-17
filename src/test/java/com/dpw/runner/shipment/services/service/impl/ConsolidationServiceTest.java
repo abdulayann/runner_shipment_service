@@ -1194,6 +1194,7 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
@@ -1245,6 +1246,7 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
@@ -1907,6 +1909,7 @@ import static org.mockito.Mockito.*;
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
@@ -1987,6 +1990,7 @@ import static org.mockito.Mockito.*;
         when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
         when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
         when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
@@ -3290,6 +3294,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(shipmentDetailsResponse.getRoutingsList().get(0));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class)).thenReturn(importBrokerResponse);
         when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class)).thenReturn(exportBrokerResponse);
@@ -4923,6 +4928,71 @@ import static org.mockito.Mockito.*;
            consolidationService.getAutoAttachConsolidationDetails(commonRequestModel);
         });
         assertEquals(ConsolidationConstants.PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE, e.getMessage());
+    }
+
+    @Test
+    void completeUpdateReverseSyncsMainCarriageRoutingsInShipment() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ConsolidationDetailsRequest()).build();
+
+        Routings mockRouting = new Routings();
+        mockRouting.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+        ConsolidationDetails mockConoslidation = objectMapperTest.convertValue(testConsol, ConsolidationDetails.class);
+        mockConoslidation.setCarrierBookingRef("BookingRef#TEST");
+        mockConoslidation.setRoutingsList(List.of(mockRouting));
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ShipmentDetails mockShip1 = new ShipmentDetails();
+        mockShip1.setCarrierDetails(new CarrierDetails());
+        mockShip1.setRoutingsList(new ArrayList<>());
+        mockShip1.setSyncRoutingFromConsolidation(true);
+        ShipmentDetails mockShip2 = new ShipmentDetails();
+        mockShip2.setCarrierDetails(new CarrierDetails());
+        mockShip2.setRoutingsList(new ArrayList<>());
+        mockShip2.setSyncRoutingFromConsolidation(true);
+
+        mockConoslidation.setShipmentsList(List.of(mockShip1, mockShip2));
+
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        var spyService = Mockito.spy(consolidationService);
+
+        Mockito.doReturn(Optional.of(mockConoslidation)).when(spyService).retrieveByIdOrGuid(any());
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(mockConoslidation);
+        when(jsonHelper.convertToJson(mockConoslidation)).thenReturn("");
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockShip1, mockShip2)));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(mockConoslidation);
+//        when(commonUtils.convertToEntityList(anyList(), any(), anyBoolean())).thenReturn(List.of());
+//        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(mockConoslidation.getContainersList());
+//        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(mockConoslidation.getPackingList());
+//        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(mockConoslidation.getEventsList());
+//        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(mockConoslidation.getReferenceNumbersList());
+//        when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+//        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(mockConoslidation.getRoutingsList());
+//        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(mockConoslidation.getConsolidationAddresses());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(mockRouting, Routings.class)).thenReturn(mockRouting);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(jsonHelper.convertValue(mockConoslidation, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(masterDataUtils.fetchInBulkContainerTypes(anyList())).thenReturn(keyMasterDataMap);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(jsonHelper.convertValue(mockConoslidation.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(mockConoslidation.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        when(cache.get(any())).thenReturn(() -> containerTypeMasterData);
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
+        assertEquals(expectedEntity, responseEntity);
     }
 
 }

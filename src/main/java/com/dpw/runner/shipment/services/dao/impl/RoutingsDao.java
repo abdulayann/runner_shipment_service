@@ -554,4 +554,9 @@ public class RoutingsDao implements IRoutingsDao {
                 .isDomestic(false)
                 .build();
     }
+
+    @Override
+    public List<Routings> findRoutingsByConsolidationId(Long consolidationId) {
+        return routingsRepository.findByConsolidationId(consolidationId);
+    }
 }

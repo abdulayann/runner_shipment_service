@@ -116,6 +116,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -1334,6 +1335,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         if(console != null && (oldEntity == null ||  !Objects.equals(console.getBol(),oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
+                !CollectionUtils.isEmpty(console.getRoutingsList()) ||
                 !Objects.equals(console.getCarrierBookingRef(),oldEntity.getCarrierBookingRef()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
@@ -1393,6 +1395,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
                     throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i);
             }
 
             shipmentDao.saveAll(shipments);
@@ -1401,6 +1404,61 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         return shipments;
+    }
+
+    @Override
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
+        if(CollectionUtils.isEmpty(consolidationRoutings))
+            return;
+        if(!Boolean.TRUE.equals(shipmentDetails.getSyncRoutingFromConsolidation()))
+            return;
+
+        List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
+
+        // sync consolidation routings to linked shipment
+        consolidationRoutings.stream()
+                .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
+                .forEach(consolRoute -> {
+                    // Look for this POL POD main carriage routing in shipment routings list
+                    // update/create
+                    var syncedRoute = jsonHelper.convertValue(consolRoute, Routings.class);
+                    shipmentMainCarriageRouting.add(syncedRoute);
+                });
+
+        // Logic to regroup all shipment routings with updated leg sequence
+        // Assumption -> order of routes is as follows; Otherwise legs will have a chaotic order for user
+        // 1. PRE_CARRIAGE
+        // 2. MAIN_CARRIAGE
+        // 3. ON_CARRIAGE
+        AtomicLong legCount = new AtomicLong(1);
+        List<Routings> finalShipmentRouteList = new ArrayList<>();
+        List<Routings> preCarriageShipmentRoutes = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.PRE_CARRIAGE.equals(i.getCarriage())).toList();
+        List<Routings> onCarriageShipmentRoutes = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.ON_CARRIAGE.equals(i.getCarriage())).toList();
+
+        // Merge routings list
+        mergeRoutingList(preCarriageShipmentRoutes, finalShipmentRouteList, legCount);
+        mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
+        mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
+
+        // Assign routing list to shipment routing
+        shipmentDetails.setRoutingsList(finalShipmentRouteList);
+    }
+
+    /**
+     * Merges carriage routes back into shipment routing list
+     * @param carriageRoute input routing list
+     * @param shipmentRoutingsList shipment routing list to be merged into
+     * @param legCount
+     */
+    private void mergeRoutingList(List<Routings> carriageRoute, List<Routings> shipmentRoutingsList, AtomicLong legCount) {
+        if(carriageRoute.isEmpty())
+            return;
+
+        carriageRoute.forEach(i -> {
+            i.setLeg(legCount.get());
+            legCount.incrementAndGet();
+            shipmentRoutingsList.add(i);
+        });
     }
 
     private void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId) {
@@ -3803,22 +3861,6 @@ public class ConsolidationService implements IConsolidationService {
                 && shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
                 && shipment.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT);
 
-
-        RoutingsResponse customRouting = RoutingsResponse.builder()
-                .leg(1L)
-                .pod(shipmentCarrierDetails != null ? shipmentCarrierDetails.getDestination() : null)
-                .pol(shipmentCarrierDetails != null ? shipmentCarrierDetails.getOrigin() : null)
-                .routingStatus(Constants.ROUTING_CFD)
-                .mode(shipment.getTransportMode())
-                .vesselName(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVessel() : null)
-                .voyage(shipmentCarrierDetails != null ? shipmentCarrierDetails.getVoyage() : null)
-                .eta(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEta() : null)
-                .etd(shipmentCarrierDetails != null ? shipmentCarrierDetails.getEtd() : null)
-                .carrier(shipmentCarrierDetails != null ? shipmentCarrierDetails.getShippingLine() : null)
-                .flightNumber(shipmentCarrierDetails != null ? shipmentCarrierDetails.getFlightNumber() : null)
-                .build();
-
-
         String transportMode = shipment.getTransportMode() == null ? tenantSettings.get().getDefaultTransportMode(): shipment.getTransportMode();
         String sci = null;
         if(Objects.equals(additionalDetails.getSci(), AwbConstants.T1)) {
@@ -3870,7 +3912,6 @@ public class ConsolidationService implements IConsolidationService {
                 .bol(shipment.getMasterBill() != null && !shipment.getMasterBill().isEmpty() ? shipment.getMasterBill() : ((transportMode == null || !transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null))
                 .referenceNumber(shipment.getBookingReference())
                 .payment(isPayment ? shipment.getPaymentTerms() : null)
-                .routingsList(List.of(customRouting))
                 .mawb(isMawb ? shipment.getMasterBill() : null)
                 .createdBy(UserContext.getUser().getUsername())
                 .modeOfBooking(StringUtils.equals(transportMode, Constants.TRANSPORT_MODE_SEA) ? Constants.INTTRA : null)
@@ -3878,6 +3919,20 @@ public class ConsolidationService implements IConsolidationService {
                 .openForAttachment(true)
                 //.isLinked(true)
                 .build();
+
+        if(shipment.getRoutingsList() != null && !shipment.getRoutingsList().isEmpty()) {
+            List<RoutingsResponse> customRouting = shipment.getRoutingsList().stream().
+                    map(item -> {
+                        RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
+                        newItem.setId(null);
+                        newItem.setGuid(null);
+                        newItem.setShipmentId(null);
+                        newItem.setBookingId(null);
+                        return newItem;
+                    }).
+                    toList();
+            consol.setRoutingsList(customRouting);
+        }
 
         if(additionalDetails != null) {
             PartiesResponse parties;
