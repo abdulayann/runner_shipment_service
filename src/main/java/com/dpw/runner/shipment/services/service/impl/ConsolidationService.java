@@ -929,14 +929,18 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    public void sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
 
         var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
+        if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
+            return ResponseHelper.buildSuccessResponseWithWarning("Template not found, please inform the region users manually");
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
 
         List<String> toEmailList = new ArrayList<>();
-        toEmailList.add(shipmentDetails.getCreatedBy());
-        toEmailList.add(shipmentDetails.getAssignedTo());
+        if(shipmentDetails.getCreatedBy() != null)
+            toEmailList.add(shipmentDetails.getCreatedBy());
+        if(shipmentDetails.getAssignedTo() != null)
+            toEmailList.add(shipmentDetails.getAssignedTo());
 
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
@@ -951,8 +955,10 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         Map<String, Object> dictionary = new HashMap<>();
-        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, emailTemplateModel);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails);
         commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
+
+        return ResponseHelper.buildSuccessResponse();
     }
 
 
