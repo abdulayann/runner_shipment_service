@@ -6309,7 +6309,6 @@ public class ShipmentService implements IShipmentService {
                 .build();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
-//        shipmentDetails.get().setDirection("IMP");
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         boolean isImportShipment = false;
         if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
