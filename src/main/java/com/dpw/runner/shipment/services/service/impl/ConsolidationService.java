@@ -794,12 +794,15 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationId))
             awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-        if(!shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection()))
+        boolean isConsolePullCall = false;
+        if(shipmentRequestedType == null && !shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection())) {
             shipmentRequestedType = APPROVE;
+            isConsolePullCall = true;
+        }
 
         // Filter and collect inter-branch shipment details into a separate list
         List<ShipmentDetails> interBranchShipmentDetailsList = shipmentDetailsList.stream()
-                .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId)) // Filter inter-branch shipments
+                .filter(c -> !Objects.equals(c.getTenantId(), consolidationDetails.getTenantId())) // Filter inter-branch shipments
                 .toList();
 
         Map<Long, ShipmentDetails> interBranchImportShipmentMap = interBranchShipmentDetailsList.stream()
@@ -903,7 +906,7 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
-        if(!interBranchImportShipmentMap.isEmpty()) {
+        if(!interBranchImportShipmentMap.isEmpty() && isConsolePullCall) {
             for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
                 sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails);
             }
