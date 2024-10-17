@@ -110,7 +110,7 @@ public class HawbReport extends IReport{
         List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
         if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
             CompanyDto companyDetails = companyDetailsList.get(0);
-            List<String> companyAddress = ReportHelper.getCompanyAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getCity(), companyDetails.getZipPostCode(), companyDetails.getCountry());
+            List<String> companyAddress = ReportHelper.getOrgAddress(null, companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getCity(), companyDetails.getZipPostCode(), companyDetails.getCountry());
             dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
         }
 
