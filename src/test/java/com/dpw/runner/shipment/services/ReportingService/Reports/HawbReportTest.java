@@ -529,6 +529,7 @@ class HawbReportTest extends CommonMocks {
         v1DataResponse.entities = unlocationsResponses;
         v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
         List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(new CompanyDto());
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);

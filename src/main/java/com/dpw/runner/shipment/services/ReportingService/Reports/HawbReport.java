@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
@@ -107,8 +108,11 @@ public class HawbReport extends IReport{
         V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
 
         List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
-        CompanyDto companyDetails = companyDetailsList.isEmpty() ? null : companyDetailsList.get(0);
-        dictionary.put(ReportConstants.COMPANY_ADDRESS, companyDetails);
+        if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
+            CompanyDto companyDetails = companyDetailsList.get(0);
+            List<String> companyAddress = ReportHelper.getCompanyAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getCity(), companyDetails.getZipPostCode(), companyDetails.getCountry());
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+        }
 
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);

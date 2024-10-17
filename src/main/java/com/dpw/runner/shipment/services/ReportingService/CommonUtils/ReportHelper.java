@@ -353,4 +353,19 @@ public class ReportHelper {
         return number != null ? number.toString() : null;
     }
 
+    public static List<String> getCompanyAddress(String address1, String address2, String city_country, String city_zipcode, String state_country){
+        List<String> list = new ArrayList<>();
+        if(address1 != null)
+            list.add(address1);
+        if(address2 != null)
+            list.add(address2);
+        if(city_country != null)
+            list.add(city_country);
+        if(city_zipcode != null)
+            list.add(city_zipcode);
+        if(state_country != null)
+            list.add(state_country);
+        return list;
+    }
+
 }
