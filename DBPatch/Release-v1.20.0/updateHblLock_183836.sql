@@ -1,0 +1,1 @@
+update shipment_setting set house_bill_number_lock = false;
