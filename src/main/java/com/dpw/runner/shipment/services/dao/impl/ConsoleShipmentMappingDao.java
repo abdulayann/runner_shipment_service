@@ -119,7 +119,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                 } else {
                     entity.setIsAttachmentDone(true);
                 }
-                if(shipmentRequestedType != null) {
+                if(shipmentRequestedType != null && (interBranchShipIds.contains(id) || interBranchImportShipmentMap.containsKey(id))) {
                     entity.setRequestedType(shipmentRequestedType);
                 }
                 save(entity);
