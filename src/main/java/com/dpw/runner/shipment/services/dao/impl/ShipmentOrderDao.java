@@ -59,6 +59,9 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
         if (!incomingIds.isEmpty()) {
             shipmentOrderRepository.deleteByIdNotInAndShipmentId(incomingIds, shipmentId);
         }
+        else {
+            shipmentOrderRepository.deleteAllByShipmentId(shipmentId);
+        }
 
         for(ShipmentOrder shipmentOrder : shipmentOrders){
             shipmentOrder.setShipmentId(shipmentId);

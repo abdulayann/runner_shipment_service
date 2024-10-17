@@ -672,8 +672,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .map(DateAndSources::getDateTime).orElse(null))
                                                 .estimated(Optional.ofNullable(event.getProjectedEventTime())
                                                         .map(DateAndSources::getDateTime).orElse(null))
-                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
-                                                .description(event.getDescriptionFromSource())
+                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescription()))
+                                                .description(event.getDescription())
                                                 .containerNumber(container.getContainerNumber())
                                                 .locationRole(event.getLocationRole());
 

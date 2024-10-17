@@ -4,6 +4,9 @@ import java.util.Set;
 
 public class ReportConstants {
     public static final String ROAD = "Road";
+    public static final String BRANCH_NAME = "BranchName";
+    public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
+    public static final String COMPANY_ADDRESS = "CompanyAddress";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
