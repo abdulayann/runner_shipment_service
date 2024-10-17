@@ -3294,7 +3294,6 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(shipmentDetailsResponse.getRoutingsList().get(0));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class)).thenReturn(importBrokerResponse);
         when(jsonHelper.convertValue(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class)).thenReturn(exportBrokerResponse);
