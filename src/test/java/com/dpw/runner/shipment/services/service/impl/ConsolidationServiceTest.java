@@ -5258,7 +5258,72 @@ import static org.mockito.Mockito.*;
     
     @Test
     void testValidationsBeforeAttachShipments() throws RunnerException {
-        consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(testShipment), true);
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(2);
+        shipmentDetails.setContainsHazardous(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), true));
+    }
+
+    @Test
+    void testValidationsBeforeAttachShipments1() throws RunnerException {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(2);
+        shipmentDetails.setContainsHazardous(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
+    }
+
+    @Test
+    void testValidationsBeforeAttachShipments2() throws RunnerException {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(2);
+        testConsol.setHazardous(true);
+        shipmentDetails.setContainsHazardous(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
+    }
+
+    @Test
+    void testValidationsBeforeAttachShipments3() throws RunnerException {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(1);
+        testConsol.setHazardous(true);
+        shipmentDetails.setContainsHazardous(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertDoesNotThrow(() -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L), 2L, List.of(shipmentDetails), false));
+    }
+
+    @Test
+    void testValidationsBeforeAttachShipments4() throws RunnerException {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(1);
+        testConsol.setHazardous(true);
+        shipmentDetails.setContainsHazardous(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), false));
+    }
+
+    @Test
+    void testValidationsBeforeAttachShipments5() throws RunnerException {
+        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTenantId(1);
+        shipmentDetails.setTenantId(1);
+        testConsol.setHazardous(true);
+        shipmentDetails.setContainsHazardous(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        mockShipmentSettings();
+        assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), true));
     }
 
 }
