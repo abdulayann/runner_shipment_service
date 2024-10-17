@@ -270,7 +270,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.openapitools.jackson.nullable.JsonNullable;
-import org.skyscreamer.jsonassert.JSONAssert;
 import org.springframework.context.ApplicationContext;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -8833,7 +8832,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void fetchSimilarShipmentList_SuccessTest(){
+    void fetchBillChargesShipmentList_SuccessTest(){
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
                 "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
@@ -8870,14 +8869,14 @@ ShipmentServiceTest extends CommonMocks {
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
-        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchBillChargesShipmentList(commonRequestModel);
 
         assertEquals(expectedResponse, result);
     }
 
 
     @Test
-    void fetchSimilarShipmentList_SuccessTest2(){
+    void fetchBillChargesShipmentList_SuccessTest2(){
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
                 "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
@@ -8904,13 +8903,13 @@ ShipmentServiceTest extends CommonMocks {
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
-        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchBillChargesShipmentList(commonRequestModel);
 
         assertEquals(expectedResponse, result);
     }
 
     @Test
-    void fetchSimilarShipmentList_SuccessTest3(){
+    void fetchBillChargesShipmentList_SuccessTest3(){
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().pageNo(1).pageSize(5).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
                 "9f6acf30-3e62-4d3e-991e-a990fe00f069", listCommonRequest);
@@ -8931,23 +8930,23 @@ ShipmentServiceTest extends CommonMocks {
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(), shipmentDetailsPage.getTotalElements());
-        ResponseEntity<IRunnerResponse> result = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentService.fetchBillChargesShipmentList(commonRequestModel);
 
         assertEquals(expectedResponse, result);
     }
 
     @Test
-    void fetchSimilarShipmentList_GuidMissingTest(){
+    void fetchBillChargesShipmentList_GuidMissingTest(){
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchBillChargesShipmentList(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void fetchSimilarShipmentList_EmptyDataTest(){
+    void fetchBillChargesShipmentList_EmptyDataTest(){
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest("9f6acf30-3e62-4d3e-991e-a990fe00f069");
         when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.empty());
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchSimilarShipmentList(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fetchBillChargesShipmentList(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 

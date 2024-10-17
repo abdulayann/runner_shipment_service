@@ -50,7 +50,7 @@ public class ApiConstants {
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
     public static final String STATE_BASED_LIST = "/state-based-list";
-    public static final String FETCH_SIMILAR_LIST = "/list/similar";
+    public static final String API_LIST_BILL_CHARGES_SHIPMENTS = "/list-for-bill-charges";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";

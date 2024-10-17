@@ -3391,7 +3391,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> fetchSimilarShipmentList(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> fetchBillChargesShipmentList(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             if (commonRequestModel.getGuid() == null) {

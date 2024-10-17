@@ -63,7 +63,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> fetchSimilarShipmentList(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchBillChargesShipmentList(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException;
 

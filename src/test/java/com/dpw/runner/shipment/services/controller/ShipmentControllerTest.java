@@ -1342,15 +1342,15 @@ class ShipmentControllerTest {
 
     @Test
     void testGetFilteredShipment(){
-        when(shipmentService.fetchSimilarShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        var responseEntity = shipmentController.listFilteredSimilarShipments("guid", null, null );
+        when(shipmentService.fetchBillChargesShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", null, null );
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void testGetFilteredShipmentException() {
-        when(shipmentController.listFilteredSimilarShipments(any(), null, null)).thenThrow(new RuntimeException());
-        var responseEntity = shipmentController.listFilteredSimilarShipments("guid", null, null );
+        when(shipmentController.listBillChargesShipments(any(), null, null)).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", null, null );
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
