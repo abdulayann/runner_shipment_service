@@ -3920,20 +3920,6 @@ public class ConsolidationService implements IConsolidationService {
                 //.isLinked(true)
                 .build();
 
-        if(shipment.getRoutingsList() != null && !shipment.getRoutingsList().isEmpty()) {
-            List<RoutingsResponse> customRouting = shipment.getRoutingsList().stream().
-                    map(item -> {
-                        RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
-                        newItem.setId(null);
-                        newItem.setGuid(null);
-                        newItem.setShipmentId(null);
-                        newItem.setBookingId(null);
-                        return newItem;
-                    }).
-                    toList();
-            consol.setRoutingsList(customRouting);
-        }
-
         if(additionalDetails != null) {
             PartiesResponse parties;
             if(additionalDetails.getImportBroker() != null) {
