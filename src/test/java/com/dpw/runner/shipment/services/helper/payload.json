@@ -255,7 +255,11 @@
     "notesList": [],
     "truckDriverDetails": [],
     "servicesList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "86d295a5-a896-46f1-82a8-26369755cda3",
+      "shipmentId": 1
+    }],
     "referenceNumbersList": [],
     "packingList": [],
     "fileRepoList": [],
@@ -1155,7 +1159,11 @@
     },
     "packingList": [],
     "referenceNumbersList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "dc092b0e-43a6-41d7-9dc3-546017f85771",
+      "consolidationId": 1
+    }],
     "containersList": [
       {
         "id": 150408,

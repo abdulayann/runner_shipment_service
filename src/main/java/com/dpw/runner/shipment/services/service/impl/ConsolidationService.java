@@ -1390,7 +1390,8 @@ public class ConsolidationService implements IConsolidationService {
         return shipments;
     }
 
-    private void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
+    @Override
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
         if(CollectionUtils.isEmpty(consolidationRoutings))
             return;
         if(!Boolean.TRUE.equals(shipmentDetails.getSyncRoutingFromConsolidation()))
@@ -3820,7 +3821,6 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    //TODO - send routings in response
     @Override
     public ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId) {
         ConsolidationDetailsResponse consol;
@@ -3910,6 +3910,8 @@ public class ConsolidationService implements IConsolidationService {
                         RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
                         newItem.setId(null);
                         newItem.setGuid(null);
+                        newItem.setShipmentId(null);
+                        newItem.setBookingId(null);
                         return newItem;
                     }).
                     toList();
