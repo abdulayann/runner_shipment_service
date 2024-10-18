@@ -788,12 +788,15 @@ public class ConsolidationService implements IConsolidationService {
         if (!Objects.isNull(consolidationId))
             awbDao.validateAirMessaging(consolidationId);
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-        if(!shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection()))
+        boolean isConsolePullCall = false;
+        if(shipmentRequestedType == null && !shipmentDetailsList.isEmpty() && DIRECTION_IMP.equalsIgnoreCase(shipmentDetailsList.get(0).getDirection())) {
             shipmentRequestedType = APPROVE;
+            isConsolePullCall = true;
+        }
 
         // Filter and collect inter-branch shipment details into a separate list
         List<ShipmentDetails> interBranchShipmentDetailsList = shipmentDetailsList.stream()
-                .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId)) // Filter inter-branch shipments
+                .filter(c -> !Objects.equals(c.getTenantId(), consolidationDetails.getTenantId())) // Filter inter-branch shipments
                 .toList();
 
         Map<Long, ShipmentDetails> interBranchImportShipmentMap = interBranchShipmentDetailsList.stream()
@@ -897,6 +900,15 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         interBranchShipIds.retainAll(attachedShipmentIds);
+        if(!interBranchImportShipmentMap.isEmpty() && isConsolePullCall) {
+            for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
+                var emailTemplatesRequestsModel = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
+                if(Objects.isNull(emailTemplatesRequestsModel) || emailTemplatesRequestsModel.isEmpty())
+                    shipmentRequestedTypes.add(APPROVE);
+                if(shipmentRequestedTypes.isEmpty())
+                    sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
+            }
+        }
 
         if(!interBranchShipIds.isEmpty()) // send email for pull requested when called from controller directly
             sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
@@ -917,6 +929,43 @@ public class ConsolidationService implements IConsolidationService {
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
+
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
+
+        var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
+        List<String> toEmailsList = new ArrayList<>();
+        if(shipmentDetails.getCreatedBy() != null)
+            toEmailsList.add(shipmentDetails.getCreatedBy());
+        if(shipmentDetails.getAssignedTo() != null)
+            toEmailsList.add(shipmentDetails.getAssignedTo());
+
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(consolidationDetails.getTenantId());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(), consolidationDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
+
+        if(toEmailsList.isEmpty()) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+            toEmailsList.addAll(new ArrayList<>(toEmailIds));
+        }
+
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailsList, new ArrayList<>(ccEmailIds));
+
+        return ResponseHelper.buildSuccessResponse();
+    }
+
 
     private void setInterBranchContext(Boolean isInterBranchConsole) {
         if (Boolean.TRUE.equals(isInterBranchConsole))

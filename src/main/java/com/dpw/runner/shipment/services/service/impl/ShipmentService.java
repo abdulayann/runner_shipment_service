@@ -2,19 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -517,6 +505,7 @@ public class ShipmentService implements IShipmentService {
     private IShipmentOrderDao shipmentOrderDao;
 
     public static final String CONSOLIDATION_ID = "consolidationId";
+    public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -6075,7 +6064,7 @@ public class ShipmentService implements IShipmentService {
         }
         String warning = null;
         if(!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+            warning = TEMPLATE_NOT_FOUND_MESSAGE;
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -6319,10 +6308,15 @@ public class ShipmentService implements IShipmentService {
                 .build();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         boolean isImportShipment = false;
-        if(shipmentDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
+        if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
             isImportShipment = true;
             consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
+            var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
+            if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
+                return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
+            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get(), emailTemplatesRequests);
         }
         if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);
@@ -6330,10 +6324,47 @@ public class ShipmentService implements IShipmentService {
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
             String warning = null;
             if (!shipmentRequestedTypes.isEmpty()) {
-                warning = "Template not found, please inform the region users manually";
+                warning = TEMPLATE_NOT_FOUND_MESSAGE;
             }
             return ResponseHelper.buildSuccessResponseWithWarning(warning);
         }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPushAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequests) {
+        var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
+
+        List<String> toEmailList = new ArrayList<>();
+        if(shipmentDetails.getCreatedBy() != null)
+            toEmailList.add(shipmentDetails.getCreatedBy());
+        if(shipmentDetails.getAssignedTo() != null)
+            toEmailList.add(shipmentDetails.getAssignedTo());
+
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(shipmentDetails.getTenantId());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(shipmentDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
+
+        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
+
+        if(toEmailList.isEmpty()) {
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+            toEmailList.addAll(new ArrayList<>(toEmailIds));
+        }
+
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
         return ResponseHelper.buildSuccessResponse();
     }
 

@@ -7204,8 +7204,63 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .direction(Constants.DIRECTION_IMP)
                 .build();
-        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment1() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails1.setCreatedBy("abc");
+        shipmentDetails1.setAssignedTo("def");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment2() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment3() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         var response = spyService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
