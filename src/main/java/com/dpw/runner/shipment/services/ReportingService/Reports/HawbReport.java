@@ -90,7 +90,7 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
         CarrierDetailModel carrierDetailModel;
-        String tenantName = getTenant().tenantName;
+        String tenantName = getTenant().getTenantName();
         if(hawbModel.shipmentDetails != null ) {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
@@ -106,7 +106,6 @@ public class HawbReport extends IReport{
         List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
         V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
-
         List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
         if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
             CompanyDto companyDetails = companyDetailsList.get(0);
