@@ -1,0 +1,3 @@
+update carrier_details set vessel = '41af4477-0665-4baf-9d9b-5bd719bb730d' where vessel in ('94e0fdeb-2746-48da-885e-7d10d6f95e50', '0cad9c5a-4327-4e47-8237-58c75bc3c831', 'a9a976ff-d8bc-415b-97c2-9ccc3c248ada');
+update booking_carriage set vessel = '41af4477-0665-4baf-9d9b-5bd719bb730d' where vessel in ('94e0fdeb-2746-48da-885e-7d10d6f95e50', '0cad9c5a-4327-4e47-8237-58c75bc3c831', 'a9a976ff-d8bc-415b-97c2-9ccc3c248ada');
+update routings set vessel_name = '41af4477-0665-4baf-9d9b-5bd719bb730d' where vessel_name in ('94e0fdeb-2746-48da-885e-7d10d6f95e50', '0cad9c5a-4327-4e47-8237-58c75bc3c831', 'a9a976ff-d8bc-415b-97c2-9ccc3c248ada');
