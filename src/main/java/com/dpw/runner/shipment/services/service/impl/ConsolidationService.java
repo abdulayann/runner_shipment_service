@@ -904,8 +904,9 @@ public class ConsolidationService implements IConsolidationService {
             for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
                 var emailTemplatesRequestsModel = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
                 if(Objects.isNull(emailTemplatesRequestsModel) || emailTemplatesRequestsModel.isEmpty())
-                    return ResponseHelper.buildSuccessResponseWithWarning("Template not found, please inform the region users manually");
-                sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
+                    shipmentRequestedTypes.add(APPROVE);
+                if(shipmentRequestedTypes.isEmpty())
+                    sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
             }
         }
 
