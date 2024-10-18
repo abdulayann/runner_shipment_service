@@ -414,7 +414,7 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.serviceAccount.password}")
     private String serviceAccountPassword;
 
-    @Value("${v1service.url.base}${v1service.url.listTask}")
+    @Value("${v1service.url.base}${v1service.url.listCompaniesForCreditLimit}")
     private String getCompaniesDetails;
 
     @Autowired
