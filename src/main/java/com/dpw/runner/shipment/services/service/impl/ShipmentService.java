@@ -6168,7 +6168,7 @@ public class ShipmentService implements IShipmentService {
             var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
             if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
                 return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
-            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get(), emailTemplatesRequests);
+            sendImportShipmentPushAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequests);
         }
         if(!isImportShipment) {
             consoleShipmentMappingDao.save(entity);
