@@ -1452,7 +1452,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1497,7 +1497,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1543,7 +1543,7 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1588,7 +1588,7 @@ import static org.mockito.Mockito.*;
          when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1636,7 +1636,7 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1683,7 +1683,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.saveAll(anyList())).thenReturn(List.of(shipmentDetails));
         mockShipmentSettings();
         mockTenantSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(null, 1L, shipmentIds, true);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
