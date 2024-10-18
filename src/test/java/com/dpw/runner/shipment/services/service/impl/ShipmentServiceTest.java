@@ -50,7 +50,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.producer.*;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -7078,6 +7078,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -7095,6 +7096,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
         var response = spyService.requestInterBranchConsole(1L, 2L);
@@ -7111,6 +7113,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        mockShipmentSettings();
         when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
         when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
