@@ -3789,6 +3789,7 @@ public class ConsolidationService implements IConsolidationService {
 //            consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
         if (routingsRequestList != null) {
+            syncMainLegRoute(consolidationDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
@@ -3809,6 +3810,19 @@ public class ConsolidationService implements IConsolidationService {
                 if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
+        }
+    }
+
+    public void syncMainLegRoute(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, List<RoutingsRequest> routingsRequests) {
+        if(oldEntity == null || !Objects.equals(consolidationDetails.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
+                || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine())) {
+            routingsRequests.stream().filter(i -> (RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())
+                            && Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), i.getPol())
+                            && Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), i.getPod())))
+                    .forEach(i -> {
+                        i.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
+                        i.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+                    });
         }
     }
 
