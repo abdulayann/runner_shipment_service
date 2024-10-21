@@ -319,9 +319,15 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails deliveryDetails;
 
+    @Column(name = "delivery_details_id", insertable = false, updatable = false)
+    private Long deliveryDetailsId;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails pickupDetails;
+
+    @Column(name = "pickup_details_id", insertable = false, updatable = false)
+    private Long pickupDetailsId;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")

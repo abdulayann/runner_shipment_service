@@ -16,4 +16,5 @@ public interface IPickupDeliveryDetailsDao {
     void delete(PickupDeliveryDetails pickupDeliveryDetails);
     List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws RunnerException;
     List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
+    List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
 }
