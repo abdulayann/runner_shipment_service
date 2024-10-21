@@ -138,9 +138,6 @@ public class ShipmentDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Events> eventsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'SHIPMENT'")
-    private List<FileRepo> fileRepoList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Packing> packingList;
@@ -331,6 +328,21 @@ public class ShipmentDetails extends MultiTenancy {
     @OrganizationData
     private Parties client;
 
+    @Column(name = "client_id", insertable = false, updatable = false)
+    private Long clientId;
+
+    @Column(name = "consigner_id", insertable = false, updatable = false)
+    private Long consignerId;
+
+    @Column(name = "consignee_id", insertable = false, updatable = false)
+    private Long consigneeId;
+
+    @Column(name = "carrier_detail_id", insertable = false, updatable = false)
+    private Long carrierDetailId;
+
+    @Column(name = "additional_details_id", insertable = false, updatable = false)
+    private Long additionalDetailId;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consigner_id", referencedColumnName = "id")
     @OrganizationData
@@ -391,6 +403,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String orderManagementNumber;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ShipmentOrder> shipmentOrders;
 
     @Enumerated(EnumType.STRING)

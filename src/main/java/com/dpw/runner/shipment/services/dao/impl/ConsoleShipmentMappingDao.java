@@ -185,4 +185,18 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     public void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId) {
         consoleShipmentsMappingRepository.deletePendingStateByConsoleIdAndShipmentId(consoleId, shipmentId);
     }
+
+    @Override
+    public Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds) {
+        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnShipmentId(shipmentIds);
+        Map<Long, Integer> shipmentCounts = new HashMap<>();
+
+        for (Object[] result : results) {
+            Long shipmentId = ((Number) result[0]).longValue();
+            int count = ((Number) result[1]).intValue();
+            shipmentCounts.put(shipmentId, count);
+        }
+
+        return shipmentCounts;
+    }
 }

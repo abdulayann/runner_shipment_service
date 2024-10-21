@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +21,7 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
         return findOne(spec);
     }
     List<Parties> findAll();
+
+    @Query(value = "SELECT * FROM parties WHERE id IN ?1", nativeQuery = true)
+    List<Parties> findByIds(List<Long> ids);
 }

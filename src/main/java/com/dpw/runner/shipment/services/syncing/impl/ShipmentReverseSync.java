@@ -105,7 +105,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             if(cs.getPackings_() != null)
                 map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
             sd.setPackingList(syncEntityConversionService.packingsV1ToV2(cs.getPackings_()));
-            sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));

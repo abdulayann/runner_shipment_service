@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +18,7 @@ public interface IAdditionalDetailRepository extends MultiTenancyRepository<Addi
         Specification<AdditionalDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
+    @Query(value = "SELECT * FROM shipment_additional_details WHERE id IN ?1", nativeQuery = true)
+    List<AdditionalDetails> findByIds(List<Long> ids);
 }

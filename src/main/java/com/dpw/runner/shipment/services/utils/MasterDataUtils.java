@@ -265,6 +265,7 @@ public class MasterDataUtils{
 
             BigDecimal teu;
             for(ShipmentDetails shipment : shipmentDetailsList) {
+                containerCountUpdate(shipment, dataMap.get(shipment.getId()));
                 teu = BigDecimal.ZERO;
                 if (shipment.getContainersList() != null) {
                     for(Containers c : shipment.getContainersList()) {
@@ -283,6 +284,46 @@ public class MasterDataUtils{
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
+    }
+
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        if (shipmentDetail.getContainersList() != null) {
+            for (Containers container : shipmentDetail.getContainersList()) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    }
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerNumbers(containerNumber);
     }
 
     public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
