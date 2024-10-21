@@ -27,7 +27,9 @@ public class CancelValidateAspect {
         Set<String> validatedFields = new HashSet<>();
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
         if(shipmentRequest != null){
-            String transportMode = null, direction = null, shipmentType = null;
+            String transportMode = null;
+            String direction = null;
+            String shipmentType = null;
             Boolean domesticType = null;
             if(shipmentRequest.getTransportMode() != null)
                 transportMode = shipmentRequest.getTransportMode().toLowerCase();

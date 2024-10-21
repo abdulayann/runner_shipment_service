@@ -58,9 +58,9 @@ public class PermissionsContext {
             // context setup for new permissions
             if(permission.startsWith("Operation")) {
                 // Shipment permissions grouping
-                populatePermissionList(shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission, shipmentCancelPermission, permission, SHIPMENTS);
+                populatePermissionList(shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission, shipmentCancelPermission, permission, SHIPMENTS_PERMISSION_KEY);
                 // Consolidation permissions grouping
-                populatePermissionList(consolidationListPermission, consolidationRetrievePermission, consolidationCreatePermission, consolidationUpdatePermission, consolidationCancelPermission, permission, CONSOLIDATION);
+                populatePermissionList(consolidationListPermission, consolidationRetrievePermission, consolidationCreatePermission, consolidationUpdatePermission, consolidationCancelPermission, permission, CONSOLIDATIONS_PERMISSION_KEY);
             }
         }
 

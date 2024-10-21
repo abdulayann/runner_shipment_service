@@ -43,7 +43,7 @@ public class UpdateValidateAspect {
             List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+                // earlier used String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
@@ -96,7 +96,7 @@ public class UpdateValidateAspect {
             List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
             for (String v1MappedPermission : mappedPermissionList){
-//                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+                // earlier used String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))

@@ -571,9 +571,8 @@ public class Constants {
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
     public static final String GUID = "guid";
     public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
-    public static final String SHIPMENTS = "Shipments";
-    public static final String CONSOLIDATIONS = "Consolidations";
-
+    public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
+    public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     private Constants() {
     }
 
