@@ -54,7 +54,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
 
     @Override
     public List<AdditionalDetails> findByIds(List<Long> id) {
-        return additionalDetailRepository.findByIds(id);
+        return additionalDetailRepository.findByIdIn(id);
     }
 
 }

@@ -273,7 +273,7 @@ public class PartiesDao implements IPartiesDao {
 
     @Override
     public List<Parties> findByIds(List<Long> id) {
-        return partiesRepository.findByIds(id);
+        return partiesRepository.findByIdIn(id);
     }
 
 }

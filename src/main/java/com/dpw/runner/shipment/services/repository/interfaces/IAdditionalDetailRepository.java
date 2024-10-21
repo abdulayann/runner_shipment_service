@@ -19,6 +19,5 @@ public interface IAdditionalDetailRepository extends MultiTenancyRepository<Addi
         return findOne(spec);
     }
 
-    @Query(value = "SELECT * FROM shipment_additional_details WHERE id IN ?1", nativeQuery = true)
-    List<AdditionalDetails> findByIds(List<Long> ids);
+    List<AdditionalDetails> findByIdIn(List<Long> ids);
 }

@@ -22,6 +22,5 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
     }
     List<Parties> findAll();
 
-    @Query(value = "SELECT * FROM parties WHERE id IN ?1", nativeQuery = true)
-    List<Parties> findByIds(List<Long> ids);
+    List<Parties> findByIdIn(List<Long> ids);
 }
