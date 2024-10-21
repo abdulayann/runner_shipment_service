@@ -513,7 +513,7 @@ public class ReportService implements IReportService {
             byte[] pdfByte_Content = null;
             byte[] mainDoc_hawb;
             if(reportRequest.isPrintForParties()){
-                mainDoc_hawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) == null? "" : dataRetrived.get(ReportConstants.HAWB_NUMBER).toString(), dataRetrived, Pages);
+                mainDoc_hawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, Pages);
             }else{
                 mainDoc_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
             }
@@ -1283,7 +1283,7 @@ public class ReportService implements IReportService {
                         byte[] mainDocCurrent;
                         if(reportRequest.isPrintForParties()){
                             try {
-                                mainDocCurrent = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NUMBER) == null? "" : json.get(ReportConstants.HAWB_NUMBER).toString(), jsonDictClone, pages);
+                                mainDocCurrent = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null? "" : json.get(ReportConstants.HAWB_NO).toString(), jsonDictClone, pages);
                             } catch (DocumentException | IOException e) {
                                 throw new RuntimeException(e);
                             }
@@ -1307,7 +1307,7 @@ public class ReportService implements IReportService {
             json.put(ReportConstants.CHARGES, json.get(ReportConstants.COPY_CHARGES));
             json.put(ReportConstants.AS_AGREED, json.get(ReportConstants.COPY_AS_AGREED));
             if(reportRequest.isPrintForParties()){
-                mainDoc = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NUMBER) == null? "" : json.get(ReportConstants.HAWB_NUMBER).toString(), json, pages);
+                mainDoc = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null? "" : json.get(ReportConstants.HAWB_NO).toString(), json, pages);
             }else{
                 mainDoc = GetFromDocumentService(json, pages.getMainPageId());
             }

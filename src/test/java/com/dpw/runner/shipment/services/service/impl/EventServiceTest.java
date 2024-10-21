@@ -1028,7 +1028,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
-        when(shipmentDao.save(any(), anyBoolean())).thenThrow(new RuntimeException());
+        when(shipmentDao.saveWithoutValidation(any())).thenThrow(new RuntimeException());
 
         var response = eventService.processUpstreamTrackingMessage(container);
         assertFalse(response);

@@ -2234,6 +2234,19 @@ class V1ServiceImplTest {
         assertEquals("RuntimeException", throwable.getMessage());
     }
 
+    @Test
+    void testStateBasedList5() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(null));
+        when(mock.getBody()).thenReturn(null);
+        // Act
+        var responseEntity = v1ServiceImpl.stateBasedList("Request");
+        // Assert
+        assertNull(responseEntity.getEntities());
+    }
+
     /**
      * Method under test: {@link V1ServiceImpl#updateUnlocationData(Object)} (Object)}
      */
@@ -5762,5 +5775,41 @@ class V1ServiceImplTest {
         assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")));
     }
 
+    @Test
+    void getCompaniesDetails() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getCompaniesDetails("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getCompaniesDetails2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getCompaniesDetails3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
 
 }

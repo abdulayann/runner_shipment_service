@@ -465,6 +465,8 @@ public class EntityTransferService implements IEntityTransferService {
         }
         // Packing got created with shipment
         entityTransferConsolidationDetails.setPackingList(null);
+        // Setting this to true to bypass condition - no dg shipment available
+        entityTransferConsolidationDetails.setCreatingFromDgShipment(entityTransferConsolidationDetails.getHazardous());
 
         // Create or update console
         ConsolidationDetailsResponse consolidationDetailsResponse = this.createOrUpdateConsolidation(entityTransferConsolidationDetails, oldConsolidationDetailsList);
@@ -476,9 +478,9 @@ public class EntityTransferService implements IEntityTransferService {
             if(!interBranchShipment.isEmpty()) {
                 commonUtils.setInterBranchContextForHub();
                 createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
-                consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds);
+                consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds, true);
             } else {
-                consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds);
+                consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds, true);
             }
             log.info("Shipment and console got attached with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
 

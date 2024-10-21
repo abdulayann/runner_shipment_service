@@ -226,4 +226,6 @@ public interface IV1Service {
     List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
 
     Integer getRoleIdsByRoleName(V1RoleIdRequest roleIdRequest);
+
+    V1DataResponse getCompaniesDetails(Object request);
 }

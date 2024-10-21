@@ -171,7 +171,7 @@ public class AwbService implements IAwbService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
-    private static final String errorMessage = "You cannot generate the AWB without adding the screening/ Security status for RA KC shipments";
+    private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
     private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
@@ -847,7 +847,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
@@ -1267,7 +1267,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception ex){
-            throw new RunnerException(errorMessage);
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, "Shipments"));
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
@@ -2671,11 +2671,13 @@ public class AwbService implements IAwbService {
                     }
                 }
             }
-            if(!IsStringNullOrEmpty(res))
-                res = res + "\n";
-            else
-                res = "";
-            res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
+            if(packs != 0) {
+                if(!IsStringNullOrEmpty(res))
+                    res = res + "\n";
+                else
+                    res = "";
+                res = res + "Dangerous Goods as per attached Shipper’s Declaration. " + packs.toString() + (packs > 1 ? " packages" : " package");
+            }
         }
         return res;
     }
@@ -2731,7 +2733,7 @@ public class AwbService implements IAwbService {
             if(!Objects.isNull(awbResponse.getAwbNotifyPartyInfo()))
                 awbResponse.getAwbNotifyPartyInfo().forEach(n -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(n, AwbNotifyPartyInfo.class, fieldNameKeyMap, AwbNotifyPartyInfo.class.getSimpleName() + count.incrementAndGet())));
             if (!Objects.isNull(awbResponse.getDefaultAwbShipmentInfo()))
-                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getDefaultAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() + count.incrementAndGet() ));
             if(!Objects.isNull(awbResponse.getDefaultAwbRoutingInfo()))
                 awbResponse.getDefaultAwbRoutingInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbRoutingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet())));
             if(!Objects.isNull(awbResponse.getAwbPackingInfo()))

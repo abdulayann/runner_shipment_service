@@ -481,6 +481,7 @@ public class Constants {
     public static final String USER_NAME = "User_name";
     public static final String USER_BRANCH = "User_Branch";
     public static final String USER_COUNTRY = "User_Country";
+    public static final String IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL = "Import_Shipment_Pull_Attachment_Email_Template";
 
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
@@ -533,6 +534,7 @@ public class Constants {
     public static final String OCEAN_DG_COMMERCIAL_SENDER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_SENDER";
     public static final String HTML_HREF_TAG_PREFIX = "<html><body>" + "<a href='";
     public static final String HTML_HREF_TAG_SUFFIX = "</a>" + "</body></html>";
+    public static final String IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL = "Import_Shipment_Push_Attachment_Email_Template";
 
     //OCEAN DG Email Templates Type
     public static final String OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE";
@@ -542,6 +544,13 @@ public class Constants {
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE";
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE";
     public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
+    public static final String AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION = "DG Shipment is not allowed to Consolidate with Interbranch Consolidation - %s.";
+    public static final String AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT = "DG Consolidation is not allowed for Interbranch Shipment - %s.";
+    public static final String AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT = "Consolidation is not allowed for Interbranch DG Shipment - %s.";
+    public static final String AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION = "Shipment is not allowed for Interbranch DG Consolidation - %s.";
+    public static final String AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT = "DG Consolidation is not allowed to have more than one shipment attached.";
+    public static final String CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL = "Cannot attach more shipments to a DG Consolidation - %s.";
+    public static final String CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS = "Cannot update Shipment as DG Shipment, attached consolidation consists of multiple shipments.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
 
