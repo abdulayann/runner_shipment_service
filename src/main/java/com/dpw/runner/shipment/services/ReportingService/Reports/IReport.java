@@ -2813,7 +2813,7 @@ public abstract class IReport {
         dictionary.put(CHARGES_IN_CAPS, originalChargesRowsInCaps);
         dictionary.put(CHARGES_SMALL, originalChargesRows);
 
-        if(originalChargesRows != null && originalChargesRowsInCaps != null && originalChargesRows.size() > 0 && originalChargesRowsInCaps.size() > 0)
+        if(originalChargesRows != null && originalChargesRowsInCaps != null && !originalChargesRows.isEmpty() && !originalChargesRowsInCaps.isEmpty())
         {
             List<Map<String, Object>> values = new ArrayList<>();
             List<Map<String, Object>> valuesInCaps = new ArrayList<>();
@@ -2830,7 +2830,7 @@ public abstract class IReport {
             }
             for (Map<String, Object> v: valuesInCaps) {
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
-                    v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse));
+                    v.put(OVERSEAS_SELL_AMOUNT, StringUtility.toUpperCase(AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse)));
                 };
             }
             dictionary.put(CHARGES_SMALL, values);
