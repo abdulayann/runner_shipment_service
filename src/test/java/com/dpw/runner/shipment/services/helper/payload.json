@@ -9242,6 +9242,7 @@
         "leg": 2,
         "mode": "AIR",
         "routingStatus": "PLD",
+        "carriage": "MAIN_CARRIAGE",
         "pol": "EGCAI_AIR",
         "pod": "SGJUR_AIR",
         "eta": "2024-05-13 00:00:00",
