@@ -1,0 +1,1 @@
+update mawb_stocks_link set status = 'Unused', entity_type = null, entity_id = null, ship_cons_number = null where mawb_number = '157-38092353';
