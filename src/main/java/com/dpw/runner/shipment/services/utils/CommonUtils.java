@@ -919,7 +919,7 @@ public class CommonUtils {
         if(!to.isEmpty()) {
             try {
                 notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplateModel.getBody()),
-                        emailTemplateModel.getSubject(), to, cc);
+                        replaceTagsFromData(dictionary, emailTemplateModel.getSubject()), to, cc);
             } catch (Exception ex) {
                 log.error(ex.getMessage());
             }
