@@ -398,6 +398,26 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE
+        if(!IsStringNullOrEmpty(key)) {
+            String value = null;
+
+            if(!IsStringNullOrEmpty(masterLists.getValuenDesc()))
+                value = masterLists.getValuenDesc();
+            else
+                value = masterLists.getItemDescription();
+
+            String[] parts = key.split("#");
+            if(parts.length == 2) {
+                Map<String, String> finalValueMap = new HashMap<>();
+                if(map.containsKey(parts[1]))
+                    finalValueMap = (Map<String, String>) map.get(parts[1]);
+                finalValueMap.put(parts[0], value);
+                map.put(parts[1], finalValueMap);
+            }
+        }
+    }
+
 
     public List<EntityTransferMasterLists> fetchMultipleMasterData(MasterListRequestV2 requests) {
         V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
