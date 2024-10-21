@@ -1184,9 +1184,6 @@ public class HblReport extends IReport {
     }
 
     private void convertShipmentContainersToUpperCase(ShipmentContainers shipmentContainers) {
-        if (shipmentContainers == null) {
-            return;
-        }
         if (shipmentContainers.ContainerNumber != null) shipmentContainers.ContainerNumber = shipmentContainers.ContainerNumber.toUpperCase();
         if (shipmentContainers.ShipmentPacksUnit != null) shipmentContainers.ShipmentPacksUnit = shipmentContainers.ShipmentPacksUnit.toUpperCase();
         if (shipmentContainers.GrossWeightUnit != null) shipmentContainers.GrossWeightUnit = shipmentContainers.GrossWeightUnit.toUpperCase();
