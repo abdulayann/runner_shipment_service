@@ -3515,6 +3515,17 @@ public class ShipmentService implements IShipmentService {
         Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
         shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
 
+        List<Long> pickupDetailsId = new ArrayList<>();
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
+        if(pickupDetailsId.size() > 0) {
+            Map<Long, PickupDeliveryDetails> pickupDetailsMap = pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+                    .stream().collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
+
+            shipmentList.forEach(c -> c.setPickupDetails(pickupDetailsMap.get(c.getPickupDetailsId())));
+            shipmentList.forEach(c -> c.setDeliveryDetails(pickupDetailsMap.get(c.getDeliveryDetailsId())));
+        }
+
         log.info("{} | findAllWithOutIncludeColumn: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
         return shipmentList;
     }
@@ -3544,6 +3555,20 @@ public class ShipmentService implements IShipmentService {
         List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
         Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
         shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
+        return CompletableFuture.completedFuture(null);
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> fetchPickupDeliveryDetails (Page<ShipmentDetails> shipmentList) {
+        List<Long> pickupDetailsId = new ArrayList<>();
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
+        if(pickupDetailsId.size() > 0) {
+            Map<Long, PickupDeliveryDetails> pickupDetailsMap = pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+                    .stream().collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
+
+            shipmentList.forEach(c -> c.setPickupDetails(pickupDetailsMap.get(c.getPickupDetailsId())));
+            shipmentList.forEach(c -> c.setDeliveryDetails(pickupDetailsMap.get(c.getDeliveryDetailsId())));
+        }
         return CompletableFuture.completedFuture(null);
     }
 
