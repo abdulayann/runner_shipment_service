@@ -3789,7 +3789,8 @@ public class ConsolidationService implements IConsolidationService {
 //            consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
         if (routingsRequestList != null) {
-            syncMainLegRoute(consolidationDetails, oldEntity, routingsRequestList);
+            if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
+                syncMainLegRoute(consolidationDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
