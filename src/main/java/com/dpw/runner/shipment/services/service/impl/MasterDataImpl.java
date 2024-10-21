@@ -23,12 +23,16 @@ import java.util.concurrent.CompletableFuture;
 @Service
 public class MasterDataImpl implements IMasterDataService {
 
+    private final MasterDataFactory masterDataFactory;
+    private final IV1Service v1Service;
+    private final MasterDataUtils masterDataUtils;
+
     @Autowired
-    private MasterDataFactory masterDataFactory;
-    @Autowired
-    private IV1Service v1Service;
-    @Autowired
-    private MasterDataUtils masterDataUtils;
+    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils) {
+        this.masterDataFactory = masterDataFactory;
+        this.v1Service = v1Service;
+        this.masterDataUtils = masterDataUtils;
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
