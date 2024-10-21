@@ -123,6 +123,7 @@ public class ReportConstants {
     public static final String TotalCntrPacks = "TotalCntrPacks";
     public static final String GROSS_WEIGHT = "GrossWeight";
     public static final String SHIPMENT_DETAIL_DATE_OF_ISSUE = "DateofIssue";
+    public static final String SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS = "DateofIssueInCaps";
     public static final String GROSS_WEIGHT_UNIT = "GrossWeightUnit";
     public static final String GROSS_VOLUME = "GrossVolume";
     public static final String GROSS_VOLUME_UNIT = "GrossVolumeUnit";
@@ -168,6 +169,8 @@ public class ReportConstants {
     public static final String ISSUE_PLACE_COUNTRY = "IssuePlaceCountry";
     public static final String PAID_PLACE_NAME = "PaidPlaceName";
     public static final String PAID_PLACE_COUNTRY = "PaidPlaceCountry";
+    public static final String PAID_PLACE_NAME_IN_CAPS = "PaidPlaceNameInCaps";
+    public static final String PAID_PLACE_COUNTRY_IN_CAPS = "PaidPlaceCountryInCaps";
     public static final String PAID_PLACE_COUNTRY_NAME = "PaidPlaceCountryName";
     public static final String DATE_OF_ISSUE = "DateOfIssue";
     public static final String SHIPMENT_CREATION_DATE = "ShipmentCreationDate";
@@ -477,6 +480,7 @@ public class ReportConstants {
     public static final String HAS_CHARGES = "hasCharges";
     public static final String CHARGES = "Charges";
     public static final String CHARGES_SMALL = "charges";
+    public static final String CHARGES_IN_CAPS = "chargesInCaps";
     public static final String COPY_CHARGES = "copyCharges";
     public static final String BILL_REMARK = "BillRemark";
 
@@ -699,7 +703,9 @@ public class ReportConstants {
     public static final String ADDITIONAL_COST_AT = "AdditionalCostAt";
     public static final String EXPORTER_REFERENCE_NUMBER = "ExporterReferenceNumber";
     public static final String CUSTOMS_REFERENCE_NUMBER = "CustomsReferenceNumber";
+    public static final String CUSTOMS_REFERENCE_NUMBER_IN_CAPS = "CustomsReferenceNumberInCaps";
     public static final String FORWARDER_REFERENCE_NUMBER = "ForwarderReferenceNumber";
+    public static final String FORWARDER_REFERENCE_NUMBER_IN_CAPS = "ForwarderReferenceNumberInCaps";
     public static final String PRE_CARRIAGE_PARTY = "PreCarriageParty";
     public static final String COMMODITY_GROUP = "CommodityGroup";
     public static final String PACKS_COMMODITY_GROUP = "PacksCommodityGroup";
