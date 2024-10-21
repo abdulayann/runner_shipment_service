@@ -1018,7 +1018,8 @@ public class MasterDataUtils{
 
     public Map<String, TenantModel> fetchInTenantsList(List<String> requests) {
         Map<String, TenantModel> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toList());
+        if(!requests.isEmpty()) {
             log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.TENANT_ID));
