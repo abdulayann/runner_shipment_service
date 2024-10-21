@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -53,6 +51,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingExce
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -772,7 +772,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds, boolean fromConsolidation) throws RunnerException {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if(consol.isEmpty())
@@ -826,26 +826,9 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-            Page<ConsoleShipmentMapping> oldConsoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
-            List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
-            int existingShipments = consolidationDetails.getShipmentsList() != null ? consolidationDetails.getShipmentsList().size() : 0;
-            if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-            && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&  existingShipments + shipmentIds.size() > 1) {
-                throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
-            }
-            if(oldConsoleShipmentMappings != null && !oldConsoleShipmentMappings.isEmpty()) {
-                consoleShipmentMappings = oldConsoleShipmentMappings.getContent();
-                for (ConsoleShipmentMapping consoleShipmentMapping : oldConsoleShipmentMappings.getContent()) {
-                    if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
-                        throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
-                }
-            }
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent();
 
-            for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
-                    throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
-                }
-            }
+            validationsBeforeAttachShipments(consolidationDetails, consoleShipmentMappings, shipmentIds, consolidationId, shipmentDetailsList, fromConsolidation);
 
             attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds, interBranchImportShipmentMap);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
@@ -966,16 +949,62 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
+    public void validationsBeforeAttachShipments(ConsolidationDetails consolidationDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
+                                                  List<Long> shipmentIds, Long consolidationId, List<ShipmentDetails> shipmentDetailsList, boolean fromConsolidation) throws RunnerException {
+        int existingShipments = consolidationDetails.getShipmentsList() != null ? consolidationDetails.getShipmentsList().size() : 0;
+        if(Boolean.TRUE.equals(consolidationDetails.getHazardous()) && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
+                && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&  existingShipments + shipmentIds.size() > 1) {
+            throw new RunnerException("For Ocean DG Consolidation LCL Cargo Type, we can have only 1 shipment");
+        }
+        if(!listIsNullOrEmpty(consoleShipmentMappings)) {
+            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
+                if(!consoleShipmentMapping.getConsolidationId().equals(consolidationId) && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
+                    throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
+            }
+        }
+
+        boolean anyInterBranchShipment = false;
+        for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails.getLatDate() != null && consolidationDetails.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
+                throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() +" Cargo Delivery Date is lesser than LAT Date.");
+            }
+            if(checkForAirDGFlag(consolidationDetails) && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
+                anyInterBranchShipment = true;
+                if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                    if(fromConsolidation)
+                        throw new RunnerException(String.format(AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT, shipmentDetails.getShipmentId()));
+                    else
+                        throw new RunnerException(String.format(AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
+
+                }
+            }
+        }
+
+        if(checkForAirDGFlag(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
+            if(existingShipments + shipmentIds.size() > 1) {
+                if(fromConsolidation)
+                    throw new RunnerException(AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT);
+                else
+                    throw new RunnerException(String.format(CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL, consolidationDetails.getConsolidationNumber()));
+            }
+            if(anyInterBranchShipment)
+                throw new RunnerException(String.format(AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION, consolidationDetails.getConsolidationNumber()));
+        }
+    }
 
     private void setInterBranchContext(Boolean isInterBranchConsole) {
         if (Boolean.TRUE.equals(isInterBranchConsole))
             commonUtils.setInterBranchContextForHub();
     }
 
-    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
+    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
         if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
-        if(!Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()))
+        return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
+    }
+
+    private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails consolidationDetails) {
+        if(!checkForAirDGFlag(consolidationDetails))
             return false;
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }

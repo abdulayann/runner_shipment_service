@@ -478,9 +478,9 @@ public class EntityTransferService implements IEntityTransferService {
             if(!interBranchShipment.isEmpty()) {
                 commonUtils.setInterBranchContextForHub();
                 createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
-                consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds);
+                consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consolidationDetailsResponse.getId(), shipmentIds, true);
             } else {
-                consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds);
+                consolidationService.attachShipments(null, consolidationDetailsResponse.getId(), shipmentIds, true);
             }
             log.info("Shipment and console got attached with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
 
