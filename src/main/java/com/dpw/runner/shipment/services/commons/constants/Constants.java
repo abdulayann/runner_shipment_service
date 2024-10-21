@@ -355,6 +355,7 @@ public class Constants {
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
     public static final String STATUS = "status";
     public static final String JOB_TYPE = "jobType";
+    public static final String INCOTERMS = "incoterms";
     public static final String DELIVERY_DETAILS = "deliveryDetails";
     public static final String PICKUP_DETAILS = "pickupDetails";
     public static final String FLIGHT_NUMBER = "flightNumber";
@@ -553,7 +554,15 @@ public class Constants {
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
 
+    public static final String CLIENT_ORG_CODE = "clientOrgCode";
+    public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
+    public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
+    public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
+    public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
+    public static final String GUID = "guid";
     public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
+
     private Constants() {
     }
 
