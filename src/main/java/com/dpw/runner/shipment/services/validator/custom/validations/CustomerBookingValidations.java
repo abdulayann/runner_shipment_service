@@ -35,8 +35,8 @@ public class CustomerBookingValidations {
         // If TransportModeConfig flag is ON, this block will check for the valid transport mode
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig())) {
             // If oldEntity is null (Create) OR transport mode is getting updated (Update)
-            if (Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType())) {
-                if (Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings)))
+            if ((Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
+                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
                     throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
             }
         }

@@ -2062,8 +2062,8 @@ public class ShipmentService implements IShipmentService {
         // If TransportModeConfig flag is ON, this block will check for the valid transport mode
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig())) {
             // If oldEntity is null (Create) OR transport mode is getting updated (Update)
-            if (isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode())) {
-                if (Boolean.FALSE.equals(commonUtils.isTransportModeValid(shipmentDetails.getTransportMode(), Constants.SHIPMENT_DETAILS, tenantSettings)))
+            if ((isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
+                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(shipmentDetails.getTransportMode(), Constants.SHIPMENT_DETAILS, tenantSettings))) {
                     throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, shipmentDetails.getTransportMode()));
             }
         }

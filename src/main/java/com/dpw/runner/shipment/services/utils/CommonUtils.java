@@ -1753,13 +1753,14 @@ public class CommonUtils {
         return String.join("-", args);
     }
 
-    // This method is used to validate the whether the transport mode is allowed to be used
+    // This method is used to validate whether the transport mode is allowed to be used or not
     public boolean isTransportModeValid(String transportMode, String entity, V1TenantSettingsResponse tenantSettings) {
-        Set<String> validTransportModes = new HashSet<>();
+        Set<String> validTransportModes;
 
         switch (entity) {
             case CUSTOMER_BOOKING -> validTransportModes = this.getValidTransportModes(tenantSettings.getBookingTransportModeAir(), tenantSettings.getBookingTransportModeSea(), tenantSettings.getBookingTransportModeRail(), tenantSettings.getBookingTransportModeRoad());
             case SHIPMENT_DETAILS -> validTransportModes = this.getValidTransportModes(tenantSettings.getShipmentTransportModeAir(), tenantSettings.getShipmentTransportModeSea(), tenantSettings.getShipmentTransportModeRail(), tenantSettings.getShipmentTransportModeRoad());
+            default -> validTransportModes = new HashSet<>();
         }
 
         return validTransportModes.contains(transportMode);
