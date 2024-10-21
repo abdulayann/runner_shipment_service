@@ -388,9 +388,7 @@ public class MasterDataUtils{
                 }
                 if(itemValue != null) {
                     String key = itemValue + '#' + itemTypeName;
-                    log.info("createInBulkMasterListRequest before cache.get: {}", StringUtility.convertToString(cache));
                     Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
-                    log.info("createInBulkMasterListRequest after cache.get");
                     if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
                     fieldNameKeyMap.put(field, key);
                 }
@@ -459,9 +457,7 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String locCode = (String) field1.get(entityPayload);
-                log.info("createInBulkUnLocationsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
-                log.info("createInBulkUnLocationsRequest after cache.get");
                 if(locCode != null && !locCode.equals("")) {
                     if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
                     fieldNameKeyMap.put(field, locCode);
@@ -671,16 +667,13 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
-                log.info("createInBulkVesselsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
-                log.info("createInBulkVesselsRequest after cache.get");
                 if(itemValue != null && !itemValue.isEmpty()) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
