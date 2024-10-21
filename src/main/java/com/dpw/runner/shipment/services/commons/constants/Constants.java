@@ -543,6 +543,13 @@ public class Constants {
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE";
     public static final String OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE";
     public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
+    public static final String AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION = "DG Shipment is not allowed to Consolidate with Interbranch Consolidation - %s.";
+    public static final String AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT = "DG Consolidation is not allowed for Interbranch Shipment - %s.";
+    public static final String AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT = "Consolidation is not allowed for Interbranch DG Shipment - %s.";
+    public static final String AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION = "Shipment is not allowed for Interbranch DG Consolidation - %s.";
+    public static final String AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT = "DG Consolidation is not allowed to have more than one shipment attached.";
+    public static final String CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL = "Cannot attach more shipments to a DG Consolidation - %s.";
+    public static final String CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS = "Cannot update Shipment as DG Shipment, attached consolidation consists of multiple shipments.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
 
