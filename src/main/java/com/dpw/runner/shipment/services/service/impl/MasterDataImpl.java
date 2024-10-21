@@ -1,26 +1,38 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class MasterDataImpl implements IMasterDataService {
 
+    private final MasterDataFactory masterDataFactory;
+    private final IV1Service v1Service;
+    private final MasterDataUtils masterDataUtils;
+
     @Autowired
-    private MasterDataFactory masterDataFactory;
-    @Autowired
-    private IV1Service v1Service;
+    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils) {
+        this.masterDataFactory = masterDataFactory;
+        this.v1Service = v1Service;
+        this.masterDataUtils = masterDataUtils;
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -353,5 +365,15 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().getDefaultOrg(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel) {
+        MasterListRequestV2 request = (MasterListRequestV2) commonRequestModel.getData();
+        request.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
+        var keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(request);
+        Map<String, Object> response = new HashMap<>();
+        keyMasterDataMap.forEach((key, value) -> masterDataUtils.setKeyValueForMasterLists(response, key, value));
+        return ResponseHelper.buildSuccessResponse(response);
     }
 }

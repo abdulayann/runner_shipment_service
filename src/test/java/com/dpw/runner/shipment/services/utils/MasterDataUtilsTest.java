@@ -2244,4 +2244,21 @@ class MasterDataUtilsTest {
         assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
     }
 
+    @Test
+    void setKeyValueForMasterLists() {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
+        keyMasterDataMap.put("IND#COUNTRIES", EntityTransferMasterLists.builder().ItemValue("IND").ItemDescription("India").ValuenDesc("India").build());
+        masterDataUtils.setKeyValueForMasterLists(response, "IND#COUNTRIES", keyMasterDataMap.get("IND#COUNTRIES"));
+        assertNotNull(response);
+    }
+    @Test
+    void setKeyValueForMasterLists1() {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
+        keyMasterDataMap.put("IND#COUNTRIES", EntityTransferMasterLists.builder().ItemValue("IND").ItemDescription("India").build());
+        masterDataUtils.setKeyValueForMasterLists(response, "IND#COUNTRIES", keyMasterDataMap.get("IND#COUNTRIES"));
+        assertNotNull(response);
+    }
+
 }

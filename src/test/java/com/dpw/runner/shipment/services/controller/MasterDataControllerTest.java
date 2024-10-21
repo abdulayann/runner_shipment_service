@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -2134,6 +2135,36 @@ class MasterDataControllerTest {
         when(iMasterDataService.retrieveTenantSettings()).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = masterDataController.tenantSettings();
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData2() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData3() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
