@@ -1775,6 +1775,7 @@ public class ShipmentService implements IShipmentService {
                 if(Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
                     containerRequest = jsonHelper.convertValueToList(oldEntity.getContainersList(), ContainerRequest.class);
                 containerRequest.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
+                changeContainerWtVolOnDetach(shipmentRequest, allConsolConts);
             }
         }
 
@@ -1899,6 +1900,45 @@ public class ShipmentService implements IShipmentService {
             updateShipmentGateInDateAndStatusFromPacks(packingRequest, shipmentDetails);
         CompletableFuture.allOf(carrierDetailsFuture).join();
         return syncConsole;
+    }
+
+    public void changeContainerWtVolOnDetach(ShipmentRequest shipmentRequest, List<Containers> allConsolConts) throws RunnerException {
+        Map<Long, List<PackingRequest>> containerPacksMap = new HashMap<>();
+        if(!listIsNullOrEmpty(shipmentRequest.getPackingList())) {
+            for(PackingRequest packing: shipmentRequest.getPackingList()) {
+                if(packing.getContainerId() != null) {
+                    if(containerPacksMap.containsKey(packing.getContainerId()))
+                        containerPacksMap.get(packing.getContainerId()).add(packing);
+                    else
+                        containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
+                    packing.setContainerId(null);
+                }
+            }
+        }
+        for(Containers container: allConsolConts) {
+            if(CARGO_TYPE_FCL.equals(shipmentRequest.getShipmentType())) {
+                container.setAchievedWeight(BigDecimal.ZERO);
+                container.setAchievedVolume(BigDecimal.ZERO);
+                container.setWeightUtilization("0");
+                container.setVolumeUtilization("0");
+            } else {
+                if(containerPacksMap.containsKey(container.getId())) {
+                    List<PackingRequest> packs = containerPacksMap.get(container.getId());
+                    for(PackingRequest packing : packs) {
+                        if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                        }
+                        if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                        }
+                        container = containerService.calculateUtilization(container);
+                    }
+                }
+            }
+        }
+        containerDao.saveAll(allConsolConts);
     }
 
     public void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {

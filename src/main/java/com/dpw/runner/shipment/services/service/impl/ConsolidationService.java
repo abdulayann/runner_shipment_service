@@ -1033,7 +1033,8 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
         }
 
-        List<Packing> packingList = null;
+        boolean saveSeaPacks = false;
+        List<Packing> packingList = new ArrayList<>();
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -1049,7 +1050,46 @@ public class ConsolidationService implements IConsolidationService {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
                     List<Containers> containersList = shipmentDetail.getContainersList();
+                    Map<Long, List<Packing>> containerPacksMap = new HashMap<>();
+                    if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode())) {
+                        if(!listIsNullOrEmpty(shipmentDetail.getPackingList())) {
+                            for(Packing packing: shipmentDetail.getPackingList()) {
+                                if(packing.getContainerId() != null) {
+                                    if(containerPacksMap.containsKey(packing.getContainerId()))
+                                        containerPacksMap.get(packing.getContainerId()).add(packing);
+                                    else
+                                        containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
+                                    packing.setContainerId(null);
+                                    packingList.add(packing);
+                                    saveSeaPacks = true;
+                                }
+                            }
+                        }
+                    }
                     for(Containers container : containersList) {
+                        if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode())) {
+                            if(CARGO_TYPE_FCL.equals(shipmentDetail.getShipmentType())) {
+                                container.setAchievedWeight(BigDecimal.ZERO);
+                                container.setAchievedVolume(BigDecimal.ZERO);
+                                container.setWeightUtilization("0");
+                                container.setVolumeUtilization("0");
+                            } else {
+                                if(containerPacksMap.containsKey(container.getId())) {
+                                    List<Packing> packs = containerPacksMap.get(container.getId());
+                                    for(Packing packing : packs) {
+                                        if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+                                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+                                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+                                        }
+                                        if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+                                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+                                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+                                        }
+                                        container = containerService.calculateUtilization(container);
+                                    }
+                                }
+                            }
+                        }
                         shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
                     }
                     containersList = containerDao.saveAll(containersList);
@@ -1073,6 +1113,8 @@ public class ConsolidationService implements IConsolidationService {
                 shipmentDetail.setMasterBill(null);
                 this.createLogHistoryForShipment(shipmentDetail);
             }
+            if(saveSeaPacks)
+                packingList = packingDao.saveAll(packingList);
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentDao.saveAll(shipmentDetailsToSave);
         }

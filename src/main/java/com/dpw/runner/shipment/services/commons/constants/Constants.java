@@ -459,6 +459,7 @@ public class Constants {
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
+    public static final String SHIPMENT_ASSIGNED_USER_WITH_SLASH = "Shipment_Assigned_User_With_Slash";
     public static final String CONSOL_BRANCH_CODE = "Consol_Branch_Code";
     public static final String CONSOL_BRANCH_NAME = "Consol_Branch_Name";
     public static final String CONSOLIDATION_NUMBER = "Consolidation_Number";
