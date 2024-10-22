@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
@@ -52,4 +53,6 @@ public interface IContainerService extends ICommonService {
     Containers calculateUtilization(Containers container);
     ResponseEntity<IRunnerResponse> containerSync(List<Long> request);
     void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers);
+    void changeContainerWtVolForSeaFCLDetach(Containers container);
+    void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException;
 }

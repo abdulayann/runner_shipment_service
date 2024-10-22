@@ -1917,23 +1917,12 @@ public class ShipmentService implements IShipmentService {
         }
         for(Containers container: allConsolConts) {
             if(CARGO_TYPE_FCL.equals(shipmentRequest.getShipmentType())) {
-                container.setAchievedWeight(BigDecimal.ZERO);
-                container.setAchievedVolume(BigDecimal.ZERO);
-                container.setWeightUtilization("0");
-                container.setVolumeUtilization("0");
+                containerService.changeContainerWtVolForSeaFCLDetach(container);
             } else {
                 if(containerPacksMap.containsKey(container.getId())) {
                     List<PackingRequest> packs = containerPacksMap.get(container.getId());
                     for(PackingRequest packing : packs) {
-                        if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                        }
-                        if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                        }
-                        container = containerService.calculateUtilization(container);
+                        containerService.changeContainerWtVolForSeaLCLDetach(container, jsonHelper.convertValue(packing, Packing.class));
                     }
                 }
             }

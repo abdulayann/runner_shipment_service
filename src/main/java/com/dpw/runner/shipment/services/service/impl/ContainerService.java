@@ -950,6 +950,25 @@ public class ContainerService implements IContainerService {
 //        }
 //    }
 
+    public void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException {
+        if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
+            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
+            container.setAchievedWeight(container.getAchievedWeight().subtract(val));
+        }
+        if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
+            container.setAchievedVolume(container.getAchievedVolume().subtract(val));
+        }
+        calculateUtilization(container);
+    }
+
+    public void changeContainerWtVolForSeaFCLDetach(Containers container) {
+        container.setAchievedWeight(BigDecimal.ZERO);
+        container.setAchievedVolume(BigDecimal.ZERO);
+        container.setWeightUtilization("0");
+        container.setVolumeUtilization("0");
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -974,35 +993,21 @@ public class ContainerService implements IContainerService {
                             if(request.getPacksId().contains(packing.getId())) {
                                 detachPacks.add(packing);
                                 if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                                    if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-                                        BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-                                        container.setAchievedWeight(container.getAchievedWeight().subtract(val));
-                                    }
-                                    if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-                                        BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-                                        container.setAchievedVolume(container.getAchievedVolume().subtract(val));
-                                    }
-                                    container = calculateUtilization(container);
+                                    changeContainerWtVolForSeaLCLDetach(container, packing);
                                 }
                             }
                             else if(packing.getContainerId() != null && packing.getContainerId().equals(request.getContainerId()))
                                 removeAllPacks = false;
                         }
                         if(removeAllPacks && shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                            container.setAchievedWeight(BigDecimal.ZERO);
-                            container.setAchievedVolume(BigDecimal.ZERO);
-                            container.setWeightUtilization("0");
-                            container.setVolumeUtilization("0");
+                            changeContainerWtVolForSeaFCLDetach(container);
                         }
                         return detachContainer(detachPacks, container, request.getShipmentId(), removeAllPacks);
                     }
                 }
                 else {
                     if(shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                        container.setAchievedWeight(BigDecimal.ZERO);
-                        container.setAchievedVolume(BigDecimal.ZERO);
-                        container.setWeightUtilization("0");
-                        container.setVolumeUtilization("0");
+                        changeContainerWtVolForSeaFCLDetach(container);
                     }
                     return detachContainer(null, container, request.getShipmentId(), true);
                 }
