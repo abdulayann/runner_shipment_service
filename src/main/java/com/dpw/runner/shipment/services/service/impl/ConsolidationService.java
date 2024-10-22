@@ -944,6 +944,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(consolidationDetails.getTenantId());
+        tenantIds.add(shipmentDetails.getTenantId());
 
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
@@ -954,9 +955,12 @@ public class ConsolidationService implements IConsolidationService {
         var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
-
-        if(toEmailsList.isEmpty()) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
+        toEmailsList.addAll(new ArrayList<>(toEmailIds));
+        if(shipmentDetails.getCreatedBy() == null || shipmentDetails.getAssignedTo() == null) {
+            toEmailIds.clear();
+            ccEmailIds.clear();
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
             toEmailsList.addAll(new ArrayList<>(toEmailIds));
         }
 
