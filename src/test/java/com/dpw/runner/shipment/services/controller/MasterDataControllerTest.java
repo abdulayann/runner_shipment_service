@@ -2139,7 +2139,35 @@ class MasterDataControllerTest {
     }
 
 
+    @Test
+    void listOrgsTest() {
+        // Mock
+        when(iMasterDataService.getDefaultOrg(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void listOrgsTest2() {
+        // Mock
+        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listOrgsTest3() {
+        // Mock
+        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 
 

@@ -354,4 +354,12 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().getDefaultOrg(commonRequestModel.getDependentData()));
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listOrgs(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.listOrgs(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
 }

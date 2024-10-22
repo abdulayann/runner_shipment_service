@@ -9,39 +9,8 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RoleIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -61,14 +30,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -79,12 +40,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -93,6 +49,8 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.*;
 
 
 @Service
@@ -416,6 +374,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.listCompaniesForCreditLimit}")
     private String getCompaniesDetails;
+
+    @Value("${v1service.url.base}${v1service.url.listOrgs}")
+    private String listOrgs;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -2586,6 +2547,22 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
             response = this.restTemplate.postForEntity(this.getCompaniesDetails, entity, V1DataResponse.class);
             log.info("Token time taken in getCompaniesDetails() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listOrgs(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listOrgs, entity, V1DataResponse.class);
+            log.info("Token time taken in listOrgs() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
