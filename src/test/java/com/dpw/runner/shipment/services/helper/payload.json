@@ -1162,7 +1162,10 @@
     "routingsList": [{
       "id": 1,
       "guid": "dc092b0e-43a6-41d7-9dc3-546017f85771",
-      "consolidationId": 1
+      "consolidationId": 1,
+      "pol": "DKAAL_POR",
+      "pod": "AUADL_POR",
+      "carriage": "MAIN_CARRIAGE"
     }],
     "containersList": [
       {
@@ -2501,8 +2504,8 @@
         "leg": 1,
         "mode": "AIR",
         "routingStatus": "PLD",
-        "pol": "EGDAM",
-        "pod": "AEDXB_POR",
+        "pol": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+        "pod": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
         "eta": "2024-05-04 00:00:00",
         "etd": "2024-05-01 00:00:00",
         "ata": "2024-05-04 00:00:00",
@@ -2512,7 +2515,8 @@
         "flightNumber": "1443",
         "aircraftType": "CAO",
         "carrier": "Air India",
-        "domestic": false
+        "domestic": false,
+        "carriage": "MAIN_CARRIAGE"
       }
     ]
   },
@@ -9238,6 +9242,7 @@
         "leg": 2,
         "mode": "AIR",
         "routingStatus": "PLD",
+        "carriage": "MAIN_CARRIAGE",
         "pol": "EGCAI_AIR",
         "pod": "SGJUR_AIR",
         "eta": "2024-05-13 00:00:00",

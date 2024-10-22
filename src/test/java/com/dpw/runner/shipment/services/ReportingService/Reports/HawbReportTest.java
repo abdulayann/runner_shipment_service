@@ -239,6 +239,18 @@ class HawbReportTest extends CommonMocks {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
+
+        ShipmentOrderModel shipmentOrderModel = new ShipmentOrderModel();
+        shipmentOrderModel.setOrderNumber("1234-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel2 = new ShipmentOrderModel();
+        shipmentOrderModel2.setOrderNumber("1235-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel3 = new ShipmentOrderModel();
+        shipmentOrderModel3.setOrderNumber("1235-5679-9123-4567");
+
+        shipmentModel.setShipmentOrders(Arrays.asList(shipmentOrderModel, shipmentOrderModel2, shipmentOrderModel3));
+
         hawbModel.setShipmentDetails(shipmentModel);
         String csdInfo = "some info";
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
@@ -414,7 +426,10 @@ class HawbReportTest extends CommonMocks {
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
-        assertNotNull(hawbReport.populateDictionary(hawbModel));
+        Map<String, Object> dict = hawbReport.populateDictionary(hawbModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
+        assertEquals("1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567", dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
     }
 
     @Test

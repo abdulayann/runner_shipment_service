@@ -781,4 +781,32 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_LIST_BILL_CHARGES_SHIPMENTS)
+    public ResponseEntity<?> listBillChargesShipments(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid,
+                                                      @RequestParam(defaultValue = "1") Integer pageNo ,
+                                                      @RequestParam(required = false) Integer pageSize) {
+        try {
+            pageSize = (pageSize!=null) ? pageSize : Integer.MAX_VALUE;
+            ListCommonRequest request = ListCommonRequest.builder().pageNo(pageNo).pageSize(pageSize).build();
+            return shipmentService.fetchBillChargesShipmentList(CommonRequestModel.buildRequest(guid, request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CANCELLED, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.CANCEL)
+    public ResponseEntity<IRunnerResponse> cancelShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return shipmentService.cancel(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

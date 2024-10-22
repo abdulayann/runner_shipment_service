@@ -93,4 +93,6 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getDGShipment(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException;
 }

@@ -28,13 +28,19 @@ public class Constants {
     public static final String DELIMITER = "-";
     public static final String CONTAINS_HAZARDOUS = "containsHazardous";
     public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
+    public static final String VIEW_PERMISSION = "View";
+    public static final String CREATE_PERMISSION = "Create";
+    public static final String MODIFY_PERMISSION = "Modify";
+    public static final String CANCEL_PERMISSION = "Cancel";
     public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
     public static final String SHIPMENT_CREATE_PERMISSION = "ShipmentCreate";
     public static final String SHIPMENT_UPDATE_PERMISSION = "ShipmentUpdate";
+    public static final String SHIPMENT_CANCEL_PERMISSION = "ShipmentCancel";
     public static final String CONSOLIDATION_LIST_PERMISSION = "ConsolidationList";
     public static final String CONSOLIDATION_RETRIEVE_PERMISSION = "ConsolidationRetrive";
     public static final String CONSOLIDATION_CREATE_PERMISSION = "ConsolidationCreate";
     public static final String CONSOLIDATION_UPDATE_PERMISSION = "ConsolidationUpdate";
+    public static final String CONSOLIDATION_CANCEL_PERMISSION = "ConsolidationCancel";
 
     public static final String ALL = "all";
     public static final String BROWSER_TIMEZONE = "browser-timezone";
@@ -314,8 +320,10 @@ public class Constants {
 
     public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
 
-    public static final String CARRIER_BOOKING_CREATE = "CarrierBooking:Create";
-    public static final String CARRIER_BOOKING_VIEW = "CarrierBooking:View";
+    public static final String CARRIER_BOOKING_CREATE = "Operations:CarrierBookings:Create";
+    public static final String CARRIER_BOOKING_VIEW = "Operations:CarrierBookings:View";
+    public static final String CARRIER_BOOKING_MODIFY = "Operations:CarrierBookings:Modify";
+    public static final String CARRIER_BOOKING_CANCEL= "Operations:CarrierBookings:Cancel";
 
     public static final String POUNDS = "pounds";
     public static final String KG = "kg";
@@ -355,6 +363,7 @@ public class Constants {
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
     public static final String STATUS = "status";
     public static final String JOB_TYPE = "jobType";
+    public static final String INCOTERMS = "incoterms";
     public static final String DELIVERY_DETAILS = "deliveryDetails";
     public static final String PICKUP_DETAILS = "pickupDetails";
     public static final String FLIGHT_NUMBER = "flightNumber";
@@ -458,6 +467,7 @@ public class Constants {
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
+    public static final String SHIPMENT_ASSIGNED_USER_WITH_SLASH = "Shipment_Assigned_User_With_Slash";
     public static final String CONSOL_BRANCH_CODE = "Consol_Branch_Code";
     public static final String CONSOL_BRANCH_NAME = "Consol_Branch_Name";
     public static final String CONSOLIDATION_NUMBER = "Consolidation_Number";
@@ -553,7 +563,16 @@ public class Constants {
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
 
+    public static final String CLIENT_ORG_CODE = "clientOrgCode";
+    public static final String CONSIGNER_ORG_CODE = "consignerOrgCode";
+    public static final String CONSIGNEE_ORG_CODE = "consigneeOrgCode";
+    public static final String CLIENT_ADDRESS_CODE = "clientAddressCode";
+    public static final String CONSIGNER_ADDRESS_CODE = "consignerAddressCode";
+    public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
+    public static final String GUID = "guid";
     public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
+    public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
+    public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     private Constants() {
     }
 

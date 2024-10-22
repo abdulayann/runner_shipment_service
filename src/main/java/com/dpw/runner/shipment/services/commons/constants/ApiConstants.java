@@ -32,6 +32,7 @@ public class ApiConstants {
 
 
     public static final String API_UPDATE_BOOKING = "/update/booking";
+    public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
@@ -50,6 +51,7 @@ public class ApiConstants {
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
     public static final String STATE_BASED_LIST = "/state-based-list";
+    public static final String API_LIST_BILL_CHARGES_SHIPMENTS = "/list-for-bill-charges";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
@@ -128,5 +130,7 @@ public class ApiConstants {
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
+
+    public static final String CANCEL = "/cancel";
 
 }
