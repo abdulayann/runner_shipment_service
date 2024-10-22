@@ -340,6 +340,8 @@ public abstract class IReport {
         if(shipment.getOrderManagementNumber()!=null)
             dictionary.put(ORDER_MANAGEMENT_NUMBER, shipment.getOrderManagementNumber());
 
+        populateShipmentOrders(shipment, dictionary);
+
         if(shipment.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary , shipment);
         PartiesModel shipmentClient = shipment.getClient();
@@ -893,6 +895,15 @@ public abstract class IReport {
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+    public void populateShipmentOrders(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if(ObjectUtils.isNotEmpty(shipment.getShipmentOrders())){
+            var orderNumbers = shipment.getShipmentOrders().stream()
+                    .map(ShipmentOrderModel::getOrderNumber)
+                    .collect(Collectors.joining(","));
+            dictionary.put(ORDER_MANAGEMENT_NUMBER, orderNumbers);
+        }
     }
 
 

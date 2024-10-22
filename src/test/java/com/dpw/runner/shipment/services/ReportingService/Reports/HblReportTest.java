@@ -12,6 +12,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doAnswer;
@@ -33,6 +34,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pi
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -1128,6 +1130,18 @@ class HblReportTest extends CommonMocks {
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
         bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
         shipmentModel.setBookingCarriagesList(List.of(bookingCarriageModel));
+
+        ShipmentOrderModel shipmentOrderModel = new ShipmentOrderModel();
+        shipmentOrderModel.setOrderNumber("1234-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel2 = new ShipmentOrderModel();
+        shipmentOrderModel2.setOrderNumber("1235-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel3 = new ShipmentOrderModel();
+        shipmentOrderModel3.setOrderNumber("1235-5679-9123-4567");
+
+        shipmentModel.setShipmentOrders(Arrays.asList(shipmentOrderModel, shipmentOrderModel2, shipmentOrderModel3));
+
         hblModel.setTransportInstructionId(12L);
         hblModel.setShipment(shipmentModel);
 
@@ -1177,6 +1191,9 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
         mockTenantSettings();
-        assertNotNull(hblReport.populateDictionary(hblModel));
+        Map<String, Object> dict = hblReport.populateDictionary(hblModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
+        assertEquals("1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567", dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
     }
 }

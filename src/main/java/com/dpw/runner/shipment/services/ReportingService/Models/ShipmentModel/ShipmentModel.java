@@ -230,7 +230,8 @@ public class ShipmentModel implements IDocumentModel {
     private String orderManagementNumber;
     @JsonProperty("OceanDGStatus")
     private OceanDGStatus oceanDGStatus;
-
+    @JsonProperty("ShipmentOrders")
+    private List<ShipmentOrderModel> shipmentOrders;
     private String document;
 }
 
