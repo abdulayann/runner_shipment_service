@@ -174,7 +174,7 @@ public class CustomerBookingController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
-    @PutMapping(ApiConstants.API_UPDATE_BOOKING)
+    @PutMapping(ApiConstants.API_CANCEL_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingCancel + "')")
     public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerStatusUpdateRequest request) {
         String responseMsg;
