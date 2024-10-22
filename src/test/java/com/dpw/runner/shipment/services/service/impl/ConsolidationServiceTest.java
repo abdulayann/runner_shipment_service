@@ -2507,6 +2507,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.getCarrierDetails().setAta(LocalDateTime.of(2024, 10,3,4,30));
+        oldEntity.getCarrierDetails().setFlightNumber("122");
 
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
@@ -4995,6 +4996,7 @@ import static org.mockito.Mockito.*;
                 .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build()))));
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
+        when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(testConsol.getRoutingsList().get(0));
         spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)), true);
         verify(consolidationSync).sync(any(), any(), anyBoolean());
     }
@@ -5255,7 +5257,7 @@ import static org.mockito.Mockito.*;
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
     }
-    
+
     @Test
     void testValidationsBeforeAttachShipments() throws RunnerException {
         testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
