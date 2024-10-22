@@ -939,6 +939,7 @@ public class ConsolidationService implements IConsolidationService {
 
         var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
         List<String> toEmailsList = new ArrayList<>();
+        List<String> ccEmailsList = new ArrayList<>();
         if(shipmentDetails.getCreatedBy() != null)
             toEmailsList.add(shipmentDetails.getCreatedBy());
         if(shipmentDetails.getAssignedTo() != null)
@@ -961,7 +962,8 @@ public class ConsolidationService implements IConsolidationService {
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
         commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
-        toEmailsList.addAll(new ArrayList<>(toEmailIds));
+        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
+        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
         if(shipmentDetails.getCreatedBy() == null || shipmentDetails.getAssignedTo() == null) {
             toEmailIds.clear();
             ccEmailIds.clear();
@@ -970,7 +972,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailsList, new ArrayList<>(ccEmailIds));
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailsList, ccEmailsList);
 
         return ResponseHelper.buildSuccessResponse();
     }
