@@ -1275,7 +1275,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1325,7 +1325,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1384,7 +1384,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1443,7 +1443,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1488,7 +1488,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1533,7 +1533,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1579,7 +1579,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1626,7 +1626,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1675,7 +1675,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1723,7 +1723,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
@@ -1792,7 +1792,7 @@ import static org.mockito.Mockito.*;
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
-        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
 //        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));

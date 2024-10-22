@@ -22,7 +22,7 @@ public interface IConsoleShipmentMappingDao {
 
     Integer countAllStateMappings(Long shipmentId);
 
-    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap);
+    HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> consoleShipmentMappings, Set<Long> interBranchRequestedShipIds, Set<Long> interBranchApprovedShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap);
 
     List<Long> detachShipments(Long consolidationId, List<Long> shipIds);
 
