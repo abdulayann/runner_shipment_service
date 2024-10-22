@@ -1,22 +1,5 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -28,36 +11,8 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
-import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -76,9 +31,6 @@ import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.*;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,11 +47,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -111,6 +59,13 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {V1ServiceImpl.class})
 @ExtendWith(SpringExtension.class)
@@ -5807,6 +5762,43 @@ class V1ServiceImplTest {
                 (Object[]) any())).thenThrow(new RuntimeException());
         // Act
         var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listOrgs() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.listOrgs("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void listOrgsThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listOrgs("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listOrgsThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listOrgs("Request"));
 
         // Assert
         assertNotNull(throwable);
