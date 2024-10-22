@@ -2246,10 +2246,6 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setElDetailsList(updatedELDetails);
         }
 
-        // create Shipment event on the bases of auto create event flag
-        if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
-            autoGenerateCreateEvent(shipmentDetails);
-
         ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity, shipmentRequest);
         if(!Objects.isNull(consolidationDetails)) {
             shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
@@ -2285,6 +2281,10 @@ public class ShipmentService implements IShipmentService {
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
             }
         }
+
+        // create Shipment event on the bases of auto create event flag
+        if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
+            autoGenerateCreateEvent(shipmentDetails);
 
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
