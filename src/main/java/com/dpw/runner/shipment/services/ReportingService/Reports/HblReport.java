@@ -6,6 +6,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AGENT_REFERENCE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AMS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AMS_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATA;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATD_DMMY;
@@ -27,7 +29,9 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_WEIGHT_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOOKING_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_LOCATION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT;
@@ -609,18 +613,26 @@ public class HblReport extends IReport {
         referenceNumber.ifPresent(i -> dictionary.put(CAN_NUMBER, i.getReferenceNumber()));
 
         populateBillChargesFields(hblModel.shipment, dictionary);
-
+        if (hblModel.shipment.getReferenceNumbersList() != null) {
+            dictionary.put(AMS_NUMBER, hblModel.shipment.getReferenceNumbersList().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+        }
+        if(hblModel.shipment.getShipmentAddresses() != null){
+            dictionary.put(CARGO_LOCATION, hblModel.shipment.getShipmentAddresses().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(CAL)));
+        }
         if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails()) && !Objects.isNull(hblModel.shipment.getAdditionalDetails().getNotifyParty())) {
             PartiesModel notifyParty = hblModel.shipment.getAdditionalDetails().getNotifyParty();
             List<String> notifyPartyAddress = getOrgAddressWithPhoneEmail(notifyParty);
             if (!Objects.isNull(notifyParty.getAddressData()) && notifyParty.getAddressData().get(FULL_NAME) != null) {
                 notifyPartyAddress.add(0, getValueFromMap(notifyParty.getAddressData(), FULL_NAME));
             }
+            List<String> notifyPartyDetails = ReportHelper.getOrgAddressDetails(notifyParty);
             dictionary.put(NOTIFY_PARTY_ADDRESS, notifyPartyAddress);
             dictionary.put(DELIVERY_PHONE, getValueFromMap(notifyParty.getAddressData(), MOBILE));
             dictionary.put(DELIVERY_FAX, getValueFromMap(notifyParty.getAddressData(), FAX));
 
-            dictionary.put(NOTIFY_PARTY, dictionary.get(NOTIFY_PARTY_ADDRESS));
+            dictionary.put(NOTIFY_PARTY, notifyPartyDetails);
             dictionary.put(NOTIFY_PARTY_CAPS, notifyPartyAddress.stream().map(String::toUpperCase).toList());
         }
         List<String> consigner = null;

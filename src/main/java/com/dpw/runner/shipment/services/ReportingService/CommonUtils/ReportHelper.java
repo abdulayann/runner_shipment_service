@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.STATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
 
 @Component
@@ -124,6 +127,31 @@ public class ReportHelper {
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
             list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
+        return list;
+    }
+
+    public static List<String> getOrgAddressDetails(PartiesModel party) {
+        if(party == null || party.getAddressData() == null)
+            return new ArrayList<>();
+        Map<String, Object> partyAddress = party.getAddressData();
+        List<String> list = new ArrayList<String>();
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getValueFromMap(partyAddress, CITY) != null) {
+            list.add(getValueFromMap(partyAddress, CITY));
+        }
+        if(getValueFromMap(partyAddress, STATE) != null) {
+            list.add(getValueFromMap(partyAddress, STATE));
+        }
+        if(getValueFromMap(partyAddress,COUNTRY) != null) {
+            list.add(getValueFromMap(partyAddress, COUNTRY));
+        }
+        if(getValueFromMap(partyAddress,ZIP_POST_CODE) != null)
+            list.add(getValueFromMap(partyAddress,ZIP_POST_CODE));
         return list;
     }
 

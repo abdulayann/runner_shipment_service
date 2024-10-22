@@ -694,6 +694,10 @@ public class ReportConstants {
     public static final String ERN = "ERN";
     public static final String DLV = "DLV";
     public static final String CEN = "CEN";
+    public static final String AMS = "AMS";
+    public static final String AMS_NUMBER = "AMSNumber";
+    public static final String CARGO_LOCATION = "CargoLocation";
+    public static final String CAL = "CAL";
     public static final String FRN = "FRN";
     public static final String RAILAGE_PLAYER = "RailagePlayer";
     public static final String ADDITIONAL_COST_AT = "AdditionalCostAt";

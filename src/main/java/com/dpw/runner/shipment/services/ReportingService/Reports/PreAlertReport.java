@@ -24,6 +24,7 @@ import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.JOB_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -138,7 +139,10 @@ public class PreAlertReport extends IReport {
                 dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
             }
         }
-        dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
+        if(preAlertModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
+
         dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsigner() != null ?
                 preAlertModel.shipmentDetails.getConsigner().getAddressData() : null, ReportConstants.ADDRESS1)));
         dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsignee() != null ?

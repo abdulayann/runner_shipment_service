@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -111,6 +112,14 @@ public class ArrivalNoticeReport extends IReport {
 
         Optional<ReferenceNumbersModel> referenceNumber = Optional.empty();
 
+        if(arrivalNoticeModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
+
+        if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
+            dictionary.put(AMS_NUMBER, arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+        }
         if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
             referenceNumber = arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().
                     filter(i -> i.getType().equals(ERN)).findFirst();

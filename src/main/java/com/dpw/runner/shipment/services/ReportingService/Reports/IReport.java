@@ -357,7 +357,15 @@ public abstract class IReport {
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
+        if (shipment.getReferenceNumbersList() != null) {
+            dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+        }
 
+        if (shipment.getReferenceNumbersList() != null) {
+            dictionary.put(CARGO_LOCATION, shipment.getReferenceNumbersList().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(CAL)));
+        }
         UnlocationsResponse pol = unlocationsMap.get(shipment.getCarrierDetails().getOriginPort());
         UnlocationsResponse pod = unlocationsMap.get(shipment.getCarrierDetails().getDestinationPort());
         UnlocationsResponse origin = unlocationsMap.get(shipment.getCarrierDetails().getOrigin());
@@ -645,7 +653,6 @@ public abstract class IReport {
                 }
             }
             List<String> consignee = populateConsigneeData(dictionary, shipmentConsignee);
-
             List<String> notify = null;
             if(shipmentNotify != null)
             {
