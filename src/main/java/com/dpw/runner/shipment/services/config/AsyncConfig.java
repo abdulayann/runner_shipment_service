@@ -32,6 +32,6 @@ public class AsyncConfig implements AsyncConfigurer {
     // Used for Completable future
     @Bean
     public ExecutorService executorService() {
-        return Executors.newFixedThreadPool(20);
+        return Executors.newFixedThreadPool(50);
     }
 }
