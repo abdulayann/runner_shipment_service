@@ -1557,7 +1557,7 @@ public class ConsolidationService implements IConsolidationService {
         ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
         Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-        return page.getContent();
+        return new ArrayList<>(page.getContent());
     }
 
     private ConsolidationDetails calculateConsolUtilization(ConsolidationDetails consolidationDetails) throws RunnerException {
