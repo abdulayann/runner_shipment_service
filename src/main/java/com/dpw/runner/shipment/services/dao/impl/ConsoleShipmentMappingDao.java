@@ -88,7 +88,7 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap) {
+    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchRequestedShipIds, Set<Long> interBranchApprovedShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -112,14 +112,14 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
-                if(interBranchShipIds.contains(id) && !interBranchImportShipmentMap.containsKey(id))
+                if(interBranchRequestedShipIds.contains(id) && !interBranchImportShipmentMap.containsKey(id))
                 {
                     entity.setIsAttachmentDone(false);
                     entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
                 } else {
                     entity.setIsAttachmentDone(true);
                 }
-                if(shipmentRequestedType != null && (interBranchShipIds.contains(id) || interBranchImportShipmentMap.containsKey(id))) {
+                if(shipmentRequestedType != null && (interBranchApprovedShipIds.contains(id) || interBranchImportShipmentMap.containsKey(id))) {
                     entity.setRequestedType(shipmentRequestedType);
                 }
                 save(entity);

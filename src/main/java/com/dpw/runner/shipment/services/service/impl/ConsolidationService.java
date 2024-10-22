@@ -806,14 +806,15 @@ public class ConsolidationService implements IConsolidationService {
                         shipment -> shipment      // Value: ShipmentDetails object itself
                 ));
 
-        Set<Long> interBranchShipIds = new HashSet<>();
+        Set<Long> interBranchRequestedShipIds = new HashSet<>();
+        Set<Long> interBranchApprovedShipIds = new HashSet<>();
         List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = new ArrayList<>(); // auto rejection emails sent when same branch console is accepted
         if(shipmentRequestedType == null) {
-            interBranchShipIds = shipmentDetailsList.stream()
+            interBranchRequestedShipIds = shipmentDetailsList.stream()
                     .filter(c -> !Objects.equals(c.getTenantId(), UserContext.getUser().TenantId))
                     .map(ShipmentDetails::getId).collect(Collectors.toSet());
             var newShipmentIds = new ArrayList<>(shipmentIds);
-            newShipmentIds.removeAll(interBranchShipIds);
+            newShipmentIds.removeAll(interBranchRequestedShipIds);
             if (!newShipmentIds.isEmpty()) {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, newShipmentIds, "IN", null);
                 listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
@@ -821,6 +822,10 @@ public class ConsolidationService implements IConsolidationService {
                 consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
                 consoleShipmentMappingDao.deletePendingStateByShipmentIds(newShipmentIds);
             }
+        } else if(!isConsolePullCall) {
+            interBranchApprovedShipIds = shipmentDetailsList.stream()
+                    .filter(c -> !Objects.equals(c.getTenantId(), consolidationDetails.getTenantId()))
+                    .map(ShipmentDetails::getId).collect(Collectors.toSet());
         }
 
         if(consolidationId != null && shipmentIds != null && !shipmentIds.isEmpty()) {
@@ -847,9 +852,9 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
 
-            attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchShipIds, interBranchImportShipmentMap);
+            attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchRequestedShipIds, interBranchApprovedShipIds, interBranchImportShipmentMap);
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchShipIds.contains(shipmentDetails.getId())) {
+                if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchRequestedShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
                         List<Containers> containersList = shipmentDetails.getContainersList();
                         for (Containers container : containersList) {
@@ -899,7 +904,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsDao.update(consolidationDetails, false, true);
             }
         }
-        interBranchShipIds.retainAll(attachedShipmentIds);
+        interBranchRequestedShipIds.retainAll(attachedShipmentIds);
         if(!interBranchImportShipmentMap.isEmpty() && isConsolePullCall) {
             for(ShipmentDetails shipmentDetails: interBranchImportShipmentMap.values()) {
                 var emailTemplatesRequestsModel = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL);
@@ -910,8 +915,8 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
-        if(!interBranchShipIds.isEmpty()) // send email for pull requested when called from controller directly
-            sendEmailForPullRequested(consolidationDetails, interBranchShipIds.stream().toList(), shipmentRequestedTypes);
+        if(!interBranchRequestedShipIds.isEmpty()) // send email for pull requested when called from controller directly
+            sendEmailForPullRequested(consolidationDetails, interBranchRequestedShipIds.stream().toList(), shipmentRequestedTypes);
         if(!consoleShipmentMappingsForEmails.isEmpty()) { // send email for pull/push rejected for other consolidations when called from controller directly
             List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
             List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
