@@ -702,6 +702,7 @@ public class ReportConstants {
     public static final String RAILAGE_PLAYER = "RailagePlayer";
     public static final String ADDITIONAL_COST_AT = "AdditionalCostAt";
     public static final String EXPORTER_REFERENCE_NUMBER = "ExporterReferenceNumber";
+    public static final String EXPORTER_REFERENCE_NUMBER_IN_CAPS = "ExporterReferenceNumberInCaps";
     public static final String CUSTOMS_REFERENCE_NUMBER = "CustomsReferenceNumber";
     public static final String CUSTOMS_REFERENCE_NUMBER_IN_CAPS = "CustomsReferenceNumberInCaps";
     public static final String FORWARDER_REFERENCE_NUMBER = "ForwarderReferenceNumber";

@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
@@ -474,9 +476,13 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setChargable(BigDecimal.TEN);
         shipmentModel.setVolumetricWeight(BigDecimal.TEN);
         shipmentModel.setNoOfPacks(10);
-        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ERN);
-        shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+        ernReferenceNumbersModel.setType(ERN);
+        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+        cenReferenceNumbersModel.setType(CEN);
+        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+        frnReferenceNumbersModel.setType(FRN);
+        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
 
         PartiesModel partiesModel = new PartiesModel();
         partiesModel.setType(CUSTOM_HOUSE_AGENT);
@@ -541,7 +547,7 @@ class HblReportTest extends CommonMocks {
         partiesModel.setOrgData(orgData);
         partiesModel.setAddressData(orgData);
         consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
-        consolidationModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
+        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
         hblModel.setConsolidation(consolidationModel);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());
@@ -1261,9 +1267,13 @@ class HblReportTest extends CommonMocks {
         shipmentModel.setChargable(BigDecimal.TEN);
         shipmentModel.setVolumetricWeight(BigDecimal.TEN);
         shipmentModel.setNoOfPacks(10);
-        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ERN);
-        shipmentModel.setReferenceNumbersList(List.of(referenceNumbersModel));
+        ReferenceNumbersModel ernReferenceNumbersModel = new ReferenceNumbersModel();
+        ernReferenceNumbersModel.setType(ERN);
+        ReferenceNumbersModel cenReferenceNumbersModel = new ReferenceNumbersModel();
+        cenReferenceNumbersModel.setType(CEN);
+        ReferenceNumbersModel frnReferenceNumbersModel = new ReferenceNumbersModel();
+        frnReferenceNumbersModel.setType(FRN);
+        shipmentModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
         RoutingsModel routingsModel = new RoutingsModel();
         routingsModel.setLeg(1L);
         routingsModel.setMode(Constants.TRANSPORT_MODE_AIR);
@@ -1346,7 +1356,7 @@ class HblReportTest extends CommonMocks {
         partiesModel.setOrgData(orgData);
         partiesModel.setAddressData(orgData);
         consolidationModel.setConsolidationAddresses(List.of(partiesModel));
-        consolidationModel.setReferenceNumbersList(List.of(referenceNumbersModel));
+        consolidationModel.setReferenceNumbersList(Arrays.asList(ernReferenceNumbersModel,cenReferenceNumbersModel,frnReferenceNumbersModel));
         hblModel.setConsolidation(consolidationModel);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>());

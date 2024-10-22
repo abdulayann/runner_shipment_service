@@ -818,8 +818,12 @@ public abstract class IReport {
         if(shipment.getReferenceNumbersList() != null) {
             List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            List<String> referenceNumberListInCaps = referenceNumberList.stream().map(StringUtility::toUpperCase).toList();
             if(!referenceNumberList.isEmpty()){
                 dictionary.put(EXPORTER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+            if(!referenceNumberListInCaps.isEmpty()) {
+                dictionary.put(EXPORTER_REFERENCE_NUMBER_IN_CAPS, String.join(",", referenceNumberListInCaps));
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
