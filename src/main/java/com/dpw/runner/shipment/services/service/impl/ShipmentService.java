@@ -1904,17 +1904,7 @@ public class ShipmentService implements IShipmentService {
 
     public void changeContainerWtVolOnDetach(ShipmentRequest shipmentRequest, List<Containers> allConsolConts) throws RunnerException {
         Map<Long, List<PackingRequest>> containerPacksMap = new HashMap<>();
-        if(!listIsNullOrEmpty(shipmentRequest.getPackingList())) {
-            for(PackingRequest packing: shipmentRequest.getPackingList()) {
-                if(packing.getContainerId() != null) {
-                    if(containerPacksMap.containsKey(packing.getContainerId()))
-                        containerPacksMap.get(packing.getContainerId()).add(packing);
-                    else
-                        containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
-                    packing.setContainerId(null);
-                }
-            }
-        }
+        getContPacksMap(shipmentRequest, containerPacksMap);
         for(Containers container: allConsolConts) {
             if(CARGO_TYPE_FCL.equals(shipmentRequest.getShipmentType())) {
                 containerService.changeContainerWtVolForSeaFCLDetach(container);
@@ -1928,6 +1918,20 @@ public class ShipmentService implements IShipmentService {
             }
         }
         containerDao.saveAll(allConsolConts);
+    }
+
+    private void getContPacksMap(ShipmentRequest shipmentRequest, Map<Long, List<PackingRequest>> containerPacksMap) {
+        if(!listIsNullOrEmpty(shipmentRequest.getPackingList())) {
+            for(PackingRequest packing: shipmentRequest.getPackingList()) {
+                if(packing.getContainerId() != null) {
+                    if(containerPacksMap.containsKey(packing.getContainerId()))
+                        containerPacksMap.get(packing.getContainerId()).add(packing);
+                    else
+                        containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
+                    packing.setContainerId(null);
+                }
+            }
+        }
     }
 
     public void dgValidations(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1, int isNewConsoleAttached) throws RunnerException {

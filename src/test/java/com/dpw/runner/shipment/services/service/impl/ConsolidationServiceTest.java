@@ -5326,4 +5326,79 @@ import static org.mockito.Mockito.*;
         assertThrows(RunnerException.class, () -> consolidationService.validationsBeforeAttachShipments(testConsol, new ArrayList<>(), List.of(1L, 2L), 2L, List.of(shipmentDetails), true));
     }
 
+    @Test
+    void testDetachShipments_Success_Sea1() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setContainersList(List.of(containers));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+        shipmentDetails.setEventsList(List.of(new Events()));
+        shipmentDetails.setPackingList(new ArrayList<>());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().get(0).setContainerId(1L);
+        shipmentDetails.getPackingList().get(1).setContainerId(1L);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .enableConsolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
+        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_Sea1_FCL() throws RunnerException {
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        shipmentDetails.setId(1L);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setContainersList(List.of(containers));
+        shipmentDetails.setGuid(UUID.randomUUID());
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setTenantId(1);
+        shipmentDetails.setEventsList(List.of(new Events()));
+        shipmentDetails.setPackingList(new ArrayList<>());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().get(0).setContainerId(1L);
+        shipmentDetails.getPackingList().get(1).setContainerId(1L);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .enableConsolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setGuid(UUID.randomUUID());
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+        when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
+        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
+        when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 }
