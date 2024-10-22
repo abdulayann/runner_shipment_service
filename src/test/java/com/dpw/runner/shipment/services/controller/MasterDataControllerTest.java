@@ -2142,7 +2142,7 @@ class MasterDataControllerTest {
     @Test
     void listOrgsTest() {
         // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(iMasterDataService.listOrgs(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = masterDataController.listOrgs(new Object());
         // Assert
@@ -2152,7 +2152,7 @@ class MasterDataControllerTest {
     @Test
     void listOrgsTest2() {
         // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException());
+        when(iMasterDataService.listOrgs(any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = masterDataController.listOrgs(new Object());
         // Assert
@@ -2162,7 +2162,7 @@ class MasterDataControllerTest {
     @Test
     void listOrgsTest3() {
         // Mock
-        when(iMasterDataService.getDefaultOrg(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(iMasterDataService.listOrgs(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = masterDataController.listOrgs(new Object());
         // Assert
