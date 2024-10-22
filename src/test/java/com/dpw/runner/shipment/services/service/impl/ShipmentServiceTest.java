@@ -8767,4 +8767,38 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
+    @Test
+    void testChangeContainerWtVolOnDetach_FCL() throws RunnerException {
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().get(0).setContainerId(1L);
+        shipmentDetails.getPackingList().get(1).setContainerId(1L);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setContainersList(List.of(Containers.builder().build()));
+        shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), shipmentDetails.getContainersList());
+        verify(containerDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void testChangeContainerWtVolOnDetach_FCL_NullPacks() throws RunnerException {
+        shipmentDetails.setPackingList(null);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setContainersList(List.of(Containers.builder().build()));
+        shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), shipmentDetails.getContainersList());
+        verify(containerDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void testChangeContainerWtVolOnDetach_LCL() throws RunnerException {
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().add(new Packing());
+        shipmentDetails.getPackingList().get(0).setContainerId(1L);
+        shipmentDetails.getPackingList().get(1).setContainerId(1L);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setContainersList(List.of(Containers.builder().build()));
+        shipmentDetails.getContainersList().get(0).setId(1L);
+        shipmentService.changeContainerWtVolOnDetach(objectMapper.convertValue(shipmentDetails, ShipmentRequest.class), shipmentDetails.getContainersList());
+        verify(containerDao, times(1)).saveAll(any());
+    }
+
 }

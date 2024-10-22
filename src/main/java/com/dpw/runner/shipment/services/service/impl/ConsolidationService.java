@@ -1033,7 +1033,8 @@ public class ConsolidationService implements IConsolidationService {
             commonUtils.setInterBranchContextForHub();
         }
 
-        List<Packing> packingList = null;
+        boolean saveSeaPacks = false;
+        List<Packing> packingList = new ArrayList<>();
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
@@ -1049,7 +1050,33 @@ public class ConsolidationService implements IConsolidationService {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
                     List<Containers> containersList = shipmentDetail.getContainersList();
+                    Map<Long, List<Packing>> containerPacksMap = new HashMap<>();
+                    if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode()) && !listIsNullOrEmpty(shipmentDetail.getPackingList())) {
+                        for(Packing packing: shipmentDetail.getPackingList()) {
+                            if(packing.getContainerId() != null) {
+                                if(containerPacksMap.containsKey(packing.getContainerId()))
+                                    containerPacksMap.get(packing.getContainerId()).add(packing);
+                                else
+                                    containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
+                                packing.setContainerId(null);
+                                packingList.add(packing);
+                                saveSeaPacks = true;
+                            }
+                        }
+                    }
                     for(Containers container : containersList) {
+                        if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode())) {
+                            if(CARGO_TYPE_FCL.equals(shipmentDetail.getShipmentType())) {
+                                containerService.changeContainerWtVolForSeaFCLDetach(container);
+                            } else {
+                                if(containerPacksMap.containsKey(container.getId())) {
+                                    List<Packing> packs = containerPacksMap.get(container.getId());
+                                    for(Packing packing : packs) {
+                                        containerService.changeContainerWtVolForSeaLCLDetach(container, packing);
+                                    }
+                                }
+                            }
+                        }
                         shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
                     }
                     containersList = containerDao.saveAll(containersList);
@@ -1073,6 +1100,8 @@ public class ConsolidationService implements IConsolidationService {
                 shipmentDetail.setMasterBill(null);
                 this.createLogHistoryForShipment(shipmentDetail);
             }
+            if(saveSeaPacks)
+                packingList = packingDao.saveAll(packingList);
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentDao.saveAll(shipmentDetailsToSave);
         }
@@ -2383,10 +2412,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
                 if(removeShipmentIds.size() == 1 && container.getShipmentsList() != null && container.getShipmentsList().size() == 1) {
                     if(request.getIsFCL() || container.getShipmentsList().get(0).getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                        container.setAchievedVolume(BigDecimal.ZERO);
-                        container.setAchievedWeight(BigDecimal.ZERO);
-                        container.setWeightUtilization("0");
-                        container.setVolumeUtilization("0");
+                        containerService.changeContainerWtVolForSeaFCLDetach(container);
                     }
                 }
                 container = containerDao.save(container);
