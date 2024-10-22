@@ -224,7 +224,7 @@ public class ConsolidationController {
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachRequest request) throws RunnerException {
         try {
-            return consolidationService.attachShipments(null, request.getId(), request.getShipmentIds());
+            return consolidationService.attachShipments(null, request.getId(), request.getShipmentIds(), true);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }

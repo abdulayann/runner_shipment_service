@@ -37,8 +37,8 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
 
     @Modifying
     @Transactional
-    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, estimated, actual, source, tenant_id, status, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)", nativeQuery = true)
-    void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt);
+    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, estimated, actual, source, tenant_id, status, created_at, updated_at, consolidation_id, shipment_number) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)", nativeQuery = true)
+    void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt, Long consolidationId, String shipmentNumber);
 
     @Modifying @Transactional
     @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)

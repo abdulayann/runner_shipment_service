@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -32,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -1322,6 +1322,36 @@ class ShipmentControllerTest {
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
         when(shipmentController.createShipmentForBooking(any())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> shipmentController.createShipmentForBooking(shipmentRequest));
+    }
+
+    @Test
+    void testAttachDetachOrderSuccess() {
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentService.attachDetachOrder(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachDetachOrderException(){
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFilteredShipment(){
+        when(shipmentService.fetchBillChargesShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", null, null );
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFilteredShipmentException() {
+        when(shipmentController.listBillChargesShipments(any(), null, null)).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", null, null );
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

@@ -1,54 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -70,28 +21,14 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.AuditLog;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -99,54 +36,47 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.PdfWriter;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import com.itextpdf.text.pdf.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -195,6 +125,18 @@ class CommonUtilsTest {
     private ShipmentService shipmentService;
 
     @Mock
+    private ShipmentDetails shipmentDetails;
+
+    @Mock
+    private CarrierDetails carrierDetailsMock;
+
+    @Mock
+    private V1TenantSettingsResponse v1TenantSettingsResponse;
+
+    @Mock
+    private EmailTemplatesRequest emailTemplateModel;
+
+    @Mock
     private ICarrierDetailsDao carrierDetailsDao;
 
     @Mock
@@ -207,6 +149,7 @@ class CommonUtilsTest {
     private PdfReader reader;
     private PdfStamper stamper;
     private ByteArrayOutputStream outputStream;
+    private PrintStream originalOut;
     private byte[] pdfBytes;
 
     @AfterEach
@@ -234,6 +177,9 @@ class CommonUtilsTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         mockUser.setEmail("email");
+        mockUser.setCode("TEST_CODE");
+        mockUser.setUsername("TestUser");
+        mockUser.setTenantDisplayName("Test Tenant");
         UserContext.setUser(mockUser);
     }
 
@@ -2505,4 +2451,229 @@ class CommonUtilsTest {
         assertEquals("E123--S789-SRC-place", result);  // Expect containerNumber to be empty
     }
 
+    @Test
+    void testPopulateTemplate_withValidData_shouldPopulateDictionary() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        // Set up shipment details
+        when(shipmentDetails.getCreatedBy()).thenReturn("creator");
+        when(shipmentDetails.getAssignedTo()).thenReturn("assignee");
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP123");
+        when(shipmentDetails.getId()).thenReturn(1L);
+
+
+        // Set up consolidation details
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("CONS123");
+        when(consolidationDetails.getMawb()).thenReturn("MAWB123");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+        when(carrierDetailsMock.getFlightNumber()).thenReturn("FL123");
+
+        when(consolidationDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(consolidationDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(consolidationDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
+
+        // Call the method
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Verify dictionary population
+        assertEquals("creator", dictionary.get(SHIPMENT_CREATE_USER));
+        assertEquals("assignee", dictionary.get(SHIPMENT_ASSIGNED_USER));
+        assertEquals("SHIP123", dictionary.get(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK));
+        assertEquals("CONS123", dictionary.get(SOURCE_CONSOLIDATION_NUMBER));
+        assertEquals("MAWB123", dictionary.get(MAWB_NUMBER));
+        assertEquals("FL123", dictionary.get(FLIGHT_NUMBER1));
+
+        // Verify UserContext and tenant details
+        assertEquals("TEST_CODE", dictionary.get(CONSOL_BRANCH_CODE));
+        assertEquals("Test Tenant", dictionary.get(CONSOL_BRANCH_NAME));
+        assertEquals("TestUser", dictionary.get(ACTIONED_USER_NAME));
+    }
+
+    @Test
+    void testPopulateShipmentImportPushAttachmentTemplate_withValidData() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        // Mock shipmentDetails
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP123");
+        when(shipmentDetails.getHouseBill()).thenReturn("HB123");
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+
+        // Mock consolidationDetails
+        when(consolidationDetails.getCreatedBy()).thenReturn("createdByUser");
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("CONSOL123");
+
+        // Mock carrier details
+        when(carrierDetailsMock.getEtd()).thenReturn(LocalDate.parse( "2024-09-20").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getEta()).thenReturn(LocalDate.parse( "2024-09-25").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getShippingLine()).thenReturn("LINE123");
+        when(carrierDetailsMock.getFlightNumber()).thenReturn("FLIGHT001");
+        when(carrierDetailsMock.getOriginPort()).thenReturn("ORIG001");
+        when(carrierDetailsMock.getDestinationPort()).thenReturn("DEST001");
+        when(shipmentDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(shipmentDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(shipmentDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
+
+        // Test method
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Assert dictionary contents
+        assertEquals("createdByUser", dictionary.get(CONSOLIDATION_CREATE_USER));
+        assertEquals("SHIP123", dictionary.get(SHIPMENT_NUMBER));
+        assertEquals("Test Tenant", dictionary.get(CONSOL_BRANCH_NAME));
+        assertEquals("HB123", dictionary.get(HAWB_NUMBER));
+        assertEquals("09/20/2024", dictionary.get(ETD_CAPS));
+        assertEquals("09/25/2024", dictionary.get(ETA_CAPS));
+        assertEquals("FLIGHT001", dictionary.get(FLIGHT_NUMBER1));
+        assertEquals("TEST_CODE", dictionary.get(CONSOL_BRANCH_CODE));
+        assertEquals("TestUser", dictionary.get(ACTIONED_USER_NAME));
+    }
+
+    @Test
+    void testPopulateShipmentImportPushAttachmentTemplate_withMissingCarrierDetails() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        // Mock shipmentDetails with missing carrier details
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+        when(carrierDetailsMock.getShippingLine()).thenReturn(null);
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        // Test method
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Assert dictionary does not contain carrier details
+        assertNull(dictionary.get("CARRIER_CODE"));
+        assertNull(dictionary.get("CARRIER_NAME"));
+    }
+
+    @Test
+    void testSendEmailNotification_WithEmptyToList() {
+        Map<String, Object> dictionary = new HashMap<>();
+        // Arrange
+        List<String> to = new ArrayList<>();  // Empty "to" list
+        List<String> cc = Arrays.asList("cc@example.com");
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
+
+        // Assert
+        // Ensure notificationService.sendEmail is never called
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+
+    @Test
+    void testSendEmailNotification_WhenToListIsEmpty() {
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> ccEmails = new ArrayList<>();
+        // Arrange: empty 'to' list
+        List<String> emptyTo = List.of();
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, emptyTo, ccEmails);
+
+        // Assert: verify that the notification service sendEmail was never called
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void testSendEmailNotification_ValidatesDictionaryModification() {
+        Map<String, Object> dictionary = new HashMap<>();
+        emailTemplateModel = new EmailTemplatesRequest();
+        emailTemplateModel.setBody("Hello, {name}");
+        emailTemplateModel.setSubject("Shipment Update");
+
+        // Arrange
+        List<String> to = List.of("recipient@example.com");
+        List<String> cc = List.of("cc@example.com");
+        dictionary.put("name", "John Doe");
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
+
+        // Assert
+        assertEquals("Hello, John Doe", commonUtils.replaceTagsFromData(dictionary, emailTemplateModel.getBody()));
+    }
+
+    @Test
+    void testGetEmailTemplates_Success() {
+        // Arrange: Mock the iv1Service response
+        V1DataResponse mockV1DataResponse = new V1DataResponse();
+        mockV1DataResponse.entities = new ArrayList<>();  // Add any mock entities you need
+
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(mockV1DataResponse);
+
+        // Mock the jsonHelper conversion
+        List<EmailTemplatesRequest> mockTemplates = new ArrayList<>();
+        when(jsonHelper.convertValueToList(mockV1DataResponse.entities, EmailTemplatesRequest.class)).thenReturn(mockTemplates);
+
+        // Act
+        List<EmailTemplatesRequest> result = commonUtils.getEmailTemplates("TestTemplateType");
+
+        // Assert: Verify the result and interactions
+        assertNotNull(result);
+        assertEquals(mockTemplates, result);  // Result should match the mock list returned by the helper
+
+        // Verify that the service and helper were called with the correct arguments
+        verify(iv1Service, times(1)).getEmailTemplates(any(CommonV1ListRequest.class));
+        verify(jsonHelper, times(1)).convertValueToList(mockV1DataResponse.entities, EmailTemplatesRequest.class);
+    }
+
+    @Test
+    void testGetEmailTemplates_EmptyResponse() {
+        // Arrange: Mock an empty response
+        V1DataResponse emptyResponse = new V1DataResponse();
+        emptyResponse.entities = new ArrayList<>();  // No entities in the response
+
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(emptyResponse);
+
+        when(jsonHelper.convertValueToList(emptyResponse.entities, EmailTemplatesRequest.class)).thenReturn(new ArrayList<>());
+
+        // Act
+        List<EmailTemplatesRequest> result = commonUtils.getEmailTemplates("EmptyTemplateType");
+
+        // Assert: Verify the result is an empty list
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // Verify the service and helper were called correctly
+        verify(iv1Service, times(1)).getEmailTemplates(any(CommonV1ListRequest.class));
+        verify(jsonHelper, times(1)).convertValueToList(emptyResponse.entities, EmailTemplatesRequest.class);
+    }
+
+    @Test
+    void testGetEmailTemplates_ExceptionThrown() {
+        // Arrange: Mock the service to throw an exception
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class)))
+                .thenThrow(new RuntimeException("Error fetching templates"));
+
+        // Act & Assert: Verify that an exception is thrown and handled properly
+        assertThrows(RuntimeException.class, () -> {
+            commonUtils.getEmailTemplates("TestTemplateType");
+        });
+
+        // Verify that the helper was never called since the service failed
+        verify(jsonHelper, never()).convertValueToList(anyList(), eq(EmailTemplatesRequest.class));
+    }
 }

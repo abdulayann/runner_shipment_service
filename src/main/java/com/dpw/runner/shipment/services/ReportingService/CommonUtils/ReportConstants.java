@@ -4,6 +4,9 @@ import java.util.Set;
 
 public class ReportConstants {
     public static final String ROAD = "Road";
+    public static final String BRANCH_NAME = "BranchName";
+    public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
+    public static final String COMPANY_ADDRESS = "CompanyAddress";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
@@ -704,6 +707,9 @@ public class ReportConstants {
     public static final String SHIPPING_REQUEST = "ShippingRequest";
     public static final String SHIPPING_REQUEST_OUT = "ShippingRequestOut";
     public static final String SHIPPING_REQUEST_AIR = "ShippingRequestAir";
+    public static final String SHIPPER_ACCOUNT_NUMBER = "ShippersAccountNumber";
+    public static final String CONSIGNEE_ACCOUNT_NUMBER = "ConsigneeAccountNumber";
+    public static final String ACCOUNT_NUMBER = "AccountNumber";
 
     public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
     public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";
@@ -1215,6 +1221,8 @@ public class ReportConstants {
     public static final String AIR_LABEL_REMARKS = "AirLabelRemarks";
     public static final String IS_MAWB = "IsMAWB";
     public static final String IS_HAWB = "IsHAWB";
+    public static final String IS_DMAWB = "IsDMAWB";
+    public static final String IS_B2BMAWB = "IsB2BMAWB";
     public static final String CONSOL_TOTAL_WEIGHT_AND_UNIT = "ConsolTotalWeightandUnit";
     public static final String CSD_REPORT = "CSD";
     public static final String DATE_OF_PRINT = "DateOfPrint";

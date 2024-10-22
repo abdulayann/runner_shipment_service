@@ -398,14 +398,40 @@ public class EventDao implements IEventDao {
 
 
     @Override
+    @Transactional
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt);
+        Events events = new Events();
+        events.setGuid(guid);
+        events.setEntityId(entityId);
+        events.setEntityType(entityType);
+        events.setEventCode(eventCode);
+        events.setDescription(description);
+        events.setEstimated(estimated);
+        events.setActual(actual);
+        events.setSource(source);
+        events.setTenantId(tenantId);
+        events.setStatus(status);
+        events.setCreatedAt(createdAt);
+        events.setUpdatedAt(updatedAt);
+        updateEventDetails(events);
+        saveEventByEntityManager(events);
     }
 
     @Override
     @Transactional
     public void createEventForAirMessagingEvent(Events events) {
-        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        updateEventDetails(events);
+        saveEventByEntityManager(events);
+    }
+
+    private void saveEventByEntityManager(Events events) {
+        log.info("Air-messaging : preparing event save native query");
+        Query query = entityManager.createNativeQuery(
+                "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
+                        "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
+                        "created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude, " +
+                        "consolidation_id, shipment_number, status) " +
+                        "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .setParameter(1, events.getGuid())
                 .setParameter(2, events.getEntityId())
                 .setParameter(3, events.getEntityType())
@@ -417,13 +443,15 @@ public class EventDao implements IEventDao {
                 .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getTotalPieces()))
                 .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getWeight()))
                 .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getTotalWeight()))
-                .setParameter(12, events.getIsPartial())
+                .setParameter(12, new TypedParameterValue(StandardBasicTypes.BOOLEAN, events.getIsPartial()))
                 .setParameter(15, events.getCreatedAt())
                 .setParameter(16, events.getUpdatedAt())
                 .setParameter(19, events.getPlaceName())
                 .setParameter(20, events.getPlaceDescription())
                 .setParameter(21, events.getLongitude())
-                .setParameter(22, events.getLatitude());
+                .setParameter(22, events.getLatitude())
+                .setParameter(24, events.getShipmentNumber())
+                .setParameter(25, events.getStatus());
 
         if(events.getReceivedDate() != null) {
             query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getReceivedDate())));
@@ -445,13 +473,20 @@ public class EventDao implements IEventDao {
         } else {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
-        query.executeUpdate();
+        if(events.getConsolidationId() != null) {
+            query.setParameter(23, events.getConsolidationId());
+        } else {
+            query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
+        }
 
-//        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
+        log.info("Air-messaging : executing event save native query");
+        query.executeUpdate();
+        log.info("Air-messaging : native query execution complete");
     }
 
     @Override
     public void updateEventDetails(Events event) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available...");
         Long entityId = event.getEntityId();
         String entityType = event.getEntityType();
         if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {

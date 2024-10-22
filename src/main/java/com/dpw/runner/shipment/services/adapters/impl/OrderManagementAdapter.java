@@ -10,13 +10,9 @@ import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManage
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -262,6 +258,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         shipmentDetails.setOrderManagementId(order.getGuid().toString());
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
+        shipmentDetails.setShipmentOrders(Arrays.asList(ShipmentOrder.builder().orderGuid(order.getGuid()).orderNumber(order.getOrderNumber()).build()));
 
         shipmentDetails.setServiceType(order.getServiceMode());
 

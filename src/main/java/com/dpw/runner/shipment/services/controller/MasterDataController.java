@@ -639,6 +639,22 @@ public class MasterDataController {
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);
     }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.STATE_BASED_LIST)
+    public ResponseEntity<IRunnerResponse> stateBasedList(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return   masterDataService.stateBasedList(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return   ResponseHelper.buildFailedResponse(responseMsg);
+    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),

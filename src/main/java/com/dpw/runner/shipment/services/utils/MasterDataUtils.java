@@ -347,11 +347,15 @@ public class MasterDataUtils{
                 }
                 if(itemValue != null) {
                     String key = itemValue + '#' + itemTypeName;
+                    log.info("createInBulkMasterListRequest before cache.get: {}", StringUtility.convertToString(cache));
                     Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+                    log.info("createInBulkMasterListRequest after cache.get");
                     if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
                     fieldNameKeyMap.put(field, key);
                 }
             } catch (Exception e) {
+                log.error("Error in createInBulkMasterListRequest : {}", e.getMessage());
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -414,12 +418,16 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String locCode = (String) field1.get(entityPayload);
+                log.info("createInBulkUnLocationsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
+                log.info("createInBulkUnLocationsRequest after cache.get");
                 if(locCode != null && !locCode.equals("")) {
                     if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
                     fieldNameKeyMap.put(field, locCode);
                 }
             } catch (Exception e) {
+                log.error("Error in createInBulkUnLocationsRequest : {}", e.getMessage());
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -622,12 +630,16 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
+                log.info("createInBulkVesselsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
+                log.info("createInBulkVesselsRequest after cache.get");
                 if(itemValue != null && !itemValue.isEmpty()) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
+                log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
+                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -1304,7 +1316,8 @@ public class MasterDataUtils{
             CommonV1ListRequest orgRequest = new CommonV1ListRequest();
             List<Object> orgField = new ArrayList<>(List.of(field));
             String operator = "=";
-            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator));
+            orgCriteria.add(value);
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);

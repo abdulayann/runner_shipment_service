@@ -987,6 +987,30 @@ class EventServiceTest extends CommonMocks {
     }
 
     @Test
+    void processUpstreamTrackingMessageForAirShipment() {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        String refNum = container.getContainerBase().getShipmentReference();
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTransportMode("AIR");
+
+        Events mockEvent = Events.builder().eventCode(EventConstants.TRCF).build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(mockEvent));
+        when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+
+        var response = eventService.processUpstreamTrackingMessage(container);
+        assertTrue(response);
+    }
+
+    @Test
     void processUpstreamTrackingMessageReturnsFalseIfShipmentSaveFails() throws RunnerException {
         var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
 
@@ -1004,10 +1028,48 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
-        when(shipmentDao.save(any(), anyBoolean())).thenThrow(new RuntimeException());
+        when(shipmentDao.saveWithoutValidation(any())).thenThrow(new RuntimeException());
 
         var response = eventService.processUpstreamTrackingMessage(container);
         assertFalse(response);
+    }
+
+    @Test
+    void testListEventsV2ForInputShipmentId() throws RunnerException {
+        Long shipmentId = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void testListEventsV2ForInputConsolidationId() throws RunnerException {
+        Long consolidation = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidation);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
     }
 
 

@@ -21,6 +21,7 @@ public class ApprovalPartiesRequest implements IRunnerRequest {
         String entityId;
         String entityType;
         String orgId;
+        String orgType;
     }
 
     private List<ApprovalParty> creditDetailsRequests;

@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.modelmapper.ModelMapper;
@@ -96,6 +97,22 @@ public class AwbUtility {
         if (!StringUtility.isEmpty(addressParam.getContactNumber()))
             forMattedAddress += newLine + addressParam.getContactNumber();
         return forMattedAddress;
+    }
+
+    public static String constructAddressForAwb(Map<String, Object> addressData) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+
+        if(addressData != null) {
+            if (addressData.containsKey(PartiesConstants.ADDRESS1))
+                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
+            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+                if(!sb.isEmpty()) sb.append(newLine);
+                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2)));
+            }
+        }
+
+        return sb.toString();
     }
 
     public static String constructAddress(Map<String, Object> addressData) {
@@ -236,12 +253,12 @@ public class AwbUtility {
                 }
 
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
-                        .city(orgs.get(0).getCity())
-                        .country(StringUtility.isNotEmpty(orgs.get(0).getCountry()) ? CountryListHelper.ISO3166.fromAlpha3(orgs.get(0).getCountry().toUpperCase()).getAlpha2() : null)
+                        .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
+                        .country(!Strings.isNullOrEmpty(awb.getAwbShipmentInfo().getIssuingAgentCountry()) ? CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2() : null)
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
-                        .postCode(postCode)
+                        .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
                         .build());
             }
         } else {
@@ -249,7 +266,7 @@ public class AwbUtility {
                     && response.getAddresses().containsKey(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode())) {
                 var org = response.getOrganizations().get(issuingAgent.getOrgCode());
                 var address = response.getAddresses().get(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode());
-                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address));
+                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getIssuingAgentCountry(), awb.getAwbShipmentInfo().getIssuingAgentCity(), awb.getAwbShipmentInfo().getIssuingAgentZipCode()));
             }
         }
 
@@ -257,14 +274,14 @@ public class AwbUtility {
              && response.getAddresses().containsKey(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode()))){
                 var org = response.getOrganizations().get(consolidationDetails.getSendingAgent().getOrgCode());
                 var address = response.getAddresses().get(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode());
-                awbResponse.getMeta().setShipper(populateOrgsFields(org, address));
+                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
 
         }
         if(consolidationDetails.getReceivingAgent() != null && (response.getOrganizations().containsKey(consolidationDetails.getReceivingAgent().getOrgCode())
                     && response.getAddresses().containsKey(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode()))){
                 var org = response.getOrganizations().get(consolidationDetails.getReceivingAgent().getOrgCode());
                 var address = response.getAddresses().get(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode());
-                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address));
+                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
 
         }
 
@@ -357,14 +374,14 @@ public class AwbUtility {
                 .build();
     }
 
-    private AwbAirMessagingResponse.OrgDetails populateOrgsFields(Map<String, Object> org, Map<String, Object> address) {
+    private AwbAirMessagingResponse.OrgDetails populateOrgsFields(Map<String, Object> org, Map<String, Object> address, String country, String city, String zipCode) {
         return AwbAirMessagingResponse.OrgDetails.builder()
-                        .city(org.containsKey(PartiesConstants.CITY) ? (String) org.get(PartiesConstants.CITY) : null)
-                        .country(org.containsKey(PartiesConstants.COUNTRY) && StringUtility.isNotEmpty((String)org.get(PartiesConstants.COUNTRY)) ? CountryListHelper.ISO3166.fromAlpha3(((String) org.get(PartiesConstants.COUNTRY)).toUpperCase()).getAlpha2() : null)
+                        .city(city)
+                        .country(!Strings.isNullOrEmpty(country) ? CountryListHelper.ISO3166.fromAlpha3(country.toUpperCase()).getAlpha2() : null)
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
-                        .postCode(address.containsKey(PartiesConstants.ZIP_POST_CODE) ? (String) address.get(PartiesConstants.ZIP_POST_CODE) : null)
+                        .postCode(zipCode)
                 .build();
     }
 
@@ -417,12 +434,12 @@ public class AwbUtility {
                 }
 
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
-                        .city(orgs.get(0).getCity())
-                        .country(StringUtility.isNotEmpty(orgs.get(0).getCountry()) ? CountryListHelper.ISO3166.fromAlpha3(orgs.get(0).getCountry().toUpperCase()).getAlpha2() : null)
+                        .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
+                        .country(!Strings.isNullOrEmpty(awb.getAwbShipmentInfo().getIssuingAgentCountry()) ? CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2() : null)
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
-                        .postCode(postCode)
+                        .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
                         .build());
             }
         } else {
@@ -430,7 +447,7 @@ public class AwbUtility {
                     && response.getAddresses().containsKey(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode())) {
                 var org = response.getOrganizations().get(issuingAgent.getOrgCode());
                 var address = response.getAddresses().get(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode());
-                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address));
+                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getIssuingAgentCountry(), awb.getAwbShipmentInfo().getIssuingAgentCity(), awb.getAwbShipmentInfo().getIssuingAgentZipCode()));
             }
         }
 
@@ -438,14 +455,14 @@ public class AwbUtility {
                     && response.getAddresses().containsKey(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode()))){
                 var org = response.getOrganizations().get(shipmentDetails.getConsigner().getOrgCode());
                 var address = response.getAddresses().get(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode());
-                awbResponse.getMeta().setShipper(populateOrgsFields(org, address));
+                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
 
         }
         if(shipmentDetails.getConsignee() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsignee().getOrgCode())
                     && response.getAddresses().containsKey(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode()))) {
                 var org = response.getOrganizations().get(shipmentDetails.getConsignee().getOrgCode());
                 var address = response.getAddresses().get(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode());
-                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address));
+                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
 
         }
 
@@ -525,6 +542,7 @@ public class AwbUtility {
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
+        log.info("Air-messaging : entered createStatusUpdateForAirMessaging; guid {}", guid);
         Optional<Awb> awb = Optional.ofNullable(awbDao.findAwbByGuidByQuery(guid));
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);
@@ -662,6 +680,7 @@ public class AwbUtility {
 
     public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {
         var guid = airMessageEvent.getGuid();
+        log.info("Air-messaging : entered createEventUpdateForAirMessaging; guid : {}", guid);
         var awb = awbDao.findByGuid(guid);
         if(awb.isEmpty()){
             throw new RunnerException("No Awb exist for given Guid: " + guid);

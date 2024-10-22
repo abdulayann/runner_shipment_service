@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.dto.request.CustomerStatusUpdateRequest;
+import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -1275,14 +1276,17 @@ public class CustomerBookingService implements ICustomerBookingService {
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
+        var userContext = UserContext.getUser();
         return () -> {
             try {
                 MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext);
                 runnable.run();
             } finally {
                 RequestAuthContext.removeToken();
                 MDC.clear();
+                UserContext.removeUser();
             }
         };
     }
@@ -1576,22 +1580,30 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {
         ApprovalPartiesRequest approvalPartiesRequest = ApprovalPartiesRequest.builder().build();
-        List<Parties> parties = List.of(booking.getConsignee(), booking.getCustomer(), booking.getNotifyParty(), booking.getConsignor())
+        List<Object[]> parties = List.of(
+                    new Object[]{booking.getCustomer(), PartyType.CLIENT},
+                    new Object[]{booking.getConsignee(), PartyType.CONSIGNEE},
+                    new Object[]{booking.getConsignor(), PartyType.CONSIGNOR},
+                    new Object[]{booking.getNotifyParty(), PartyType.NOTIFY_PARTY}
+                )
                 .stream()
-                .filter(Objects::nonNull)
+                .filter(entry -> entry[0] != null)
                 .toList();
         List<ApprovalPartiesRequest.ApprovalParty> partiesList = new ArrayList<>();
-        for(Parties party : parties){
+        for(Object[] partyEntry : parties){
+            Parties party = (Parties) partyEntry[0];
             if(party == null) continue;
-            var orgId = party.getOrgData() != null ? String.valueOf(party.getOrgData().get(PartiesConstants.ID)) : null;
-            var addressId = party.getAddressData() != null ? String.valueOf(party.getAddressData().get(PartiesConstants.ID)) : null;
-            if(orgId == null || addressId == null)
+            var orgId = party.getOrgData() != null ? StringUtility.convertToString(party.getOrgData().get(PartiesConstants.ID)) : null;
+            var addressId = party.getAddressData() != null ? StringUtility.convertToString(party.getAddressData().get(PartiesConstants.ID)) : null;
+            if(StringUtility.isEmpty(orgId) || StringUtility.isEmpty(addressId))
                 continue;
+            var orgType = partyEntry[1].toString();
             partiesList.add(ApprovalPartiesRequest.ApprovalParty.builder()
                     .addressId(addressId)
                     .orgId(orgId)
                     .entityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
                     .entityId(String.valueOf(booking.getGuid()))
+                    .orgType(orgType)
                     .build());
         }
         approvalPartiesRequest.setCreditDetailsRequests(partiesList);

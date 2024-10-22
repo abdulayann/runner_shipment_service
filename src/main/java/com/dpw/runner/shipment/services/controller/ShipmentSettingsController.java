@@ -246,4 +246,18 @@ public class ShipmentSettingsController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL, response = MyResponseClass.class) })
+    @PutMapping(ApiConstants.API_UPDATE + ApiConstants.HIDE_MANIFEST)
+    public ResponseEntity<IRunnerResponse> updateHideManifest(@RequestParam @Valid boolean hideManifest) {
+        String responseMsg;
+        try {
+            return shipmentSettingsService.hideManifest(hideManifest);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

@@ -111,7 +111,7 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private String debtorName;
         private String debtorAddress;
         private String debtorAddressCompanyName;
-        private MeasurementBasis measurementBasis;//Weight
+        private String measurementBasis;//Weight
         private BigDecimal measurementBasisQuantity;
         private String measurementBasisUnit;//Kg
         private String measurementContainerTypeCode;
@@ -207,7 +207,7 @@ public class BillChargesBaseResponse implements IRunnerResponse {
         private String creditorAddressId;
         private String creditorAddress;
         private String creditorAddressCompanyName;
-        private MeasurementBasis measurementBasis;//Weight
+        private String measurementBasis;//Weight
         private BigDecimal measurementBasisQuantity;
         private String measurementBasisUnit;//Kg
         private String measurementContainerTypeCode;

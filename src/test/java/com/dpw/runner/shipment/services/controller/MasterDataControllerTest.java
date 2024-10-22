@@ -1257,6 +1257,36 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void stateBasedListTest() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void stateBasedListTest2() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void stateBasedListTest3() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
     /**
      * Method under test: {@link MasterDataController#createOrganization(Object)}
      */

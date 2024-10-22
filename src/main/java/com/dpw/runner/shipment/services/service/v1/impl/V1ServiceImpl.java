@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -56,6 +57,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
@@ -74,6 +76,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -89,6 +93,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
+
 
 @Service
 //@EnableAsync
@@ -217,6 +222,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.unlocation}")
     private String UNLOCATION_URL;
+
+    @Value("${v1service.url.base}${v1service.url.stateBasedList}")
+    private String stateBasedListUrl;
 
     @Value("${v1service.url.base}${v1service.url.organization}")
     private String ORGANIZATION_API;
@@ -406,6 +414,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.serviceAccount.password}")
     private String serviceAccountPassword;
 
+    @Value("${v1service.url.base}${v1service.url.listCompaniesForCreditLimit}")
+    private String getCompaniesDetails;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -415,16 +426,21 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
-            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility) {
+            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
         this.getUserServiceFactory = getUserServiceFactory;
         this.tokenUtility = tokenUtility;
+        this.cacheManager = cacheManager;
     }
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
+    private final CacheManager cacheManager;
+
+    @Value("${env.name}-${v1service.serviceAccount.username}")
+    private String serviceTokenCacheKey;
 
     @Override
     public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
@@ -590,22 +606,32 @@ public class V1ServiceImpl implements IV1Service {
             // Create HttpEntity with headers and body
             HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
 
-            // Call the API to get the token
-            ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {});
+            // Search cache for the token of service account
+            Cache userCache = cacheManager.getCache(CacheConstants.CACHE_KEY_USER);
+            Objects.requireNonNull(userCache);
+            Cache.ValueWrapper cachedToken = userCache.get(serviceTokenCacheKey);
+            if (Objects.isNull(cachedToken) || Objects.isNull(cachedToken.get())) {
+                // Call the API to get the token
+                ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {
+                });
 
-            long timeTaken = System.currentTimeMillis() - startTime;
-            log.info("Time taken to fetch token: {} ms", timeTaken);
+                long timeTaken = System.currentTimeMillis() - startTime;
+                log.info("Time taken to fetch token: {} ms", timeTaken);
 
-            // Extract token from the API response
-            Map<String, Object> responseBody = response.getBody();
-            if (responseBody != null && responseBody.containsKey("token")) {
-                String token = (String) responseBody.get("token");
-                log.info("Token successfully retrieved from API.");
-                return token;
-            } else {
-                log.error("Token not found in response.");
-                throw new V1ServiceException("Token not found in response");
+                // Extract token from the API response
+                Map<String, Object> responseBody = response.getBody();
+                if (responseBody != null && responseBody.containsKey("token")) {
+                    String token = (String) responseBody.get("token");
+                    log.info("Token successfully retrieved from API.");
+                    userCache.put(serviceTokenCacheKey, token);
+                    return token;
+                }
+                else {
+                    log.error("Token not found in response.");
+                    throw new V1ServiceException("Token not found in response");
+                }
             }
+            return StringUtility.convertToString(cachedToken.get());
 
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             log.error("HTTP error during token generation: {}", ex.getMessage());
@@ -1221,6 +1247,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse fetchOrganization(Object request, HttpHeaders headers) {
+        ResponseEntity orgResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_API, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in getOrganization() function {}", (System.currentTimeMillis() - time));
+            return (V1DataResponse) orgResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public V1DataResponse updateOrganizationData(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1270,6 +1313,24 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+    @Override
+    public V1DataResponse stateBasedList(Object request) {
+        ResponseEntity<V1DataResponse> locationResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            locationResponse = this.restTemplate.postForEntity(this.stateBasedListUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in stateBasedList() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
+            return locationResponse.getBody() != null? locationResponse.getBody(): new V1DataResponse();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+
 
     @Override
     public V1DataResponse updateUnlocationData(Object request) {
@@ -1595,6 +1656,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse addressList(Object request, HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public List<String> getTenantName(List<Integer> tenantIds) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of(Constants.TENANTID));
@@ -1765,6 +1843,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1RetrieveResponse retrieveTenant(HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(headers);
+            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
+            return (V1RetrieveResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public PartyRequestV2 getDefaultOrg() {
         ResponseEntity masterDataResponse = null;
 
@@ -1773,7 +1868,14 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
             log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
-            return (PartyRequestV2) masterDataResponse.getBody();
+            PartyRequestV2 partyRequestV2 = (PartyRequestV2) masterDataResponse.getBody();
+            if(partyRequestV2 != null) {
+                if (partyRequestV2.getOrgData() != null && partyRequestV2.getOrgData().containsKey("Id"))
+                    partyRequestV2.setOrgId(String.valueOf(partyRequestV2.getOrgData().get("Id")));
+                if (partyRequestV2.getAddressData() != null && partyRequestV2.getAddressData().containsKey("Id"))
+                    partyRequestV2.setAddressId(String.valueOf(partyRequestV2.getAddressData().get("Id")));
+            }
+            return partyRequestV2;
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
@@ -2471,6 +2573,22 @@ public class V1ServiceImpl implements IV1Service {
             } else {
                 throw new V1ServiceException(jsonHelper.readFromJson(var6.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
             }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getCompaniesDetails(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.getCompaniesDetails, entity, V1DataResponse.class);
+            log.info("Token time taken in getCompaniesDetails() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }

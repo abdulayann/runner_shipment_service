@@ -255,7 +255,11 @@
     "notesList": [],
     "truckDriverDetails": [],
     "servicesList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "86d295a5-a896-46f1-82a8-26369755cda3",
+      "shipmentId": 1
+    }],
     "referenceNumbersList": [],
     "packingList": [],
     "fileRepoList": [],
@@ -329,8 +333,18 @@
       "entityType": "HAWB",
       "shipperName": "TEST VG CREDIT LIMIT",
       "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "shipperCity": "PUNE",
+      "shipperCountry": "IND",
+      "shipperState": "MH",
+      "shipperZipCode": "344221",
+      "shipperPhone": "9876554476",
       "consigneeName": "NATIONWIDE PAPER LTD",
       "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeCity": "PUNE",
+      "consigneeCountry": "IND",
+      "consigneeState": "MH",
+      "consigneeZipCode": "344221",
+      "consigneePhone": "9876554476",
       "consigneeReferenceNumber": "2436215",
       "iataCode": "5678",
       "awbNumber": "235-88998641",
@@ -338,7 +352,13 @@
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
       "agentCASSCode": "8975",
-      "issuingAgentName": "ABB EGYPT"
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\nABC CO LLC\nAEJEA",
+      "issuingAgentCity": "PUNE",
+      "issuingAgentCountry": "IND",
+      "issuingAgentState": "MH",
+      "issuingAgentZipCode": "344221",
+      "issuingAgentPhone": "9876554476"
     },
     "awbRoutingInfo": [
       {
@@ -1139,7 +1159,11 @@
     },
     "packingList": [],
     "referenceNumbersList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "dc092b0e-43a6-41d7-9dc3-546017f85771",
+      "consolidationId": 1
+    }],
     "containersList": [
       {
         "id": 150408,
@@ -1453,7 +1477,15 @@
       "firstCarrier": "Air Transat",
       "agentCASSCode": "123"
     },
-    "awbNotifyPartyInfo": [],
+    "awbNotifyPartyInfo": [
+      {
+        "city": "Pune",
+        "state": "MH",
+        "country": "IND",
+        "zipCode": "383767",
+        "phone": "8976666553"
+      }
+    ],
     "awbRoutingInfo": [
       {
         "entityId": 2246,
@@ -1468,7 +1500,7 @@
       "entityId": 2246,
       "entityType": "MAWB",
       "handlingInfo": "Attached : Commercial Invoice & P/List",
-      "ntrQtyGoods": "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED\r\n",
+      "ntrQtyGoods": "CONSOLIDATION AS PER ATTACHED LIST\r\n",
       "currency": "EGP",
       "customsValue": 0,
       "customOriginCode": "EG"
@@ -1684,7 +1716,9 @@
         "IsObsolete": false,
         "AddressType": "General",
         "CompanyName": "RA Branch",
-        "AddressShortCode": "Def RA Address"
+        "AddressShortCode": "Def RA Address",
+        "ZipPostCode": "324332",
+        "ContactPhone": "9866334674"
       }
     },
     "receivingAgent": {
@@ -4251,11 +4285,15 @@
     "totalPacks": "1 BAG, 1 CNA",
     "totalPacksWeight": "152,078 KG",
     "totalPacksVolume": "119,646 M3",
-    "packsVolumetricWeight": "19,941,040 KG",
+    "packsVolumetricWeight": "152 M3",
     "packsChargeableWeight": "119,646 M3",
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "chargeableWeight" : "119,646",
+    "packsChargeableWeightUnit" : "M3",
+    "packsVolume" : "119,646",
+    "packsVolumeUnit" : "M3",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0
@@ -4269,6 +4307,10 @@
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "packsVolume" : "119,646",
+    "packsVolumeUnit" : "M3",
+    "chargeableWeight" : "19,941,040",
+    "packsChargeableWeightUnit" : "KG",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0

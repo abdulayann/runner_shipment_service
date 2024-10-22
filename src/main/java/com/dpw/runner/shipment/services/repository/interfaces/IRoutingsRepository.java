@@ -29,4 +29,6 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
         Specification<Routings> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
+
+    List<Routings> findByConsolidationId(Long consolidationId);
 }

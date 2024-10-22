@@ -390,6 +390,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "order_management_number")
     private String orderManagementNumber;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    private List<ShipmentOrder> shipmentOrders;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_category")
     private CustomerCategoryRates customerCategory;
@@ -513,5 +516,8 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "ocean_dg_status")
      @Enumerated(EnumType.STRING)
      private OceanDGStatus oceanDGStatus;
+
+     @Column(name = "sync_routing_from_consolidation")
+     private Boolean syncRoutingFromConsolidation;
 
 }
