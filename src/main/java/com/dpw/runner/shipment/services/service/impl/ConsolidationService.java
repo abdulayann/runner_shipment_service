@@ -1505,6 +1505,21 @@ public class ConsolidationService implements IConsolidationService {
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
 
+
+        List<Routings> existingMainCarriageRoutings = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
+        int count = 0;
+        if(existingMainCarriageRoutings != null)
+        {
+            for(var routing: shipmentMainCarriageRouting)
+            {
+                if(count < existingMainCarriageRoutings.size()) {
+                    routing.setId(existingMainCarriageRoutings.get(count).getId());
+                    routing.setGuid(existingMainCarriageRoutings.get(count).getGuid());
+                    count++;
+                }
+            }
+        }
+
         // Logic to regroup all shipment routings with updated leg sequence
         // Assumption -> order of routes is as follows; Otherwise legs will have a chaotic order for user
         // 1. PRE_CARRIAGE

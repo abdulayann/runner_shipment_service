@@ -6315,10 +6315,8 @@ public class ShipmentService implements IShipmentService {
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
 
-        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
-
         if(toEmailList.isEmpty()) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), false);
             toEmailList.addAll(new ArrayList<>(toEmailIds));
         }
 

@@ -686,7 +686,7 @@ public class PackingService implements IPackingService {
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
-            response.setPacksVolume(IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse));
+            response.setPacksVolume(BigDecimal.valueOf(totalVolume));
             response.setPacksVolumeUnit(toVolumeUnit);
             if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
                 response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
@@ -721,7 +721,7 @@ public class PackingService implements IPackingService {
             }
             chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
             response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
-            response.setChargeableWeight(IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse));
+            response.setChargeableWeight(BigDecimal.valueOf(chargeableWeight));
             response.setPacksChargeableWeightUnit(packChargeableWeightUnit);
             return response;
         } catch (Exception e) {

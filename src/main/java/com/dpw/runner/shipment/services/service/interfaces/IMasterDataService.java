@@ -119,4 +119,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel);
 }
