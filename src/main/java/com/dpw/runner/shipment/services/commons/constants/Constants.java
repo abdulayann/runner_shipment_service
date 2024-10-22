@@ -314,8 +314,10 @@ public class Constants {
 
     public static final String CREDIT_LIMIT = "CREDIT_LIMIT";
 
-    public static final String CARRIER_BOOKING_CREATE = "CarrierBooking:Create";
-    public static final String CARRIER_BOOKING_VIEW = "CarrierBooking:View";
+    public static final String CARRIER_BOOKING_CREATE = "Operations:CarrierBookings:Create";
+    public static final String CARRIER_BOOKING_VIEW = "Operations:CarrierBookings:View";
+    public static final String CARRIER_BOOKING_MODIFY = "Operations:CarrierBookings:Modify";
+    public static final String CARRIER_BOOKING_CANCEL= "Operations:CarrierBookings:Cancel";
 
     public static final String POUNDS = "pounds";
     public static final String KG = "kg";
