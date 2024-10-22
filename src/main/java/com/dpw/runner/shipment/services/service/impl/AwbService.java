@@ -3093,7 +3093,7 @@ public class AwbService implements IAwbService {
     }
 
     private String getVolumeFromConsolidationPackSummary(PackSummaryResponse packSummaryResponse) {
-        return Constants.VOL + " " + packSummaryResponse.getPacksVolume() + " " + packSummaryResponse.getPacksVolumeUnit();
+        return Constants.VOL + " " + packSummaryResponse.getPacksVolume().toString() + " " + packSummaryResponse.getPacksVolumeUnit();
     }
 
     private String getVolumeFromShipmentDetails(ShipmentDetails shipmentDetails) {
