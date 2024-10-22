@@ -20,8 +20,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 
@@ -43,20 +46,22 @@ class RetrieveValidateAspectTest {
     }
 
 
-    @Test
-    void testCreateShipmentAspect() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(strings = {"Shipments:Retrive:All Shipment:AllShipmentRetrive", "Operations:Shipments:AIR:Export:Create",
+            "Operations:Shipments:AIR:Export:View", "Operations:Shipments:AIR:Export:Modify", "Operations:Shipments:AIR:Export:Cancel"})
+    void testCreateShipmentAspectShouldSuccessfullyReturn(String permission) throws RunnerException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Retrive:All Shipment:AllShipmentRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList(permission)));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         mockShipment.setShipmentId("AIR-CAN-00001");
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
-        mockShipment.setTransportMode("SEA");
+        mockShipment.setTransportMode("AIR");
         mockShipment.setIsDomestic(false);
         mockShipment.setDirection("EXP");
         mockShipment.setShipmentType("FCL");

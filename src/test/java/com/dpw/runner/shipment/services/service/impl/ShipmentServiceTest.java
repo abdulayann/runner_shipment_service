@@ -8801,4 +8801,38 @@ ShipmentServiceTest extends CommonMocks {
         verify(containerDao, times(1)).saveAll(any());
     }
 
+    @Test
+    void testCancel_ShipmentExists() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setGuid(UUID.randomUUID());
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipment));
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.cancel(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(ShipmentStatus.Cancelled.getValue(), shipment.getStatus());
+        verify(shipmentDao).save(shipment, false);
+        verify(shipmentSync).sync(any(), any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void testCancel_ShipmentDoesNotExist() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            shipmentService.cancel(commonRequestModel);
+        });
+        assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, exception.getMessage());
+    }
+
 }

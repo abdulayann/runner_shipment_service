@@ -28,13 +28,19 @@ public class Constants {
     public static final String DELIMITER = "-";
     public static final String CONTAINS_HAZARDOUS = "containsHazardous";
     public static final String SHIPMENT_LIST_PERMISSION = "ShipmentList";
+    public static final String VIEW_PERMISSION = "View";
+    public static final String CREATE_PERMISSION = "Create";
+    public static final String MODIFY_PERMISSION = "Modify";
+    public static final String CANCEL_PERMISSION = "Cancel";
     public static final String SHIPMENT_RETRIEVE_PERMISSION = "ShipmentRetrive";
     public static final String SHIPMENT_CREATE_PERMISSION = "ShipmentCreate";
     public static final String SHIPMENT_UPDATE_PERMISSION = "ShipmentUpdate";
+    public static final String SHIPMENT_CANCEL_PERMISSION = "ShipmentCancel";
     public static final String CONSOLIDATION_LIST_PERMISSION = "ConsolidationList";
     public static final String CONSOLIDATION_RETRIEVE_PERMISSION = "ConsolidationRetrive";
     public static final String CONSOLIDATION_CREATE_PERMISSION = "ConsolidationCreate";
     public static final String CONSOLIDATION_UPDATE_PERMISSION = "ConsolidationUpdate";
+    public static final String CONSOLIDATION_CANCEL_PERMISSION = "ConsolidationCancel";
 
     public static final String ALL = "all";
     public static final String BROWSER_TIMEZONE = "browser-timezone";
@@ -565,7 +571,8 @@ public class Constants {
     public static final String CONSIGNEE_ADDRESS_CODE = "consigneeAddressCode";
     public static final String GUID = "guid";
     public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
-
+    public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
+    public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     private Constants() {
     }
 

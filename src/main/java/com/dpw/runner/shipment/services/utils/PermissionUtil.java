@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructCriteria;
-import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPermissionName;
 
 /**
  * Util class for leveraging common methods related to permissions
@@ -16,17 +15,27 @@ import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPerm
 public class PermissionUtil {
     private PermissionUtil(){}
 
+    /**
+     * We receive LIST_PERMISSION set of the user permissions , since the permission structure have been updated now
+     * the system only has VIEW permission as far as this method is concerned;
+     * Internally we are bifurcating that view permission into List and Retrieve
+     * @param permissionList : VIEW permissions from user token
+     * @param isShipment : boolean value for identifying shipment or consolidation
+     * @return List<FilterCriteria> based upon available view permission
+     */
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList, Boolean isShipment) {
 
         List<FilterCriteria> criterias = new ArrayList<>();
         HashSet<String> permissionSet = new HashSet<>();
 
-        for (String permission : permissionList) {
+        List<String> mappedPermission = V1PermissionMapUtil.getPermissionNames(permissionList);
+
+        for (String v1MappedPermission : mappedPermission) {
             List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
-            String v1MappedPermission = getPermissionName(permission);
             if(v1MappedPermission == null)
                 continue;
+
             // De-construct permission string into individual elements and strip the last element
             List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                     .filter(e -> !e.contains("list"))
