@@ -871,12 +871,15 @@ public class MasterDataUtils{
     }
 
     public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
+        long start = System.currentTimeMillis();
         Map<String, String> fieldNameMasterDataMap = new HashMap<>();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return fieldNameMasterDataMap;
 
         fieldNameKeyMap.forEach((key, value) -> {
+            long mid = System.currentTimeMillis();
             var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
+            log.info("{} | setMasterDataImpl redis get: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             if(!Objects.isNull(cache)) {
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
@@ -950,6 +953,7 @@ public class MasterDataUtils{
 
             }
         });
+        log.info("{} | setMasterDataImpl complete: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - start));
         return fieldNameMasterDataMap;
     }
 
