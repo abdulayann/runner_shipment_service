@@ -872,9 +872,10 @@ public abstract class IReport {
                     pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
                     pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
         }
-        if(shipment.getNoOfPacks() != null)
+        if(shipment.getNoOfPacks() != null) {
             dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
             dictionary.put(ReportConstants.NO_OF_PACKAGES_IN_CAPS, StringUtility.toUpperCase(GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse)));
+        }
         if (!Objects.isNull(shipment.getAdditionalDetails().getWarehouseId()) &&
                 wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId()))) {
             dictionary.put(WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotName());
