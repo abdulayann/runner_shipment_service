@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -30,7 +31,7 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private Integer addressId;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String country;
-    @MasterData(type = MasterDataType.COUNTRY_STATES)
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.AWB_COUNTRY)
     private String state;
     private String city;
     private String zipCode;
