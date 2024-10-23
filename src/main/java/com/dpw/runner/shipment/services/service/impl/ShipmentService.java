@@ -6378,16 +6378,16 @@ public class ShipmentService implements IShipmentService {
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
 
         List<String> toEmailList = new ArrayList<>();
-        if(shipmentDetails.getCreatedBy() != null)
-            toEmailList.add(shipmentDetails.getCreatedBy());
-        if(shipmentDetails.getAssignedTo() != null)
-            toEmailList.add(shipmentDetails.getAssignedTo());
+        List<String> ccEmailsList = new ArrayList<>();
+        if(consolidationDetails.getCreatedBy() != null)
+            toEmailList.add(consolidationDetails.getCreatedBy());
 
         Set<String> toEmailIds = new HashSet<>();
         Set<String> ccEmailIds = new HashSet<>();
         Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         tenantIds.add(shipmentDetails.getTenantId());
+        tenantIds.add(consolidationDetails.getTenantId());
 
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
@@ -6399,15 +6399,18 @@ public class ShipmentService implements IShipmentService {
 
         CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
 
-        commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap);
-
-        if(toEmailList.isEmpty()) {
-            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), true);
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
+        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
+        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
+        if(consolidationDetails.getCreatedBy() == null) {
+            toEmailIds.clear();
+            ccEmailIds.clear();
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
             toEmailList.addAll(new ArrayList<>(toEmailIds));
         }
 
         commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
-        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, new ArrayList<>(ccEmailIds));
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, ccEmailsList);
         return ResponseHelper.buildSuccessResponse();
     }
 
