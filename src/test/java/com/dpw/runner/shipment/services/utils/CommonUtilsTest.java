@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -63,7 +66,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
@@ -2488,7 +2491,7 @@ class CommonUtilsTest {
         assertEquals("assignee", dictionary.get(SHIPMENT_ASSIGNED_USER));
         assertEquals("SHIP123", dictionary.get(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK));
         assertEquals("CONS123", dictionary.get(SOURCE_CONSOLIDATION_NUMBER));
-        assertEquals("MAWB123", dictionary.get(MAWB_NUMBER));
+        assertEquals("MAWB123", dictionary.get(Constants.MAWB_NUMBER));
         assertEquals("FL123", dictionary.get(FLIGHT_NUMBER1));
 
         // Verify UserContext and tenant details
@@ -2535,9 +2538,9 @@ class CommonUtilsTest {
 
         // Assert dictionary contents
         assertEquals("createdByUser", dictionary.get(CONSOLIDATION_CREATE_USER));
-        assertEquals("SHIP123", dictionary.get(SHIPMENT_NUMBER));
+        assertEquals("SHIP123", dictionary.get(Constants.SHIPMENT_NUMBER));
         assertEquals("Test Tenant", dictionary.get(CONSOL_BRANCH_NAME));
-        assertEquals("HB123", dictionary.get(HAWB_NUMBER));
+        assertEquals("HB123", dictionary.get(Constants.HAWB_NUMBER));
         assertEquals("09/20/2024", dictionary.get(ETD_CAPS));
         assertEquals("09/25/2024", dictionary.get(ETA_CAPS));
         assertEquals("FLIGHT001", dictionary.get(FLIGHT_NUMBER1));
@@ -2675,5 +2678,52 @@ class CommonUtilsTest {
 
         // Verify that the helper was never called since the service failed
         verify(jsonHelper, never()).convertValueToList(anyList(), eq(EmailTemplatesRequest.class));
+    }
+
+    @Test
+    void testIsTransportModeValid() {
+        var tenantSettings = V1TenantSettingsResponse.builder().build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, SHIPMENT_DETAILS, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING, CONSOLIDATION})
+    void testIsTransportModeValidSea(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeAir(true).shipmentTransportModeRail(true).shipmentTransportModeRoad(true).bookingTransportModeAir(true).bookingTransportModeRail(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidAir(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeRail(true).shipmentTransportModeRoad(true).bookingTransportModeSea(true).bookingTransportModeRail(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_AIR, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidRail(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeAir(true).shipmentTransportModeRoad(true).bookingTransportModeSea(true).bookingTransportModeAir(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_RAI, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidRoad(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeSea(true).shipmentTransportModeRail(true).bookingTransportModeSea(true).bookingTransportModeSea(true).bookingTransportModeRail(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_ROA, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidAccepted(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).bookingTransportModeSea(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
+        assertTrue(response);
     }
 }

@@ -1934,6 +1934,16 @@ public class ShipmentService implements IShipmentService {
 
         if(checkIfLCLConsolidationEligible(shipmentDetails))
             updateShipmentGateInDateAndStatusFromPacks(packingRequest, shipmentDetails);
+
+        var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
+        // If TransportModeConfig flag is ON, this block will check for the valid transport mode
+        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig())) {
+            // If oldEntity is null (Create) OR transport mode is getting updated (Update)
+            if ((isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
+                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(shipmentDetails.getTransportMode(), Constants.SHIPMENT_DETAILS, tenantSettings))) {
+                    throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, shipmentDetails.getTransportMode()));
+            }
+        }
         CompletableFuture.allOf(carrierDetailsFuture).join();
         return syncConsole;
     }

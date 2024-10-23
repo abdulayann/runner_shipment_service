@@ -1642,4 +1642,44 @@ public class CommonUtils {
         return String.join("-", args);
     }
 
+    // This method is used to validate whether the transport mode is allowed to be used or not
+    public boolean isTransportModeValid(String transportMode, String entity, V1TenantSettingsResponse tenantSettings) {
+        Set<String> validTransportModes;
+
+        switch (entity) {
+            case CUSTOMER_BOOKING -> validTransportModes = this.getValidTransportModes(tenantSettings.getBookingTransportModeAir(), tenantSettings.getBookingTransportModeSea(), tenantSettings.getBookingTransportModeRail(), tenantSettings.getBookingTransportModeRoad());
+            case SHIPMENT_DETAILS -> validTransportModes = this.getValidTransportModes(tenantSettings.getShipmentTransportModeAir(), tenantSettings.getShipmentTransportModeSea(), tenantSettings.getShipmentTransportModeRail(), tenantSettings.getShipmentTransportModeRoad());
+            default -> validTransportModes = new HashSet<>();
+        }
+
+        return validTransportModes.contains(transportMode);
+    }
+
+    /**
+     * This method will return list of valid transport modes based on the tenant configs
+     * @param isAirValid if true, add AIR in valid modes list
+     * @param isSeaValid if true, add SEA in valid modes list
+     * @param isRailValid if true, add RAI in valid modes list
+     * @param isRoadValid if true, add ROA in valid modes list
+     * @return Set of valid transport modes
+     */
+    private Set<String> getValidTransportModes(Boolean isAirValid, Boolean isSeaValid, Boolean isRailValid, Boolean isRoadValid) {
+
+        Set<String> transportModes = new HashSet<>();
+
+        if (Boolean.TRUE.equals(isAirValid))
+            transportModes.add(Constants.TRANSPORT_MODE_AIR);
+
+        if (Boolean.TRUE.equals(isSeaValid))
+            transportModes.add(Constants.TRANSPORT_MODE_SEA);
+
+        if (Boolean.TRUE.equals(isRailValid))
+            transportModes.add(Constants.TRANSPORT_MODE_RAI);
+
+        if (Boolean.TRUE.equals(isRoadValid))
+            transportModes.add(Constants.TRANSPORT_MODE_ROA);
+
+        return transportModes;
+    }
+
 }

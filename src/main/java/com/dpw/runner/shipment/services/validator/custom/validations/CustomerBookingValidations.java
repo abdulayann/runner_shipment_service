@@ -7,12 +7,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldExcep
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
-
+import java.util.Optional;
 @Service
 @Slf4j
 public class CustomerBookingValidations {
@@ -29,6 +30,17 @@ public class CustomerBookingValidations {
             if(newEntity.getConsignee().getOrgCode() != null && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode()))
                 throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
+        var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
+
+        // If TransportModeConfig flag is ON, this block will check for the valid transport mode
+        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig())) {
+            // If oldEntity is null (Create) OR transport mode is getting updated (Update)
+            if ((Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
+                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
+                    throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
+            }
+        }
+
         // FCL
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:

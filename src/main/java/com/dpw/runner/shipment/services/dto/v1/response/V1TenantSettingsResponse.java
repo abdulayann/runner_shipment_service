@@ -59,4 +59,23 @@ public class V1TenantSettingsResponse implements Serializable {
     private String shipmentAttachDefaultCCMailId;
     @JsonProperty("LegalEntityCode")
     private String legalEntityCode;
+    @JsonProperty("TransportModeConfig")
+    private Boolean transportModeConfig;
+    @JsonProperty("BookingTransportModeAir")
+    private Boolean bookingTransportModeAir;
+    @JsonProperty("BookingTransportModeSea")
+    private Boolean bookingTransportModeSea;
+    @JsonProperty("BookingTransportModeRail")
+    private Boolean bookingTransportModeRail;
+    @JsonProperty("BookingTransportModeRoad")
+    private Boolean bookingTransportModeRoad;
+    @JsonProperty("ShipmentTransportModeAir")
+    private Boolean shipmentTransportModeAir;
+    @JsonProperty("ShipmentTransportModeSea")
+    private Boolean shipmentTransportModeSea;
+    @JsonProperty("ShipmentTransportModeRail")
+    private Boolean shipmentTransportModeRail;
+    @JsonProperty("ShipmentTransportModeRoad")
+    private Boolean shipmentTransportModeRoad;
+    
 }
