@@ -4,9 +4,13 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +23,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,6 +40,8 @@ class MasterDataImplTest {
 
     @Mock
     private V1MasterDataImpl v1MasterData;
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @InjectMocks
     private MasterDataImpl masterData;
@@ -691,6 +700,20 @@ class MasterDataImplTest {
         Mockito.when(masterDataFactory.getMasterDataService().getDefaultOrg(Mockito.any())).thenReturn(new DependentServiceResponse());
         ResponseEntity<IRunnerResponse> responseEntity = masterData.getDefaultOrg(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData() {
+        MasterListRequestV2 requestV2 = MasterListRequestV2.builder().MasterListRequests(List.of(MasterListRequest.builder()
+                        .ItemType("30")
+                .ItemValue("IND")
+                .build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(requestV2);
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
+        keyMasterDataMap.put("IND#COUNTRIES", EntityTransferMasterLists.builder().ItemValue("IND").ItemDescription("India").ValuenDesc("India").build());
+        Mockito.when(masterDataUtils.fetchInBulkMasterList(Mockito.any())).thenReturn(keyMasterDataMap);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.fetchMultipleMasterData(commonRequestModel);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

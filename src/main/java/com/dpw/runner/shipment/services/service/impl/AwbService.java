@@ -1430,7 +1430,7 @@ public class AwbService implements IAwbService {
         generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awbGoodsDescriptionInfos);
         generateAwbPaymentInfoRequest.setIsFromShipment(true);
         generateAwbPaymentInfoRequest.setPackUpdate(false);
-        awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
+        awbCargoInfo.setNtrQtyGoods((shipmentDetails.getGoodsDescription() != null ? shipmentDetails.getGoodsDescription() + newLine : "") + getVolumeFromShipmentDetails(shipmentDetails));
         awbCargoInfo.setEntityId(shipmentDetails.getId());
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
@@ -2328,7 +2328,7 @@ public class AwbService implements IAwbService {
             generateAwbPaymentInfoRequest.setAwbGoodsDescriptionInfo(awb.getAwbGoodsDescriptionInfo());
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
-            awbCargoInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() + newLine + getVolumeFromShipmentDetails(shipmentDetails));
+            awbCargoInfo.setNtrQtyGoods((shipmentDetails.getGoodsDescription() != null ? shipmentDetails.getGoodsDescription() + newLine : "") + getVolumeFromShipmentDetails(shipmentDetails));
             awbCargoInfo.setNtrQtyGoods(awbCargoInfo.getNtrQtyGoods() == null ? null : awbCargoInfo.getNtrQtyGoods().toUpperCase());
         }
 
@@ -3093,7 +3093,7 @@ public class AwbService implements IAwbService {
     }
 
     private String getVolumeFromConsolidationPackSummary(PackSummaryResponse packSummaryResponse) {
-        return Constants.VOL + " " + packSummaryResponse.getPacksVolume() + " " + packSummaryResponse.getPacksVolumeUnit();
+        return Constants.VOL + " " + packSummaryResponse.getPacksVolume().setScale(3, RoundingMode.HALF_UP).toString() + " " + packSummaryResponse.getPacksVolumeUnit();
     }
 
     private String getVolumeFromShipmentDetails(ShipmentDetails shipmentDetails) {
