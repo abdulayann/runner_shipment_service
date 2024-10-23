@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
@@ -23,7 +24,7 @@ public class AwbShipmentInfo implements Serializable {
     private String shipperAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String shipperCountry;
-    @MasterData(type = MasterDataType.COUNTRY_STATES)
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.SHIPPER_COUNTRY)
     private String shipperState;
     private String shipperCity;
     private String shipperZipCode;
@@ -33,7 +34,7 @@ public class AwbShipmentInfo implements Serializable {
     private String consigneeAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String consigneeCountry;
-    @MasterData(type = MasterDataType.COUNTRY_STATES)
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.CONSIGNEE_COUNTRY)
     private String consigneeState;
     private String consigneeCity;
     private String consigneeZipCode;
@@ -43,7 +44,7 @@ public class AwbShipmentInfo implements Serializable {
     private String issuingAgentAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String issuingAgentCountry;
-    @MasterData(type = MasterDataType.COUNTRY_STATES)
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.ISSUING_AGENT_COUNTRY)
     private String issuingAgentState;
     private String issuingAgentCity;
     private String issuingAgentZipCode;

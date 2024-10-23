@@ -410,6 +410,10 @@ public class Constants {
     public static final String SHR = "SHR";
     public static final String OPEN_FOR_ATTACHMENT = "openForAttachment";
     public static final String INTER_BRANCH_CONSOLE = "interBranchConsole";
+    public static final String SHIPPER_COUNTRY = "shipperCountry";
+    public static final String CONSIGNEE_COUNTRY = "consigneeCountry";
+    public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
+    public static final String AWB_COUNTRY = "country";
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",

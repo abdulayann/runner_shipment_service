@@ -3685,7 +3685,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }
-        consolidationDetails.setShipmentsList(shipmentDetails);
+
         if(consolidationDetails.getCarrierDetails() != null) {
             if (consolidationDetails.getTransportMode() != null && consolidationDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
                 consolidationDetails.getCarrierDetails().setVoyage(null);
