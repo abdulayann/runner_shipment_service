@@ -150,6 +150,7 @@ public class ReportConstants {
     public static final String ORIGINAL_WORDS = "OriginalsInWords";
     public static final String COPY_BILLS = "CopyBills";
     public static final String NO_OF_PACKAGES = "NoofPackages";
+    public static final String NO_OF_PACKAGES_IN_CAPS = "NoofPackagesInCaps";
     public static final String NO_OF_PACKAGES_WV_FORMATTED = "NoofPackagesFormatted";
     public static final String NO_OF_PACKAGES_ALIAS = "noofpackages";
     public static final String NoOfPackages = "NoOfPackages";
