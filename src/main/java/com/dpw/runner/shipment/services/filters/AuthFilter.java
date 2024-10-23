@@ -73,7 +73,8 @@ public class AuthFilter extends OncePerRequestFilter {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = servletRequest;
-        log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
+        log.info("Request For Shipment Service API: {} with RequestId: {} from IP: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC(), getClientIp(req));
+
         if(shouldNotFilter(req))
         {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -157,6 +158,14 @@ public class AuthFilter extends OncePerRequestFilter {
             }
         }
         return authorities;
+    }
+
+    private String getClientIp(HttpServletRequest req) {
+        String clientIp = req.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isEmpty()) {
+            clientIp = req.getRemoteAddr();
+        }
+        return clientIp;
     }
 
 }
