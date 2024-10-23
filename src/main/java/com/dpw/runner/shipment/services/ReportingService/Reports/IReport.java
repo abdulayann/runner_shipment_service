@@ -492,6 +492,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat));
         dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
 
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
@@ -571,6 +572,9 @@ public abstract class IReport {
         dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
         dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
+
+        dictionary.put(ReportConstants.PAID_PLACE_NAME_IN_CAPS, paidPlace != null ? paidPlace.getName() : null);
+        dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_IN_CAPS, paidPlace != null ? paidPlace.getCountry() : null);
 
         dictionary.put(ReportConstants.HSN_NUMBER, additionalDetails.getHsnNumber());
         dictionary.put(ReportConstants.SHIPMENT_BOOKING_NUMBER, shipment.getBookingNumber());
@@ -814,24 +818,36 @@ public abstract class IReport {
         if(shipment.getReferenceNumbersList() != null) {
             List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            List<String> referenceNumberListInCaps = referenceNumberList.stream().map(StringUtility::toUpperCase).toList();
             if(!referenceNumberList.isEmpty()){
                 dictionary.put(EXPORTER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+            if(!referenceNumberListInCaps.isEmpty()) {
+                dictionary.put(EXPORTER_REFERENCE_NUMBER_IN_CAPS, String.join(",", referenceNumberListInCaps));
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
             List<String> referenceNumberList;
             referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(CEN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            List<String> referenceNumberListInCaps = referenceNumberList.stream().map(StringUtility::toUpperCase).toList();
             if(!referenceNumberList.isEmpty()){
                 dictionary.put(CUSTOMS_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+            if(!referenceNumberListInCaps.isEmpty()) {
+                dictionary.put(CUSTOMS_REFERENCE_NUMBER_IN_CAPS, String.join(",", referenceNumberListInCaps));
             }
         }
         if(shipment.getReferenceNumbersList() != null) {
             List<String> referenceNumberList;
             referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(FRN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+            List<String> referenceNumberListInCaps = referenceNumberList.stream().map(StringUtility::toUpperCase).toList();
             if(!referenceNumberList.isEmpty()){
                 dictionary.put(FORWARDER_REFERENCE_NUMBER, String.join(",", referenceNumberList));
+            }
+            if(!referenceNumberListInCaps.isEmpty()) {
+                dictionary.put(FORWARDER_REFERENCE_NUMBER_IN_CAPS, String.join(",", referenceNumberListInCaps));
             }
         }
         if(!Strings.isNullOrEmpty(shipment.getCarrierDetails().getShippingLine())){
@@ -2808,22 +2824,54 @@ public abstract class IReport {
             dictionary.put(HAS_CHARGES, true);
             getChargeRows(originalChargesRows, copyChargesRows, charges, chargesApply);
         }
+        List<BillChargesResponse> originalChargesRowsInCaps = convertChargeRowsToUpperCase(originalChargesRows);
+        dictionary.put(CHARGES_IN_CAPS, originalChargesRowsInCaps);
         dictionary.put(CHARGES_SMALL, originalChargesRows);
 
-        if(originalChargesRows != null && originalChargesRows.size() > 0)
+        if(originalChargesRows != null && originalChargesRowsInCaps != null && !originalChargesRows.isEmpty() && !originalChargesRowsInCaps.isEmpty())
         {
             List<Map<String, Object>> values = new ArrayList<>();
+            List<Map<String, Object>> valuesInCaps = new ArrayList<>();
             for (BillChargesResponse billChargesResponse : originalChargesRows) {
                 values.add(jsonHelper.convertValue(billChargesResponse, new TypeReference<>() {}));
+            }
+            for (BillChargesResponse billChargesResponseInCaps : originalChargesRowsInCaps) {
+                valuesInCaps.add(jsonHelper.convertValue(billChargesResponseInCaps, new TypeReference<>() {}));
             }
             for (Map<String, Object> v: values) {
                 if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
                     v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse));
                 };
             }
+            for (Map<String, Object> v: valuesInCaps) {
+                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null) {
+                    v.put(OVERSEAS_SELL_AMOUNT, StringUtility.toUpperCase(AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(v.get(OVERSEAS_SELL_AMOUNT))), StringUtility.convertToString(v.get("OverseasSellCurrency")), v1TenantSettingsResponse)));
+                };
+            }
             dictionary.put(CHARGES_SMALL, values);
+            dictionary.put(CHARGES_IN_CAPS, valuesInCaps);
         }
         dictionary.put(COPY_CHARGES, copyChargesRows);
+    }
+
+    private List<BillChargesResponse> convertChargeRowsToUpperCase(List<BillChargesResponse> originalChargesRows) {
+        List<BillChargesResponse> originalChargesRowsInCaps = new ArrayList<>();
+        if (originalChargesRows == null) {
+            return originalChargesRowsInCaps;
+        }
+        for(BillChargesResponse originalChargeRow : originalChargesRows) {
+            originalChargeRow.setOverseasSellCurrency(originalChargeRow.getOverseasSellCurrency() != null ? originalChargeRow.getOverseasSellCurrency().toUpperCase() : null);
+            originalChargeRow.setLocalSellCurrency(originalChargeRow.getLocalSellCurrency() != null ? originalChargeRow.getLocalSellCurrency().toUpperCase() : null);
+            originalChargeRow.setPaymentType(originalChargeRow.getPaymentType() != null ? originalChargeRow.getPaymentType().toUpperCase() : null);
+            originalChargeRow.setChargeTypeCode(originalChargeRow.getChargeTypeCode() != null ? originalChargeRow.getChargeTypeCode().toUpperCase() : null);
+            originalChargeRow.setChargeTypeDescription(originalChargeRow.getChargeTypeDescription() != null ? originalChargeRow.getChargeTypeDescription().toUpperCase() : null);
+            originalChargeRow.setMeasurementBasis(originalChargeRow.getMeasurementBasis() != null ? originalChargeRow.getMeasurementBasis().toUpperCase() : null);
+            originalChargeRow.setLocalCostCurrency(originalChargeRow.getLocalCostCurrency() != null ? originalChargeRow.getLocalCostCurrency().toUpperCase() : null);
+            originalChargeRow.setBillingChargeTypeId(originalChargeRow.getBillingChargeTypeId() != null ? originalChargeRow.getBillingChargeTypeId().toUpperCase() : null);
+            originalChargeRow.setBillingChargeTypeGuid(originalChargeRow.getBillingChargeTypeGuid() != null ? originalChargeRow.getBillingChargeTypeGuid().toUpperCase() : null);
+            originalChargesRowsInCaps.add(originalChargeRow);
+        }
+        return originalChargesRowsInCaps;
     }
     private void getChargeRows(List<BillChargesResponse> originalChargesRows, List<BillChargesResponse> copyChargesRows, List<BillChargesResponse> charges, String type) {
         List<BillChargesResponse> prepaid = charges.stream().filter(x -> !Strings.isNullOrEmpty(x.getPaymentType()) && x.getPaymentType().equals("PPD")).toList();
