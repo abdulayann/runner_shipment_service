@@ -956,7 +956,9 @@ ShipmentServiceTest extends CommonMocks {
 
         // Test
         mockShipmentSettings();
-        mockTenantSettings();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().transportModeConfig(true).build());
+
+        when(commonUtils.isTransportModeValid(anyString(), anyString(), any())).thenReturn(true);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -1153,23 +1155,22 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
     // Mock
-    when(shipmentDao.findById(any()))
-        .thenReturn(
-            Optional.of(
-                shipmentDetails
-                    .setConsolidationList(new ArrayList<>())
-                    .setContainersList(new ArrayList<>())));
+        when(shipmentDao.findById(any()))
+            .thenReturn(
+                Optional.of(
+                    shipmentDetails
+                        .setConsolidationList(new ArrayList<>())
+                        .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-//        when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
-//        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(new ArrayList<ConsolidationDetails>());
-//        when(containerDao.updateEntityFromShipmentConsole(eq(List.of()), eq(null), eq(null), anyBoolean())).thenReturn(List.of());
-//        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-//        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
-        mockTenantSettings();
+//        mockTenantSettings();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().transportModeConfig(true).build());
+
+//        when(commonUtils.isTransportModeValid(anyString(), anyString(), any())).thenReturn(true);
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
