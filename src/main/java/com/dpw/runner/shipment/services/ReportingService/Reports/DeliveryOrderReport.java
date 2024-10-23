@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.DeliveryOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -126,6 +127,13 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.MASTER_BILL_ISSUE_PLACE, deliveryOrderModel.placeOfIssueName);
         dictionary.put(ReportConstants.PPCC, deliveryOrderModel.paymentTerms);
 
+        if(deliveryOrderModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(deliveryOrderModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
+        if (deliveryOrderModel.shipmentDetails.getReferenceNumbersList() != null) {
+            dictionary.put(AMS_NUMBER, deliveryOrderModel.shipmentDetails.getReferenceNumbersList().stream().findFirst()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+        }
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
