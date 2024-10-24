@@ -28,10 +28,12 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -420,6 +422,46 @@ class TrackingServiceAdapterTest {
 
         // Expect EMCR to be returned
         assertEquals(EventConstants.EMCR, result);
+    }
+
+    @Test
+    void mapShipmentDataToTrackingServiceDataWhenUserIsNull() {
+        UserContext.setUser(null);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
+                .data(new ArrayList<>())
+                .build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
+        assertNull(response.getShipmentDetails().get(0).getCountryCode());
+    }
+
+    @Test
+    void mapShipmentDataToTrackingServiceDataPopulatesCountryCodeFromBranchCountry() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantCountryCode("AUS");
+        UserContext.setUser(mockUser);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
+                .data(new ArrayList<>())
+                .build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
+        assertEquals("AU", response.getShipmentDetails().get(0).getCountryCode());
     }
 
 }

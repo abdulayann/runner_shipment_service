@@ -91,5 +91,6 @@ public class UniversalTrackingPayload {
     private String bookingCreationDate;
     private String houseBill;
     private String shipmentType;
+    private String countryCode;
   }
 }
