@@ -2748,7 +2748,9 @@ public class AwbService implements IAwbService {
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            List<String> keys = new ArrayList<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
             if(masterDataResponse == null) {
                 awbResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Awb.class.getSimpleName()), CacheConstants.MASTER_LIST));
@@ -2789,7 +2791,7 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()))));
 
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
@@ -2814,7 +2816,7 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbPackingInfo().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet() )));
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))

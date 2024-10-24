@@ -234,8 +234,10 @@ public abstract class IReport {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
                 masterListRequestV2.setMasterListRequests(requests);
                 masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                List<String> keys = new ArrayList<>();
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                commonUtils.createMasterDataKeysList(requests, keys);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
             }
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit, MasterDataType.VOLUME_UNIT.name(), false);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit, MasterDataType.WEIGHT_UNIT.name(), false);
@@ -2697,7 +2699,9 @@ public abstract class IReport {
                     masterListRequestV2.setMasterListRequests(requests);
                     masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
                     Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                    List<String> keys = new ArrayList<>();
+                    commonUtils.createMasterDataKeysList(requests, keys);
+                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
                 }
             } catch (Exception ignored) {}
             if(!StringUtility.isEmpty(pack.getDGClass()))

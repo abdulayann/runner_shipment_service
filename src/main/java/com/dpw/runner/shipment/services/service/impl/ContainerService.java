@@ -1595,7 +1595,7 @@ public class ContainerService implements IContainerService {
             commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId() ));
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
         if (!Objects.isNull(responseList)) {
             for (IRunnerResponse containerResponse : responseList) {
                 ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;

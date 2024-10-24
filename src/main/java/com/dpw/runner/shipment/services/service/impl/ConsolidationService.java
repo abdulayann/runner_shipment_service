@@ -35,16 +35,10 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingConsoli
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -1952,7 +1946,7 @@ public class ConsolidationService implements IConsolidationService {
             if (!Objects.isNull(containerResponseList))
                 containerResponseList.forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
             Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             for(Containers containers : consolidationDetails.getContainersList()) {
                 var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
@@ -2214,7 +2208,9 @@ public class ConsolidationService implements IConsolidationService {
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            List<String> keys = new ArrayList<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
             if(!Objects.isNull(consolePacksListResponse.getPacksList()))
                 consolePacksListResponse.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolePacksListResponse.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
@@ -2234,7 +2230,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolePacksListResponse.getPacksList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, ConsolePacksListResponse.PacksList.class, fieldNameKeyMap, ConsolePacksListResponse.PacksList.class.getSimpleName() )));
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
 
             if(!Objects.isNull(consolePacksListResponse.getPacksList()))
                 consolePacksListResponse.getPacksList().forEach(r -> r.setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolePacksListResponse.PacksList.class.getSimpleName()), CacheConstants.COMMODITY)));
@@ -2922,7 +2918,9 @@ public class ConsolidationService implements IConsolidationService {
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            List<String> keys = new ArrayList<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.MASTER_LIST));
@@ -2959,7 +2957,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS) );
@@ -2993,7 +2991,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             Map v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER, carrierList, new EntityTransferCarrier());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER));
@@ -3015,7 +3013,7 @@ public class ConsolidationService implements IConsolidationService {
             List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES, currencyList, new EntityTransferCurrency());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setCurrenciesMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.CURRENCIES));
@@ -3044,7 +3042,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
@@ -3067,7 +3065,7 @@ public class ConsolidationService implements IConsolidationService {
             List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.TENANTS));
@@ -3090,7 +3088,7 @@ public class ConsolidationService implements IConsolidationService {
             Set<String> wareHouseTypes = new HashSet<>(masterDataUtils.createInBulkWareHouseRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES, wareHouseTypes.stream().toList(), new WareHouseResponse());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
@@ -3116,7 +3114,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsResponse.getRoutingsList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
 
             Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS));
@@ -3140,7 +3138,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
 
             Map v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList.stream().toList(), new EntityTransferDGSubstance());
 
             if(masterDataResponse == null) { }
             else {
@@ -3162,7 +3160,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
             Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
@@ -4415,7 +4413,9 @@ public class ConsolidationService implements IConsolidationService {
                 masterListRequestV2.setMasterListRequests(listRequests);
                 masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                List<String> keys = new ArrayList<>();
+                commonUtils.createMasterDataKeysList(listRequests, keys);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
                 if(!Objects.isNull(response.getPacksList()))
                     response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST)));
             } catch (Exception e) { }
@@ -4860,8 +4860,8 @@ public class ConsolidationService implements IConsolidationService {
             Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
             Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locCodeList, EntityTransferConstants.LOCATION_SERVICE_GUID);
 
-            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS);
-            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS);
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS, tenantIdList, new TenantModel());
+            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS, locCodeList, new EntityTransferUnLocations());
 
             // console id vs list of ship ids
             Map<Long, List<Long>> shipmentVsConsolIdMap = new HashMap<>();

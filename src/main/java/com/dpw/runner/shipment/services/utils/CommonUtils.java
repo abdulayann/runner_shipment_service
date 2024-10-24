@@ -36,6 +36,8 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -1680,6 +1682,14 @@ public class CommonUtils {
             transportModes.add(Constants.TRANSPORT_MODE_ROA);
 
         return transportModes;
+    }
+    
+    public void createMasterDataKeysList(List<MasterListRequest> masterListRequests, List<String> keys) {
+        if(Objects.isNull(masterListRequests))
+            return;
+        for(MasterListRequest masterListRequest : masterListRequests) {
+            keys.add(masterListRequest.ItemValue + '#' + MasterDataType.getNameFromDescription(masterListRequest.ItemType));
+        }
     }
 
 }
