@@ -56,6 +56,6 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
     @Query(value = "SELECT shipment_id, COUNT(*) FROM console_shipment_mapping WHERE shipment_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by shipment_id", nativeQuery = true)
     List<Object[]> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestType);
 
-    @Query(value = "SELECT shipment_id, COUNT(*) FROM console_shipment_mapping WHERE consolidation_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by consolidation_id", nativeQuery = true)
+    @Query(value = "SELECT consolidation_id, COUNT(*) FROM console_shipment_mapping WHERE consolidation_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by consolidation_id", nativeQuery = true)
     List<Object[]> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestType);
 }
