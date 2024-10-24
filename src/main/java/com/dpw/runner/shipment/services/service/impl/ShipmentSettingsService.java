@@ -613,7 +613,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Override
     public ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds() {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        List<String> tenantIds = new ArrayList<>();
+        Set<String> tenantIds = new HashSet<>();
         tenantIds.add(StringUtility.convertToString(UserContext.getUser().TenantId));
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
                 && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
@@ -628,7 +628,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Override
     public ResponseEntity<IRunnerResponse> listHubTenantIds() {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        List<String> tenantIds = new ArrayList<>();
+        Set<String> tenantIds = new HashSet<>();
         tenantIds.add(StringUtility.convertToString(UserContext.getUser().TenantId));
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             tenantIds.addAll(commonUtils.fetchColoadingDetails().stream().map(x -> x.getParentTenantId().toString()).toList());

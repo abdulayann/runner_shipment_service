@@ -2724,7 +2724,7 @@ public class AwbService implements IAwbService {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             AtomicInteger count = new AtomicInteger();
-            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(awbResponse, Awb.class, fieldNameKeyMap, Awb.class.getSimpleName() ));
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(awbResponse, Awb.class, fieldNameKeyMap, Awb.class.getSimpleName() ));
             // Populate all the master data in inner objects
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
                 listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() ));
@@ -2744,11 +2744,11 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbOtherChargesInfo().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, AwbOtherChargesInfo.class, fieldNameKeyMap, AwbOtherChargesInfo.class.getSimpleName() + count.incrementAndGet())));
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            List<String> keys = new ArrayList<>();
+            Set<String> keys = new HashSet<>();
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
@@ -2773,7 +2773,7 @@ public class AwbService implements IAwbService {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             AtomicInteger count = new AtomicInteger();
-            List<String> locationCodes = new ArrayList<>();
+            Set<String> locationCodes = new HashSet<>();
             // Populate all the unlocation data in inner objects
             if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
                 locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(awbResponse.getAwbShipmentInfo(), AwbShipmentInfo.class, fieldNameKeyMap, AwbShipmentInfo.class.getSimpleName() )));
@@ -2816,7 +2816,7 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbPackingInfo().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbRoutingInfo.class.getSimpleName() + count.incrementAndGet() )));
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(awbResponse.getAwbShipmentInfo()))
@@ -3630,7 +3630,7 @@ public class AwbService implements IAwbService {
             throw new ValidationException("Please add " + errorString + " and retry");
         }
         List<String> unlocoRequests = new ArrayList<>(List.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
-        List<String> carrierRequests = new ArrayList<>(List.of(iataFetchRateRequest.getFlightCarrier()));
+        Set<String> carrierRequests = new HashSet<>(List.of(iataFetchRateRequest.getFlightCarrier()));
 
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);

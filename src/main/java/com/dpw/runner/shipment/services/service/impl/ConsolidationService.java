@@ -1941,7 +1941,7 @@ public class ConsolidationService implements IConsolidationService {
         long shipmentCont = 0l;
         if(consolidationDetails.getContainersList() != null && consolidationDetails.getContainersList().size() > 0) {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> containerTypes = new ArrayList<>();
+            Set<String> containerTypes = new HashSet<>();
             List<ContainerResponse> containerResponseList = jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerResponse.class);
             if (!Objects.isNull(containerResponseList))
                 containerResponseList.forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
@@ -2199,16 +2199,16 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCallPacksList (ConsolePacksListResponse consolePacksListResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<MasterListRequest> listRequests = new ArrayList<>();
+            Set<MasterListRequest> listRequests = new HashSet<>();
             if(!Objects.isNull(consolePacksListResponse.getPacksList()))
                 consolePacksListResponse.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ConsolePacksListResponse.PacksList.class, fieldNameKeyMap, ConsolePacksListResponse.PacksList.class.getSimpleName() )));
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            List<String> keys = new ArrayList<>();
+            Set<String> keys = new HashSet<>();
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
@@ -2230,7 +2230,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolePacksListResponse.getPacksList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, ConsolePacksListResponse.PacksList.class, fieldNameKeyMap, ConsolePacksListResponse.PacksList.class.getSimpleName() )));
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
 
             if(!Objects.isNull(consolePacksListResponse.getPacksList()))
                 consolePacksListResponse.getPacksList().forEach(r -> r.setCommodityMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolePacksListResponse.PacksList.class.getSimpleName()), CacheConstants.COMMODITY)));
@@ -2894,7 +2894,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
             if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
                 listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() ));
 
@@ -2914,11 +2914,11 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            List<String> keys = new ArrayList<>();
+            Set<String> keys = new HashSet<>();
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
@@ -2941,7 +2941,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> locationCodes = new ArrayList<>(masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
+            Set<String> locationCodes = new HashSet<>(masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName() ));
             if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
                 locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
 
@@ -2978,13 +2978,13 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> carrierList = new ArrayList<>();
+            Set<String> carrierList = new HashSet<>();
             if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
-                carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
 
             if(masterDataResponse != null) {
                 if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList())) {
-                    List<String> finalCarrierList = carrierList;
+                    Set<String> finalCarrierList = carrierList;
                     consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId())));
                     carrierList = finalCarrierList;
                 }
@@ -3010,7 +3010,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
+            Set<String> currencyList = new HashSet<>(masterDataUtils.createInBulkCurrencyRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES, currencyList, new EntityTransferCurrency());
@@ -3042,7 +3042,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
@@ -3062,7 +3062,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
+            Set<String> tenantIdList = new HashSet<>(masterDataUtils.createInBulkTenantsRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel());
@@ -3088,7 +3088,7 @@ public class ConsolidationService implements IConsolidationService {
             Set<String> wareHouseTypes = new HashSet<>(masterDataUtils.createInBulkWareHouseRequest(consolidationDetailsResponse, ConsolidationDetails.class, fieldNameKeyMap, ConsolidationDetails.class.getSimpleName()));
 
             Map v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES, wareHouseTypes.stream().toList(), new WareHouseResponse());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES, wareHouseTypes, new WareHouseResponse());
 
             if(masterDataResponse == null) {
                 consolidationDetailsResponse.setTextData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ConsolidationDetails.class.getSimpleName()), CacheConstants.WAREHOUSES));
@@ -3107,7 +3107,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> vesselList = new ArrayList<>();
+            Set<String> vesselList = new HashSet<>();
             if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
                 vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
             if (!Objects.isNull(consolidationDetailsResponse.getRoutingsList()))
@@ -3138,7 +3138,7 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
 
             Map v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList.stream().toList(), new EntityTransferDGSubstance());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList, new EntityTransferDGSubstance());
 
             if(masterDataResponse == null) { }
             else {
@@ -3155,7 +3155,7 @@ public class ConsolidationService implements IConsolidationService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> containerTypes = new ArrayList<>();
+            Set<String> containerTypes = new HashSet<>();
             if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
                 consolidationDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
@@ -4406,14 +4406,14 @@ public class ConsolidationService implements IConsolidationService {
             }
             try {
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                List<MasterListRequest> listRequests = new ArrayList<>();
+                Set<MasterListRequest> listRequests = new HashSet<>();
                 if(!Objects.isNull(response.getPacksList()))
                     response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName() )));
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                masterListRequestV2.setMasterListRequests(listRequests);
+                masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
                 masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                List<String> keys = new ArrayList<>();
+                Set<String> keys = new HashSet<>();
                 commonUtils.createMasterDataKeysList(listRequests, keys);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
                 if(!Objects.isNull(response.getPacksList()))
@@ -4848,8 +4848,8 @@ public class ConsolidationService implements IConsolidationService {
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
             Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-            var tenantIdList = new ArrayList<String>();
-            var locCodeList =  new ArrayList<String>();
+            var tenantIdList = new HashSet<String>();
+            var locCodeList =  new HashSet<String>();
             final CarrierDetails nullCarrierDetails = new CarrierDetails();
             shipmentsPage.getContent().stream().forEach(i -> {
                 tenantIdList.add(StringUtility.convertToString(i.getTenantId()));

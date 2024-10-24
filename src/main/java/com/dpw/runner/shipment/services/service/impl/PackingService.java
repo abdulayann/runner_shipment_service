@@ -439,7 +439,7 @@ public class PackingService implements IPackingService {
         ColumnsToIgnore(fieldNameMap, request);
 
         if(fieldNameMap.containsKey("Origin")) {
-            List<String> unlocationsRefGuids = new ArrayList<>();
+            Set<String> unlocationsRefGuids = new HashSet<>();
             for (PackingExcelModel model : modelList){
                 unlocationsRefGuids.add(model.getOrigin());
             }
