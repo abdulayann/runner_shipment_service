@@ -175,7 +175,7 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(masterDataUtils.fetchInBulkCarriers(anyList())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
+        when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
         when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);

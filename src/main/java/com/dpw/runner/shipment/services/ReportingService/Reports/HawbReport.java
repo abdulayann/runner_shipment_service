@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
-import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -673,7 +672,7 @@ public class HawbReport extends IReport{
         }
 
         if (StringUtility.isNotEmpty(carrierDetailModel.getShippingLine())) {
-            var masterData = masterDataUtils.fetchInBulkCarriers(List.of(carrierDetailModel.getShippingLine()));
+            var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(carrierDetailModel.getShippingLine()));
             if (!Objects.isNull(masterData) && masterData.containsKey(carrierDetailModel.getShippingLine())) {
                 dictionary.put(CARRIER_HQ, masterData.get(carrierDetailModel.getShippingLine()).getHeadQuartersDetails());
             }

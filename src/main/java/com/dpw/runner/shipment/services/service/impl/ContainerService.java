@@ -505,7 +505,7 @@ public class ContainerService implements IContainerService {
 //        ColumnsToIgnore(fieldNameMap, request);
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
-            List<String> unlocationsRefGuids = new ArrayList<>();
+            Set<String> unlocationsRefGuids = new HashSet<>();
             for (ContainersExcelModel model : modelList){
                 unlocationsRefGuids.add(model.getContainerStuffingLocation());
             }
@@ -1595,7 +1595,7 @@ public class ContainerService implements IContainerService {
             commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId() ));
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
         if (!Objects.isNull(responseList)) {
             for (IRunnerResponse containerResponse : responseList) {
                 ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;

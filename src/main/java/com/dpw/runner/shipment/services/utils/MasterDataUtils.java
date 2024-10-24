@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -14,28 +12,10 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -47,19 +27,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -68,6 +35,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -138,8 +113,8 @@ public class MasterDataUtils{
                 }
             }
 
-            Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), onField);
-            pushToCache(v1Data, CacheConstants.UNLOCATIONS);
+            Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes, onField);
+            pushToCache(v1Data, CacheConstants.UNLOCATIONS, locCodes, new EntityTransferUnLocations());
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof CustomerBookingResponse bookingResponse) {
@@ -170,26 +145,26 @@ public class MasterDataUtils{
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
         try {
             double _start = System.currentTimeMillis();
-            Set<String> locCodes = new HashSet<>();
+            Set<String> vessels = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
-                        locCodes.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                        vessels.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
                     }
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse) {
                     if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
-                        locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                        vessels.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
                     }
                 }
                 else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-                    locCodes.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
+                    vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
                 }
             }
 
-            Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(locCodes.stream().toList());
-            pushToCache(v1Data, CacheConstants.VESSELS);
+            Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(vessels);
+            pushToCache(v1Data, CacheConstants.VESSELS, vessels, new EntityTransferVessels());
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
@@ -230,8 +205,8 @@ public class MasterDataUtils{
                 }
             }
 
-            Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList.stream().toList());
-            pushToCache(v1Data, CacheConstants.TENANTS);
+            Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList);
+            pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel());
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
@@ -275,8 +250,8 @@ public class MasterDataUtils{
                     });
             }
 
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             BigDecimal teu;
             for(ShipmentDetails shipment : shipmentDetailsList) {
@@ -361,8 +336,8 @@ public class MasterDataUtils{
                 }
             }
 
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             BigDecimal teu;
             for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
@@ -514,7 +489,7 @@ public class MasterDataUtils{
         return locCodesList;
     }
 
-    public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(List<String> requests, String onField) {
+    public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(Set<String> requests, String onField) {
         Map<String, EntityTransferUnLocations> keyMasterDataMap = new HashMap<>();
         if (requests.isEmpty()) {
             return keyMasterDataMap;
@@ -626,7 +601,7 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return itemValueList;
     }
-    public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(List<String> requests) {
+    public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(Set<String> requests) {
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -793,7 +768,7 @@ public class MasterDataUtils{
         }
     }
 
-    public Map<String, EntityTransferVessels> fetchInBulkVessels(List<String> requests) {
+    public Map<String, EntityTransferVessels> fetchInBulkVessels(Set<String> requests) {
         Map<String, EntityTransferVessels> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -840,7 +815,7 @@ public class MasterDataUtils{
         return itemValueList;
     }
 
-    public Map<String, EntityTransferCarrier> fetchInBulkCarriers(List<String> requests) {
+    public Map<String, EntityTransferCarrier> fetchInBulkCarriers(Set<String> requests) {
         Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -880,11 +855,17 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public void pushToCache (Map<String, ?> v1Data, String type) {
-        if (Objects.isNull(v1Data) || v1Data.isEmpty())
+    public void pushToCache (Map<String, ?> v1Data, String type, Set<String> keys, Object object) {
+        if (Objects.isNull(v1Data))
             return;
         for (var key : v1Data.keySet()) {
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), v1Data.get(key));
+        }
+        if(!Objects.equals(v1Data.size(), keys.size())) {
+            for(String key : keys) {
+                if (!v1Data.containsKey(key))
+                    cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), object);
+            }
         }
     }
 
@@ -1004,7 +985,7 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public Map<String, EntityTransferCurrency> fetchInCurrencyList(List<String> requests) {
+    public Map<String, EntityTransferCurrency> fetchInCurrencyList(Set<String> requests) {
         Map<String, EntityTransferCurrency> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || CurrencyList: {}", LoggerHelper.getRequestIdFromMDC(), requests);
@@ -1053,9 +1034,9 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public Map<String, TenantModel> fetchInTenantsList(List<String> requests) {
+    public Map<String, TenantModel> fetchInTenantsList(Set<String> requests) {
         Map<String, TenantModel> keyMasterDataMap = new HashMap<>();
-        requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toList());
+        requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toSet());
         if(!requests.isEmpty()) {
             log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
@@ -1424,7 +1405,7 @@ public class MasterDataUtils{
                     ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                             .guidsList(guidsList).build();
                     ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
-                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
+                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING, guidsList.stream().map(UUID::toString).collect(Collectors.toSet()), new ShipmentBillingListResponse.BillingData());
                 }
 
                 for (ShipmentDetails details: shipmentDetails) {
@@ -1495,14 +1476,14 @@ public class MasterDataUtils{
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkVessels(List.of(code));
+        var resp = fetchInBulkVessels(Set.of(code));
         return resp.containsKey(code) ? resp.get(code).getName() : null;
     }
 
     public String getCarrierName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkCarriers(List.of(code));
+        var resp = fetchInBulkCarriers(Set.of(code));
         return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
 
@@ -1526,8 +1507,8 @@ public class MasterDataUtils{
             if(!Objects.isNull(containerResponses))
                 containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
 
-            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             BigDecimal teu;
             teu = BigDecimal.ZERO;

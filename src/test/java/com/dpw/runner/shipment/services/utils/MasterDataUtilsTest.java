@@ -1,18 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -23,34 +10,10 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -62,14 +25,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,6 +38,15 @@ import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.test.context.TestPropertySource;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
@@ -297,7 +261,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
+        var responseEntity = masterDataUtils.fetchInBulkUnlocations(Set.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -308,7 +272,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
+        var responseEntity = masterDataUtils.fetchInBulkUnlocations(Set.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -319,7 +283,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(null);
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
+        var responseEntity = masterDataUtils.fetchInBulkUnlocations(Set.of(UUID.randomUUID().toString()), EntityTransferConstants.UNLOCATION_CODE);
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -327,7 +291,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkUnlocations4() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkUnlocations(List.of(), EntityTransferConstants.UNLOCATION_CODE);
+        var responseEntity = masterDataUtils.fetchInBulkUnlocations(Set.of(), EntityTransferConstants.UNLOCATION_CODE);
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -479,7 +443,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
         when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkContainerTypes(List.of("20GP", "40HQ"));
+        var responseEntity = masterDataUtils.fetchInBulkContainerTypes(Set.of("20GP", "40HQ"));
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -488,7 +452,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkContainerTypes2() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkContainerTypes(List.of());
+        var responseEntity = masterDataUtils.fetchInBulkContainerTypes(Set.of());
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -641,7 +605,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemValue("CODE").build()));
         when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkCarriers(List.of("20GP", "40HQ"));
+        var responseEntity = masterDataUtils.fetchInBulkCarriers(Set.of("20GP", "40HQ"));
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -650,7 +614,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkCarriers2() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkCarriers(List.of());
+        var responseEntity = masterDataUtils.fetchInBulkCarriers(Set.of());
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -743,7 +707,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferVessels.class))).thenReturn(List.of(EntityTransferVessels.builder().Guid(UUID.randomUUID()).build()));
         when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkVessels(List.of("20GP", "40HQ"));
+        var responseEntity = masterDataUtils.fetchInBulkVessels(Set.of("20GP", "40HQ"));
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -752,7 +716,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInBulkVessels2() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInBulkVessels(List.of());
+        var responseEntity = masterDataUtils.fetchInBulkVessels(Set.of());
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -826,7 +790,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferCurrency.class))).thenReturn(List.of(EntityTransferCurrency.builder().CurrenyCode("INR").build()));
         when(v1Service.fetchCurrenciesData(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInCurrencyList(List.of("INR"));
+        var responseEntity = masterDataUtils.fetchInCurrencyList(Set.of("INR"));
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -835,7 +799,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInCurrencyList2() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInCurrencyList(List.of());
+        var responseEntity = masterDataUtils.fetchInCurrencyList(Set.of());
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }
@@ -911,7 +875,7 @@ class MasterDataUtilsTest {
         when(commonUtils.convertToList(any(), eq(TenantModel.class))).thenReturn(List.of(tenantModel));
         when(v1Service.listCousinBranches(any())).thenReturn(V1DataResponse.builder().build());
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInTenantsList(List.of("INR"));
+        var responseEntity = masterDataUtils.fetchInTenantsList(Set.of("INR"));
         assertNotNull(responseEntity);
         assertFalse(responseEntity.isEmpty());
     }
@@ -920,7 +884,7 @@ class MasterDataUtilsTest {
     @Test
     void fetchInTenantsList2() {
         // Act and Assert
-        var responseEntity = masterDataUtils.fetchInTenantsList(List.of());
+        var responseEntity = masterDataUtils.fetchInTenantsList(Set.of());
         assertNotNull(responseEntity);
         assertTrue(responseEntity.isEmpty());
     }

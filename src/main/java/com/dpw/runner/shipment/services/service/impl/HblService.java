@@ -1010,8 +1010,7 @@ public class HblService implements IHblService {
             locCodes.add(additionalDetails.getPlaceOfSupply());
         }
 
-        Map<String, EntityTransferUnLocations> v1Data = masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).toList(), EntityTransferConstants.LOCATION_SERVICE_GUID);
-        return v1Data;
+        return masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toSet()), EntityTransferConstants.LOCATION_SERVICE_GUID);
     }
 
     private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) {
