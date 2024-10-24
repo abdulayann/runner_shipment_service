@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingExce
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
@@ -4155,6 +4156,7 @@ import static org.mockito.Mockito.*;
         UniversalTrackingPayload universalTrackingPayload = new UniversalTrackingPayload();
         UniversalTrackingPayload.UniversalEventsPayload eventsPayload = new UniversalTrackingPayload.UniversalEventsPayload();
         var spyService = Mockito.spy(consolidationService);
+        when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
         when(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails)).thenReturn(true);
         when(trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails)).thenReturn(universalTrackingPayload);
         when(jsonHelper.convertToJson(any())).thenReturn("");
@@ -4165,6 +4167,8 @@ import static org.mockito.Mockito.*;
         spyService.pushShipmentDataToDependentService(consolidationDetails, true, null);
         verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", false);
         verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", true);
+        verify(producer, atLeast(1)).produceToKafka(any(), any(), any());
+        verify(producer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
     }
 
     @Test

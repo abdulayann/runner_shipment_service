@@ -3949,6 +3949,7 @@ public class ConsolidationService implements IConsolidationService {
             if(consolidationDetails.getTenantId() == null)
                 consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
             log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(consolidationDetails.getGuid()));
         }
