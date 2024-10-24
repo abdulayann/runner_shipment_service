@@ -1958,11 +1958,6 @@ ShipmentServiceTest extends CommonMocks {
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 
-        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-
-
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
