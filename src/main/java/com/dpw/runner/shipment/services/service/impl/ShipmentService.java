@@ -915,7 +915,8 @@ public class ShipmentService implements IShipmentService {
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
-            this.createLogHistoryForShipment(shipmentDetails);
+            ShipmentDetails finalShipmentDetails1 = shipmentDetails;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)));
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1769,7 +1770,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
-            this.createLogHistoryForShipment(entity);
+            ShipmentDetails finalEntity1 = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)));
             ShipmentDetails finalEntity = entity;
             return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
@@ -1808,7 +1810,7 @@ public class ShipmentService implements IShipmentService {
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
                     .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
         } catch (Exception ex) {
-            log.error("Error while creating LogsHistory : " + ex.getMessage());
+            log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
     }
 
