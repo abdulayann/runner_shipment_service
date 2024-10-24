@@ -26,32 +26,32 @@ import java.time.LocalDateTime;
 @BatchSize(size = 50)
 public class ArrivalDepartureDetails extends MultiTenancy {
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "container_yard_id", referencedColumnName = "id")
     @OrganizationData
     private Parties containerYardId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties transportPortId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "cto_id", referencedColumnName = "id")
     @OrganizationData
     private Parties CTOId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "cfs_id", referencedColumnName = "id")
     @OrganizationData
     private Parties CFSId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "first_foreign_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties firstForeignPortId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "last_foreign_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties lastForeignPortId;
