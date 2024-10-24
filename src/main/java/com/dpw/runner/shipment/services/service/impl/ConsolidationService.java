@@ -484,7 +484,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid);
-            this.createLogHistoryForConsole(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -515,7 +515,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, false);
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
-            this.createLogHistoryForConsole(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1361,7 +1361,8 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
-            this.createLogHistoryForConsole(entity);
+            ConsolidationDetails finalEntity1 = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)));
             ConsolidationDetails finalEntity = entity;
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
@@ -3858,7 +3859,7 @@ public class ConsolidationService implements IConsolidationService {
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(consolidationDetails.getId())
                     .entityType(Constants.CONSOLIDATION).entityGuid(consolidationDetails.getGuid()).entityPayload(entityPayload).build());
         } catch (Exception ex) {
-            log.error("Error while creating LogsHistory : " + ex.getMessage());
+            log.error("Error while creating LogsHistory for Consolidation : " + ex.getMessage());
         }
     }
     private void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
