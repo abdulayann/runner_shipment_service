@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -1203,8 +1204,10 @@ ShipmentServiceTest extends CommonMocks {
     void pushShipmentDataToDependentService_success() {
         //Test
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
+        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
         shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
+        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
     }
 
 
@@ -4308,11 +4311,13 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setMasterBill("MBL22");
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
+        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
     }
 
     @Test
@@ -4323,12 +4328,14 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setMasterBill("MBL22");
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setSource(Constants.API);
+        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
         when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
         when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(UniversalTrackingPayload.UniversalEventsPayload.builder().build());
         when(jsonHelper.convertToJson(any())).thenReturn("json");
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
         verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
+        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
     }
 
 

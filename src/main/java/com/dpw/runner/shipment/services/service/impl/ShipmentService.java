@@ -2807,6 +2807,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
+            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
         }
