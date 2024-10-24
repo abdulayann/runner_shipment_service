@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -39,12 +38,10 @@ public class Awb extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "awb_notify_party_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
 
     @Type(type = "jsonb")
     @Column(name = "awb_routing_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbRoutingInfo> awbRoutingInfo;
 
     @Type(type = "jsonb")
@@ -57,7 +54,6 @@ public class Awb extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "awb_other_charges_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
 
     @Type(type = "jsonb")
@@ -66,22 +62,18 @@ public class Awb extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "awb_oci_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbOCIInfo> awbOciInfo;
 
     @Type(type = "jsonb")
     @Column(name = "awb_goods_description_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
 
     @Type(type = "jsonb")
     @Column(name = "awb_packing_info", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbPackingInfo> awbPackingInfo;
 
     @Type(type = "jsonb")
     @Column(name = "awb_special_handling_codes_Mappings", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
 
     @Column(name = "consolidation_id")

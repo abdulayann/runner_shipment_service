@@ -38,17 +38,14 @@ public class Hbl extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "container_data", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<HblContainerDto> hblContainer;
 
     @Type(type = "jsonb")
     @Column(name = "cargo_data", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<HblCargoDto> hblCargo;
 
     @Type(type = "jsonb")
     @Column(name = "notify_party_data", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<HblPartyDto> hblNotifyParty;
 
 }

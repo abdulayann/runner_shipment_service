@@ -31,7 +31,6 @@ public class QuoteContracts extends BaseEntity {
 
     @Type(type = "jsonb")
     @Column(name = "container_types", columnDefinition = "jsonb")
-    @BatchSize(size = 50)
     private List<String> containerTypes;
 
 }
