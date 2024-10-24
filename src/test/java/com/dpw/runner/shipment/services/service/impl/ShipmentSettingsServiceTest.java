@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -28,7 +27,6 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -507,7 +505,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         tenantModelMap.put(StringUtility.convertToString(2), tenantModel2);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -520,7 +518,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -534,7 +532,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -554,7 +552,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         List<CoLoadingMAWBDetailsResponse> coLoadingMAWBDetailsResponses = new ArrayList<>(Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(2).build()));
         mockTenantSettings();
         when(commonUtils.fetchColoadingDetails()).thenReturn(coLoadingMAWBDetailsResponses);
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -567,7 +565,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
