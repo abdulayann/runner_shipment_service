@@ -2161,8 +2161,6 @@ class MasterDataUtilsTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
-        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
         assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(completeShipment.getContainersList()));
     }
 
@@ -2196,9 +2194,6 @@ class MasterDataUtilsTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> null);
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
-        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
-
 
         assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
     }
