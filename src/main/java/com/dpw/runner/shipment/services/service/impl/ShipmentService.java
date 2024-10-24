@@ -1046,9 +1046,10 @@ public class ShipmentService implements IShipmentService {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
             // Generate default routes based on O-D pairs
-            var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
-            consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
-
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
+                consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
+            }
 
             ResponseEntity<?> consolidationDetailsResponse = consolidationService.createFromBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
@@ -1201,7 +1202,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode) {
 
-        if(ObjectUtils.isEmpty(carrierDetailRequest)) {
+        if(ObjectUtils.isEmpty(carrierDetailRequest) || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
             return new ArrayList<>();
         }
 
@@ -3012,9 +3013,17 @@ public class ShipmentService implements IShipmentService {
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             // Generate default Routes if Route Master is enabled
-            createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
-            consolidationDetails.setRoutingsList(createRoutes);
-
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
+                consolidationDetails.setRoutingsList(createRoutes);
+            }
+            else {
+                if(routeRequest.isPresent()) {
+                    createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
+                    createRoutes = createConsoleRoutePayload(createRoutes);
+                    consolidationDetails.setRoutingsList(createRoutes);
+                }
+            }
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
             if(createRoutes != null && !createRoutes.isEmpty()) {
                 routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
@@ -4614,7 +4623,7 @@ public class ShipmentService implements IShipmentService {
             });
         }
 
-        if(consolidation.getRoutingsList() != null && !consolidation.getRoutingsList().isEmpty()) {
+        if(consolidation.getRoutingsList() != null && !consolidation.getRoutingsList().isEmpty() && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
             List<RoutingsResponse> routingsResponse = consolidation.getRoutingsList().stream().
                     map(item -> {
                         RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
