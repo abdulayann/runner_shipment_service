@@ -103,7 +103,7 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
 
@@ -112,7 +112,7 @@ class MasterDataUtilsTest {
     void testCreateInBulkContainerTypeRequest() {
         // Arrange
         // Act and Assert
-        var response = masterDataUtils.createInBulkMasterListRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkMasterListRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -129,7 +129,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
 
@@ -146,7 +146,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -163,7 +163,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -197,13 +197,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkUnLocationsRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkUnLocationsRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkUnLocationsRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkUnLocationsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkUnLocationsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -218,7 +218,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -234,7 +234,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -251,7 +251,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -298,13 +298,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkChargeTypeRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkChargeTypeRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkChargeTypeRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkChargeTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkChargeTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -319,7 +319,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -335,7 +335,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -352,7 +352,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -379,13 +379,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkContainerTypeRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkContainerTypeRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkContainerTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkContainerTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -400,7 +400,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -416,7 +416,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -433,7 +433,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -459,13 +459,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkCommodityTypeRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkCommodityTypeRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkCommodityTypeRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -480,7 +480,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -496,7 +496,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -513,7 +513,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -540,13 +540,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkCarriersRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkCarriersRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkCarriersRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkCarriersRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCarriersRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -561,7 +561,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -578,7 +578,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -595,7 +595,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -642,13 +642,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkVesselsRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkVesselsRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkVesselsRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkVesselsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkVesselsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNull(response);
     }
 
@@ -663,7 +663,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -680,7 +680,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -697,7 +697,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -724,13 +724,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkCurrencyRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkCurrencyRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkCurrencyRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkCurrencyRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCurrencyRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -747,7 +747,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -763,7 +763,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -780,7 +780,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -807,13 +807,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkTenantsRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkTenantsRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkTenantsRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkTenantsRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -830,7 +830,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -846,7 +846,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -863,7 +863,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -892,13 +892,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkCurrencyRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkCurrencyRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkDGSubstanceRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkDGSubstanceRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkDGSubstanceRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -915,9 +915,9 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code", new HashMap<>());
         packing.setDGSubstanceId(11);
-        var response2 = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code");
+        var response2 = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code", new HashMap<>());
 
         assertNotNull(response);
         assertTrue(response.isEmpty());
@@ -940,7 +940,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -960,7 +960,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -986,13 +986,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkWareHouseRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkWareHouseRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkWareHouseRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkWareHouseRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkWareHouseRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1009,7 +1009,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
 
@@ -1028,7 +1028,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -1047,7 +1047,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -1075,13 +1075,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkActivityTypeRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkActivityTypeRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkActivityTypeRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkActivityTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkActivityTypeRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1098,7 +1098,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
 
@@ -1117,7 +1117,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -1136,7 +1136,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -1165,13 +1165,13 @@ class MasterDataUtilsTest {
 
     /**
      * Method under test:
-     * {@link MasterDataUtils#createInBulkSalesAgentRequest(IRunnerResponse, Class, Map, String)}
+     * {@link MasterDataUtils#createInBulkSalesAgentRequest(IRunnerResponse, Class, Map, String, Map)}
      */
 
     @Test
     void createInBulkSalesAgentRequest() {
         // Act and Assert
-        var response = masterDataUtils.createInBulkSalesAgentRequest(null, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkSalesAgentRequest(null, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1188,7 +1188,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
 
@@ -1205,9 +1205,9 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         mockShipmentDetailsResponse.setSalesAgent(123L);
-        var response2 = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code");
+        var response2 = masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
         assertNotNull(response2);
@@ -1226,7 +1226,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code"));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -1599,7 +1599,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1616,7 +1616,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS, true);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS, true, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1632,7 +1632,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1648,7 +1648,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Code("20GP").Description("20 Foot").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CONTAINER_TYPE);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CONTAINER_TYPE, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1664,7 +1664,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferChargeType.builder().ChargeCode("AMS").Description("AMS Filling").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CHARGE_TYPE);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CHARGE_TYPE, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1680,7 +1680,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("ValuenDesc").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1696,7 +1696,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1712,7 +1712,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ItemDescription("ItemDescription").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, true);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.MASTER_LIST, true, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1728,7 +1728,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferVessels.builder().Name("Name").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.VESSELS);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.VESSELS, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1744,7 +1744,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferCarrier.builder().ItemDescription("DPW").build());
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CARRIER);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CARRIER, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1760,7 +1760,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(TenantModel::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.TENANTS);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.TENANTS, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1776,7 +1776,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(WareHouseResponse::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.WAREHOUSES);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.WAREHOUSES, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1792,7 +1792,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(ActivityMasterResponse::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.ACTIVITY_TYPE);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.ACTIVITY_TYPE, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1808,7 +1808,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(SalesAgentResponse::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.SALES_AGENT);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.SALES_AGENT, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1824,7 +1824,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.COMMODITY);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.COMMODITY, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));
@@ -1841,7 +1841,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, StringUtility.getRandomString(10));
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, StringUtility.getRandomString(10), null);
 
         assertNotNull(resonseMap);
         assertFalse(resonseMap.containsKey("field"));
@@ -1857,7 +1857,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferCurrency::new);
 
-        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CURRENCIES);
+        var resonseMap = masterDataUtils.setMasterData(inputFieldNameKeyMap, CacheConstants.CURRENCIES, null);
 
         assertNotNull(resonseMap);
         assertTrue(resonseMap.containsKey("field"));

@@ -237,7 +237,7 @@ public abstract class IReport {
                 Set<String> keys = new HashSet<>();
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 commonUtils.createMasterDataKeysList(requests, keys);
-                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), null);
             }
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit, MasterDataType.VOLUME_UNIT.name(), false);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit, MasterDataType.WEIGHT_UNIT.name(), false);
@@ -2701,7 +2701,7 @@ public abstract class IReport {
                     Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                     Set<String> keys = new HashSet<>();
                     commonUtils.createMasterDataKeysList(requests, keys);
-                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
+                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), null);
                 }
             } catch (Exception ignored) {}
             if(!StringUtility.isEmpty(pack.getDGClass()))

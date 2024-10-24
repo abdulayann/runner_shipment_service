@@ -1586,20 +1586,21 @@ public class ContainerService implements IContainerService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoListWithMasterData(List<Containers> lst) {
+        Map<String, Object> cacheMap = new HashMap<>();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Set<String> commodityTypes = new HashSet<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         lst.forEach(containers -> {
             ContainerResponse containerResponse = (ContainerResponse) convertEntityToDto(containers);
             responseList.add(containerResponse);
-            commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId() ));
+            commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId(), cacheMap));
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
         if (!Objects.isNull(responseList)) {
             for (IRunnerResponse containerResponse : responseList) {
                 ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
-                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY));
+                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
             }
         }
         return responseList;
