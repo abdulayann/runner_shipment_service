@@ -1247,7 +1247,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             // Preprocessing
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
                 customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
@@ -1255,10 +1255,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!Objects.isNull(customerBookingResponse.getPackingList()))
                 customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             // fetching from V1 in single call
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            List<String> keys = new ArrayList<>();
+            Set<String> keys = new HashSet<>();
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
@@ -1283,13 +1283,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             // Preprocessing
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> locationCodes = new ArrayList<>();
+            Set<String> locationCodes = new HashSet<>();
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
                 locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
                 customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
             // fetching from V1 in single call
-            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes.stream().toList(), EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations());
             // Postprocessing
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
@@ -1308,11 +1308,11 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> chargeTypes = new ArrayList<>();
+            Set<String> chargeTypes = new HashSet<>();
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
                 customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
-            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
+            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE, chargeTypes, new EntityTransferChargeType());
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
@@ -1329,7 +1329,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> containerTypes = new ArrayList<>();
+            Set<String> containerTypes = new HashSet<>();
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
                 customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
@@ -1351,7 +1351,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Set<String> vesselList = new HashSet<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
                 Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
                 masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels());
                 customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, true));
@@ -1368,8 +1368,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                List<String> carriersList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-                Map v1Data = masterDataUtils.fetchInBulkCarriers(carriersList);
+                Set<String> carriersList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Map v1Data = masterDataUtils.fetchInBulkCarriers(carriersList.stream().toList());
                 masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER, carriersList, new EntityTransferCarrier());
                 customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true));
             }

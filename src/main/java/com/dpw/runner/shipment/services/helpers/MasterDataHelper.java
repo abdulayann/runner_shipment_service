@@ -50,7 +50,7 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() ));
             if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
                 listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() ));
             if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
@@ -74,11 +74,11 @@ public class MasterDataHelper {
             }
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
 
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            List<String> keys = new ArrayList<>();
+            Set<String> keys = new HashSet<>();
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
 
@@ -103,7 +103,7 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> locationCodes = new ArrayList<>();
+            Set<String> locationCodes = new HashSet<>();
             if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
                 locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
             if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -145,7 +145,7 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> tenantIdList = new ArrayList<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+            Set<String> tenantIdList = new HashSet<>(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
             if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
                 tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()));
             if(!Objects.isNull(shipmentDetailsResponse.getConsolidationList()) && !shipmentDetailsResponse.getConsolidationList().isEmpty()){
@@ -174,7 +174,7 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> currencyList = new ArrayList<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
+            Set<String> currencyList = new HashSet<>(masterDataUtils.createInBulkCurrencyRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()));
             Map<String, EntityTransferCurrency> v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
             masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES, currencyList, new EntityTransferCurrency());
 
@@ -195,12 +195,12 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> carrierList = new ArrayList<>();
+            Set<String> carrierList = new HashSet<>();
             if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
-                carrierList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
 
             if(masterDataResponse != null && !Objects.isNull(shipmentDetailsResponse.getRoutingsList())) {
-                List<String> finalCarrierList = carrierList;
+                Set<String> finalCarrierList = carrierList;
                 shipmentDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
             }
 
@@ -233,7 +233,7 @@ public class MasterDataHelper {
             }
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes.stream().toList(), new EntityTransferCommodityType());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
@@ -258,7 +258,7 @@ public class MasterDataHelper {
                 wareHouseTypes.addAll(masterDataUtils.createInBulkWareHouseRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
 
             Map<String, WareHouseResponse> v1Data = masterDataUtils.fetchInWareHousesList(wareHouseTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES, wareHouseTypes.stream().toList(), new WareHouseResponse());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.WAREHOUSES, wareHouseTypes, new WareHouseResponse());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -283,7 +283,7 @@ public class MasterDataHelper {
                 activityTypes.addAll(masterDataUtils.createInBulkActivityTypeRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName()) );
 
             Map<String, ActivityMasterResponse> v1Data = masterDataUtils.fetchInActivityMasterList(activityTypes.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE, activityTypes.stream().toList(), new ActivityMasterResponse());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.ACTIVITY_TYPE, activityTypes, new ActivityMasterResponse());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
@@ -308,7 +308,7 @@ public class MasterDataHelper {
                 salesAgents.addAll(masterDataUtils.createInBulkSalesAgentRequest(shipmentDetailsResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName()) );
 
             Map<String, SalesAgentResponse> v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT, salesAgents.stream().toList(), new SalesAgentResponse());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT, salesAgents, new SalesAgentResponse());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(shipmentDetailsResponse))
@@ -328,12 +328,12 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> containerTypes = new ArrayList<>();
+            Set<String> containerTypes = new HashSet<>();
             if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
                 shipmentDetailsResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
 
             Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes.stream().toList(), new EntityTransferContainerType());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType());
 
             if(masterDataResponse == null) {
                 if (!Objects.isNull(shipmentDetailsResponse.getContainersList()))
@@ -354,7 +354,7 @@ public class MasterDataHelper {
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> vesselList = new ArrayList<>();
+            Set<String> vesselList = new HashSet<>();
             if (!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
                 shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> vesselList.addAll(masterDataUtils.createInBulkVesselsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId() )));
             if (!Objects.isNull(shipmentDetailsResponse.getCarrierDetails()))
@@ -387,7 +387,7 @@ public class MasterDataHelper {
                 shipmentDetailsResponse.getPackingList().forEach(r -> dgSubstanceIdList.addAll(masterDataUtils.createInBulkDGSubstanceRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId() )));
 
             Map<String, EntityTransferDGSubstance> v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
-            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList.stream().toList(), new EntityTransferDGSubstance());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList, new EntityTransferDGSubstance());
 
             if(!Objects.equals(null, masterDataResponse)) {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);

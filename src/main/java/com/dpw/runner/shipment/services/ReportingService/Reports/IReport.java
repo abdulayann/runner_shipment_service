@@ -207,7 +207,7 @@ public abstract class IReport {
         }
         ship.MarinePollutant = Boolean.TRUE.equals(row.getMarinePollutant()) ? "Marine Pollutant" : null;
         try {
-            List<MasterListRequest> requests = new ArrayList<>();
+            Set<MasterListRequest> requests = new HashSet<>();
             Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossVolumeUnit));
@@ -232,9 +232,9 @@ public abstract class IReport {
 
             if(requests.size() > 0) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                masterListRequestV2.setMasterListRequests(requests);
+                masterListRequestV2.setMasterListRequests(requests.stream().toList());
                 masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
-                List<String> keys = new ArrayList<>();
+                Set<String> keys = new HashSet<>();
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 commonUtils.createMasterDataKeysList(requests, keys);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
@@ -2685,7 +2685,7 @@ public abstract class IReport {
             if(!StringUtility.isEmpty(pack.getProperShippingName()))
                 dict.put(OCEAN_DG_PSN, pack.getProperShippingName());
             try {
-                List<MasterListRequest> requests = new ArrayList<>();
+                Set<MasterListRequest> requests = new HashSet<>();
                 Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
                 Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getDGClass()));
                 if(Objects.isNull(value1))
@@ -2696,10 +2696,10 @@ public abstract class IReport {
 
                 if(requests.size() > 0) {
                     MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                    masterListRequestV2.setMasterListRequests(requests);
+                    masterListRequestV2.setMasterListRequests(requests.stream().toList());
                     masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
                     Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                    List<String> keys = new ArrayList<>();
+                    Set<String> keys = new HashSet<>();
                     commonUtils.createMasterDataKeysList(requests, keys);
                     masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists());
                 }

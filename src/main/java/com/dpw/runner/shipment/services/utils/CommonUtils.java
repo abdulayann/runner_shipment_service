@@ -1684,7 +1684,7 @@ public class CommonUtils {
         return transportModes;
     }
     
-    public void createMasterDataKeysList(List<MasterListRequest> masterListRequests, List<String> keys) {
+    public void createMasterDataKeysList(Set<MasterListRequest> masterListRequests, Set<String> keys) {
         if(Objects.isNull(masterListRequests))
             return;
         for(MasterListRequest masterListRequest : masterListRequests) {
