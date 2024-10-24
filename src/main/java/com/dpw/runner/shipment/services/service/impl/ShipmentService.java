@@ -3483,19 +3483,6 @@ public class ShipmentService implements IShipmentService {
         var start = System.currentTimeMillis();
         var shipmentList = shipmentDao.findAll(spec, pageable);
 
-//        select * from shipment_details  limit 25;
-//        select * from parties where id in(select client_id from shipment_details  limit 25);
-//        select * from parties where id in(select consigner_id from shipment_details  limit 25);
-//        select * from parties where id in(select consignee_id from shipment_details  limit 25);
-//        select * from carrier_details where id in(select carrier_detail_id from shipment_details  limit 25);
-//        select * from shipment_additional_details where id in(select additional_details_id from shipment_details  limit 25);
-
-//        var partiesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.fetchParties(shipmentList)), executorService);
-//        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.fetchCarrier(shipmentList)), executorService);
-//        var additionalDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.fetchAdditionalDetails(shipmentList)), executorService);
-//
-//        CompletableFuture.allOf(partiesFuture, carrierFuture, additionalDetailsFuture).join();
-
         List<Long> partyIds = shipmentList.stream().map(ShipmentDetails::getClientId).collect(Collectors.toList());
         partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsigneeId).collect(Collectors.toList()));
         partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsignerId).collect(Collectors.toList()));
@@ -3529,50 +3516,6 @@ public class ShipmentService implements IShipmentService {
         log.info("{} | findAllWithOutIncludeColumn: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
         return shipmentList;
     }
-
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> fetchParties (Page<ShipmentDetails> shipmentList) {
-        List<Long> partyIds = shipmentList.stream().map(ShipmentDetails::getClientId).collect(Collectors.toList());
-        partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsigneeId).collect(Collectors.toList()));
-        partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsignerId).collect(Collectors.toList()));
-
-        Map<Long, Parties> partyMap = partiesDao.findByIds(partyIds.stream().filter(Objects::nonNull).collect(Collectors.toList()))
-                .stream().collect(Collectors.toMap(Parties::getId, Function.identity()));
-
-        shipmentList.forEach(c -> c.setClient(partyMap.get(c.getClientId())));
-        shipmentList.forEach(c -> c.setConsignee(partyMap.get(c.getConsigneeId())));
-        shipmentList.forEach(c -> c.setConsigner(partyMap.get(c.getConsignerId())));
-        return CompletableFuture.completedFuture(null);
-    }
-
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> fetchCarrier (Page<ShipmentDetails> shipmentList) {
-        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
-        Map<Long, CarrierDetails> carrierMap = carrierDetailsDao.findByIds(carrierIds).stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setCarrierDetails(carrierMap.get(c.getCarrierDetailId())));
-        return CompletableFuture.completedFuture(null);
-    }
-
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> fetchAdditionalDetails (Page<ShipmentDetails> shipmentList) {
-        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
-        Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
-        return CompletableFuture.completedFuture(null);
-    }
-
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> fetchPickupDeliveryDetails (Page<ShipmentDetails> shipmentList) {
-        List<Long> pickupDetailsId = new ArrayList<>();
-        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
-        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
-        if(pickupDetailsId.size() > 0) {
-            Map<Long, PickupDeliveryDetails> pickupDetailsMap = pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList()))
-                    .stream().collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
-
-            shipmentList.forEach(c -> c.setPickupDetails(pickupDetailsMap.get(c.getPickupDetailsId())));
-            shipmentList.forEach(c -> c.setDeliveryDetails(pickupDetailsMap.get(c.getDeliveryDetailsId())));
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-
-
 
     private void checkWayBillNumberCriteria(ListCommonRequest request)
     {
