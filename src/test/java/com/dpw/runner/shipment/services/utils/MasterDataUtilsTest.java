@@ -2170,9 +2170,6 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
 
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferContainerType.class))).thenReturn(List.of(EntityTransferContainerType.builder().Code("20GP").ContainerType("ContainerType").build()));
-        when(v1Service.fetchContainerTypeData(any())).thenReturn(V1DataResponse.builder().build());
-
         masterDataUtils.setConsolidationContainerTeuData(List.of(mockConsolidation), List.of(ConsolidationListResponse.builder().build()));
         assertTrue(isSuccess);
     }
