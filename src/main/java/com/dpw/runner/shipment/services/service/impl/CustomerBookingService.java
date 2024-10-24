@@ -1362,7 +1362,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
                 Set<String> carriersList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-                Map v1Data = masterDataUtils.fetchInBulkCarriers(carriersList);
+                Map<String, EntityTransferCarrier> v1Data = masterDataUtils.fetchInBulkCarriers(carriersList);
                 masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER, carriersList, new EntityTransferCarrier());
                 customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true));
             }
