@@ -187,16 +187,26 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds) {
-        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnShipmentId(shipmentIds);
-        Map<Long, Integer> shipmentCounts = new HashMap<>();
+    public Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestedType) {
+        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnShipmentId(shipmentIds, requestedType);
+        return this.convertResponseToMap(results);
+    }
+
+    @Override
+    public Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType) {
+        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnConsolidation(consoleIds, requestedType);
+        return this.convertResponseToMap(results);
+    }
+
+    private Map<Long, Integer> convertResponseToMap(List<Object[]> results) {
+        Map<Long, Integer> responseMap = new HashMap<>();
 
         for (Object[] result : results) {
-            Long shipmentId = ((Number) result[0]).longValue();
+            Long key = ((Number) result[0]).longValue();
             int count = ((Number) result[1]).intValue();
-            shipmentCounts.put(shipmentId, count);
+            responseMap.put(key, count);
         }
 
-        return shipmentCounts;
+        return responseMap;
     }
 }

@@ -363,14 +363,14 @@ public class ConsolidationService implements IConsolidationService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
-        var map = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(consolidationIdList).build());
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
-            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).map(List::size).orElse(null));
+            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).orElse(null));
             consolidationListResponses.add(res);
         });
         consolidationListResponses.forEach(consolidationDetails -> {
@@ -2653,9 +2653,8 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            id = consolidationDetails.get().getId();
-            var notificationMap = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(List.of(id)).build());
-            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
+            var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
             createConsolidationPayload(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

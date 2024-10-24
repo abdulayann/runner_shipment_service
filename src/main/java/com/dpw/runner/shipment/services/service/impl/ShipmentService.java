@@ -665,7 +665,7 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList);
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
 //            containerCountUpdate(shipmentDetail, response);
@@ -3646,7 +3646,7 @@ public class ShipmentService implements IShipmentService {
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
-        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()));
+        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));

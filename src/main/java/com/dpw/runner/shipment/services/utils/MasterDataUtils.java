@@ -349,10 +349,16 @@ public class MasterDataUtils{
                 dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
 
             Set<String> containerTypes = new HashSet<>();
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-                if(!Objects.isNull(consolidationDetails.getContainersList()))
-                    consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+                if(!Objects.isNull(consolidationDetails.getContainersList())) {
+                    consolidationDetails.getContainersList().forEach(r -> {
+                        Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                        if (Objects.isNull(cacheValue))
+                            containerTypes.add(r.getContainerCode());
+                    });
+                }
             }
 
             Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
