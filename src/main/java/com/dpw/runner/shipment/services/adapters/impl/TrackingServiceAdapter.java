@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import java.time.format.DateTimeFormatter;
@@ -482,31 +483,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         if (UserContext.getUser() == null || UserContext.getUser().getTenantCountryCode() == null)
             return countryCode;
 
-
-        try {
-            String tenantCountry = UserContext.getUser().getTenantCountryCode();
-            log.info("TrackingService Adapter - building criteria for country {}", tenantCountry);
-            // get country code from master data
-            List<Object> criteria = Arrays.asList(
-                    List.of(MasterDataConstants.ITEM_TYPE),
-                    "=",
-                    MasterDataType.COUNTRIES.getId()
-            );
-            criteria = Arrays.asList(criteria,
-                    "and",
-                    Arrays.asList(List.of(MasterDataConstants.ITEM_VALUE),
-                            "IN",
-                            List.of(Collections.singletonList(tenantCountry))
-                    )
-            );
-            V1DataResponse v1DataResponse = v1Service.fetchMasterData(CommonV1ListRequest.builder().criteriaRequests(criteria).build());
-            if (!Objects.isNull(v1DataResponse.getEntities())) {
-                var masterData = jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class);
-                countryCode = masterData.get(0).getIdentifier1();
-            }
-        } catch (Exception e) {
-            log.error("TrackingService Adapter - error while fetching country master data", e);
-        }
+        countryCode = CountryListHelper.ISO3166.fromAlpha3(UserContext.getUser().getTenantCountryCode().toUpperCase()).getAlpha2();
 
         return StringUtility.toUpperCase(countryCode);
     }

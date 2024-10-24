@@ -425,16 +425,9 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
-    void mapShipmentDataToTrackingServiceDataPopulatesCountryCodeFromBranchCountry() {
-        UsersDto mockUser = new UsersDto();
-        mockUser.setTenantCountryCode("AUS");
-        UserContext.setUser(mockUser);
+    void mapShipmentDataToTrackingServiceDataWhenUserIsNull() {
+        UserContext.setUser(null);
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        EntityTransferMasterLists masterData = EntityTransferMasterLists.builder()
-                .ItemType(MasterDataType.COUNTRIES.getId())
-                .ItemValue("AUS")
-                .Identifier1("AU")
-                .build();
 
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
@@ -444,11 +437,31 @@ class TrackingServiceAdapterTest {
                 .build();
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
-        when(v1Service.fetchMasterData(any())).thenReturn(V1DataResponse.builder().entities(List.of(masterData)).build());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(masterData));
         UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
         assertNotNull(response);
         assertEquals("APL", response.getCarrier());
+        assertNull(response.getShipmentDetails().get(0).getCountryCode());
+    }
+
+    @Test
+    void mapShipmentDataToTrackingServiceDataPopulatesCountryCodeFromBranchCountry() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantCountryCode("AUS");
+        UserContext.setUser(mockUser);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
+                .data(new ArrayList<>())
+                .build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
+        assertEquals("AU", response.getShipmentDetails().get(0).getCountryCode());
     }
 
 }
