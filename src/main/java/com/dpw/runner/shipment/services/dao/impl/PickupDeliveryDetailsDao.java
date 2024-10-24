@@ -110,4 +110,9 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
             log.error(responseMsg, e);
         }
     }
+
+    @Override
+    public List<PickupDeliveryDetails> findByIdIn(List<Long> ids) {
+        return pickupDeliveryDetailsRepository.findByIdIn(ids);
+    }
 }

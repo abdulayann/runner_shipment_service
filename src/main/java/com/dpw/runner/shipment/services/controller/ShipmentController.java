@@ -169,7 +169,8 @@ public class ShipmentController {
             if(Boolean.TRUE.equals(getFullShipment)) {
                 return shipmentService.fullShipmentsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
-           return shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+           ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+            return  response;
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }

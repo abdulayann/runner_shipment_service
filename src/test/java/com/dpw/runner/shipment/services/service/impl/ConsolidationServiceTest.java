@@ -263,8 +263,8 @@ import static org.mockito.Mockito.*;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
-        testConsolResponse = modelMapperTest.map(testConsol , ConsolidationDetailsResponse.class);
-        testConsolRequest = modelMapperTest.map(testConsol , ConsolidationDetailsRequest.class);
+        testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
+        testConsolRequest = objectMapperTest.convertValue(testConsol , ConsolidationDetailsRequest.class);
         consolidationService.executorService = Executors.newFixedThreadPool(2);
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         consolidationDetails = new ConsolidationDetails();
@@ -3075,9 +3075,9 @@ import static org.mockito.Mockito.*;
         Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
         packing.setId(1L);
         packing.setShipmentId(2L);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3100,9 +3100,9 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         packing.setShipmentId(2L);
         packing.setHazardous(true);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3120,9 +3120,9 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         packing.setShipmentId(2L);
         packing.setHazardous(true);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3141,9 +3141,9 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         packing.setShipmentId(2L);
         packing.setHazardous(true);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3163,9 +3163,9 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         packing.setShipmentId(2L);
         packing.setHazardous(true);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3193,9 +3193,9 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         packing.setShipmentId(2L);
         packing.setHazardous(true);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
@@ -3222,9 +3222,9 @@ import static org.mockito.Mockito.*;
         Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
         packing.setId(1L);
         packing.setShipmentId(2L);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.CARGO_TYPE_FCL);
         request.setPacksList(List.of(packsList));
 
@@ -3245,13 +3245,13 @@ import static org.mockito.Mockito.*;
         Packing packing = jsonTestUtility.getJson("PACKING", Packing.class);
         packing.setId(1L);
         packing.setShipmentId(2L);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
-        ContainerShipmentADInConsoleRequest.PacksList packsList = modelMapperTest.map(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
+        ContainerShipmentADInConsoleRequest.PacksList packsList = objectMapperTest.convertValue(packing, ContainerShipmentADInConsoleRequest.PacksList.class);
         packsList.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         request.setPacksList(List.of(packsList));
 
-        ContainerResponse response = modelMapperTest.map(containers, ContainerResponse.class);
+        ContainerResponse response = objectMapperTest.convertValue(containers, ContainerResponse.class);
 
         when(containerDao.findById(anyLong())).thenReturn(Optional.of(containers));
         when(packingDao.findById(anyLong())).thenReturn(Optional.of(packing));
@@ -3272,7 +3272,7 @@ import static org.mockito.Mockito.*;
         ContainerShipmentADInConsoleRequest request = new ContainerShipmentADInConsoleRequest();
         request.setIsFCL(true);
         Containers containers = jsonTestUtility.getJson("CONTAINER", Containers.class);
-        ContainerRequest containerRequest = modelMapperTest.map(containers, ContainerRequest.class);
+        ContainerRequest containerRequest = objectMapperTest.convertValue(containers, ContainerRequest.class);
         request.setContainer(containerRequest);
 
         when(containerDao.findById(anyLong())).thenThrow(new RuntimeException());
@@ -3558,11 +3558,11 @@ import static org.mockito.Mockito.*;
     @Test
     void testGetConsolFromShipment_Success() {
         ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
-        ShipmentDetailsResponse shipmentDetailsResponse = modelMapperTest.map(shipmentDetails, ShipmentDetailsResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapperTest.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setShipmentLite(false);
-        PartiesResponse exportBrokerResponse = modelMapperTest.map(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class);
-        PartiesResponse importBrokerResponse = modelMapperTest.map(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class);
+        PartiesResponse exportBrokerResponse = objectMapperTest.convertValue(shipmentDetailsResponse.getAdditionalDetails().getExportBroker(), PartiesResponse.class);
+        PartiesResponse importBrokerResponse = objectMapperTest.convertValue(shipmentDetailsResponse.getAdditionalDetails().getImportBroker(), PartiesResponse.class);
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
@@ -3584,7 +3584,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testGetConsolFromShipment_Failure_TenantSettingsDataRetrievalError() {
         ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
-        ShipmentDetailsResponse shipmentDetailsResponse = modelMapperTest.map(shipmentDetails, ShipmentDetailsResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapperTest.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.empty());
@@ -4123,8 +4123,8 @@ import static org.mockito.Mockito.*;
     void testCompleteV1ConsolidationCreateAndUpdate_Success() throws RunnerException {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
-        ConsolidationDetailsRequest consolidationDetailsRequest = modelMapperTest.map(consolidationDetails, ConsolidationDetailsRequest.class);
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
+        ConsolidationDetailsRequest consolidationDetailsRequest = objectMapperTest.convertValue(consolidationDetails, ConsolidationDetailsRequest.class);
+        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapperTest.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
         var spyService = Mockito.spy(consolidationService);
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));

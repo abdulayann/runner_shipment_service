@@ -363,14 +363,14 @@ public class ConsolidationService implements IConsolidationService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
-        var map = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(consolidationIdList).build());
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
-            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).map(List::size).orElse(null));
+            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).orElse(null));
             consolidationListResponses.add(res);
         });
         consolidationListResponses.forEach(consolidationDetails -> {
@@ -484,7 +484,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid);
-            this.createLogHistoryForConsole(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -515,7 +515,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, false);
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
-            this.createLogHistoryForConsole(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1419,7 +1419,8 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
-            this.createLogHistoryForConsole(entity);
+            ConsolidationDetails finalEntity1 = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)));
             ConsolidationDetails finalEntity = entity;
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
@@ -2734,9 +2735,8 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
             }
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            id = consolidationDetails.get().getId();
-            var notificationMap = getNotificationMap(PendingNotificationRequest.builder().consolidationIdList(List.of(id)).build());
-            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
+            var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
             createConsolidationPayload(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -3929,7 +3929,7 @@ public class ConsolidationService implements IConsolidationService {
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(consolidationDetails.getId())
                     .entityType(Constants.CONSOLIDATION).entityGuid(consolidationDetails.getGuid()).entityPayload(entityPayload).build());
         } catch (Exception ex) {
-            log.error("Error while creating LogsHistory : " + ex.getMessage());
+            log.error("Error while creating LogsHistory for Consolidation : " + ex.getMessage());
         }
     }
     private void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
