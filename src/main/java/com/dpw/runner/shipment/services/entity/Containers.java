@@ -299,11 +299,13 @@ public class Containers extends MultiTenancy {
             joinColumns = @JoinColumn(name = "container_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "containersList", allowSetters = true)
+    @BatchSize(size = 50)
     private List<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
             mappedBy = "containersList")
     @JsonIgnore
+    @BatchSize(size = 50)
     private List<BookingCharges> bookingCharges;
 
     @Column(name = "commodity_group")
@@ -331,6 +333,7 @@ public class Containers extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_id")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckingDetails;
 
     @Column(name = "invoice_number")

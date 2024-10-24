@@ -11,15 +11,15 @@ import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import javax.persistence.OrderBy;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.*;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -128,9 +128,11 @@ public class ShipmentDetails extends MultiTenancy {
     private String goodsDescription;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<BookingCarriage> bookingCarriagesList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ELDetails> elDetailsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -140,19 +142,24 @@ public class ShipmentDetails extends MultiTenancy {
 
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<Packing> packingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @OrderBy("leg ASC")
+    @BatchSize(size = 50)
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ServiceDetails> servicesList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckDriverDetails;
 
     @Column(name = "weight")
@@ -313,6 +320,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
+    @BatchSize(size = 50)
     private List<Notes> notesList;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
@@ -360,6 +368,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Parties consignee;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<Jobs> jobsList;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -368,10 +377,12 @@ public class ShipmentDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
     @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
+    @BatchSize(size = 50)
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")
+    @BatchSize(size = 50)
     private List<Parties> shipmentAddresses;
 
     @Column(name = "job_status")
@@ -501,6 +512,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String destinationContractType;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
 
      @Column(name = "date_type")
@@ -525,6 +537,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @Where(clause = "is_attachment_done = 'false'")
+    @BatchSize(size = 50)
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
     @Column(name = "department")

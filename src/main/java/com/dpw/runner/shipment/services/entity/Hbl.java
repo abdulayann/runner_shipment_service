@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -41,14 +38,17 @@ public class Hbl extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "container_data", columnDefinition = "jsonb")
+    @BatchSize(size = 50)
     private List<HblContainerDto> hblContainer;
 
     @Type(type = "jsonb")
     @Column(name = "cargo_data", columnDefinition = "jsonb")
+    @BatchSize(size = 50)
     private List<HblCargoDto> hblCargo;
 
     @Type(type = "jsonb")
     @Column(name = "notify_party_data", columnDefinition = "jsonb")
+    @BatchSize(size = 50)
     private List<HblPartyDto> hblNotifyParty;
 
 }

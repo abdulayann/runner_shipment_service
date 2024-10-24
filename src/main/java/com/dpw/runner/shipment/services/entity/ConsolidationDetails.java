@@ -446,6 +446,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @Where(clause = "is_attachment_done = 'false'")
+    @BatchSize(size = 50)
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
     @Column(name = "department")

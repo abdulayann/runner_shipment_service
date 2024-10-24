@@ -88,6 +88,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'PICKUP_DELIVERY'")
+    @BatchSize(size = 50)
     private List<Parties> partiesList;
 
     @Column(name = "drop_mode")
