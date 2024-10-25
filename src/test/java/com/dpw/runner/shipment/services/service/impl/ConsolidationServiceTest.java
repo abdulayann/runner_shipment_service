@@ -4227,7 +4227,7 @@ import static org.mockito.Mockito.*;
         when(truckDriverDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(truckDriverDetails)));
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(consolidationDetails.getShipmentsList()));
         when(jsonHelper.convertValue(truckDriverDetails, TruckDriverDetailsResponse.class)).thenReturn(truckDriverDetailsResponse);
-        spyService.createConsolidationPayload(consolidationDetails, consolidationDetailsResponse);
+        spyService.createConsolidationPayload(consolidationDetails, consolidationDetailsResponse, true);
         verify(truckDriverDetailsDao, times(1)).findAll(any(), any());
         assertEquals(List.of(truckDriverDetailsResponse), consolidationDetailsResponse.getTruckDriverDetails());
     }
@@ -4251,7 +4251,7 @@ import static org.mockito.Mockito.*;
         awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
         awb.setLinkedHawbAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
         when(awbDao.findByConsolidationId(consolidationDetailsResponse.getId())).thenReturn(List.of(awb));
-        spyService.createConsolidationPayload(consolidationDetails, consolidationDetailsResponse);
+        spyService.createConsolidationPayload(consolidationDetails, consolidationDetailsResponse, true);
         assertEquals(AwbStatus.AIR_MESSAGE_SENT, consolidationDetailsResponse.getAwbStatus());
         assertEquals(AwbStatus.AIR_MESSAGE_SENT, consolidationDetailsResponse.getLinkedHawbStatus());
     }
