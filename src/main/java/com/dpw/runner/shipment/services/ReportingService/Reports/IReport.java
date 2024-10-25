@@ -360,13 +360,19 @@ public abstract class IReport {
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
         if (shipment.getReferenceNumbersList() != null) {
-            dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+            dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS))
+                .findFirst()
+                .map(ReferenceNumbersModel::getReferenceNumber)
+                .orElse(null));
         }
 
-        if (shipment.getReferenceNumbersList() != null) {
-            dictionary.put(CARGO_LOCATION, shipment.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(CAL)));
+        if (shipment.getShipmentAddresses() != null) {
+            dictionary.put(CARGO_LOCATION, shipment.getShipmentAddresses().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(CAL))
+                .findFirst()
+                .map(ReportHelper::getOrgAddressDetails)
+                .orElse(null));
         }
         UnlocationsResponse pol = unlocationsMap.get(shipment.getCarrierDetails().getOriginPort());
         UnlocationsResponse pod = unlocationsMap.get(shipment.getCarrierDetails().getDestinationPort());

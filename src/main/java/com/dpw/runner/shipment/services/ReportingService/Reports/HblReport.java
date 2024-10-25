@@ -614,12 +614,18 @@ public class HblReport extends IReport {
 
         populateBillChargesFields(hblModel.shipment, dictionary);
         if (hblModel.shipment.getReferenceNumbersList() != null) {
-            dictionary.put(AMS_NUMBER, hblModel.shipment.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+            dictionary.put(AMS_NUMBER, hblModel.shipment.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS))
+                .findFirst()
+                .map(ReferenceNumbersModel::getReferenceNumber)
+                .orElse(null));
         }
         if(hblModel.shipment.getShipmentAddresses() != null){
-            dictionary.put(CARGO_LOCATION, hblModel.shipment.getShipmentAddresses().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(CAL)));
+            dictionary.put(CARGO_LOCATION, hblModel.shipment.getShipmentAddresses().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(CAL))
+                .findFirst()
+                .map(ReportHelper::getOrgAddressDetails)
+                .orElse(null));
         }
         if (!Objects.isNull(hblModel.shipment) && !Objects.isNull(hblModel.shipment.getAdditionalDetails()) && !Objects.isNull(hblModel.shipment.getAdditionalDetails().getNotifyParty())) {
             PartiesModel notifyParty = hblModel.shipment.getAdditionalDetails().getNotifyParty();

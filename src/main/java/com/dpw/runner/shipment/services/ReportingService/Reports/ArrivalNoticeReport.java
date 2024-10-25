@@ -117,10 +117,6 @@ public class ArrivalNoticeReport extends IReport {
         }
 
         if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
-            dictionary.put(AMS_NUMBER, arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
-        }
-        if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
             referenceNumber = arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().
                     filter(i -> i.getType().equals(ERN)).findFirst();
         }
