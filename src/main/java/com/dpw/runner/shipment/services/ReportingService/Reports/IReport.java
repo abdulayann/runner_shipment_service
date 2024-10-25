@@ -1875,7 +1875,7 @@ public abstract class IReport {
         return null;
     }
 
-    public static List<String> getFormattedDetails(String name, String address)
+    public static List<String> getFormattedDetails(String name, String address, String country, String state, String city, String zipCode, String phone)
     {
         if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
             return null;
@@ -1891,6 +1891,24 @@ public abstract class IReport {
                     .toArray(String[]::new);
             details.addAll(Arrays.asList(addressList));
         }
+        StringBuilder tempAddress = new StringBuilder();
+        if (!Strings.isNullOrEmpty(state)){
+            tempAddress.append(state);
+        }
+        if (!Strings.isNullOrEmpty(city)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(city);
+        }
+        if (!Strings.isNullOrEmpty(country)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(country);
+        }
+        if(!tempAddress.isEmpty())
+            details.add(tempAddress.toString());
+        if (!Strings.isNullOrEmpty(zipCode)) details.add(zipCode);
+        if (!Strings.isNullOrEmpty(phone)) details.add(phone);
         return details;
     }
 

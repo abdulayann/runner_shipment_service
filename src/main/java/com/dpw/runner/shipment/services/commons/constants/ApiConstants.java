@@ -49,6 +49,7 @@ public class ApiConstants {
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
+    public static final String STATE_BASED_LIST = "/state-based-list";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
@@ -76,6 +77,7 @@ public class ApiConstants {
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
     public static final String  GET_PACK_UTILISATION = "/get/packUtilisation";
+    public static final String HIDE_MANIFEST = "/hideManifest";
 
     public static final String SHIPMENT_SUMMARY = "/get/shipmentSummary";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";

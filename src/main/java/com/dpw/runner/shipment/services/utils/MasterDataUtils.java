@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -113,6 +114,7 @@ public class MasterDataUtils{
      */
     public void setLocationData(List<IRunnerResponse> responseList, String onField) {
         try {
+            double _start = System.currentTimeMillis();
             Set<String> locCodes = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -158,6 +160,8 @@ public class MasterDataUtils{
                     consolidationDetailsResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
                 }
             }
+            log.info("Time taken to fetch location Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setLocationData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -165,6 +169,7 @@ public class MasterDataUtils{
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
         try {
+            double _start = System.currentTimeMillis();
             Set<String> locCodes = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -199,6 +204,7 @@ public class MasterDataUtils{
                     consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
                 }
             }
+            log.info("Time taken to fetch vessel Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -206,6 +212,7 @@ public class MasterDataUtils{
 
     public void fetchTenantIdForList(List<IRunnerResponse> responseList) {
         try {
+            double _start = System.currentTimeMillis();
             Set<String> tenantIdList = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -242,6 +249,8 @@ public class MasterDataUtils{
                         consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS));
                 }
             }
+            log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchTenantIdForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -249,15 +258,21 @@ public class MasterDataUtils{
 
     public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
         try {
+            double _start = System.currentTimeMillis();
             Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
             for (IRunnerResponse response : responseList)
                 dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
 
             Set<String> containerTypes = new HashSet<>();
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             for(ShipmentDetails shipment : shipmentDetailsList) {
                 if(!Objects.isNull(shipment.getContainersList()))
-                    shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+                    shipment.getContainersList().forEach(r -> {
+                        Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                        if (Objects.isNull(cacheValue))
+                            containerTypes.add(r.getContainerCode());
+                    });
             }
 
             Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
@@ -265,6 +280,7 @@ public class MasterDataUtils{
 
             BigDecimal teu;
             for(ShipmentDetails shipment : shipmentDetailsList) {
+                containerCountUpdate(shipment, dataMap.get(shipment.getId()));
                 teu = BigDecimal.ZERO;
                 if (shipment.getContainersList() != null) {
                     for(Containers c : shipment.getContainersList()) {
@@ -280,9 +296,50 @@ public class MasterDataUtils{
                 }
                 dataMap.get(shipment.getId()).setTeuCount(teu);
             }
+            log.info("Time taken to fetch COntainer Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
+    }
+
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        if (shipmentDetail.getContainersList() != null) {
+            for (Containers container : shipmentDetail.getContainersList()) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    }
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerNumbers(containerNumber);
     }
 
     public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
@@ -292,10 +349,16 @@ public class MasterDataUtils{
                 dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
 
             Set<String> containerTypes = new HashSet<>();
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-                if(!Objects.isNull(consolidationDetails.getContainersList()))
-                    consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+                if(!Objects.isNull(consolidationDetails.getContainersList())) {
+                    consolidationDetails.getContainersList().forEach(r -> {
+                        Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                        if (Objects.isNull(cacheValue))
+                            containerTypes.add(r.getContainerCode());
+                    });
+                }
             }
 
             Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
@@ -347,9 +410,7 @@ public class MasterDataUtils{
                 }
                 if(itemValue != null) {
                     String key = itemValue + '#' + itemTypeName;
-                    log.info("createInBulkMasterListRequest before cache.get: {}", StringUtility.convertToString(cache));
                     Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
-                    log.info("createInBulkMasterListRequest after cache.get");
                     if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
                     fieldNameKeyMap.put(field, key);
                 }
@@ -398,6 +459,26 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE
+        if(!IsStringNullOrEmpty(key)) {
+            String value = null;
+
+            if(!IsStringNullOrEmpty(masterLists.getValuenDesc()))
+                value = masterLists.getValuenDesc();
+            else
+                value = masterLists.getItemDescription();
+
+            String[] parts = key.split("#");
+            if(parts.length == 2) {
+                Map<String, String> finalValueMap = new HashMap<>();
+                if(map.containsKey(parts[1]))
+                    finalValueMap = (Map<String, String>) map.get(parts[1]);
+                finalValueMap.put(parts[0], value);
+                map.put(parts[1], finalValueMap);
+            }
+        }
+    }
+
 
     public List<EntityTransferMasterLists> fetchMultipleMasterData(MasterListRequestV2 requests) {
         V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
@@ -418,9 +499,7 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String locCode = (String) field1.get(entityPayload);
-                log.info("createInBulkUnLocationsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
-                log.info("createInBulkUnLocationsRequest after cache.get");
                 if(locCode != null && !locCode.equals("")) {
                     if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
                     fieldNameKeyMap.put(field, locCode);
@@ -630,16 +709,13 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
-                log.info("createInBulkVesselsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
-                log.info("createInBulkVesselsRequest after cache.get");
                 if(itemValue != null && !itemValue.isEmpty()) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -979,7 +1055,8 @@ public class MasterDataUtils{
 
     public Map<String, TenantModel> fetchInTenantsList(List<String> requests) {
         Map<String, TenantModel> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toList());
+        if(!requests.isEmpty()) {
             log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.TENANT_ID));
@@ -1316,7 +1393,8 @@ public class MasterDataUtils{
             CommonV1ListRequest orgRequest = new CommonV1ListRequest();
             List<Object> orgField = new ArrayList<>(List.of(field));
             String operator = "=";
-            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, value));
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator));
+            orgCriteria.add(value);
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             response = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);

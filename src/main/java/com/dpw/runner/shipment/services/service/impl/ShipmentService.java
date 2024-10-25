@@ -2,19 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -45,6 +33,10 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmp
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -147,24 +139,6 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -533,7 +507,11 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IShipmentOrderDao shipmentOrderDao;
 
+    @Autowired
+    private ICarrierDetailsDao carrierDetailsDao;
+
     public static final String CONSOLIDATION_ID = "consolidationId";
+    public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -711,14 +689,14 @@ public class ShipmentService implements IShipmentService {
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
-        var map = getNotificationMap(PendingNotificationRequest.builder().shipmentIdList(shipmentIdList).build());
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
-            containerCountUpdate(shipmentDetail, response);
+//            containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
-            response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).map(List::size).orElse(null));
+            response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).orElse(null));
             if(ObjectUtils.isNotEmpty(shipmentDetail.getShipmentOrders()))
                 response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
             responseList.add(response);
@@ -961,7 +939,8 @@ public class ShipmentService implements IShipmentService {
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
-            this.createLogHistoryForShipment(shipmentDetails);
+            ShipmentDetails finalShipmentDetails1 = shipmentDetails;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)));
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1073,6 +1052,11 @@ public class ShipmentService implements IShipmentService {
                     containersList(customerBookingRequest.getContainersList()).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
+            // Generate default routes based on O-D pairs
+            var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
+            consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
+
+
             ResponseEntity<?> consolidationDetailsResponse = consolidationService.createFromBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
             {
@@ -1084,7 +1068,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest);
+        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), customerBookingRequest.getTransportType());
         ShipmentRequest shipmentRequest = ShipmentRequest.builder().
                 carrierDetails(CarrierDetailRequest.builder()
                         .origin(customerBookingRequest.getCarrierDetails().getOrigin())
@@ -1220,104 +1204,22 @@ public class ShipmentService implements IShipmentService {
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
 
-    /**
-     * Retrieves the list of routing requests for the specified customer booking request.
-     *
-     * <p>If the customer booking request already contains a routing list, it returns that list.
-     * Otherwise, it generates routing legs based on the carrier details provided in the request.</p>
-     *
-     * <p>The routing legs are generated based on the following logic:</p>
-     * <ul>
-     *     <li>If Origin and Port of Loading (POL) are different, create a leg from Origin to POL.</li>
-     *     <li>If POL and Port of Discharge (POD) are different, create a leg from POL to POD.</li>
-     *     <li>If POD and Destination are different, create a leg from POD to Destination.</li>
-     *     <li>If all points are the same (Origin, POL, POD, Destination), create a single leg from Origin to Destination.</li>
-     * </ul>
-     *
-     * @param customerBookingRequest the customer booking request containing carrier details and routing information
-     * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
-     */
+
     @Override
-    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CustomerBookingRequest customerBookingRequest) {
-        // Retrieve existing routing list from the customer booking request
-        List<RoutingsRequest> customerBookingRequestRoutingList = customerBookingRequest.getRoutingList();
+    public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode) {
 
-        // If the routing list already exists, return it immediately
-        if (ObjectUtils.isNotEmpty(customerBookingRequestRoutingList)) {
-            return customerBookingRequestRoutingList;
-        }
-
-        // Initialize the list to hold routing requests
-        List<RoutingsRequest> routingsRequests = new ArrayList<>();
-
-        if(ObjectUtils.isEmpty(customerBookingRequest.getCarrierDetails())) {
-            return routingsRequests;
+        if(ObjectUtils.isEmpty(carrierDetailRequest)) {
+            return new ArrayList<>();
         }
 
         // Get carrier details from the customer booking request
-        CarrierDetailRequest carrierDetails = Optional.ofNullable(customerBookingRequest.getCarrierDetails())
+        CarrierDetailRequest carrierDetails = Optional.ofNullable(carrierDetailRequest)
                 .orElse(new CarrierDetailRequest());
 
-        // Define origin, ports, and destination with their respective transport modes
-        Pair<String, String> origin = Pair.of(carrierDetails.getOrigin(), Constants.TRANSPORT_MODE_ROA);
-        Pair<String, String> portOfLoading = Pair.of(carrierDetails.getOriginPort(), null);
-        Pair<String, String> portOfDischarge = Pair.of(carrierDetails.getDestinationPort(), null);
-        Pair<String, String> destination = Pair.of(carrierDetails.getDestination(), Constants.TRANSPORT_MODE_ROA);
+        List<Routings> routingsList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(carrierDetails, CarrierDetails.class), transportMode);
 
-        // Create a list of locations for processing
-        List<Pair<String, String>> locations = List.of(origin, portOfLoading, portOfDischarge, destination);
+        return commonUtils.convertToList(routingsList, RoutingsRequest.class);
 
-        Integer currentLocation = 0; // Index for the current location
-        Integer nextLocation = 1; // Index for the next location to compare
-        Long legCounter = 1L;   // A counter for leg numbers
-        // Loop through the locations to generate routing requests
-        while (currentLocation < 4 && nextLocation < 4) {
-            // Skip null locations
-            if (locations.get(currentLocation).getLeft() == null) {
-                currentLocation++;
-                nextLocation++;
-            } else if (locations.get(nextLocation).getLeft() == null) {
-                nextLocation++;
-            } else if (locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
-                // If locations are the same, move to the next pair
-                currentLocation++;
-                nextLocation++;
-            } else {
-                // Determine the transport mode for the routing request
-                String mode = customerBookingRequest.getTransportType();
-                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
-                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
-                }
-                // Create and add a new routing request to the list
-                routingsRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft()));
-                currentLocation = nextLocation;
-                nextLocation++;
-            }
-        }
-
-        // Return the generated routing requests
-        return routingsRequests;
-    }
-
-    /**
-     * Creates a new routing request.
-     *
-     * @param leg   the leg number for the routing request
-     * @param mode  the mode of transport for the routing request
-     * @param pol   the Port of Loading for the routing request
-     * @param pod   the Port of Discharge for the routing request
-     * @return a new {@link RoutingsRequest} object with the specified parameters
-     */
-    private RoutingsRequest createRoutingsRequest(Long leg, String mode, String pol, String pod) {
-        // Build and return the RoutingsRequest object with the given parameters
-        return RoutingsRequest.builder()
-                .leg(leg)
-                .mode(mode)
-                .pol(pol)
-                .pod(pod)
-                .isSelectedForDocument(false)
-                .isDomestic(false)
-                .build();
     }
 
     @Override
@@ -1892,7 +1794,8 @@ public class ShipmentService implements IShipmentService {
             }
 
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
-            this.createLogHistoryForShipment(entity);
+            ShipmentDetails finalEntity1 = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)));
             ShipmentDetails finalEntity = entity;
             return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
@@ -1931,7 +1834,7 @@ public class ShipmentService implements IShipmentService {
             logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
                     .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
         } catch (Exception ex) {
-            log.error("Error while creating LogsHistory : " + ex.getMessage());
+            log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
     }
 
@@ -1967,8 +1870,19 @@ public class ShipmentService implements IShipmentService {
     }
     private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException{
         CarrierDetails oldCarrierDetails = null;
-        if(!isCreate)
+        if(!isCreate) {
             oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
+
+            // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+            if(!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+                consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
+                if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()
+                        && !Objects.isNull(consoleShipmentMappings.get(0).getRequestedType()) ) {
+                    throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
+                }
+            }
+        }
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
         var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)));
         List<Long> tempConsolIds = new ArrayList<>();
@@ -2074,6 +1988,8 @@ public class ShipmentService implements IShipmentService {
 
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
+            List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidationDetails1.getId());
+            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false);
             oceanDGValidations(shipmentDetails, consolidationDetails1);
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
@@ -3108,11 +3024,10 @@ public class ShipmentService implements IShipmentService {
                 routings = shipmentDetails.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).toList();
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
-            if(routeRequest.isPresent()) {
-                createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
-                createRoutes = createConsoleRoutePayload(createRoutes);
-                consolidationDetails.setRoutingsList(createRoutes);
-            }
+            // Generate default Routes if Route Master is enabled
+            createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
+            consolidationDetails.setRoutingsList(createRoutes);
+
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
             if(createRoutes != null && !createRoutes.isEmpty()) {
                 routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
@@ -3313,10 +3228,9 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
-            request.setIncludeTbls(Arrays.asList(Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS, Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
 //            checkWayBillNumberCriteria(request);
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildListSuccessResponse(
@@ -3556,11 +3470,13 @@ public class ShipmentService implements IShipmentService {
                 totalPage = eligibleShipmentId.getTotalPages();
                 totalElements = eligibleShipmentId.getTotalElements();
             }
-            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
+//            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);
             log.info(ShipmentConstants.SHIPMENT_LIST_CRITERIA_PREPARING, LoggerHelper.getRequestIdFromMDC());
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+//            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
                 totalPage = shipmentDetailsPage.getTotalPages();
@@ -3591,6 +3507,44 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    public Page<ShipmentDetails> findAllWithOutIncludeColumn(Specification<ShipmentDetails> spec, Pageable pageable) {
+        var start = System.currentTimeMillis();
+        var shipmentList = shipmentDao.findAll(spec, pageable);
+
+        List<Long> partyIds = shipmentList.stream().map(ShipmentDetails::getClientId).collect(Collectors.toList());
+        partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsigneeId).collect(Collectors.toList()));
+        partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsignerId).collect(Collectors.toList()));
+
+        Map<Long, Parties> partyMap = partiesDao.findByIds(partyIds.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+                .stream().collect(Collectors.toMap(Parties::getId, Function.identity()));
+
+        shipmentList.forEach(c -> c.setClient(partyMap.get(c.getClientId())));
+        shipmentList.forEach(c -> c.setConsignee(partyMap.get(c.getConsigneeId())));
+        shipmentList.forEach(c -> c.setConsigner(partyMap.get(c.getConsignerId())));
+
+        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
+        Map<Long, CarrierDetails> carrierMap = carrierDetailsDao.findByIds(carrierIds).stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
+        shipmentList.forEach(c -> c.setCarrierDetails(carrierMap.get(c.getCarrierDetailId())));
+
+        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
+        Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
+        shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
+
+        List<Long> pickupDetailsId = new ArrayList<>();
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
+        if(pickupDetailsId.size() > 0) {
+            Map<Long, PickupDeliveryDetails> pickupDetailsMap = pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+                    .stream().collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
+
+            shipmentList.forEach(c -> c.setPickupDetails(pickupDetailsMap.get(c.getPickupDetailsId())));
+            shipmentList.forEach(c -> c.setDeliveryDetails(pickupDetailsMap.get(c.getDeliveryDetailsId())));
+        }
+
+        log.info("{} | findAllWithOutIncludeColumn: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+        return shipmentList;
     }
 
     private void checkWayBillNumberCriteria(ListCommonRequest request)
@@ -3722,9 +3676,8 @@ public class ShipmentService implements IShipmentService {
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
-        id = shipmentDetails.get().getId();
-        var notificationMap = getNotificationMap(PendingNotificationRequest.builder().shipmentIdList(List.of(id)).build());
-        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).map(List::size).orElse(null));
+        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
         if(measurmentBasis) {
@@ -4710,6 +4663,20 @@ public class ShipmentService implements IShipmentService {
                                     .build());
                 }
             });
+        }
+
+        if(consolidation.getRoutingsList() != null && !consolidation.getRoutingsList().isEmpty()) {
+            List<RoutingsResponse> routingsResponse = consolidation.getRoutingsList().stream().
+                    map(item -> {
+                        RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
+                        newItem.setId(null);
+                        newItem.setGuid(null);
+                        newItem.setConsolidationId(null);
+                        newItem.setBookingId(null);
+                        return newItem;
+                    }).
+                    toList();
+            shipment.setRoutingsList(routingsResponse);
         }
 
         if(!IsStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
@@ -6148,7 +6115,7 @@ public class ShipmentService implements IShipmentService {
         }
         String warning = null;
         if(!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+            warning = TEMPLATE_NOT_FOUND_MESSAGE;
         }
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -6390,14 +6357,69 @@ public class ShipmentService implements IShipmentService {
                 .isAttachmentDone(false)
                 .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
                 .build();
-        consoleShipmentMappingDao.save(entity);
-        Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
-        sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
-        String warning = null;
-        if(!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        boolean isImportShipment = false;
+        if(shipmentDetails.isPresent() && consolidationDetails.isPresent() && shipmentDetails.get().getDirection().equalsIgnoreCase(Constants.DIRECTION_IMP)) {
+            isImportShipment = true;
+            consolidationService.attachShipments(ShipmentRequestedType.APPROVE, consoleId, new ArrayList<>(List.of(shipId)));
+            var emailTemplatesRequests = commonUtils.getEmailTemplates(IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL);
+            if(Objects.isNull(emailTemplatesRequests) || emailTemplatesRequests.isEmpty())
+                return ResponseHelper.buildSuccessResponseWithWarning(TEMPLATE_NOT_FOUND_MESSAGE);
+            sendImportShipmentPushAttachmentEmail(shipmentDetails.get(), consolidationDetails.get(), emailTemplatesRequests);
         }
-        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        if(!isImportShipment) {
+            consoleShipmentMappingDao.save(entity);
+            Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
+            sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
+            String warning = null;
+            if (!shipmentRequestedTypes.isEmpty()) {
+                warning = TEMPLATE_NOT_FOUND_MESSAGE;
+            }
+            return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private ResponseEntity<IRunnerResponse> sendImportShipmentPushAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequests) {
+        var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
+
+        List<String> toEmailList = new ArrayList<>();
+        List<String> ccEmailsList = new ArrayList<>();
+        if(consolidationDetails.getCreatedBy() != null)
+            toEmailList.add(consolidationDetails.getCreatedBy());
+
+        Set<String> toEmailIds = new HashSet<>();
+        Set<String> ccEmailIds = new HashSet<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        tenantIds.add(shipmentDetails.getTenantId());
+        tenantIds.add(consolidationDetails.getTenantId());
+
+        Map<String, Object> dictionary = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(shipmentDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
+
+        CompletableFuture.allOf(carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture).join();
+
+        commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, shipmentDetails.getTenantId(), true);
+        ccEmailsList.addAll(new ArrayList<>(toEmailIds));
+        ccEmailsList.addAll(new ArrayList<>(ccEmailIds));
+        if(consolidationDetails.getCreatedBy() == null) {
+            toEmailIds.clear();
+            ccEmailIds.clear();
+            commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, consolidationDetails.getTenantId(), false);
+            toEmailList.addAll(new ArrayList<>(toEmailIds));
+        }
+
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, toEmailList, ccEmailsList);
+        return ResponseHelper.buildSuccessResponse();
     }
 
     @Override

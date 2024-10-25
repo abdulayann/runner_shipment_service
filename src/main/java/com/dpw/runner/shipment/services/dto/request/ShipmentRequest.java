@@ -175,4 +175,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
+    private Boolean syncRoutingFromConsolidation;
 }

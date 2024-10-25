@@ -15,6 +15,10 @@ public class PackSummaryResponse implements IRunnerResponse {
     private String packsVolumetricWeight;
     private String packsChargeableWeight;
     private String totalPacksWithUnit;
+    private BigDecimal chargeableWeight;
+    private String packsChargeableWeightUnit;
+    private BigDecimal packsVolume;
+    private String packsVolumeUnit;
 
     // Consolidation achieved summary
     private BigDecimal achievedWeight;

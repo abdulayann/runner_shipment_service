@@ -403,4 +403,34 @@ class ShipmentSettingsControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void hideManifest() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void hideManifest2() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void hideManifest3() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

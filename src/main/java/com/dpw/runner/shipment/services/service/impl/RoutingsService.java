@@ -442,6 +442,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponse.shipmentId(routings.getShipmentId());
         routingsResponse.bookingId(routings.getBookingId());
         routingsResponse.leg(routings.getLeg());
+        routingsResponse.carriage(routings.getCarriage());
         routingsResponse.mode(routings.getMode());
         routingsResponse.routingStatus(routings.getRoutingStatus());
         routingsResponse.vesselName(routings.getVesselName());

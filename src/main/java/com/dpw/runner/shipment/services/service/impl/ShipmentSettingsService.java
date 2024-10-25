@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
@@ -319,6 +320,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if(request == null) {
             log.debug("Request is empty for Shipment Settings create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+        request.setHideManifest(true);
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
@@ -366,6 +368,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             request.setId(oldEntity.get().getId());
             request.setGuid(oldEntity.get().getGuid());
+            if(request.getHideManifest() == null) {
+                request.setHideManifest(oldEntity.get().getHideManifest());
+            }
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
                 request.getHawbLockSettings().setGuid(oldEntity.get().getHawbLockSettings().getGuid());
@@ -631,5 +636,28 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
         List<TenantModel> listOfHubStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
         return ResponseHelper.buildSuccessResponse(listOfHubStations);
+    }
+
+    @Transactional
+    @Override
+    public ResponseEntity<IRunnerResponse> hideManifest(boolean hideManifest) {
+        Optional<ShipmentSettingsDetails> entity = Optional.empty();
+        ListCommonRequest newRequest = new ListCommonRequest();
+        newRequest.setPageNo(1);
+        newRequest.setPageSize(Integer.MAX_VALUE);
+        newRequest.setFilterCriteria(new ArrayList<>());
+        Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
+        Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
+        if(!shipmentSettingsPage.get().toList().isEmpty())
+            entity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
+
+        if(entity.isEmpty()) {
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, TenantContext.getCurrentTenant(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = entity.get();
+        shipmentSettingsDetails.setHideManifest(hideManifest);
+        shipmentSettingsDao.save(shipmentSettingsDetails);
+        return ResponseHelper.buildSuccessResponse();
     }
 }

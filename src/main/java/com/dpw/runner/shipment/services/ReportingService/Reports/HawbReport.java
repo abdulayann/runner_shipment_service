@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.OtherChargesResponse;
@@ -12,6 +13,8 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -87,6 +90,7 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
         CarrierDetailModel carrierDetailModel;
+        String tenantName = getTenant().getTenantName();
         if(hawbModel.shipmentDetails != null ) {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
@@ -95,7 +99,20 @@ public class HawbReport extends IReport{
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
+        dictionary.put(ReportConstants.BRANCH_NAME, tenantName);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, v1TenantSettingsResponse.getLegalEntityCode());
+        Integer companyId = ((HawbModel) documentModel).usersDto.getCompanyId();
+        List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
+        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
+        V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
+        List<CompanyDto> companyDetailsList = jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class);
+        if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
+            CompanyDto companyDetails = companyDetailsList.get(0);
+            List<String> companyAddress = ReportHelper.getOrgAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getState(), companyDetails.getCity(), companyDetails.getCountry(), companyDetails.getZipPostCode());
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+        }
+
         //TODO- Tenant data
 //        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
 //        dictionary[ReportConstants.AGENT] = tenantDetails;
@@ -107,8 +124,8 @@ public class HawbReport extends IReport{
 
 
         if(shipmentInfo != null){
-            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress());
-            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress());
+            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
+            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
             dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
             dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
             dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, StringUtility.toUpperCase(shipmentInfo.getIssuingAgentName()));
@@ -235,8 +252,8 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.MAWB_NO3 , AwbNumber.substring(0, Math.min(3, AwbNumber.length())));
                 if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
             }
-
-            dictionary.put(ISSUING_AGENT_ADDRESS, hawbModel.getAwb().getAwbShipmentInfo().getIssuingAgentAddress());
+            var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
+            dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
 
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
@@ -669,11 +686,52 @@ public class HawbReport extends IReport{
         var awbNotifParty = hawbModel.getAwb().getAwbNotifyPartyInfo();
 
         if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
-            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName(), hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getAddress()));
+            var party = hawbModel.getAwb().getAwbNotifyPartyInfo().get(0);
+            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
             dictionary.put(AWB_NOTIFY_PARTY_NAME, hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() != null ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }
 
         return dictionary;
+    }
+
+    public static String constructAddressForAwb(String address, String country, String state, String city, String zipCode, String phone) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+        if(address != null) {
+            sb.append(address);
+        }
+
+        StringBuilder tempAddress = new StringBuilder();
+        if (!Strings.isNullOrEmpty(state)){
+            tempAddress.append(state);
+        }
+        if (!Strings.isNullOrEmpty(city)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(city);
+        }
+        if (!Strings.isNullOrEmpty(country)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(country);
+        }
+        if(!tempAddress.isEmpty()) {
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(tempAddress);
+        }
+
+        if (!Strings.isNullOrEmpty(zipCode)){
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(zipCode);
+        }
+        if (!Strings.isNullOrEmpty(phone)){
+            if(!sb.isEmpty())
+                sb.append(newLine);
+            sb.append(phone);
+        }
+        return sb.toString();
     }
 
     public static OtherChargesResponse getOtherChargesDetails(List<AwbOtherChargesInfo> otherChargesRows, Awb siData, AwbCargoInfo cargoInfoRows, V1TenantSettingsResponse v1TenantSettingsResponse)

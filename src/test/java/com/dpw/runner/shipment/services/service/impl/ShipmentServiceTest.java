@@ -9,9 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
@@ -28,7 +26,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -39,11 +39,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -120,22 +115,6 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -1764,6 +1743,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1798,6 +1778,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1831,6 +1812,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -2116,11 +2098,6 @@ ShipmentServiceTest extends CommonMocks {
 
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
-        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsList),
@@ -2576,6 +2553,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
@@ -3578,7 +3556,7 @@ ShipmentServiceTest extends CommonMocks {
         packingRequest.setVolume(BigDecimal.valueOf(11));
         packingRequest.setPacks("1");
         packingRequest.setLengthUnit("M");
-        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
@@ -3619,8 +3597,14 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
+
+        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(List.of(new ConsolidationDetails()));
         mockShipmentSettings();
         mockTenantSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
 
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
@@ -5217,6 +5201,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
@@ -6153,8 +6138,6 @@ ShipmentServiceTest extends CommonMocks {
         routings.setMode(Constants.TRANSPORT_MODE_SEA);
         routings.setLeg(1L);
 
-        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
-
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
@@ -6313,6 +6296,9 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
         when(notesDao.save(any())).thenReturn(Notes.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
@@ -7205,6 +7191,91 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId(1L).consolidationId(2L).build()));
         var response = shipmentService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment1() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails1.setCreatedBy("abc");
+        shipmentDetails1.setAssignedTo("def");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment2() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment3() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_NonInterBranchShipment_EmailSent() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction("EXP")
+                .build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consoleShipmentMappingDao).save(argThat(entity ->
+                entity.getIsAttachmentDone() != null && !entity.getIsAttachmentDone()
+        ));
+        verify(spyService).sendEmailForPushRequested(any(), any(), any());
     }
 
     @Test
@@ -8230,190 +8301,6 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_ExistingRoutingList() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        List<RoutingsRequest> existingRoutingList = new ArrayList<>();
-        existingRoutingList.add(new RoutingsRequest());
-        customerBookingRequest.setRoutingList(existingRoutingList);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(existingRoutingList, result);
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NoExistingRoutingList() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(3, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NullCarrierDetails() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        customerBookingRequest.setCarrierDetails(null);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NullOrigin() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin(null);
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NullPortOfLoading() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort(null);
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NullPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort(null);
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_NullDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination(null);
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginAndPortOfLoading() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_SamePortOfLoadingAndPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Loading");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_SamePortOfDischargeAndDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Destination");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingAndPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Origin");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingPortOfDischargeAndDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Origin");
-        carrierDetails.setDestination("Origin");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
-    }
-
-    @Test
     void createShipmentFromBookingTest() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
@@ -8786,6 +8673,38 @@ ShipmentServiceTest extends CommonMocks {
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+//    @Test
+    void testUpdateThrowsValidatonExceptionIfStaleShipmentIsSavedAgain() throws RunnerException {
+        Long shipmentId = 1L;
+        Long linkedConsolidationId = 1L;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .jobType(Constants.SHIPMENT_TYPE_DRT)
+                .consignee(Parties.builder().orgCode("org1").build())
+                .consigner(Parties.builder().orgCode("org2").build())
+                .build();
+        shipmentDetails.setId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder()
+                .shipmentId(shipmentId)
+                .consolidationId(linkedConsolidationId)
+                .isAttachmentDone(true)
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(consoleShipmentMapping));
+
+        String errorMessage = ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR;
+        Exception e = assertThrows(RunnerException.class, () -> shipmentService.partialUpdate(commonRequestModel, false));
+        assertEquals(errorMessage, e.getMessage());
     }
 
 

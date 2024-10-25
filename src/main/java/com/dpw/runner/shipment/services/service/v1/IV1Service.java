@@ -72,6 +72,8 @@ public interface IV1Service {
     V1DataResponse fetchOrganization(Object request);
 
     V1DataResponse fetchUnlocation(Object request);
+    V1DataResponse stateBasedList(Object request);
+
 
     V1DataResponse fetchContainerTypeData(Object request);
 
@@ -224,4 +226,6 @@ public interface IV1Service {
     List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
 
     Integer getRoleIdsByRoleName(V1RoleIdRequest roleIdRequest);
+
+    V1DataResponse getCompaniesDetails(Object request);
 }

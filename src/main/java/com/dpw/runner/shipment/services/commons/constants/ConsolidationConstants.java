@@ -64,4 +64,5 @@ public class ConsolidationConstants {
     public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
     public static final String CONSOLIDATION_RETRIEVE_EMPTY_REQUEST = "Request is empty for Consolidation retrieve with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_NULL = "Consolidation Details is null for Guid {} with Request Id {}";
+    public static final String PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE = "Existing Shipment Push Request already in place, Cannot initiate a new request.";
 }

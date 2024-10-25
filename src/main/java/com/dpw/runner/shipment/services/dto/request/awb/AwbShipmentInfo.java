@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
@@ -19,12 +22,33 @@ public class AwbShipmentInfo implements Serializable {
     private String entityType;
     private String shipperName;
     private String shipperAddress;
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String shipperCountry;
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.SHIPPER_COUNTRY)
+    private String shipperState;
+    private String shipperCity;
+    private String shipperZipCode;
+    private String shipperPhone;
     private String shipperReferenceNumber;
     private String consigneeName;
     private String consigneeAddress;
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String consigneeCountry;
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.CONSIGNEE_COUNTRY)
+    private String consigneeState;
+    private String consigneeCity;
+    private String consigneeZipCode;
+    private String consigneePhone;
     private String consigneeReferenceNumber;
     private String issuingAgentName;
     private String issuingAgentAddress;
+    @MasterData(type = MasterDataType.COUNTRIES)
+    private String issuingAgentCountry;
+    @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.ISSUING_AGENT_COUNTRY)
+    private String issuingAgentState;
+    private String issuingAgentCity;
+    private String issuingAgentZipCode;
+    private String issuingAgentPhone;
     private String iataCode;
     private String noOfCopies;
     private String status;
