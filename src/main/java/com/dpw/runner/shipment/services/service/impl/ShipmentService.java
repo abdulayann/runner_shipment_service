@@ -2901,7 +2901,7 @@ public class ShipmentService implements IShipmentService {
 
                             String placeName = Optional.ofNullable(container.getPlaces()).orElse(Collections.emptyList()).stream()
                                     .filter(place -> Objects.equals(place.getId(), event.getLocation()))
-                                    .map(Place::getCode).findFirst()
+                                    .map(Place::getCode).map(StringUtils::defaultString).findFirst()
                                     .orElse(StringUtils.EMPTY);
 
                             String trackingEventsUniqueKey = commonUtils.getTrackingEventsUniqueKey(
