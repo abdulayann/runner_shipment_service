@@ -786,4 +786,19 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @GetMapping("/delete/party")
+    public ResponseEntity<IRunnerResponse> deleteParties(@ApiParam(value = "start", required = true) @RequestParam Long start,
+                                                         @ApiParam(value = "end", required = true) @RequestParam Long end,
+                                                         @ApiParam(value = "batch", required = true) @RequestParam Long batch) throws RunnerException {
+        String responseMsg;
+        try {
+            return shipmentService.deleteParty(start, end, batch);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }

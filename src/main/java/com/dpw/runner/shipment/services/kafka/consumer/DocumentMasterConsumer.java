@@ -29,7 +29,7 @@ public class DocumentMasterConsumer {
         this.bookingIntegrationsUtility = bookingIntegrationsUtility;
     }
 
-    @KafkaListener(topics = {"#{'${document.master.kafka.event}'}"}, groupId = "#{'${document.master.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${document.master.kafka.event}'}"}, groupId = "#{'${document.master.kafka.subs}'}")
     public void consume(String message)
     {
         try {

@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -23,4 +24,12 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
     List<Parties> findAll();
 
     List<Parties> findByIdIn(List<Long> ids);
+
+    @Modifying
+    @Query(value = "DELETE FROM parties WHERE id >= ?1 and id <= ?2", nativeQuery = true)
+    int deleteById1(Long start, Long end);
+
+    @Modifying
+    @Query(value = "DELETE FROM parties WHERE id = ?1", nativeQuery = true)
+    int deleteByIdOneId(Long start);
 }

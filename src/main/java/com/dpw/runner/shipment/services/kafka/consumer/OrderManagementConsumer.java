@@ -22,7 +22,7 @@ public class OrderManagementConsumer {
     private ObjectMapper objectMapper;
 
     //TODO:bookingseparation:Mayank - remove this once booking service go live
-    @KafkaListener(topics = {"#{'${order.management.event.kafka.queue}'}"}, groupId = "#{'${order.management.event.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${order.management.event.kafka.queue}'}"}, groupId = "#{'${order.management.event.kafka.subs}'}")
     public void consume(String message)
     {
         try {

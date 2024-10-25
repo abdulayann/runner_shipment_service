@@ -21,4 +21,6 @@ public interface IPartiesDao {
     List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap);
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws RunnerException;
     List<Parties> findByIds(List<Long> id);
+    Integer deleteParty(Long start, Long end);
+    Integer deletePartyById(Long start);
 }

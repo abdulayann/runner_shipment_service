@@ -276,4 +276,14 @@ public class PartiesDao implements IPartiesDao {
         return partiesRepository.findByIdIn(id);
     }
 
+    @Override
+    public Integer deleteParty(Long start, Long end) {
+        return partiesRepository.deleteById1(start, end);
+    }
+
+    @Override
+    public Integer deletePartyById(Long start) {
+        return partiesRepository.deleteByIdOneId(start);
+    }
+
 }

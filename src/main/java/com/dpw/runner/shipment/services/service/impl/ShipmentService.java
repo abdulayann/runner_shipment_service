@@ -7321,4 +7321,39 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> deleteParty(long start, long end, long batch) {
+
+        long count = 0;
+        if (batch == 0) {
+            while (start < end) {
+                long _start = System.currentTimeMillis();
+                log.info("Party Delete Starting : {}", start);
+                try {
+                    count += partiesDao.deletePartyById(start);
+                } catch (Exception e) {}
+                log.info("Party Delete Completed : {} --- Time: {} ms", start, System.currentTimeMillis() - _start);
+                start++;
+            }
+        } else {
+            while (start < end) {
+                long _start = System.currentTimeMillis();
+                log.info("Party Delete Starting : {} - {}", start, start + batch);
+                try {
+                    count += partiesDao.deleteParty(start, start + batch);
+                } catch (Exception e) {
+                    log.error("Party Delete Failed : {} - {} --- Message: {}", start, start + batch, e.getMessage());
+                }
+                log.info("Party Delete Completed : {} - {} --- Time: {} ms", start, start + batch, System.currentTimeMillis() - _start);
+                start += batch;
+            }
+        }
+
+
+
+
+        return ResponseHelper.buildSuccessResponse(count);
+    }
+
 }
