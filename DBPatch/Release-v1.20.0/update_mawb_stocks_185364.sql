@@ -1,0 +1,2 @@
+update mawb_stocks_link set status = 'Unused', entity_type = null, entity_id = null, ship_cons_number = null where id=1693;
+update mawb_stocks_link set status = 'Unused', entity_type = null, entity_id = null, ship_cons_number = null where id=1740;
