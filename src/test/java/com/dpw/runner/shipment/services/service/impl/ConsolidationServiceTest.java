@@ -3948,9 +3948,9 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         shipmentDetails.getPackingList().forEach(x -> when(jsonHelper.convertValue(x, ContainerPackSummaryDto.PacksList.class)).thenReturn(modelMapperTest.map(x, ContainerPackSummaryDto.PacksList.class)));
         when(jsonHelper.convertValue(shipmentDetails.getClient(), PartiesResponse.class)).thenReturn(modelMapperTest.map(shipmentDetails.getClient(), PartiesResponse.class));
-        when(masterDataUtils.createInBulkMasterListRequest(any(), any(), anyMap(), any() )).thenReturn(requests);
+        when(masterDataUtils.createInBulkMasterListRequest(any(), any(), anyMap(), any(), anyMap())).thenReturn(requests);
         when(masterDataUtils.fetchInBulkMasterList(any())).thenReturn(new HashMap<>());
-        when(masterDataUtils.setMasterData(any(), any())).thenReturn(new HashMap<>());
+        when(masterDataUtils.setMasterData(any(), any(), any())).thenReturn(new HashMap<>());
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getContainerPackSummary(CommonRequestModel.buildRequest(consolidationDetails.getId()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

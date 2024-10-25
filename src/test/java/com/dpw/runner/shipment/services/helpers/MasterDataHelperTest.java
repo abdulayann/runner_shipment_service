@@ -58,11 +58,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
@@ -96,11 +96,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
 
@@ -110,7 +110,7 @@ class MasterDataHelperTest {
 
         // Assert
         verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
-                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any());
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
         verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
         ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
         assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
@@ -129,11 +129,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         // Act
         CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = masterDataHelper
@@ -141,7 +141,7 @@ class MasterDataHelperTest {
 
         // Assert
         verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
-                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any());
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
         verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
         ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
         assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
@@ -160,11 +160,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
@@ -175,7 +175,7 @@ class MasterDataHelperTest {
 
         // Assert
         verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
-                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any());
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
         verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
         ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
         assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
@@ -194,10 +194,10 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
                 .thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         // Act
@@ -222,10 +222,10 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
                 .thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
@@ -256,10 +256,10 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
                 .thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
@@ -290,11 +290,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         // Act
@@ -320,11 +320,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
 
         // Act
@@ -333,7 +333,7 @@ class MasterDataHelperTest {
 
         // Assert
         verify(masterDataUtils, atLeast(1)).createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(),
-                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any());
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
         verify(masterDataUtils).fetchInTenantsList(isA(Set.class));
         ResponseEntity<IRunnerResponse> getResult = actualAddAllTenantDataInSingleCallResult.get();
         assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
@@ -352,11 +352,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
 
@@ -383,11 +383,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkCurrencyRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInCurrencyList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         // Act
@@ -413,11 +413,11 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.createInBulkCurrencyRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
-                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any())).thenReturn(new ArrayList<>());
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInCurrencyList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         // Act
@@ -443,9 +443,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkCarriers(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
         shipmentDetailsResponse.setRoutingsList(List.of(RoutingsResponse.builder().build()));
@@ -473,9 +473,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkCarriers(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
         shipmentDetailsResponse.setRoutingsList(List.of(RoutingsResponse.builder().build()));
@@ -503,9 +503,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkCommodityTypes(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));
         // Act
@@ -531,9 +531,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkCommodityTypes(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
         shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
@@ -561,9 +561,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInWareHousesList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -589,9 +589,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInWareHousesList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -617,9 +617,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInActivityMasterList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -645,9 +645,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInActivityMasterList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -673,9 +673,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInSalesAgentList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -701,9 +701,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInSalesAgentList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         // Act
@@ -729,9 +729,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkContainerTypes(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
@@ -758,9 +758,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkContainerTypes(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
@@ -787,9 +787,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkVessels(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
@@ -817,9 +817,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInBulkVessels(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
@@ -848,9 +848,9 @@ class MasterDataHelperTest {
         // Arrange
         doNothing().when(masterDataKeyUtils)
                 .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
-                        Mockito.<Map<String, Object>>any());
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
         when(masterDataUtils.fetchInDGSubstanceList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
-        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));

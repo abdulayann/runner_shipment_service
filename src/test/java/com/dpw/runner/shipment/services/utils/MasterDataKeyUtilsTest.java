@@ -56,7 +56,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferUnLocations::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS_AWB, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.UNLOCATIONS));
     }
@@ -75,7 +75,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferUnLocations::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.UNLOCATIONS));
     }
@@ -94,7 +94,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferContainerType::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.CONTAINER_TYPE));
     }
@@ -113,7 +113,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferChargeType::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CHARGE_TYPE, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CHARGE_TYPE, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.CHARGE_TYPE));
     }
@@ -132,7 +132,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferVessels::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.VESSELS));
     }
@@ -151,7 +151,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.CARRIER));
     }
@@ -170,7 +170,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferCurrency::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CURRENCIES, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CURRENCIES, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.CURRENCIES));
     }
@@ -189,7 +189,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(TenantModel::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.TENANTS));
     }
@@ -208,7 +208,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(WareHouseResponse::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.WAREHOUSES, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.WAREHOUSES, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.WAREHOUSES));
     }
@@ -227,7 +227,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(ActivityMasterResponse::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.ACTIVITY_TYPE, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.ACTIVITY_TYPE, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.ACTIVITY_TYPE));
     }
@@ -246,7 +246,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(SalesAgentResponse::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.SALES_AGENT, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.SALES_AGENT, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.SALES_AGENT));
     }
@@ -265,7 +265,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferCommodityType::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.COMMODITY));
     }
@@ -284,7 +284,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferDGSubstance::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.DG_SUBSTANCES));
     }
@@ -304,7 +304,7 @@ class MasterDataKeyUtilsTest {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, null);
 
         assertTrue(masterDataResponse.containsKey(CacheConstants.MASTER_LIST));
     }
@@ -314,7 +314,7 @@ class MasterDataKeyUtilsTest {
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         Map<String, Object> masterDataResponse = new HashMap<>();
 
-        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, "ANY_TYPE", masterDataResponse);
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, "ANY_TYPE", masterDataResponse, null);
 
         assertTrue(masterDataResponse.isEmpty());
     }
