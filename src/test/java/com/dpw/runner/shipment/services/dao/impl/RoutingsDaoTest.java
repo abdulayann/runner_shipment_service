@@ -783,7 +783,6 @@ class RoutingsDaoTest extends CommonMocks {
         carrierDetails.setOriginPort("Origin");
         carrierDetails.setDestinationPort("Origin");
         carrierDetails.setDestination("Origin");
-        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
