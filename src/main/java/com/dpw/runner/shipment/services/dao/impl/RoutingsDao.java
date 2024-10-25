@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -52,6 +53,8 @@ public class RoutingsDao implements IRoutingsDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Routings save(Routings routings) {
@@ -521,9 +524,15 @@ public class RoutingsDao implements IRoutingsDao {
                     mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
                     carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
+                String flightNumber = "";
+                String flightCarrier = "";
+                if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
+                    flightNumber = carrierDetails.getFlightNumber();
+                    flightCarrier = carrierDetails.getShippingLine();
+                }
 
                 // Create and add a new routing request to the list
-                routingRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage));
+                routingRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage, flightNumber, flightCarrier));
                 currentLocation = nextLocation;
                 nextLocation++;
             }
@@ -542,13 +551,15 @@ public class RoutingsDao implements IRoutingsDao {
      * @param pod   the Port of Discharge for the routing request
      * @return a new {@link RoutingsRequest} object with the specified parameters
      */
-    private Routings createRoutingsRequest(Long leg, String mode, String pol, String pod, RoutingCarriage carriage) {
+    private Routings createRoutingsRequest(Long leg, String mode, String pol, String pod, RoutingCarriage carriage, String flightNumber, String carrier) {
         // Build and return the RoutingsRequest object with the given parameters
         return Routings.builder()
                 .leg(leg)
                 .mode(mode)
                 .pol(pol)
                 .pod(pod)
+                .carrier(carrier)
+                .flightNumber(flightNumber)
                 .carriage(carriage)
                 .isSelectedForDocument(false)
                 .isDomestic(false)

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -46,7 +47,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class RoutingsDaoTest {
+class RoutingsDaoTest extends CommonMocks {
 
     @Mock
     private IRoutingsRepository routingsRepository;
@@ -88,7 +89,8 @@ class RoutingsDaoTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG")
+                .enableRouteMaster(true).build());
         MockitoAnnotations.initMocks(this);
     }
 
@@ -621,7 +623,25 @@ class RoutingsDaoTest {
         carrierDetails.setDestinationPort("Port of Discharge");
         carrierDetails.setDestination("Destination");
 
+        mockShipmentSettings();
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, null);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_AIR() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        carrierDetails.setFlightNumber("554");
+        carrierDetails.setShippingLine("air");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_AIR);
 
         assertNotNull(result);
         assertEquals(3, result.size());
@@ -643,6 +663,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Port of Loading");
         carrierDetails.setDestinationPort("Port of Discharge");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -657,6 +678,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort(null);
         carrierDetails.setDestinationPort("Port of Discharge");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -671,6 +693,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Port of Loading");
         carrierDetails.setDestinationPort(null);
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -685,6 +708,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Port of Loading");
         carrierDetails.setDestinationPort("Port of Discharge");
         carrierDetails.setDestination(null);
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -699,6 +723,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Origin");
         carrierDetails.setDestinationPort("Port of Discharge");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -713,6 +738,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Port of Loading");
         carrierDetails.setDestinationPort("Port of Loading");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -727,6 +753,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Port of Loading");
         carrierDetails.setDestinationPort("Destination");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
@@ -741,6 +768,7 @@ class RoutingsDaoTest {
         carrierDetails.setOriginPort("Origin");
         carrierDetails.setDestinationPort("Origin");
         carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
 
         List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
 
