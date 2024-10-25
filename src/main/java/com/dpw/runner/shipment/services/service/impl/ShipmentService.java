@@ -2335,7 +2335,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (routingsRequestList != null) {
-            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()))
+            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
                 syncMainLegRoute(shipmentDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
             shipmentDetails.setRoutingsList(updatedRoutings);
