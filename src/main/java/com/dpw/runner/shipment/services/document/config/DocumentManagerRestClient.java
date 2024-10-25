@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.document.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
@@ -66,7 +67,7 @@ public class DocumentManagerRestClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", token);
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
-        headers.add(LoggingConstants.SOURCE_SERVICE_TYPE, LoggingConstants.SHIPMENT);
+        headers.add(Constants.SOURCE_SERVICE_TYPE, LoggingConstants.SHIPMENT);
         return headers;
     }
 

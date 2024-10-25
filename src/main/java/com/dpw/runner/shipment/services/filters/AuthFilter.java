@@ -34,6 +34,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Component
 //@Order(1)
 @Slf4j
@@ -73,7 +76,7 @@ public class AuthFilter extends OncePerRequestFilter {
         try {
         LoggerHelper.putRequestId(UUID.randomUUID().toString());
         HttpServletRequest req = servletRequest;
-        log.info("Request For Shipment Service API: {} with RequestId: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC());
+        log.info("Request For Shipment Service API: {} with RequestId: {} from Source Service: {}",servletRequest.getRequestURI(), LoggerHelper.getRequestIdFromMDC(), getSourceServiceType(req));
         if(shouldNotFilter(req))
         {
             filterChain.doFilter(servletRequest, servletResponse);
@@ -157,6 +160,13 @@ public class AuthFilter extends OncePerRequestFilter {
             }
         }
         return authorities;
+    }
+
+    private String getSourceServiceType(HttpServletRequest req) {
+        String sourceService = req.getHeader(SOURCE_SERVICE_TYPE);
+        if(IsStringNullOrEmpty(sourceService))
+            return "";
+        return sourceService;
     }
 
 }

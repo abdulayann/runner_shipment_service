@@ -353,6 +353,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst) {
+        return convertEntityListToDtoList(lst, false);
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ConsolidationDetails> lst, boolean getMasterData) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
@@ -370,15 +374,17 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
-        try {
-            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
-            var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
-            var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
-            CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
-        }
-        catch (Exception ex) {
-            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+        if(getMasterData) {
+            try {
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
+                var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
+                var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
+                var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+                CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
+            }
+            catch (Exception ex) {
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
+            }
         }
         return responseList;
     }
@@ -2561,6 +2567,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
+        return list(commonRequestModel, false);
+    }
+
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         int totalPages = 0;
         long totalElements = 0;
@@ -2586,7 +2596,7 @@ public class ConsolidationService implements IConsolidationService {
                 totalElements = consolidationDetailsPage.getTotalElements();
             }
             if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
-                List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
+                List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent(), getMasterData);
                 log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
                 return ResponseHelper.buildListSuccessResponse(
                         consoleResponse,
@@ -2595,7 +2605,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             else {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
-                for( var curr: convertEntityListToDtoList(consolidationDetailsPage.getContent())){
+                for( var curr: convertEntityListToDtoList(consolidationDetailsPage.getContent(), getMasterData)){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
                     res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filteredList.add( res);
@@ -2706,6 +2716,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
+        return retrieveById(commonRequestModel, false);
+    }
+
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -2733,7 +2747,7 @@ public class ConsolidationService implements IConsolidationService {
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
             var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
             response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
-            createConsolidationPayload(consolidationDetails.get(), response);
+            createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2817,6 +2831,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+        createConsolidationPayload(consolidationDetails, consolidationDetailsResponse, false);
+    }
+
+    public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
             var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
