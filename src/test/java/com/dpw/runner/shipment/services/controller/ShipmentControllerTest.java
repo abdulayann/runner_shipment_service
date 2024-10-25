@@ -593,7 +593,7 @@ class ShipmentControllerTest {
     void testList1() throws RunnerException {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.list(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
@@ -615,7 +615,7 @@ class ShipmentControllerTest {
     void testRetrieveById() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = shipmentController.retrieveById(Optional.of(111L), Optional.of(UUID.randomUUID().toString()), true);
         // Assert

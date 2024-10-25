@@ -1,12 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -56,7 +50,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.kafka.producer.*;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -3573,7 +3568,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
     }
 
@@ -5141,7 +5136,7 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
         verify(masterDataUtils, times(10)).withMdc(any());
     }
 
@@ -5159,7 +5154,7 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
         verify(masterDataUtils, times(10)).withMdc(any());
     }
 
@@ -5813,7 +5808,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(Awb.builder().airMessageStatus(AwbStatus.AIR_MESSAGE_SENT).build()));
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
         verify(masterDataUtils, times(10)).withMdc(any());
     }
 

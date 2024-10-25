@@ -91,7 +91,7 @@ class ConsolidationControllerTest {
     void list2() {
         var mockResponse = ResponseHelper.buildFailedResponse("Response");
         // Mock
-        when(consolidationService.list(any())).thenReturn(mockResponse);
+        when(consolidationService.list(any(), anyBoolean())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
         var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false, true);
@@ -149,7 +149,7 @@ class ConsolidationControllerTest {
     @Test
     void retrieveById() {
         // Mock
-        when(consolidationService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
         var responseEntity = consolidationController.retrieveById(Optional.of(1L), Optional.of(UUID.randomUUID().toString()), true);
