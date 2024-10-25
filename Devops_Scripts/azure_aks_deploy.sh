@@ -63,6 +63,10 @@ sed -i "s/\$STABLE_SEC/${STABLE_SEC}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_COUNT/${SCALE_UP_COUNT}/g" $app_hpa_yaml_path
 sed -i "s/\$SCALE_UP_SEC/${SCALE_UP_SEC}/g" $app_hpa_yaml_path
 
+sed -i "s/\$SCALE_DOWN_STABLE_SEC/${SCALE_DOWN_STABLE_SEC}/g" $app_hpa_yaml_path
+sed -i "s/\$SCALE_DOWN_COUNT/${SCALE_DOWN_COUNT}/g" $app_hpa_yaml_path
+sed -i "s/\$SCALE_DOWN_SEC/${SCALE_DOWN_SEC}/g" $app_hpa_yaml_path
+
 # replace secretproviderclass variables
 sed -i "s/\$USER_ASSIGNED_IDENTITY_ID/${USER_ASSIGNED_IDENTITY_ID}/g" $secretproviderclass_yaml_path
 sed -i "s/\$NAMESPACE_NAME/${namespace}/g" $secretproviderclass_yaml_path

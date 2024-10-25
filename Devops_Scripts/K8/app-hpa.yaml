@@ -25,3 +25,10 @@ spec:
         - type: Pods      
           value: $SCALE_UP_COUNT
           periodSeconds: $SCALE_UP_SEC
+    scaleDown:
+      stabilizationWindowSeconds: $SCALE_DOWN_STABLE_SEC
+      selectPolicy: Min
+      policies:
+        - type: Pods
+          value: $SCALE_DOWN_COUNT
+          periodSeconds: $SCALE_DOWN_SEC
