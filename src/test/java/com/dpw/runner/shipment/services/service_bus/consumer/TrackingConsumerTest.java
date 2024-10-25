@@ -4,6 +4,7 @@ import com.azure.core.util.BinaryData;
 import com.azure.messaging.servicebus.*;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,9 @@ class TrackingConsumerTest {
     private ServiceBusConfigProperties serviceBusConfigProperties;
     @Mock
     private IEventService eventService;
+
+    @Mock
+    private IV1Service v1Service;
 
     private ServiceBusReceivedMessageContext contextMock;
     private ServiceBusReceivedMessage messageMock;
@@ -73,6 +77,8 @@ class TrackingConsumerTest {
         trackingConsumer.processMessage(contextMock);
 
         Mockito.verify(contextMock).complete(); // Ensure complete() is called
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
     }
 
     @Test
@@ -85,6 +91,8 @@ class TrackingConsumerTest {
         trackingConsumer.processMessage(contextMock);
 
         Mockito.verify(contextMock).complete(); // Ensure complete() is called
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
     }
 
     @Test
@@ -97,6 +105,8 @@ class TrackingConsumerTest {
         trackingConsumer.processMessage(contextMock);
 
         Mockito.verify(contextMock, never()).complete();
+        verify(v1Service).setAuthContext();
+        verify(v1Service).clearAuthContext();
     }
 
     @Test

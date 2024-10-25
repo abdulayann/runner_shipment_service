@@ -123,6 +123,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private List<ShipmentOrderRequest> shipmentOrders;
     private CustomerCategoryRates customerCategory;
     private String contractId;
     private String parentContractId;
@@ -174,4 +175,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
+    private Boolean syncRoutingFromConsolidation;
 }

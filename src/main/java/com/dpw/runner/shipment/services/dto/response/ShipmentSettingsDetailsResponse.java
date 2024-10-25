@@ -169,4 +169,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private String transportInstructionDeliveryOrder;
     private Boolean enablePartyCheckForConsolidation;
     private String csd;
+    private Boolean hideManifest;
 }

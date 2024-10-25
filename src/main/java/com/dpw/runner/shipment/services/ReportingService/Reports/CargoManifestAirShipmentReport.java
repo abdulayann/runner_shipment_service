@@ -80,6 +80,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         try{ dictionary.put(DESTINATION_AGENT_NAME, destinationAgent.getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         try{ dictionary.put(DESTINATION_AGENT_ADDRESS, getOrgAddress(destinationAgent)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         dictionary.put(ReportConstants.WITH_CONSIGNOR, isShipperAndConsignee);
+        dictionary.put(SCI, cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getSci());
         return dictionary;
     }
 }

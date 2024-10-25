@@ -40,4 +40,6 @@ public interface IEventDao {
     void createEventForAirMessagingEvent(Events events);
 
     void updateEventDetails(Events event);
+
+    void updateEventDetails(List<Events> events);
 }

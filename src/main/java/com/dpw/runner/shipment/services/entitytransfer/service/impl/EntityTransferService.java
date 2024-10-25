@@ -186,9 +186,11 @@ public class EntityTransferService implements IEntityTransferService {
         for(int i = 0; i < destinationTenantList.size(); i++) {
             var tenant = destinationTenantList.get(i);
             var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
-            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch()))) {
+            if((Long.valueOf(tenant).equals(shipment.getReceivingBranch())))
                 taskPayload.setDirection(reverseDirection(shipment.getDirection()));
-            }
+            else if (Long.valueOf(tenant).equals(shipment.getTriangulationPartner()))
+                taskPayload.setDirection(Constants.DIRECTION_CTS);
+
             taskPayload.setSendToBranch(tenant);
 
             createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
@@ -250,17 +252,23 @@ public class EntityTransferService implements IEntityTransferService {
             var consolidationPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferConsolidationDetails.class);
             consolidationPayload.setSendToBranch(tenant);
             boolean reverseDirection = false;
+            boolean sendingToTriangulationPartner = false;
             if(Long.valueOf(tenant).equals(consol.getReceivingBranch())) {
                 consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
                 reverseDirection = true;
+            } else if (Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
+                consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
+                sendingToTriangulationPartner = true;
             }
 
             if(!consolidationPayload.getShipmentsList().isEmpty()) {
                 for(var entityTransferShipment : consolidationPayload.getShipmentsList()) {
                     var guid = entityTransferShipment.getGuid();
-                    if(reverseDirection) {
+                    if(reverseDirection)
                         entityTransferShipment.setDirection(reverseDirection(entityTransferShipment.getDirection()));
-                    }
+                    else if (sendingToTriangulationPartner)
+                        entityTransferShipment.setDirection(Constants.DIRECTION_CTS);
+
                     if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
@@ -457,6 +465,8 @@ public class EntityTransferService implements IEntityTransferService {
         }
         // Packing got created with shipment
         entityTransferConsolidationDetails.setPackingList(null);
+        // Setting this to true to bypass condition - no dg shipment available
+        entityTransferConsolidationDetails.setCreatingFromDgShipment(entityTransferConsolidationDetails.getHazardous());
 
         // Create or update console
         ConsolidationDetailsResponse consolidationDetailsResponse = this.createOrUpdateConsolidation(entityTransferConsolidationDetails, oldConsolidationDetailsList);
@@ -1454,6 +1464,7 @@ public class EntityTransferService implements IEntityTransferService {
         taskCreateRequest.setEntityType(entityType);
         taskCreateRequest.setRoleId(StringUtility.convertToString(getShipmentConsoleImportApprovalRole(tenantId)));
         taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
+        taskCreateRequest.setUserId(UserContext.getUser().getUserId());
         // can be moved as background task
         if(Constants.Consolidations.equalsIgnoreCase(entityType))
             taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
@@ -1471,6 +1482,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> ccEmails = new ArrayList<>();
         // Fetching role ids corresponding to console destination branches
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
+        if(shipmentGuidSendToBranch == null)
+            shipmentGuidSendToBranch = new HashMap<>();
         for (var keySet : shipmentGuidSendToBranch.entrySet())
             shipDestinationBranchIds.addAll(keySet.getValue());
         shipDestinationBranchIds.add(TenantContext.getCurrentTenant());

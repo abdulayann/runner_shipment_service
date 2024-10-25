@@ -76,6 +76,8 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> updateUnlocation(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> stateBasedList(CommonRequestModel commonRequestModel);
+
 
     ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel);
 
@@ -117,4 +119,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel);
 }

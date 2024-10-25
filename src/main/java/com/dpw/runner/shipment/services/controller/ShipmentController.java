@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -168,7 +169,8 @@ public class ShipmentController {
             if(Boolean.TRUE.equals(getFullShipment)) {
                 return shipmentService.fullShipmentsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
-           return shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+           ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+            return  response;
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
@@ -756,6 +758,28 @@ public class ShipmentController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ATTACH_DETACH_ORDER_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.ATTACH_DETACH_ORDER)
+    public ResponseEntity<IRunnerResponse> attachDetachOrder(@RequestBody @Valid ShipmentOrderAttachDetachRequest shipmentOrderRequest) {
+        try {
+            return shipmentService.attachDetachOrder(shipmentOrderRequest);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.API_CREATE_FROM_BOOKING)
+    public ResponseEntity<IRunnerResponse> createShipmentForBooking(@RequestBody @Valid ShipmentRequest shipmentRequest) throws RunnerException {
+
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(shipmentService.createShipmentFromBooking(shipmentRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
 
 }

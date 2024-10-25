@@ -48,8 +48,6 @@ public class AwbConstants {
     public static final String ORDER_NUMBER = "ORDER NO: %s";
     public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO");
 
-    // csdInfo format : RA#/Security status/screening status/timestamp of awb print
-    public static final String CSD_INFO_FORMAT = "%s/%s/%s/";
     public static final String AOM_SCREENING_STATUS = "AOM";
     public static final String NOT_SCREENING_STATUS = "NOT";
     public static final String EXEMPTION_CARGO_SECURITY_STATUS = "Exemption Cargo";

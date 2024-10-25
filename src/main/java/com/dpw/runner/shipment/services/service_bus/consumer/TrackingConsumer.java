@@ -4,6 +4,7 @@ import com.azure.messaging.servicebus.*;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
 import javax.annotation.PostConstruct;
@@ -21,14 +22,16 @@ public class TrackingConsumer {
     private final ServiceBusConfigProperties serviceBusConfigProperties;
     private final IEventService eventService;
     private ServiceBusProcessorClient processorClient;
+    private final IV1Service v1Service;
 
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
-            IEventService eventService, ServiceBusConfigProperties serviceBusConfigProperties) {
+            IEventService eventService, ServiceBusConfigProperties serviceBusConfigProperties, IV1Service v1Service) {
         this.sbConfiguration = sbConfiguration;
         this.jsonHelper = jsonHelper;
         this.eventService = eventService;
         this.serviceBusConfigProperties = serviceBusConfigProperties;
+        this.v1Service = v1Service;
     }
 
     @PostConstruct
@@ -58,23 +61,25 @@ public class TrackingConsumer {
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
         log.info("Tracking Consumer - container payload {}", jsonHelper.convertToJson(container));
+        v1Service.setAuthContext();
         boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
 
         if(processSuccess) {
             context.complete();
             log.info("Tracking Consumer - Finished processing message with id : {}", receivedMessage.getMessageId());
         }
-
+        v1Service.clearAuthContext();
     }
 
     public void processError(ServiceBusErrorContext context) {
         // Process error
         if (context.getException() instanceof ServiceBusException exception) {
-            log.error("Tracking Consumer - Error source: {}, reason {}", context.getErrorSource(), exception.getReason());
+            log.error("Tracking Consumer - Error source: {}, reason {}", context.getErrorSource(), exception.getReason(), exception.getCause());
         }
         else {
-            log.error("Tracking Consumer - Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage());
+            log.error("Tracking Consumer - Error occurred while processing message from tracking queue, with exception {}", context.getException().getMessage(), context.getException().getCause());
         }
+        v1Service.clearAuthContext();
     }
 
     @PreDestroy

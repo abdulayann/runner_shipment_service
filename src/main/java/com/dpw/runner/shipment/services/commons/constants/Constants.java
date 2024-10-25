@@ -16,6 +16,7 @@ public class Constants {
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
     public static final String CARGO_TYPE = "cargoType";
+    public static final String VOL = "VOL";
     public static final String CONTAINER_CATEGORY = "containerCategory";
     public static final int DIRECTION_INDEX = 1;
     public static final int SHIPMENT_TYPE_INDEX = 2;
@@ -144,6 +145,7 @@ public class Constants {
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
+    public static final String DIRECTION_CTS = "CTS";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
@@ -168,8 +170,9 @@ public class Constants {
     public static final String FORWARDING_AGENT = "Forwarding Agent";
     public static final String FAG = "FAG";
 
-    public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED";
-    public static final double FACTOR_VOL_WT = 166.667;
+    public static final String DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB = "CONSOLIDATION AS PER ATTACHED LIST";
+    public static final double AIR_FACTOR_FOR_VOL_WT = 166.667;
+    public static final double ROAD_FACTOR_FOR_VOL_WT = 333.0;
 
     /**
      * Enum Constants
@@ -398,6 +401,10 @@ public class Constants {
     public static final String SHR = "SHR";
     public static final String OPEN_FOR_ATTACHMENT = "openForAttachment";
     public static final String INTER_BRANCH_CONSOLE = "interBranchConsole";
+    public static final String SHIPPER_COUNTRY = "shipperCountry";
+    public static final String CONSIGNEE_COUNTRY = "consigneeCountry";
+    public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
+    public static final String AWB_COUNTRY = "country";
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
@@ -477,6 +484,7 @@ public class Constants {
     public static final String USER_NAME = "User_name";
     public static final String USER_BRANCH = "User_Branch";
     public static final String USER_COUNTRY = "User_Country";
+    public static final String IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL = "Import_Shipment_Pull_Attachment_Email_Template";
 
     public static final String CONSOLIDATION_CREATE_USER = "Consolidation_Create_User";
     public static final String SHIPMENT_BRANCH_CODE = "Shipment_Branch_Code";
@@ -529,6 +537,7 @@ public class Constants {
     public static final String OCEAN_DG_COMMERCIAL_SENDER_EMAIL_TYPE = "OCEAN_DG_COMMERCIAL_SENDER";
     public static final String HTML_HREF_TAG_PREFIX = "<html><body>" + "<a href='";
     public static final String HTML_HREF_TAG_SUFFIX = "</a>" + "</body></html>";
+    public static final String IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL = "Import_Shipment_Push_Attachment_Email_Template";
 
     //OCEAN DG Email Templates Type
     public static final String OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE = "OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE";
@@ -540,6 +549,8 @@ public class Constants {
     public static final String OCEAN_DG_CONTAINER_FIELDS_VALIDATION = "Please add DG class, UN Number and Proper Shipping Name to container before adding a DG Pack";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
+
+    public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
     private Constants() {
     }
 

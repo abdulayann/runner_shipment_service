@@ -9,9 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
@@ -28,6 +26,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -38,11 +39,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -74,6 +70,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AssignAllDialogDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
@@ -113,26 +110,11 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -192,6 +174,7 @@ import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.ShipmentOrder;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -243,6 +226,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -358,6 +342,8 @@ ShipmentServiceTest extends CommonMocks {
     private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
+    @Mock
+    private IShipmentOrderDao shipmentOrderDao;
     @Mock
     private BookingIntegrationsUtility bookingIntegrationsUtility;
 
@@ -1757,6 +1743,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1791,6 +1778,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1824,6 +1812,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -2109,11 +2098,6 @@ ShipmentServiceTest extends CommonMocks {
 
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
-        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsList),
@@ -2567,8 +2551,9 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
@@ -2605,7 +2590,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
@@ -3566,9 +3551,16 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2Test() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
-        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        PackingRequest packingRequest = PackingRequest.builder().build();
+        packingRequest.setWeight(BigDecimal.valueOf(11.5));
+        packingRequest.setVolume(BigDecimal.valueOf(11));
+        packingRequest.setPacks("1");
+        packingRequest.setLengthUnit("M");
+        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         Parties importBroker = Parties.builder().orgCode("1223").build();
         PartiesRequest importBrokerRequest = PartiesRequest.builder().build();
@@ -3577,7 +3569,7 @@ ShipmentServiceTest extends CommonMocks {
         additionalDetails.setExportBroker(importBroker);
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
         shipmentDetails.setGuid(UUID.randomUUID());
-        ConsolidationDetailsResponse mockConsolidationDetailsResponse = new ConsolidationDetailsResponse();
+        shipmentDetails.setShipmentOrders(Collections.singletonList(shipmentOrder));
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
@@ -3590,14 +3582,29 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(packingDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(new Packing()));
+
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(Collections.singletonList(shipmentOrder));
+        when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(shipmentOrder));
+
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
+
+        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(List.of(new ConsolidationDetails()));
         mockShipmentSettings();
         mockTenantSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
 
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
@@ -4363,6 +4370,34 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void listShipmentsWithOrderCounts() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentOrders(Collections.singletonList(ShipmentOrder.builder().build()));
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(Arrays.asList(FilterCriteria.builder().build())).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        var expectedResponse = ResponseHelper.buildListSuccessResponse(
+                convertEntityListToDtoList(shipmentDetailsPage.getContent()),
+                shipmentDetailsPage.getTotalPages(),
+                shipmentDetailsPage.getTotalElements()
+        );
+
+        ResponseEntity<?> httpResponse = shipmentService.list(commonRequestModel);
+        assertEquals(expectedResponse, httpResponse);
+        var data  = (ShipmentListResponse) (((RunnerListResponse<?>) Objects.requireNonNull(httpResponse.getBody())).getData()).get(0);
+        assertEquals(1, data.getOrdersCount());
+    }
+
+    @Test
     void deleteCatch() {
         ResponseEntity<IRunnerResponse> responseEntity = shipmentService.delete(CommonRequestModel.builder().build());
         assertNotNull(responseEntity);
@@ -4751,7 +4786,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
 
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());
@@ -4804,7 +4839,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), eq(false))).thenReturn(Arrays.asList(Containers.builder().build()));
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
-        when(consolidationDetailsDao.save(any(), eq(false))).thenReturn(ConsolidationDetails.builder().build());
+        when(consolidationDetailsDao.save(any(), eq(false), anyBoolean())).thenReturn(ConsolidationDetails.builder().build());
 
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
         mockShipmentSettings();
@@ -5166,6 +5201,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
+        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
@@ -6102,8 +6138,6 @@ ShipmentServiceTest extends CommonMocks {
         routings.setMode(Constants.TRANSPORT_MODE_SEA);
         routings.setLeg(1L);
 
-        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
-
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
@@ -6114,7 +6148,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentService.createConsolidation(shipmentDetails, new ArrayList<>());
 
@@ -6240,7 +6274,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentInV2TestNotesNotNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
         CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
         customerBookingRequest.setCustomer(PartiesRequest.builder().addressCode("code").orgCode("org").addressData(new HashMap<>()).orgData(new HashMap<>()).build());
 
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
@@ -6260,6 +6296,9 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
         when(notesDao.save(any())).thenReturn(Notes.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
@@ -7152,6 +7191,91 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId(1L).consolidationId(2L).build()));
         var response = shipmentService.requestInterBranchConsole(1L, 2L);
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment1() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        shipmentDetails1.setCreatedBy("abc");
+        shipmentDetails1.setAssignedTo("def");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment2() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(null);
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_InterBranchImportShipment3() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+        when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        when(commonUtils.getEmailTemplates(anyString())).thenReturn(List.of(new EmailTemplatesRequest()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(spyService, never()).sendEmailForPushRequested(any(), any(), any());
+    }
+
+    @Test
+    void testRequestInterBranchConsole_NonInterBranchShipment_EmailSent() throws RunnerException {
+        ShipmentService spyService = spy(shipmentService);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .direction("EXP")
+                .build();
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of());
+        doNothing().when(spyService).sendEmailForPushRequested(any(), any(), any());
+        var response = spyService.requestInterBranchConsole(1L, 2L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(consoleShipmentMappingDao).save(argThat(entity ->
+                entity.getIsAttachmentDone() != null && !entity.getIsAttachmentDone()
+        ));
+        verify(spyService).sendEmailForPushRequested(any(), any(), any());
     }
 
     @Test
@@ -8177,187 +8301,411 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_ExistingRoutingList() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        List<RoutingsRequest> existingRoutingList = new ArrayList<>();
-        existingRoutingList.add(new RoutingsRequest());
-        customerBookingRequest.setRoutingList(existingRoutingList);
+    void createShipmentFromBookingTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        PartiesRequest importBrokerRequest = PartiesRequest.builder().build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
+        additionalDetailsRequest.setImportBroker(importBrokerRequest);
+        additionalDetailsRequest.setExportBroker(importBrokerRequest);
 
-        assertNotNull(result);
-        assertEquals(existingRoutingList, result);
+        ContainerRequest containerRequest = ContainerRequest.builder().build();
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        consolidationDetailsRequest.setContainersList(Collections.singletonList(containerRequest));
+
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().build();
+        NotesRequest notesRequest = NotesRequest.builder().build();
+        PackingRequest packingRequest = PackingRequest.builder().build();
+
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+        shipmentRequest.setRoutingsList(Collections.singletonList(routingsRequest));
+        shipmentRequest.setNotesList(Collections.singletonList(notesRequest));
+        shipmentRequest.setPackingList(Collections.singletonList(packingRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(Collections.singletonList(new ConsolidationDetails()));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(Collections.singletonList(new Containers()));
+        when(jsonHelper.convertValueToList(any(), eq(Routings.class))).thenReturn(Collections.singletonList(new Routings()));
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+        when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(new Notes());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
+        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(new ReferenceNumbers()));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(Collections.singletonList(new ShipmentOrder()));
+        when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(new ShipmentOrder()));
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NoExistingRoutingList() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void createShipmentFromBookingTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
 
-        assertNotNull(result);
-        assertEquals(3, result.size());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NullCarrierDetails() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        customerBookingRequest.setCarrierDetails(null);
+    void createShipmentFromBookingTest3() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
 
-        assertNotNull(result);
-        assertEquals(0, result.size());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setGoodsDescription("Abcd").setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(null);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NullOrigin() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin(null);
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void createShipmentFromBookingTest4() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        AdditionalDetailRequest additionalDetailsRequest = new AdditionalDetailRequest();
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().build();
+        consolidationDetailsRequest.setReferenceNumber("1");
+        consolidationDetailsRequest.setBol("1");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        shipmentRequest.setAdditionalDetails(additionalDetailsRequest);
+        shipmentRequest.setConsolidationList(Collections.singletonList(consolidationDetailsRequest));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        when(consolidationService.createConsolidationForBooking(any())).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails);
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NullPortOfLoading() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort(null);
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void createShipmentFromBookingTest5() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).shipmentType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).build();
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setTransportMode("FCL");
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+
+        ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(shipmentDetailsResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("shipmentDetailsString");
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        String shipmentResponse = shipmentService.createShipmentFromBooking(shipmentRequest);
+        assertNotNull(shipmentResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NullPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort(null);
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void completeUpdateShipmentOrderTest() throws RunnerException {
+        shipmentDetails.setId(1L);
+        List<ShipmentOrder> shipmentOrderList = Collections.singletonList(ShipmentOrder.builder().build());
+        ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
+        mockShipment.setShipmentOrders(shipmentOrderList);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        // Mock
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails.setConsolidationList(new ArrayList<>())
+                                        .setContainersList(new ArrayList<>())));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(shipmentOrderList);
+        when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(shipmentOrderList);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_NullDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination(null);
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void attachDetachOrderTest() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("ATTACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginAndPortOfLoading() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Port of Discharge");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void attachDetachOrderTest2() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("ATTACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+        when(shipmentOrderDao.save(any())).thenReturn(shipmentOrder);
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_SamePortOfLoadingAndPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Port of Loading");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void attachDetachOrderTest3() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
+        doNothing().when(shipmentOrderDao).delete(any());
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_SamePortOfDischargeAndDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Port of Loading");
-        carrierDetails.setDestinationPort("Destination");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void attachDetachOrderTest4() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACH");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
 
-        assertNotNull(result);
-        assertEquals(2, result.size());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
+    }
+
+
+    @Test
+    void attachDetachOrderTest5_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACHED");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingAndPortOfDischarge() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Origin");
-        carrierDetails.setDestination("Destination");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
+    void attachDetachOrderTest6_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setEvent("DETACHED");
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setId(1L);
 
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
+        shipmentOrder.setId(1L);
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingPortOfDischargeAndDestination() {
-        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
-        CarrierDetailRequest carrierDetails = new CarrierDetailRequest();
-        carrierDetails.setOrigin("Origin");
-        carrierDetails.setOriginPort("Origin");
-        carrierDetails.setDestinationPort("Origin");
-        carrierDetails.setDestination("Origin");
-        customerBookingRequest.setCarrierDetails(carrierDetails);
-
-        List<RoutingsRequest> result = shipmentService.getCustomerBookingRequestRoutingList(customerBookingRequest);
-
-        assertNotNull(result);
-        assertEquals(0, result.size());
+    void attachDetachOrderTest7_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
+
+    @Test
+    void attachDetachOrderTest8_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void attachDetachOrderTest9_ThrowException() {
+        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+//    @Test
+    void testUpdateThrowsValidatonExceptionIfStaleShipmentIsSavedAgain() throws RunnerException {
+        Long shipmentId = 1L;
+        Long linkedConsolidationId = 1L;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .shipmentId("AIR-CAN-00001")
+                .shipmentCreatedOn(LocalDateTime.now())
+                .containersList(Arrays.asList(Containers.builder().build()))
+                .jobType(Constants.SHIPMENT_TYPE_DRT)
+                .consignee(Parties.builder().orgCode("org1").build())
+                .consigner(Parties.builder().orgCode("org2").build())
+                .build();
+        shipmentDetails.setId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder()
+                .shipmentId(shipmentId)
+                .consolidationId(linkedConsolidationId)
+                .isAttachmentDone(true)
+                .build();
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentDetailsMapper).update(any(), any());
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(consoleShipmentMapping));
+
+        String errorMessage = ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR;
+        Exception e = assertThrows(RunnerException.class, () -> shipmentService.partialUpdate(commonRequestModel, false));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
 
 }

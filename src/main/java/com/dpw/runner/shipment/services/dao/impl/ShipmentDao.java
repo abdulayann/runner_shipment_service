@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -46,6 +47,7 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -85,15 +87,6 @@ public class ShipmentDao implements IShipmentDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private ISBUtils sbUtils;
-
-    @Autowired
-    private ISBProperties isbProperties;
-
-    @Autowired
-    private AzureServiceBusTopic azureServiceBusTopic;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
 
@@ -108,6 +101,9 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     private final EntityManager entityManager;
 
@@ -222,9 +218,14 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
-            directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
+
+        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
+                throw new ValidationException("Please enter a valid MAWB number.");
+            if (shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
+                directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
+        }
+
 
         validateIataCode(shipmentDetails);
 
@@ -234,8 +235,7 @@ public class ShipmentDao implements IShipmentDao {
                 setMawbStock(shipmentDetails);
             }
         }
-//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
+
     }
 
     @Override
@@ -498,9 +498,6 @@ public class ShipmentDao implements IShipmentDao {
             mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
         }
 
-        if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
-            throw new ValidationException("Please enter a valid MAWB number.");
-
         CarrierResponse correspondingCarrier = null;
         if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill)) {
@@ -702,4 +699,8 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findAllWithoutTenantFilter(spec, pageable);
     }
 
+    @Override
+    public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
+        return shipmentRepository.save(shipmentDetails);
+    }
 }

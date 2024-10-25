@@ -1516,6 +1516,28 @@ class EntityTransferServiceTest {
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
     }
+    @Test
+    void testSendConsolidationEmailNotification_Success1() {
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
+        when(consolidationDetails.getShipmentsList()).thenReturn(List.of(shipmentDetails));
+        when(consolidationDetails.getTransportMode()).thenReturn("SEA");
+        when(consolidationDetails.getBol()).thenReturn("bol");
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = null;
+
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
 
     @Test
     void testSendShipmentEmailNotification_Success() {

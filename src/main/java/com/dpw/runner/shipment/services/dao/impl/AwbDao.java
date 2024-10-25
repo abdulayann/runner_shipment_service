@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -22,11 +23,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.MawbHawbLink;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
@@ -38,15 +35,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -238,6 +227,7 @@ public class AwbDao implements IAwbDao {
             if (Objects.equals(reportType, ReportConstants.MAWB)) {
                 if (!Boolean.TRUE.equals(fromShipment)) {
                     Awb awb = getMawb(id);
+                    getHawbPacks(awb);
                     if (awb.getConsolidationId() != null) {
                         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
                         if (consolidationDetails.isPresent()) {
@@ -561,5 +551,14 @@ public class AwbDao implements IAwbDao {
                 Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
             throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
         }
+    }
+
+    private void getHawbPacks(Awb awb) {
+        List<Awb> linkedHouses = getLinkedAwbFromMawb(awb.getId());
+        awb.setAwbPackingInfo(new ArrayList<>());
+
+        linkedHouses.stream()
+                .filter(house -> Objects.nonNull(house.getAwbPackingInfo()))
+                .forEach(house -> awb.getAwbPackingInfo().addAll(house.getAwbPackingInfo()));
     }
 }

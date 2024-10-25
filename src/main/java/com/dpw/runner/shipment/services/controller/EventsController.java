@@ -150,6 +150,23 @@ public class EventsController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(EventConstants.LIST_EVENT_DETAILS_V2)
+    public ResponseEntity<IRunnerResponse> listEventsV2(@RequestBody @Valid TrackingEventsRequest request) {
+        String responseMsg;
+        try {
+            return eventService.listV2(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error fetching Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @PostMapping(ApiConstants.API_SYNC_EVENTS)
     public ResponseEntity<IRunnerResponse> getEvents(@RequestBody @Valid List<Events> request) {
         String responseMsg;

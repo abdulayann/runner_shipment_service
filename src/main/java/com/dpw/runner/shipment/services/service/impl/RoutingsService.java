@@ -131,6 +131,9 @@ public class RoutingsService implements IRoutingsService {
             Long shipmentId = routings.stream().findFirst()
                     .map(Routings::getShipmentId).orElse(null);
 
+            // clear Routing Timestamps
+            routings.forEach(this::clearRoutingTimestamps);
+
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
@@ -367,6 +370,13 @@ public class RoutingsService implements IRoutingsService {
         }
     }
 
+    private void clearRoutingTimestamps(Routings routing) {
+        routing.setAta(null);
+        routing.setEta(null);
+        routing.setAtd(null);
+        routing.setEtd(null);
+    }
+
     /**
      * Updates the projected date and time (ETD or ETA) for the routing.
      *
@@ -432,6 +442,7 @@ public class RoutingsService implements IRoutingsService {
         routingsResponse.shipmentId(routings.getShipmentId());
         routingsResponse.bookingId(routings.getBookingId());
         routingsResponse.leg(routings.getLeg());
+        routingsResponse.carriage(routings.getCarriage());
         routingsResponse.mode(routings.getMode());
         routingsResponse.routingStatus(routings.getRoutingStatus());
         routingsResponse.vesselName(routings.getVesselName());

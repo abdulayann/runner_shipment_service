@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -21,6 +20,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -1308,4 +1309,36 @@ class ShipmentControllerTest {
         var responseEntity = shipmentController.listWithoutTenantFilter(listCommonRequest);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+
+    @Test
+    void testCreateShipmentForBooking() throws RunnerException {
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
+        when(shipmentService.createShipmentFromBooking(any())).thenReturn("Success");
+        var responseEntity = shipmentController.createShipmentForBooking(shipmentRequest);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateShipmentForBookingException() throws RunnerException {
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
+        when(shipmentController.createShipmentForBooking(any())).thenThrow(new RuntimeException());
+        assertThrows(RunnerException.class, () -> shipmentController.createShipmentForBooking(shipmentRequest));
+    }
+
+    @Test
+    void testAttachDetachOrderSuccess() {
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentService.attachDetachOrder(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testAttachDetachOrderException(){
+        ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
+        when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

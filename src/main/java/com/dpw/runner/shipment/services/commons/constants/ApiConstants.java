@@ -48,6 +48,8 @@ public class ApiConstants {
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
+    public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
+    public static final String STATE_BASED_LIST = "/state-based-list";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
@@ -75,6 +77,7 @@ public class ApiConstants {
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
     public static final String  GET_PACK_UTILISATION = "/get/packUtilisation";
+    public static final String HIDE_MANIFEST = "/hideManifest";
 
     public static final String SHIPMENT_SUMMARY = "/get/shipmentSummary";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
@@ -83,7 +86,7 @@ public class ApiConstants {
     public static final String ASSIGN_PACKS_SHIPMENTS = "/assign/shipments";
     public static final String DETACH_PACKS_SHIPMENTS = "/detach/shipments";
     public static final String GET_ALL_MASTER_DATA = "/get/master-data";
-    public static final String AUTO_CALCULATE_VOLUMETRIC_WEIGHT = "/auto-calc-volumetric-weight";
+    public static final String AUTO_CALCULATE_PACKS_DATA = "/auto-calc-packs-data";
     public static final String AUTO_CALCULATE_CHARGABLE = "/auto-calc-chargable";
     public static final String AUTO_CALCULATE_VOLUME = "/auto-calc-volume";
     public static final String GET_AUTO_UPDATE_DESC_GOODS = "/get/auto-update/goods";
@@ -124,5 +127,6 @@ public class ApiConstants {
     public static final String OCEAN_DG_SEND_FOR_APPROVAL = "/DGSendForApproval";
     public static final String OCEAN_DG_APPROVAL_RESPONSE = "/DGApprovalResponse";
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
+    public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 
 }

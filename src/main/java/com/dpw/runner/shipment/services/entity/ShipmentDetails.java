@@ -138,9 +138,6 @@ public class ShipmentDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Events> eventsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'SHIPMENT'")
-    private List<FileRepo> fileRepoList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     private List<Packing> packingList;
@@ -322,14 +319,35 @@ public class ShipmentDetails extends MultiTenancy {
     @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails deliveryDetails;
 
+    @Column(name = "delivery_details_id", insertable = false, updatable = false)
+    private Long deliveryDetailsId;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails pickupDetails;
+
+    @Column(name = "pickup_details_id", insertable = false, updatable = false)
+    private Long pickupDetailsId;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")
     @OrganizationData
     private Parties client;
+
+    @Column(name = "client_id", insertable = false, updatable = false)
+    private Long clientId;
+
+    @Column(name = "consigner_id", insertable = false, updatable = false)
+    private Long consignerId;
+
+    @Column(name = "consignee_id", insertable = false, updatable = false)
+    private Long consigneeId;
+
+    @Column(name = "carrier_detail_id", insertable = false, updatable = false)
+    private Long carrierDetailId;
+
+    @Column(name = "additional_details_id", insertable = false, updatable = false)
+    private Long additionalDetailId;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consigner_id", referencedColumnName = "id")
@@ -389,6 +407,10 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "order_management_number")
     private String orderManagementNumber;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
+    private List<ShipmentOrder> shipmentOrders;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_category")
@@ -513,5 +535,8 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "ocean_dg_status")
      @Enumerated(EnumType.STRING)
      private OceanDGStatus oceanDGStatus;
+
+     @Column(name = "sync_routing_from_consolidation")
+     private Boolean syncRoutingFromConsolidation;
 
 }

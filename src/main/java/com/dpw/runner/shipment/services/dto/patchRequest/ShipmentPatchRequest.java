@@ -109,4 +109,5 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<Long> orderNumber;
     private JsonNullable<String> orderManagementId;
     private JsonNullable<String> orderManagementNumber;
+    private List<ShipmentOrderRequest> shipmentOrders;
 }

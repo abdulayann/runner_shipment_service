@@ -249,14 +249,14 @@ class BillingServiceAdapterTest {
         CreateBookingModuleInV1 createBookingModuleInV1 = new CreateBookingModuleInV1();
 
         V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
-
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
-        when(v1Service.retrieveTenant().getEntity()).thenThrow(new BillingException());
+        HttpHeaders httpHeaders = new HttpHeaders();
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
+        when(v1Service.retrieveTenant(httpHeaders).getEntity()).thenThrow(new BillingException());
 
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
 
-        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse));
+        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders));
     }
 
     @Test
@@ -271,12 +271,13 @@ class BillingServiceAdapterTest {
         createBookingModuleInV1.setEntity(bookingEntity);
         V1RetrieveResponse v1RetrieveResponse = new V1RetrieveResponse();
         v1RetrieveResponse.setEntity(tenantModel);
-
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
 
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
-        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse));
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders));
 
     }
 
@@ -317,11 +318,11 @@ class BillingServiceAdapterTest {
         v1RetrieveResponse.setEntity(tenantModel);
 
         ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
-
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
-        when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
+        when(v1Service.fetchOrganization(any(), any(HttpHeaders.class))).thenReturn(orgResponse);
         when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
-        when(v1Service.addressList(any())).thenReturn(addressResponse);
+        when(v1Service.addressList(any(), any(HttpHeaders.class))).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
@@ -329,7 +330,7 @@ class BillingServiceAdapterTest {
         when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
 
-        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders);
 
         assertNotNull(billV2);
 
@@ -386,12 +387,13 @@ class BillingServiceAdapterTest {
         v1RetrieveResponse.setEntity(tenantModel);
 
         ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
+        HttpHeaders httpHeaders = new HttpHeaders();
 
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
-        when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
+        when(v1Service.fetchOrganization(any(),any(HttpHeaders.class))).thenReturn(orgResponse);
         when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
-        when(v1Service.addressList(any())).thenReturn(addressResponse);
+        when(v1Service.addressList(any(), any(HttpHeaders.class))).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
@@ -399,7 +401,7 @@ class BillingServiceAdapterTest {
         when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
 
-        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders);
 
         assertNotNull(billV2);
 
@@ -456,12 +458,12 @@ class BillingServiceAdapterTest {
         v1RetrieveResponse.setEntity(tenantModel);
 
         ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
-
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
-        when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
+        when(v1Service.fetchOrganization(any(),any(HttpHeaders.class))).thenReturn(orgResponse);
         when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
-        when(v1Service.addressList(any())).thenReturn(addressResponse);
+        when(v1Service.addressList(any(), any(HttpHeaders.class))).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
@@ -469,7 +471,7 @@ class BillingServiceAdapterTest {
         when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
 
-        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders);
 
         assertNotNull(billV2);
 
@@ -526,12 +528,12 @@ class BillingServiceAdapterTest {
         v1RetrieveResponse.setEntity(tenantModel);
 
         ResponseEntity<BillingEntityResponse> mockResponse = new ResponseEntity<>(billingEntityResponse, HttpStatus.OK);
-
-        when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
+        HttpHeaders httpHeaders = new HttpHeaders();
+        when(v1Service.retrieveTenant(httpHeaders)).thenReturn(v1RetrieveResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
-        when(v1Service.fetchOrganization(any())).thenReturn(orgResponse);
+        when(v1Service.fetchOrganization(any(), any(HttpHeaders.class))).thenReturn(orgResponse);
         when(jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class)).thenReturn(entityTransferOrganizations);
-        when(v1Service.addressList(any())).thenReturn(addressResponse);
+        when(v1Service.addressList(any(), any(HttpHeaders.class))).thenReturn(addressResponse);
         when(jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class)).thenReturn(entityTransferAddresses);
         when(v1ServiceUtil.createBookingRequestForV1(any(), anyBoolean(), anyBoolean(),
                 eq(shipmentDetailsResponse.getGuid()))).thenReturn(createBookingModuleInV1);
@@ -539,7 +541,8 @@ class BillingServiceAdapterTest {
         when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class))).thenReturn(mockResponse);
 
-        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse);
+
+        ResponseEntity<BillingEntityResponse> billV2 = billingServiceAdapter.createBillV2(customerBooking, false, true, shipmentDetailsResponse, httpHeaders);
 
         assertNotNull(billV2);
 
@@ -702,6 +705,7 @@ class BillingServiceAdapterTest {
     void sendBillCreationRequest_Success() {
 
         createOrUpdateEndpoint = "/createOrUpdate";
+        HttpHeaders httpHeaders = new HttpHeaders();
 
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getExternalCreateOrUpdate()).thenReturn(createOrUpdateEndpoint);
@@ -710,7 +714,7 @@ class BillingServiceAdapterTest {
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class)))
                 .thenReturn(mockResponse);
 
-        ResponseEntity<BillingEntityResponse> response = billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest);
+        ResponseEntity<BillingEntityResponse> response = billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest, httpHeaders);
 
         assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -730,7 +734,8 @@ class BillingServiceAdapterTest {
         when(restTemplate.postForEntity(eq(baseUrl + "/createOrUpdate"), any(HttpEntity.class), eq(BillingEntityResponse.class)))
                 .thenReturn(mockResponseEntity);
 
-        assertThrows(BillingException.class, () -> billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest));
+        HttpHeaders httpHeaders = new HttpHeaders();
+        assertThrows(BillingException.class, () -> billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest, httpHeaders));
     }
 
     @Test
@@ -742,8 +747,9 @@ class BillingServiceAdapterTest {
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BillingEntityResponse.class)))
                 .thenThrow(new RuntimeException("Error occurred"));
 
+        HttpHeaders httpHeaders = new HttpHeaders();
         BillingException exception = assertThrows(BillingException.class, () -> {
-            billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest);
+            billingServiceAdapter.sendBillCreationRequest(externalBillPayloadRequest, httpHeaders);
         });
 
         assertEquals("Error occurred", exception.getMessage());

@@ -57,4 +57,6 @@ public class V1TenantSettingsResponse implements Serializable {
     private String shipmentAttachDefaultToMailId;
     @JsonProperty("ShipmentAttachDefaultCCMailId")
     private String shipmentAttachDefaultCCMailId;
+    @JsonProperty("LegalEntityCode")
+    private String legalEntityCode;
 }
