@@ -154,7 +154,6 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
@@ -170,8 +169,6 @@ import com.dpw.runner.shipment.services.dto.response.notification.PendingNotific
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -298,7 +295,6 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -2516,7 +2512,6 @@ public class ShipmentService implements IShipmentService {
         if (eventsRequestList != null) {
             eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
-            updateActualFromTracking(eventsList, shipmentDetails);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
@@ -2636,7 +2631,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getEstimated());
                     }
                 } else {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
                             LocalDateTime.now(), LocalDateTime.now()));
                 }
             }
@@ -2652,7 +2647,7 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), event.getActual());
                     }
                 } else {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
                             shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), LocalDateTime.now()));
                 }
             }
@@ -2667,7 +2662,7 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getPickupDate(), event.getActual());
                     }
                 } else {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
                             shipmentDetails.getAdditionalDetails().getPickupDate(), LocalDateTime.now()));
                 }
             }
@@ -2682,7 +2677,7 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), event.getActual());
                     }
                 } else {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
                             shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), LocalDateTime.now()));
                 }
             }
@@ -2697,7 +2692,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
                     }
                 } else {
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
                             LocalDateTime.now(), LocalDateTime.now()));
                 }
             }
@@ -2712,7 +2707,7 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), event.getActual());
                     }
                 } else {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE,
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
                         shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
                 }
             }
@@ -2727,7 +2722,7 @@ public class ShipmentService implements IShipmentService {
                         handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
                     }
                 }else{
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
                             LocalDateTime.now(), LocalDateTime.now()));
                 }
             }
@@ -2744,7 +2739,7 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), event.getActual());
                     }
                 }else{
-                    events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS,
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
                             shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
                 }
             }
@@ -2762,10 +2757,10 @@ public class ShipmentService implements IShipmentService {
                     }
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW,
+                        events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW,
                                 shipmentDetails.getShipmentGateInDate(), LocalDateTime.now()));
                     } else if (shipmentDetails.getDateType() == ESTIMATED) {
-                        events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
+                        events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
                                 shipmentDetails.getShipmentGateInDate()));
                     }
                 }
@@ -2782,7 +2777,7 @@ public class ShipmentService implements IShipmentService {
                     handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
                 }
             }else{
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR,
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
                         LocalDateTime.now(), LocalDateTime.now()));
             }
         }
@@ -2821,124 +2816,56 @@ public class ShipmentService implements IShipmentService {
     private void createTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails) {
 
         if (!StringUtility.isEmpty(shipmentDetails.getBookingNumber()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now(), LocalDateTime.now()));
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getPickupDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CACO,
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
                     shipmentDetails.getAdditionalDetails().getPickupDate(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CADE,
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
                     shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), LocalDateTime.now()));
         }
 
         if (shipmentDetails.getShipmentGateInDate() != null && isLclOrAir(shipmentDetails) && shipmentDetails.getDateType()!=null) {
             if (ACTUAL.equals(shipmentDetails.getDateType())) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW, shipmentDetails.getShipmentGateInDate(),
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, shipmentDetails.getShipmentGateInDate(),
                         LocalDateTime.now()));
             } else if (ESTIMATED.equals(shipmentDetails.getDateType())) {
-                events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
                         shipmentDetails.getShipmentGateInDate()));
             }
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CURE,
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
                     shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now(),
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now(),
                     LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.PRDE,
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
                     shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.CAFS,
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
                     shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now(), LocalDateTime.now()));
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now(), LocalDateTime.now()));
         }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
-            events.add(createAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
         }
-
-    }
-
-
-    private void updateActualFromTracking(List<Events> shipmentEvents, ShipmentDetails shipmentDetails) {
-
-        TrackingServiceApiResponse trackingServiceApiResponse;
-        try {
-            trackingServiceApiResponse = trackingServiceAdapter.fetchTrackingData(
-                    TrackingRequest.builder().referenceNumber(shipmentDetails.getShipmentId()).build());
-        } catch (RunnerException e) {
-            log.error("Error fetching tracking data for shipment ID {}: {}", shipmentDetails.getShipmentId(), e.getMessage());
-            return;
-        }
-
-        if (trackingServiceApiResponse == null || trackingServiceApiResponse.getContainers() == null) {
-            log.warn("No tracking data available for shipment ID {}", shipmentDetails.getShipmentId());
-            return;
-        }
-
-        Map<String, Event> containerEventMapFromTracking = Optional.ofNullable(trackingServiceApiResponse.getContainers()).orElse(Collections.emptyList()).stream()
-                .filter(container -> container.getEvents() != null)
-                .flatMap(container -> container.getEvents().stream()
-                        .filter(Objects::nonNull)
-                        .map(event -> {
-                            String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                                    event.getLocationRole(), event.getEventType(), event.getDescription());
-
-                            String placeName = Optional.ofNullable(container.getPlaces()).orElse(Collections.emptyList()).stream()
-                                    .filter(place -> Objects.equals(place.getId(), event.getLocation()))
-                                    .map(Place::getCode).map(StringUtils::defaultString).findFirst()
-                                    .orElse(StringUtils.EMPTY);
-
-                            String trackingEventsUniqueKey = commonUtils.getTrackingEventsUniqueKey(
-                                    eventCode,
-                                    container.getContainerNumber(),
-                                    shipmentDetails.getShipmentId(),
-                                    Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING,
-                                    placeName);
-
-                            return new SimpleEntry<>(trackingEventsUniqueKey, event);
-                        }))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (existing, newEvent) ->
-                                Optional.ofNullable(existing.getId()).orElse(0) >
-                                        Optional.ofNullable(newEvent.getId()).orElse(0) ? existing : newEvent
-                ));
-
-        shipmentEvents.forEach(shipmentEvent -> {
-            if (Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equalsIgnoreCase(shipmentEvent.getSource())) {
-                EventsResponse shipmentEventsResponse = Optional.ofNullable(jsonHelper.convertValue(shipmentEvent, EventsResponse.class)).orElse(new EventsResponse());
-
-                String key = commonUtils.getTrackingEventsUniqueKey(shipmentEventsResponse.getEventCode(),
-                        shipmentEventsResponse.getContainerNumber(), shipmentEventsResponse.getShipmentNumber(),
-                        shipmentEventsResponse.getSource(), shipmentEventsResponse.getPlaceName());
-                Event eventFromTracking = containerEventMapFromTracking.get(key);
-
-                if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
-                    shipmentEvent.setActual(eventFromTracking.getActualEventTime().getDateTime());
-                    log.info("Updated actual event time for event code {} in container {}",
-                            shipmentEventsResponse.getEventCode(), shipmentEventsResponse.getContainerNumber());
-                } else {
-                    log.warn("No matching event found or missing actual event time for key: {}", key);
-                }
-            }
-        });
 
     }
 
@@ -3916,7 +3843,6 @@ public class ShipmentService implements IShipmentService {
             }
             if (eventsRequestList != null) {
                 List<Events> eventsList = jsonHelper.convertValueToList(eventsRequestList, Events.class);
-                updateActualFromTracking(eventsList, newShipmentDetails);
                 eventsList = createOrUpdateTrackingEvents(newShipmentDetails, oldEntity, eventsList, false);
                 if (eventsList != null) {
                     List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
@@ -5387,7 +5313,15 @@ public class ShipmentService implements IShipmentService {
     }
 
     private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode,
-                                         LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+            LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+        Events events = initializeAutomatedEvents(shipmentDetails, eventCode, actualDateTime, estimatedDateTime);
+        // Persist the event
+        eventDao.save(events);
+        return events;
+    }
+
+    private Events initializeAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode,
+            LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         Events events = new Events();
         // Set event fields from shipment
         events.setActual(actualDateTime);
@@ -5403,8 +5337,6 @@ public class ShipmentService implements IShipmentService {
         if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
             events.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
         }
-        // Persist the event
-        eventDao.save(events);
         return events;
     }
 
