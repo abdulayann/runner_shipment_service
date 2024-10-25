@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -52,6 +53,8 @@ public class RoutingsDao implements IRoutingsDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Routings save(Routings routings) {
@@ -523,7 +526,7 @@ public class RoutingsDao implements IRoutingsDao {
                 }
                 String flightNumber = "";
                 String flightCarrier = "";
-                if(Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
+                if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
                     flightNumber = carrierDetails.getFlightNumber();
                     flightCarrier = carrierDetails.getShippingLine();
                 }
