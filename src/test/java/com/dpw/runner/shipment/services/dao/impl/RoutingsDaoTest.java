@@ -628,6 +628,22 @@ class RoutingsDaoTest {
     }
 
     @Test
+    void testGetCustomerBookingRequestRoutingList_AIR() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        carrierDetails.setFlightNumber("554");
+        carrierDetails.setShippingLine("air");
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_AIR);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+    }
+
+    @Test
     void testGetCustomerBookingRequestRoutingList_NullCarrierDetails() {
 
         List<Routings> result = routingsDao.generateDefaultRouting(null, Constants.TRANSPORT_MODE_AIR);
