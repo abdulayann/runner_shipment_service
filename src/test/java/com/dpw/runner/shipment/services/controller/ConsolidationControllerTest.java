@@ -82,7 +82,7 @@ class ConsolidationControllerTest {
         when(consolidationService.fullConsolidationsList(any())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), true);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), true, true);
         // Assert
         assertEquals(mockResponse.getStatusCode(), responseEntity.getStatusCode());
     }
@@ -91,10 +91,10 @@ class ConsolidationControllerTest {
     void list2() {
         var mockResponse = ResponseHelper.buildFailedResponse("Response");
         // Mock
-        when(consolidationService.list(any())).thenReturn(mockResponse);
+        when(consolidationService.list(any(), anyBoolean())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(mockResponse.getStatusCode(), responseEntity.getStatusCode());
     }
@@ -105,7 +105,7 @@ class ConsolidationControllerTest {
         when(consolidationService.list(any())).thenThrow(new RuntimeException());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
@@ -149,10 +149,10 @@ class ConsolidationControllerTest {
     @Test
     void retrieveById() {
         // Mock
-        when(consolidationService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.retrieveById(Optional.of(1L), Optional.of(UUID.randomUUID().toString()));
+        var responseEntity = consolidationController.retrieveById(Optional.of(1L), Optional.of(UUID.randomUUID().toString()), true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
