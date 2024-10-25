@@ -79,7 +79,7 @@ public class ResponseHelper {
 
     public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, HttpStatus httpStatus) {
         httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
-        log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
+        log.error(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
         return new ResponseEntity<>(runnerResponse, httpStatus);
     }
