@@ -1398,6 +1398,7 @@ public class ContainerService implements IContainerService {
     }
 
     public void afterSave(Containers containers, boolean isCreate) {
+        //todo: call hook pushContainersToDependentServices method
         try {
             if(containers.getTenantId() == null)
                 containers.setTenantId(TenantContext.getCurrentTenant());
@@ -1614,20 +1615,30 @@ public class ContainerService implements IContainerService {
     }
 
     public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
+        log.info("Starting pushContainersToDependentServices with containersList size: {} and oldContainers size: {}",
+                containersList != null ? containersList.size() : 0,
+                oldContainers != null ? oldContainers.size() : 0);
         Map<Long, String> oldContsMap = new HashMap<>();
         if(oldContainers != null && !oldContainers.isEmpty()) {
             oldContsMap = oldContainers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            log.debug("Old containers map created with size: {}", oldContsMap.size());
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
+                v1TenantSettingsResponse.getLogicAppIntegrationEnabled(),
+                v1TenantSettingsResponse.getTransportOrchestratorEnabled());
         if(containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
             || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()))) {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
             String bookingRef = getRefNum(containersList.get(0));
+            log.info("Booking reference obtained: {}", bookingRef);
             for (Containers containers : containersList) {
                 if(( !oldContsMap.containsKey(containers.getId()) && !IsStringNullOrEmpty(containers.getContainerNumber()) ) ||
                     ( oldContsMap.containsKey(containers.getId()) && !Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) ))
+                    log.debug("Preparing payload for container ID: {} with container number: {}",
+                            containers.getId(), containers.getContainerNumber());
                     payloadDetails.add(prepareQueuePayload(containers, bookingRef));
             }
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
@@ -1635,7 +1646,9 @@ public class ContainerService implements IContainerService {
             updateRequest.setTenantCode(UserContext.getUser().getCode());
             eventMessage.setContainerUpdateRequest(updateRequest);
             String jsonBody = jsonHelper.convertToJson(eventMessage);
+            log.debug("JSON body created for event message: {}", jsonBody);
             if (Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled())) {
+                log.info("Producing message to Kafka for transport orchestrator.");
                 producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
             }
             sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
