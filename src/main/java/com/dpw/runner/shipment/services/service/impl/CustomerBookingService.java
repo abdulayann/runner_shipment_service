@@ -275,9 +275,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        CustomerStatusUpdateRequest customerStatusUpdateRequest = (CustomerStatusUpdateRequest) commonRequestModel.getData();
-        CustomerBookingRequest request = jsonHelper.convertValue(customerStatusUpdateRequest, CustomerBookingRequest.class);
-        return this.update(CommonRequestModel.buildRequest(request));
+        return this.update(commonRequestModel);
     }
 
     @Override

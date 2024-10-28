@@ -188,7 +188,7 @@ class CustomerBookingControllerTest {
     void cancel() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         when(customerBookingService.cancel(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = customerBookingController.cancel(CustomerStatusUpdateRequest.builder().build());
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -197,7 +197,7 @@ class CustomerBookingControllerTest {
     void cancel2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         when(customerBookingService.cancel(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = customerBookingController.cancel(CustomerStatusUpdateRequest.builder().build());
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -207,7 +207,7 @@ class CustomerBookingControllerTest {
         // Mock
         when(customerBookingService.cancel(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = customerBookingController.cancel(CustomerStatusUpdateRequest.builder().build());
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
