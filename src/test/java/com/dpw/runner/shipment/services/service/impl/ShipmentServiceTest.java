@@ -6495,7 +6495,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6520,7 +6520,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6545,7 +6545,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6556,7 +6556,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
     @Test
@@ -6567,7 +6567,7 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails.setInterBranchConsole(false);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
 

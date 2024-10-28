@@ -1089,10 +1089,10 @@ class ShipmentControllerTest {
         IRunnerResponse runnerResponse = new RunnerListResponse<>();
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(isAttached)))
+        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(isAttached), anyBoolean()))
                 .thenReturn(responseEntity);
         // Test
-        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, true);
+        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, true, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1100,10 +1100,10 @@ class ShipmentControllerTest {
     @Test
     void testConsoleShipmentList_Exception() {
         // Mock
-        when(shipmentService.consoleShipmentList(any(), anyLong(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.consoleShipmentList(any(), anyLong(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
         ListCommonRequest request = mock(ListCommonRequest.class);
         // Test
-        var responseEntity = shipmentController.consoleShipmentList(request, 1L, true);
+        var responseEntity = shipmentController.consoleShipmentList(request, 1L, true, true);
         // Assert
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
