@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -93,7 +94,8 @@ public class AdditionalDetails extends MultiTenancy {
     private String BEType;
 
     @Column(name = "security_status_received_from")
-    private String securityStatusReceivedFrom;
+    @Enumerated(EnumType.STRING)
+    private AirAuthorisingEntity securityStatusReceivedFrom;
 
     @Column(name = "additional_security_information")
     private String additionalSecurityInformation;

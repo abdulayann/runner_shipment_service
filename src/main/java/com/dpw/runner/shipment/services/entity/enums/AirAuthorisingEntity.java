@@ -1,13 +1,13 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum AirAuthorisingEntity {
-    Airport_Authority ("AO", "Airport Authority"),
-    Regulated_Agent ("RA", "Regulated Agent"),
-    Known_Consignor ("KC", "Known Consignor");
+    AO (1, "Airport Authority"),
+    RA (2, "Regulated Agent"),
+    KC (3, "Known Consignor");
 
-    private final String value;
+    private final int value;
     private final String description;
-    AirAuthorisingEntity(String value, String description) {
+    AirAuthorisingEntity(int value, String description) {
         this.value = value;
         this.description = description;
     }
@@ -16,7 +16,7 @@ public enum AirAuthorisingEntity {
         return description;
     }
 
-    public String getValue() {
+    public int getValue() {
         return value;
     }
 }
