@@ -559,6 +559,17 @@ class EntityTransferServiceTest {
     }
 
     @Test
+    void testSendConsolidationValidation_Failure_Console_Rail() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+    }
+
+    @Test
     void testSendConsolidationValidation_Failure_ShipmentFieldsException_Hbl() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);

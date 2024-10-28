@@ -761,6 +761,9 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_RAI)) {
+            throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
+        }
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
 
