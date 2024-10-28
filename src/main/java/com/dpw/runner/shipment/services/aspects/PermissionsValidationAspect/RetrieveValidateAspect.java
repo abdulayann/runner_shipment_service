@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.annotation.AfterReturning;
@@ -21,7 +21,7 @@ public class RetrieveValidateAspect {
 
     @AfterReturning(pointcut="execution(* com.dpw.runner.shipment.services.dao.impl.ShipmentDao.findById(..)) && args(Long)",
             returning="shipment")
-    public void validateShipmentRetrieve(Optional<ShipmentDetails> shipment) throws RunnerException {
+    public void validateShipmentRetrieve(Optional<ShipmentDetails> shipment) throws ValidationException {
         log.info("Validating Retrieve permissions on shipment entity");
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
@@ -67,14 +67,15 @@ public class RetrieveValidateAspect {
                     return;
             }
 
-            if (validatedFields.size() < retrieveValidationFields)
-                throw new RunnerException("Unavailable to retrieve record due to insufficient retrieve permissions");
+            if (validatedFields.size() < retrieveValidationFields) {
+                throw new ValidationException("Unavailable to retrieve record due to insufficient retrieve permissions");
+            }
         }
     }
 
     @AfterReturning(pointcut="execution(* com.dpw.runner.shipment.services.dao.impl.ConsolidationDao.findById(..)) && args(Long)",
             returning="consolidation")
-    public void validateConsolidationRetrieve(Optional<ConsolidationDetails> consolidation) throws RunnerException {
+    public void validateConsolidationRetrieve(Optional<ConsolidationDetails> consolidation) throws ValidationException {
         log.info("Validating Retrieve permissions on consolidation entity");
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
@@ -121,7 +122,7 @@ public class RetrieveValidateAspect {
             }
 
             if (validatedFields.size() < retrieveValidationFields)
-                throw new RunnerException("Unavailable to retrieve record due to insufficient retrieve permissions");
+                throw new ValidationException("Unavailable to retrieve record due to insufficient retrieve permissions");
         }
     }
 }

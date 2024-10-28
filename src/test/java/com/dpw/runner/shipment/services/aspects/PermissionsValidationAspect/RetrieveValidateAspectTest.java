@@ -3,17 +3,12 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import org.aspectj.lang.JoinPoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +19,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 
@@ -49,7 +43,7 @@ class RetrieveValidateAspectTest {
     @ParameterizedTest
     @ValueSource(strings = {"Shipments:Retrive:All Shipment:AllShipmentRetrive", "Operations:Shipments:AIR:Export:Create",
             "Operations:Shipments:AIR:Export:View", "Operations:Shipments:AIR:Export:Modify", "Operations:Shipments:AIR:Export:Cancel"})
-    void testCreateShipmentAspectShouldSuccessfullyReturn(String permission) throws RunnerException {
+    void testCreateShipmentAspectShouldSuccessfullyReturn(String permission) throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -73,7 +67,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspect2() throws RunnerException {
+    void testCreateShipmentAspect2() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -92,11 +86,11 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
     }
 
     @Test
-    void testCreateShipmentAspect3() throws RunnerException {
+    void testCreateShipmentAspect3() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -115,11 +109,11 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
     }
 
     @Test
-    void testCreateShipmentAspect4() throws RunnerException {
+    void testCreateShipmentAspect4() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -143,7 +137,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspect5() throws RunnerException {
+    void testCreateShipmentAspect5() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -163,7 +157,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspectException() throws RunnerException {
+    void testCreateShipmentAspectException() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -182,11 +176,11 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetails));
     }
 
     @Test
-    void testCreateConsolidationAspect() throws RunnerException {
+    void testCreateConsolidationAspect() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -210,7 +204,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspect2() throws RunnerException {
+    void testCreateConsolidationAspect2() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -229,11 +223,11 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
     }
 
     @Test
-    void testCreateConsolidationAspect3() throws RunnerException {
+    void testCreateConsolidationAspect3() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -252,11 +246,11 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
     }
 
     @Test
-    void testCreateConsolidationAspect4() throws RunnerException {
+    void testCreateConsolidationAspect4() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -280,7 +274,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspect5() throws RunnerException {
+    void testCreateConsolidationAspect5() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -300,7 +294,7 @@ class RetrieveValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspectException() throws RunnerException {
+    void testCreateConsolidationAspectException() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -319,6 +313,6 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        assertThrows(RunnerException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetails));
     }
 }
