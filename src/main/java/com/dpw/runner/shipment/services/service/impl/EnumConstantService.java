@@ -99,6 +99,11 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.TASK_STATUS, enumList);
 
+        for(AirAuthorisingEntity entity : AirAuthorisingEntity.values()) {
+            enumList.add(EnumConstantResponse.builder().description(entity.getDescription()).name(entity.getValue()).build());
+        }
+        response.put(Constants.AIR_AUTHORISING_ENTITY, enumList);
+
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }

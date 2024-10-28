@@ -92,6 +92,15 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "be_type")
     private String BEType;
 
+    @Column(name = "security_status_received_from")
+    private String securityStatusReceivedFrom;
+
+    @Column(name = "additional_security_information")
+    private String additionalSecurityInformation;
+
+    @Column(name = "ra_number")
+    private String raNumber;
+
     @Column(name = "custom_location")
     @MasterData(type = MasterDataType.CUSTOM_LOCATION, cascade = Constants.CUSTOM_CITY)
     private String customLocation;
