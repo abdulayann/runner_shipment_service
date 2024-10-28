@@ -100,8 +100,8 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "additional_security_information")
     private String additionalSecurityInformation;
 
-    @Column(name = "ra_number")
-    private String raNumber;
+    @Column(name = "regulated_entity_category")
+    private String regulatedEntityCategory;
 
     @Column(name = "custom_location")
     @MasterData(type = MasterDataType.CUSTOM_LOCATION, cascade = Constants.CUSTOM_CITY)
