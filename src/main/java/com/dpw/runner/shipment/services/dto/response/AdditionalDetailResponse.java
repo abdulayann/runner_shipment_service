@@ -48,7 +48,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String BEType;
     private AirAuthorisingEntity securityStatusReceivedFrom;
     private String additionalSecurityInformation;
-    private String raNumber;
+    private String regulatedEntityCategory;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;
