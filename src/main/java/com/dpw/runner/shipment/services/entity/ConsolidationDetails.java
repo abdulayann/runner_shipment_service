@@ -432,6 +432,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.SCI)
     private String sci;
 
+    @Column(name = "additional_security_information")
+    private String additionalSecurityInformation;
+
     @Column(name = "cfs_cut_off_date")
     private LocalDateTime cfsCutOffDate;
 

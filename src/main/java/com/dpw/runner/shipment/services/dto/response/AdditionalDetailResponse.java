@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -45,6 +46,9 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private String CHAJobNumber;
     private String ADCode;
     private String BEType;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String additionalSecurityInformation;
+    private String raNumber;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;

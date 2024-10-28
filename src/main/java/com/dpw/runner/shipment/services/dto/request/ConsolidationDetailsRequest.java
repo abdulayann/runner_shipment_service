@@ -131,6 +131,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String exemptionCodes;
     private String aomFreeText;
     private String sci;
+    private String additionalSecurityInformation;
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;

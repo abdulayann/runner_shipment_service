@@ -468,6 +468,7 @@ public class Constants {
     public static final String FLOW = "Flow";
     public static final String TASK_TYPE = "TaskType";
     public static final String TASK_STATUS = "TaskStatus";
+    public static final String AIR_AUTHORISING_ENTITY = "AirAuthorisingEntity";
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
