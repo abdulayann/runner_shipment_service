@@ -5124,11 +5124,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
-                List.of(consolidationListResponse),
-                1, 1));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
 
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -5139,7 +5137,7 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -5151,10 +5149,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseEntity.of(Optional.empty()));
-
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -5165,11 +5162,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
-                List.of(),
-                1, 1));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
 
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

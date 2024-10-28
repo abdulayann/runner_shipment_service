@@ -607,10 +607,10 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached) {
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Cosole Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached);
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached, getMasterData);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }

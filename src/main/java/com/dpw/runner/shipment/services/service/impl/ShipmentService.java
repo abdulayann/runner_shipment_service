@@ -5875,7 +5875,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached) {
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached, boolean getMasterData) {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         if (consolidationDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -5908,7 +5908,7 @@ public class ShipmentService implements IShipmentService {
         } else {
             CommonUtils.andCriteria(CONSOLIDATION_ID, consoleId, "=", request);
         }
-        var response = list(CommonRequestModel.buildRequest(request));
+        var response = list(CommonRequestModel.buildRequest(request), getMasterData);
         if (response.getBody() instanceof RunnerListResponse<?> responseList) {
             for (var resp : responseList.getData()) {
                 if (resp instanceof ShipmentListResponse shipmentListResponse

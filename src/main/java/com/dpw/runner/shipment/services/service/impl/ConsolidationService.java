@@ -4985,7 +4985,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(CommonRequestModel commonRequestModel, boolean getMasterData) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
@@ -5001,7 +5001,7 @@ public class ConsolidationService implements IConsolidationService {
         var requestedTypeMap = consoleShipMappingList.stream().collect(Collectors.toMap(ConsoleShipmentMapping::getConsolidationId, Function.identity(), (existingValue, newValue) -> existingValue));
 
         ListCommonRequest request = CommonUtils.constructListCommonRequest("id", consoleIds, "IN");
-        var response = list(CommonRequestModel.buildRequest(request));
+        var response = list(CommonRequestModel.buildRequest(request), getMasterData);
 
         if (response.getBody() instanceof RunnerListResponse<?> responseList) {
             for (var resp : responseList.getData()) {
