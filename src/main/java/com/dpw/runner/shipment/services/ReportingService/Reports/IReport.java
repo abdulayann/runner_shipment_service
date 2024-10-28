@@ -3263,11 +3263,16 @@ public abstract class IReport {
                     }
                     screeningCodes.add(aomString);
                     dictionary.put(SCREENING_CODES, screeningCodes);
+                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
                 } else {
                     dictionary.put(SCREENING_CODES, screeningCodes);
                 }
 
             }
+
+            dictionary.put(RA_NUMBER, additionalDetailModel.getRegulatedEntityCategory());
+            dictionary.put(SECURITY_STATUS_RECEIVED_FROM, additionalDetailModel.getSecurityStatusReceivedFrom());
+            dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(additionalDetailModel.getAdditionalSecurityInformation()));
         }
 
         if(shipmentModel.getSecurityStatus() != null ) {
@@ -3307,12 +3312,14 @@ public abstract class IReport {
                     }
                     screeningCodes.add(aomString);
                     dictionary.put(SCREENING_CODES, screeningCodes);
+                    dictionary.put(AOM_FREE_TEXT, consolidationModel.getAomFreeText());
                 } else {
                     dictionary.put(SCREENING_CODES, screeningCodes);
                 }
 
             }
         }
+        dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(consolidationModel.getAdditionalSecurityInformation()));
 
         if(consolidationModel.getSecurityStatus() != null ) {
             dictionary.put(CONSIGNMENT_STATUS, consolidationModel.getSecurityStatus());
@@ -3507,6 +3514,26 @@ public abstract class IReport {
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return commonUtils.getCurrentTenantSettings();
+    }
+
+    public String getDefaultRANumber() {
+        String defaultRANumber = null;
+        try {
+            TenantModel tenantModel = getTenant();
+            CommonV1ListRequest commonV1ListRequest = new CommonV1ListRequest();
+            commonV1ListRequest.setCriteriaRequests(List.of(
+                    List.of("Id"),
+                    "=",
+                    tenantModel.getDefaultAddressId()
+            ));
+            V1DataResponse response = v1Service.addressList(commonV1ListRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(response.getEntities(), AddressDataV1.class);
+            defaultRANumber = Optional.of(addressDataList.get(0)).map(AddressDataV1::getKcraNumber).orElse(null);
+        }
+        catch (Exception e) {
+            log.error("Error while getting RA Number for tenant's default address");
+        }
+        return defaultRANumber;
     }
 
 }
