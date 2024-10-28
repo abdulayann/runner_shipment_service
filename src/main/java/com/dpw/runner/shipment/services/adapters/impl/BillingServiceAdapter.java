@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -213,6 +214,13 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return fetchBillingSummary(url, httpEntity);
     }
 
+    @Override
+    public List<BillingDueSummary> fetchBillingDueSummary(BillingBulkSummaryBranchWiseRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise();
+        HttpEntity<BillingBulkSummaryBranchWiseRequest> httpEntity = new HttpEntity<>(request, v2AuthHelper.getInvoiceServiceXApiKeyHeader());
+        return fetchBillingDueSummary(url, httpEntity);
+    }
+
     private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
@@ -239,6 +247,42 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
                 List<Map<String, Object>> billingSummaryListMap = (List<Map<String, Object>>) data.get(BILLING_SUMMARY);
                 return modelMapper.map(billingSummaryListMap, new TypeToken<List<BillingSummary>>() {
+                }.getType());
+            } else {
+                log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
+        }
+    }
+
+    private <T> List<BillingDueSummary> fetchBillingDueSummary(String url, HttpEntity<T> httpEntity) {
+        log.info("Sending request to URL: {}", url);
+        log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
+        double start = System.currentTimeMillis();
+        try {
+            log.info(EXECUTING_POST_REQUEST);
+            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
+            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
+
+            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
+
+            if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
+                String errorMsg = RESPONSE_CONTAINS_ERROR + billingEntityResponse.getErrors().toString();
+                log.error(errorMsg);
+                throw new BillingException(errorMsg);
+            }
+
+            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
+                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get(BILLING_SUMMARY))) {
+                log.info("Received billingEntityResponse from billing service");
+                Map<String, Object> data = billingEntityResponse.getData();
+                log.debug("Response data: {}", data);
+
+                List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) data.get(BILLING_SUMMARY);
+                return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {
                 }.getType());
             } else {
                 log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
