@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -273,6 +274,9 @@ public class CargoManifestReport extends IReport{
 
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
+        }
+        if(cargoManifestModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
         }
 
         return dictionary;
