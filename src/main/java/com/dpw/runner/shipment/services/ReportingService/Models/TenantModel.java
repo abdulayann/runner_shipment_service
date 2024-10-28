@@ -34,6 +34,7 @@ public class TenantModel implements Serializable {
     public LocalDateTime IATARegistrationStartDate;
     public String PIMAAddress;
     public Long DefaultOrgId;
+    public Long DefaultAddressId;
     public String AgentIATANumber;
 
     public Boolean RoundoffLocalCurrencyAmount;
