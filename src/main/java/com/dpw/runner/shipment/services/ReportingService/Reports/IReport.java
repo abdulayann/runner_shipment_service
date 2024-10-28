@@ -1027,6 +1027,9 @@ public abstract class IReport {
                         dict.put(ReportConstants.MORN, referenceNumbersModel.getReferenceNumber());
                 }
             }
+            if(shipmentModel.getAdditionalDetails() != null) {
+                dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(shipmentModel.getAdditionalDetails().getNotifyParty()));
+            }
             shipAwbDataList.add(dict);
         }
         if(dictionary == null)
