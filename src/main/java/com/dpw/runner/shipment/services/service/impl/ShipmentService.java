@@ -1748,7 +1748,7 @@ public class ShipmentService implements IShipmentService {
 
         if(Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()))
             airDGValidations(shipmentDetails, oldEntity, removedConsolIds, isNewConsolAttached, consolidationDetailsRequests);
-        if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !Boolean.TRUE.equals(oldEntity.getContainsHazardous()) &&
+        if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && (Objects.isNull(oldEntity) || !Boolean.TRUE.equals(oldEntity.getContainsHazardous())) &&
                 !Boolean.TRUE.equals(isNewConsolAttached.getValue()) && !listIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
             dgValidations(shipmentDetails, consolidationDetails1, 0);
