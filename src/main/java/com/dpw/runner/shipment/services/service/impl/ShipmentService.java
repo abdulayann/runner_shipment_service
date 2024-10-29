@@ -326,6 +326,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
+    @Value("${include.master.data}")
+    private Boolean includeMasterData;
+
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
@@ -521,7 +524,7 @@ public class ShipmentService implements IShipmentService {
                 response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
             responseList.add(response);
         });
-        if(getMasterData) {
+        if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
                 double _start = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
@@ -4286,7 +4289,7 @@ public class ShipmentService implements IShipmentService {
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
-            if(getMasterData) {
+            if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, null)), executorService);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, null)), executorService);
                 var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, null)), executorService);
