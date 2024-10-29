@@ -473,7 +473,7 @@ public class ConsolidationService implements IConsolidationService {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-
+        syncMainLegRoute(request, null);
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -503,8 +503,10 @@ public class ConsolidationService implements IConsolidationService {
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Request is null for Consolidation Create");
         }
 
+        syncMainLegRoute(request, null);
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1395,6 +1397,7 @@ public class ConsolidationService implements IConsolidationService {
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            syncMainLegRoute(consolidationDetailsRequest, oldEntity.get());
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             setInterBranchContext(entity.getInterBranchConsole());
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -3907,8 +3910,6 @@ public class ConsolidationService implements IConsolidationService {
 //            consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
         if (routingsRequestList != null) {
-            if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
-                syncMainLegRoute(consolidationDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
@@ -3932,16 +3933,19 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    public void syncMainLegRoute(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, List<RoutingsRequest> routingsRequests) {
-        if(oldEntity == null || !Objects.equals(consolidationDetails.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
-                || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine())) {
-            routingsRequests.stream().filter(i -> (RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())
-                            && Objects.equals(consolidationDetails.getCarrierDetails().getOriginPort(), i.getPol())
-                            && Objects.equals(consolidationDetails.getCarrierDetails().getDestinationPort(), i.getPod())))
-                    .forEach(i -> {
-                        i.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
-                        i.setCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-                    });
+    public void syncMainLegRoute(ConsolidationDetailsRequest consolidationDetailsRequest, ConsolidationDetails oldEntity) {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Constants.TRANSPORT_MODE_AIR.equals(consolidationDetailsRequest.getTransportMode())) {
+            List<RoutingsRequest> routingsRequests = consolidationDetailsRequest.getRoutingsList();
+            if (oldEntity == null || !Objects.equals(consolidationDetailsRequest.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
+                    || !Objects.equals(consolidationDetailsRequest.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine())) {
+                routingsRequests.stream().filter(i -> (RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())
+                                && Objects.equals(consolidationDetailsRequest.getCarrierDetails().getOriginPort(), i.getPol())
+                                && Objects.equals(consolidationDetailsRequest.getCarrierDetails().getDestinationPort(), i.getPod())))
+                        .forEach(i -> {
+                            i.setFlightNumber(consolidationDetailsRequest.getCarrierDetails().getFlightNumber());
+                            i.setCarrier(consolidationDetailsRequest.getCarrierDetails().getShippingLine());
+                        });
+            }
         }
     }
 
