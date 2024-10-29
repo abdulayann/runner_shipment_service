@@ -1316,7 +1316,7 @@ public class ConsolidationService implements IConsolidationService {
 
             // Exit if shipment details are empty or if split billing is not enabled
             if (ObjectUtils.isEmpty(shipmentDetails) || !Boolean.TRUE.equals(tenantSettings.getEnableConsolSplitBillCharge())) {
-                throw new RunnerException("No shipment details provided or split billing is disabled.");
+                return;
             }
 
             // Filter non-empty shipments with transport mode "AIR" or "SEA"
@@ -1333,9 +1333,9 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             // Map shipments by their GUIDs for lookup, handle potential null GUIDs
-            Map<UUID, ShipmentDetails> shipmentMapByGuid = eligibleShipments.stream()
+            Map<String, ShipmentDetails> shipmentMapByGuid = eligibleShipments.stream()
                     .filter(shp -> shp.getGuid() != null)
-                    .collect(toMap(ShipmentDetails::getGuid, Function.identity()));
+                    .collect(toMap(ship -> ship.getGuid().toString(), Function.identity()));
 
             // Prepare request for billing due summary
             BillingBulkSummaryBranchWiseRequest branchWiseRequest = createBillingBulkSummaryBranchWiseRequest(eligibleShipments);
