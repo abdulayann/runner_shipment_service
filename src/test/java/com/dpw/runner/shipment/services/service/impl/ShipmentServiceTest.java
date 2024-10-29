@@ -6657,7 +6657,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6665,7 +6665,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6684,7 +6684,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6692,7 +6692,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6711,7 +6711,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6719,7 +6719,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6738,7 +6738,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6746,7 +6746,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6765,7 +6765,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6773,7 +6773,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
