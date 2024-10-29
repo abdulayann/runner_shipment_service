@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
@@ -370,13 +371,27 @@ public class AwbDao implements IAwbDao {
             // if not original printed
             if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
                 awb.setPrintType(printType);
-            if(Boolean.TRUE.equals(isOriginal))
+            if(Boolean.TRUE.equals(isOriginal)) {
                 awb.setOriginalPrintedAt(printedAt);
+                checkForMandatoryHsCodeForUAE(awb);
+            }
             try {
                 save(awb);
             } catch (Exception e) {
                 log.error("Exception occurred while saving print information for awb : {}", e.getMessage());
             }
+        }
+    }
+
+    private void checkForMandatoryHsCodeForUAE(Awb awb) {
+        String destinationCountry = awb.getAwbShipmentInfo().getDestinationAirport();
+        if(destinationCountry.equalsIgnoreCase("UAE")) {
+            List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
+            awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
+                if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
+                    throw new RuntimeException("Please enter the HS code in the goods description of the cargo information tab.");
+                }
+            });
         }
     }
 

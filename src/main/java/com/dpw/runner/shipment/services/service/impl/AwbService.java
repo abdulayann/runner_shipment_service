@@ -232,6 +232,8 @@ public class AwbService implements IAwbService {
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
+        boolean isPODCountryUAE = false;
+        checkForWarningHsCodeForUAE(awb, isPODCountryUAE);
 
         try {
             if (request.getId() == null) {
@@ -288,7 +290,23 @@ public class AwbService implements IAwbService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+        if(isPODCountryUAE)
+            return
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    //todo: maybe I will remove this
+    private void checkForWarningHsCodeForUAE(Awb awb, boolean isPODCountryUAE) {
+        String destinationCountry = awb.getAwbShipmentInfo().getDestinationAirport();
+        if(destinationCountry.equalsIgnoreCase("UAE")) {
+            isPODCountryUAE = true;
+            List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
+            awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
+                if (Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
+                    return;
+                }
+            });
+        }
     }
 
     private void validateAwbBeforeUpdate(Awb awb) {
