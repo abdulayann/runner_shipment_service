@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.LastPostedInvoiceDat
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -155,6 +156,26 @@ class BillingServiceAdapterTest {
         assertEquals(billingSummaries, result);
     }
 
+    @Test
+    void testFetchBillingDueSummary_SuccessfulResponse() {
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        BillingDueSummary dueSummary = new BillingDueSummary();
+        billingEntityResponse.setData(Map.of("billingSummary", List.of(Map.of("branchId", "branchId", "moduleGuid", "moduleGuid", "dueRemaining", true))));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingDueSummary> billingSummaries = List.of(dueSummary);
+        when(modelMapper.map(anyList(), any(Type.class)))
+                .thenReturn(billingSummaries);
+
+        List<BillingDueSummary> result = billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest);
+        assertEquals(billingSummaries, result);
+    }
 
     @Test
     void fetchShipmentBillingData_Success() {
