@@ -178,6 +178,38 @@ class BillingServiceAdapterTest {
     }
 
     @Test
+    void testFetchBillingDueSummary_NullData() {
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(null);
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        List<BillingDueSummary> result = billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest);
+        assertEquals(Collections.emptyList(), result);
+    }
+
+    @Test
+    void testFetchBillingDueSummary_NullResponse() {
+        when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
+        when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
+
+        BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
+        billingEntityResponse.setData(null);
+        billingEntityResponse.setErrors(List.of("Error_1"));
+
+        ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
+        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
+                .thenReturn(responseEntity);
+
+        assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest));
+    }
+
+    @Test
     void fetchShipmentBillingData_Success() {
 
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
