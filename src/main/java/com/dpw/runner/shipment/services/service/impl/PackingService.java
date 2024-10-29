@@ -953,11 +953,12 @@ public class PackingService implements IPackingService {
             packingList.addAll(Optional.ofNullable(updatedConsolPacks).orElse(Optional.ofNullable(consol.getPackingList()).orElse(Collections.emptyList())));
         }
 
+        log.info("calculating pack summary for aggregate of {} packs", packingList.size());
+        packSummaryResponse = calculatePackSummary(packingList, TRANSPORT_MODE_AIR, null, new ShipmentMeasurementDetailsDto());
+        log.info("Received weight: {} and volume:{} from packing summary response", packSummaryResponse.getAchievedWeight(), packSummaryResponse.getAchievedVolume());
+
         // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
         if(coLoadingConsolChecks(consol)) {
-            log.info("calculating pack summary for aggregate of {} packs", packingList.size());
-            packSummaryResponse = calculatePackSummary(packingList, TRANSPORT_MODE_AIR, null, new ShipmentMeasurementDetailsDto());
-            log.info("Received weight: {} and volume:{} from packing summary response", packSummaryResponse.getAchievedWeight(), packSummaryResponse.getAchievedVolume());
             var convertedWeight = BigDecimal.valueOf(convertUnit(MASS, packSummaryResponse.getAchievedWeight(), packSummaryResponse.getWeightUnit(), toWeightUnit).doubleValue());
             var convertedVolume = BigDecimal.valueOf(convertUnit(VOLUME, packSummaryResponse.getAchievedVolume(), packSummaryResponse.getVolumeUnit(), toVolumeUnit).doubleValue());
             achievedQuantities.setConsolidatedWeight(convertedWeight);
