@@ -1028,7 +1028,7 @@ public abstract class IReport {
                 }
             }
             if(shipmentModel.getAdditionalDetails() != null) {
-                dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(shipmentModel.getAdditionalDetails().getNotifyParty()));
+                dict.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(shipmentModel.getAdditionalDetails().getNotifyParty()));
             }
             shipAwbDataList.add(dict);
         }
