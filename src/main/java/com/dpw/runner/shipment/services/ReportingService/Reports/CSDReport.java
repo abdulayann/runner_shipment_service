@@ -65,7 +65,7 @@ public class CSDReport extends IReport{
             if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
                 carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
                 dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
-                        csdModel.getShipmentModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
+                        csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
                 ));
             }
         }
