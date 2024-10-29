@@ -158,54 +158,85 @@ class BillingServiceAdapterTest {
 
     @Test
     void testFetchBillingDueSummary_SuccessfulResponse() {
+        // Mock configuration values
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
 
+        // Create mock response data
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
-        BillingDueSummary dueSummary = new BillingDueSummary();
         billingEntityResponse.setData(Map.of("billingSummary", List.of(Map.of("branchId", "branchId", "moduleGuid", "moduleGuid", "dueRemaining", true))));
-
         ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
-        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
-                .thenReturn(responseEntity);
 
+        // Mock restTemplate.exchange instead of postForEntity
+        when(restTemplate.exchange(
+                any(String.class),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+
+        // Prepare expected mapped results
+        BillingDueSummary dueSummary = new BillingDueSummary();
         List<BillingDueSummary> billingSummaries = List.of(dueSummary);
-        when(modelMapper.map(anyList(), any(Type.class)))
-                .thenReturn(billingSummaries);
 
+        // Mock modelMapper
+        when(modelMapper.map(anyList(), any(Type.class))).thenReturn(billingSummaries);
+
+        // Call the method under test
         List<BillingDueSummary> result = billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest);
+
+        // Verify results
         assertEquals(billingSummaries, result);
     }
 
     @Test
     void testFetchBillingDueSummary_NullData() {
+        // Mock configuration values
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
 
+        // Create a mock response with null data
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
-        billingEntityResponse.setData(null);
-
+        billingEntityResponse.setData(null); // Set data to null to simulate the test case
         ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
-        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
-                .thenReturn(responseEntity);
 
+        // Mock restTemplate.exchange instead of postForEntity
+        when(restTemplate.exchange(
+                any(String.class),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+
+        // Call the method under test
         List<BillingDueSummary> result = billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest);
+
+        // Verify that the result is an empty list
         assertEquals(Collections.emptyList(), result);
     }
 
     @Test
     void testFetchBillingDueSummary_NullResponse() {
+        // Mock configuration values
         when(billingServiceUrlConfig.getBaseUrl()).thenReturn(baseUrl);
         when(billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise()).thenReturn("/billing-bulk-summary");
 
+        // Create a mock response with null data and errors
         BillingEntityResponse billingEntityResponse = new BillingEntityResponse();
         billingEntityResponse.setData(null);
-        billingEntityResponse.setErrors(List.of("Error_1"));
+        billingEntityResponse.setErrors(List.of("Error_1")); // Set errors to simulate an error response
 
         ResponseEntity<BillingEntityResponse> responseEntity = ResponseEntity.ok(billingEntityResponse);
-        when(restTemplate.postForEntity(any(String.class), any(HttpEntity.class), any(Class.class)))
-                .thenReturn(responseEntity);
 
+        // Mock restTemplate.exchange instead of postForEntity
+        when(restTemplate.exchange(
+                any(String.class),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class))
+        ).thenReturn(responseEntity);
+
+        // Assert that a BillingException is thrown
         assertThrows(BillingException.class, () -> billingServiceAdapter.fetchBillingDueSummary(billingBulkSummaryBranchWiseRequest));
     }
 

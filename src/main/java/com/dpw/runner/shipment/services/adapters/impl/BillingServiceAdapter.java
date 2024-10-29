@@ -258,38 +258,15 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private <T> List<BillingDueSummary> fetchBillingDueSummary(String url, HttpEntity<T> httpEntity) {
-        log.info("Sending request to URL: {}", url);
-        log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
-        double start = System.currentTimeMillis();
-        try {
-            log.info(EXECUTING_POST_REQUEST);
-            ResponseEntity<BillingEntityResponse> responseEntity = restTemplate.postForEntity(url, httpEntity, BillingEntityResponse.class);
-            log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
+        BillingEntityResponse response = executePostRequest(url, httpEntity, new ParameterizedTypeReference<BillingEntityResponse>() {});
 
-            BillingEntityResponse billingEntityResponse = responseEntity.getBody();
-
-            if (billingEntityResponse != null && ObjectUtils.isNotEmpty(billingEntityResponse.getErrors())) {
-                String errorMsg = RESPONSE_CONTAINS_ERROR + billingEntityResponse.getErrors().toString();
-                log.error(errorMsg);
-                throw new BillingException(errorMsg);
-            }
-
-            if (responseEntity.getStatusCode().is2xxSuccessful() && billingEntityResponse != null
-                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData())
-                    && ObjectUtils.isNotEmpty(billingEntityResponse.getData().get(BILLING_SUMMARY))) {
-                log.info("Received billingEntityResponse from billing service");
-                Map<String, Object> data = billingEntityResponse.getData();
-                log.debug("Response data: {}", data);
-
-                List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) data.get(BILLING_SUMMARY);
-                return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {
-                }.getType());
-            } else {
-                log.warn("Received non-successful response from billing service: {}", responseEntity.getStatusCode());
-                return Collections.emptyList();
-            }
-        } catch (Exception e) {
-            throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
+        if (response != null && ObjectUtils.isNotEmpty(response.getData())
+                && ObjectUtils.isNotEmpty(response.getData().get(BILLING_SUMMARY))) {
+            List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) response.getData().get(BILLING_SUMMARY);
+            return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {}.getType());
+        } else {
+            log.warn("Billing due summary data not found in response.");
+            return Collections.emptyList();
         }
     }
 
