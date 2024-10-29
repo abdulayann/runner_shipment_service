@@ -263,6 +263,10 @@ public class ConsolidationService implements IConsolidationService {
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
+
+    @Value("${include.master.data}")
+    private Boolean includeMasterData;
+    
     private SecureRandom rnd = new SecureRandom();
 
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
@@ -374,7 +378,7 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
-        if(getMasterData) {
+        if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
                 var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
@@ -2846,7 +2850,7 @@ public class ConsolidationService implements IConsolidationService {
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
-            if(getMasterData) {
+            if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
                 var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
