@@ -41,7 +41,11 @@ public class NotificationServiceImpl implements INotificationService {
                 .to(String.join(",", emailIds))
                 .cc(cc.isEmpty() ? null : String.join(",", cc))
                 .build();
-        sendEmail(request);
+        try {
+            sendEmail(request);
+        } catch (Exception e) {
+            log.info("Exception caught: {}", e.getMessage());
+        }
     }
 
     @Override

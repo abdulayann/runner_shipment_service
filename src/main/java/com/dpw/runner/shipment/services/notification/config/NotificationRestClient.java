@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.impl.ReportServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.reportService.MailAuditLogRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -34,6 +35,9 @@ public class NotificationRestClient {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private JsonHelper jsonHelper;
+
     public NotificationServiceResponse sendEmail(NotificationServiceSendEmailRequest params) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -56,13 +60,18 @@ public class NotificationRestClient {
 
         String url = notificationConfig.getNotificationBaseUrl() + notificationConfig.getSendEmail();
 
-        ResponseEntity<NotificationServiceResponse> responseEntity = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                requestEntity,
-                NotificationServiceResponse.class
-        );
-
+        log.error("Entire request object is: {}", jsonHelper.convertToJson(requestEntity));
+        ResponseEntity<NotificationServiceResponse> responseEntity = null;
+        try {
+            responseEntity = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    NotificationServiceResponse.class
+            );
+        } catch (Exception e) {
+            log.error("Exception while calling notification service: {}", e.getMessage());
+        }
         //make rest client for v1 and
 
         String module = params.getModuleName();
