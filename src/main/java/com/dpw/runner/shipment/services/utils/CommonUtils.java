@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -1341,7 +1342,7 @@ public class CommonUtils {
                     || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
                     || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
                     || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
-                List<String> unlocoRequests = new ArrayList<>();
+                Set<String> unlocoRequests = new HashSet<>();
                 if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
                     unlocoRequests.add(carrierDetails.getOrigin());
                 if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
@@ -1350,11 +1351,11 @@ public class CommonUtils {
                     unlocoRequests.add(carrierDetails.getDestination());
                 if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
                     unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-                UnlocationsResponse pol = unlocationsMap.get(carrierDetails.getOriginPort());
-                UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
-                UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
-                UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
+                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests);
+                EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
+                EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
+                EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());
+                EntityTransferUnLocations destination = unlocationsMap.get(carrierDetails.getDestination());
                 if(!Objects.isNull(origin))
                     carrierDetails.setOriginLocCode(origin.getLocCode());
                 if(!Objects.isNull(destination))

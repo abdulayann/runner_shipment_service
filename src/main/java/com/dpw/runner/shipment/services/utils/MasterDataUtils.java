@@ -1341,6 +1341,28 @@ public class MasterDataUtils{
         return unLocationsList.isEmpty() ? null : unLocationsList.get(0);
     }
 
+    public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes) {
+        if(Objects.isNull(locCodes))
+            return new HashMap<>();
+        Map<String, EntityTransferUnLocations> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        Set<String> locCodesFetchFromV1 = new HashSet<>();
+        for(String locCode: locCodes) {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
+            if(Objects.isNull(value))
+                locCodesFetchFromV1.add(locCode);
+            else
+                responseMap.put(locCode, (EntityTransferUnLocations) value.get());
+        }
+        if(locCodesFetchFromV1.size() > 0) {
+            Map<String, EntityTransferUnLocations> unLocationsMap = getLocationData(locCodesFetchFromV1).entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> jsonHelper.convertValue(entry.getValue(), EntityTransferUnLocations.class)));
+            responseMap.putAll(unLocationsMap);
+            pushToCache(unLocationsMap, CacheConstants.UNLOCATIONS, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
+    }
+
     public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
         if (Objects.isNull(locCodes))
