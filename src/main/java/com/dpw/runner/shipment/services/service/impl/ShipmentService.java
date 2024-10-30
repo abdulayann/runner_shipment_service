@@ -7247,6 +7247,7 @@ public class ShipmentService implements IShipmentService {
 
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
 
@@ -7260,6 +7261,13 @@ public class ShipmentService implements IShipmentService {
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
         shipmentDao.save(shipment, false);
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
+        }
+        pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
 
         return ResponseHelper.buildSuccessResponse();

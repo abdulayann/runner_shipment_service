@@ -8808,15 +8808,21 @@ ShipmentServiceTest extends CommonMocks {
         shipment.setId(1L);
         shipment.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipment));
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+
+        var shipmentServiceSpy = Mockito.spy(shipmentService);
+        doNothing().when(shipmentServiceSpy).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        mockTenantSettings();
 
         // Act
-        ResponseEntity<IRunnerResponse> response = shipmentService.cancel(commonRequestModel);
+        ResponseEntity<IRunnerResponse> response = shipmentServiceSpy.cancel(commonRequestModel);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(ShipmentStatus.Cancelled.getValue(), shipment.getStatus());
         verify(shipmentDao).save(shipment, false);
         verify(shipmentSync).sync(any(), any(), any(), any(), anyBoolean());
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(anyLong());
     }
 
     @Test
