@@ -1355,10 +1355,14 @@ public class CommonUtils {
                 UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
                 UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
                 UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+                if(!Objects.isNull(origin))
+                    carrierDetails.setOriginLocCode(origin.getLocCode());
+                if(!Objects.isNull(destination))
+                    carrierDetails.setDestinationLocCode(destination.getLocCode());
+                if(!Objects.isNull(pol))
+                    carrierDetails.setOriginPortLocCode(pol.getLocCode());
+                if(!Objects.isNull(pod))
+                    carrierDetails.setDestinationPortLocCode(pod.getLocCode());
             }
         }
         catch (Exception e) {
