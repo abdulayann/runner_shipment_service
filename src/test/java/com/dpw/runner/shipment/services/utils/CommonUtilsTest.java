@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -26,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -66,7 +66,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
@@ -902,9 +902,9 @@ class CommonUtilsTest {
         carrierDetails.setOriginPort("test");
         carrierDetails.setDestination("test");
         carrierDetails.setDestinationPort("test");
-        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
-        unlocationsMap.put("test", new UnlocationsResponse());
-        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", new EntityTransferUnLocations());
+        when(masterDataUtils.getLocationDataFromCache(any())).thenReturn(unlocationsMap);
         commonUtils.updateUnLocData(carrierDetails, null);
         verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
