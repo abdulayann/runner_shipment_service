@@ -1314,6 +1314,8 @@ class MasterDataUtilsTest {
 
     @Test
     void getLocationDataFromCache2() {
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
         var response = masterDataUtils.getLocationDataFromCache(Set.of());
         assertNotNull(response);
         assertTrue(response.isEmpty());
