@@ -139,4 +139,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
+    private Boolean isNetworkFlag;
 }
