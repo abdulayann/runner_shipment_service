@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.mapper;
 
-import com.dpw.runner.shipment.services.dto.PatchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;

@@ -14,7 +14,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplat
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
-import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -596,6 +596,20 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_Success_WithEntityTransferFalse(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(false));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);

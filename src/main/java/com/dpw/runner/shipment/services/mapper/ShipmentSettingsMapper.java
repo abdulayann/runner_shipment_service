@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.mapper;
 
-import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.HawbLockSettingsRequest;
 import com.dpw.runner.shipment.services.dto.request.HblLockSettingsRequest;
 import com.dpw.runner.shipment.services.dto.request.MawbLockSettingsRequest;

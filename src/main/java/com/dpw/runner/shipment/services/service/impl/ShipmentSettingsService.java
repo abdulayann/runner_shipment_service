@@ -9,7 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConsta
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
@@ -704,8 +704,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
             Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getEntityTransfer();
-            Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getEntityTransfer() != null)
-                    && shipmentSettingsPatchRequest.getEntityTransfer().orElse(false);
+            Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getEntityTransfer() != null) && shipmentSettingsPatchRequest.getEntityTransfer().orElse(false);
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setEntityTransfer(newEntityTransferFlag);
             if(Boolean.FALSE.equals(oldEntityTransferFlag) && Boolean.TRUE.equals(newEntityTransferFlag)) {
