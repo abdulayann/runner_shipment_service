@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-import com.dpw.runner.shipment.services.dto.patchRequest.shipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
@@ -439,7 +439,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.partialUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentSettingsController.partialUpdate(shipmentSettingsPatchRequest.builder().build());
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -449,7 +449,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.partialUpdate(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentSettingsController.partialUpdate(shipmentSettingsPatchRequest.builder().build());
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -459,7 +459,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.partialUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = shipmentSettingsController.partialUpdate(shipmentSettingsPatchRequest.builder().build());
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

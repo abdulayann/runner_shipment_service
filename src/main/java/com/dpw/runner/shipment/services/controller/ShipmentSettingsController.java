@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.patchRequest.shipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
@@ -264,7 +264,7 @@ public class ShipmentSettingsController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_PARTIAL_UPDATE_SUCCESSFUL, response = MyResponseClass.class) })
     @PutMapping(ApiConstants.API_PARTIAL_UPDATE)
-    public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid shipmentSettingsPatchRequest shipmentSettingsPatchRequest) {
+    public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid ShipmentSettingsPatchRequest shipmentSettingsPatchRequest) {
         String responseMsg;
         try {
             return shipmentSettingsService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));

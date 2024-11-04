@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.patchRequest;
+package com.dpw.runner.shipment.services.dto.PatchRequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class shipmentSettingsPatchRequest extends CommonRequest implements IRunnerRequest {
+public class ShipmentSettingsPatchRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long tenantId;
     private JsonNullable<Boolean> autoUpdateShipmentAWB;

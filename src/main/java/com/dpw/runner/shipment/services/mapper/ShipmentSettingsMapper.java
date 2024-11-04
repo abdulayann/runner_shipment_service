@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.mapper;
 
-import com.dpw.runner.shipment.services.dto.patchRequest.shipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.PatchRequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.HawbLockSettingsRequest;
 import com.dpw.runner.shipment.services.dto.request.HblLockSettingsRequest;
 import com.dpw.runner.shipment.services.dto.request.MawbLockSettingsRequest;
@@ -29,5 +29,5 @@ public interface ShipmentSettingsMapper {
     HblLockSettings map(HblLockSettingsRequest req);
 
     @InheritConfiguration
-    void update(shipmentSettingsPatchRequest update, @MappingTarget ShipmentSettingsDetails destination);
+    void update(ShipmentSettingsPatchRequest update, @MappingTarget ShipmentSettingsDetails destination);
 }
