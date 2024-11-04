@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -44,6 +47,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.type.StandardBasicTypes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -487,67 +491,70 @@ public class EventDao implements IEventDao {
     @Override
     public void updateEventDetails(Events event) {
         log.info("event-entity : populating consolidationId, shipmentNumber if available...");
+
         Long entityId = event.getEntityId();
         String entityType = event.getEntityType();
-        if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
-            // set linked consolidationId
-            // set shipmentId
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(entityId);
-            if(!consoleShipmentMappings.isEmpty()) {
-                event.setConsolidationId(consoleShipmentMappings.get(0).getConsolidationId());
-            }
-            List<ShipmentDetails> shipmentDetails = shipmentDao.getShipmentNumberFromId(List.of(entityId));
-            if(!shipmentDetails.isEmpty()) {
-                event.setShipmentNumber(shipmentDetails.get(0).getShipmentId());
-            }
-        }
-        else if(entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+
+        if (Constants.SHIPMENT.equals(entityType)) {
+            // Fetch shipment details and console mappings
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(entityId));
+            List<ConsoleShipmentMapping> consoleMappings = consoleShipmentMappingDao.findByShipmentId(entityId);
+
+            // Set consolidationId if required
+            shipmentDetailsList.stream().findFirst().ifPresent(shipmentDetails -> {
+                if (ObjectUtils.isNotEmpty(consoleMappings) &&
+                        shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                    event.setConsolidationId(consoleMappings.get(0).getConsolidationId());
+                }
+                // Set shipment number
+                event.setShipmentNumber(shipmentDetails.getShipmentId());
+            });
+
+        } else if (Constants.CONSOLIDATION.equals(entityType)) {
             event.setConsolidationId(entityId);
         }
     }
 
+    /**
+     * Determines if an event should be sent from shipment to consolidation based on the transport mode
+     * and the event code associated with the shipment event.
+     *
+     * <p>This method checks if the provided transport mode has a corresponding set of event codes
+     * that warrant sending the event to consolidation. The event codes for each mode are predefined
+     * in a mapping for efficient lookup.</p>
+     *
+     * @param events       the event details containing the event code
+     * @param transportMode the mode of transport, e.g., "SEA" or "AIR"
+     * @return {@code true} if the event should be sent to consolidation, {@code false} otherwise
+     */
     @Override
-    public void updateEventDetails(List<Events> events) {
-        // Separate SHIPMENT and CONSOLIDATION events
-        List<Events> shipmentEvents = events.stream()
-                .filter(event -> Constants.SHIPMENT.equalsIgnoreCase(event.getEntityType()))
-                .toList();
-        List<Events> consolidationEvents = events.stream()
-                .filter(event -> Constants.CONSOLIDATION.equalsIgnoreCase(event.getEntityType()))
-                .toList();
+    public boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode) {
+        String eventCode = events.getEventCode().toUpperCase();
 
-        // Collect all shipment entity IDs
-        Set<Long> shipmentIds = shipmentEvents.stream()
-                .map(Events::getEntityId)
-                .collect(Collectors.toSet());
+        // Map each transport mode to its corresponding event codes
+        Map<String, Set<String>> eventCodesByMode = Map.of(
+                TRANSPORT_MODE_SEA, Set.of(
+                        EventConstants.BOCO, EventConstants.ECPK, EventConstants.FCGI, EventConstants.VSDP,
+                        EventConstants.FHBL, EventConstants.FNMU, EventConstants.PRST, EventConstants.ARDP,
+                        EventConstants.DOGE, EventConstants.DOTP, EventConstants.FUGO, EventConstants.CAFS,
+                        EventConstants.PRDE, EventConstants.EMCR
+                ),
+                TRANSPORT_MODE_AIR, Set.of(
+                        EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
+                        EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
+                        EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS
+                )
+        );
 
-        // Batch fetch data for SHIPMENT events
-        Map<Long, List<ConsoleShipmentMapping>> consoleShipmentMappingMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
-                .collect(Collectors.groupingBy(ConsoleShipmentMapping::getShipmentId));
-        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(new ArrayList<>(shipmentIds)).stream()
-                .collect(Collectors.toMap(ShipmentDetails::getId, shipmentDetails -> shipmentDetails, (existing, duplicate) -> existing));
+        // Check if the transport mode exists in the map and if the event code is present in its set
+        boolean shouldSend = eventCodesByMode.getOrDefault(transportMode.toUpperCase(), Set.of()).contains(eventCode);
 
-        // Update SHIPMENT events with fetched data
-        shipmentEvents.forEach(event -> {
-            Long entityId = event.getEntityId();
+        // Log the decision result
+        log.info("Result of shouldSendEventFromShipmentToConsolidation for transportMode '{}' and eventCode '{}': {}",
+                transportMode, eventCode, shouldSend);
 
-            // Set consolidationId from ConsoleShipmentMapping
-            List<ConsoleShipmentMapping> mappings = consoleShipmentMappingMap.get(entityId);
-            if (mappings != null && !mappings.isEmpty()) {
-                event.setConsolidationId(mappings.get(0).getConsolidationId());
-            }
-
-            // Set shipmentNumber from ShipmentDetails
-            ShipmentDetails shipmentDetails = shipmentDetailsMap.get(entityId);
-            if (shipmentDetails != null) {
-                event.setShipmentNumber(shipmentDetails.getShipmentId());
-            }
-        });
-
-        // Update CONSOLIDATION events
-        consolidationEvents.forEach(event -> {
-            event.setConsolidationId(event.getEntityId());
-        });
+        return shouldSend;
     }
+
 
 }
