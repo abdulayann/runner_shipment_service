@@ -5,13 +5,11 @@ import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializ
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.persistence.Column;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -165,7 +163,7 @@ public class ConsolidationModel implements IDocumentModel {
     @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
     @JsonProperty("TriangulationPartner")
-    private long triangulationPartner;
+    private List<Long> triangulationPartner;
     @JsonProperty("ReceivingBranch")
     private long receivingBranch;
     @JsonProperty("IntraBranch")

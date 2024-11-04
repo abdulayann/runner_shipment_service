@@ -1,14 +1,14 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -18,7 +18,7 @@ public class ArValidationResponse implements IRunnerResponse {
     private UUID shipmentGuid;
     private String consolidationType;
     private Long receivingAgent;
-    private Long triangulationPartner;
+    private List<Long> triangulationPartner;
     private Integer sourceBranch;
     private Integer origin;
     private String salesBranch;

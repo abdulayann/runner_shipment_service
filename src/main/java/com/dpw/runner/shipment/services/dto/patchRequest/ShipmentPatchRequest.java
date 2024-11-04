@@ -88,7 +88,7 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<Long> sourceTenantId;
     private JsonNullable<Integer> status;
     private JsonNullable<String> transportMode;
-    private JsonNullable<Long> triangulationPartner;
+    private JsonNullable<List<Long>> triangulationPartner;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private JsonNullable<BigDecimal> volume;
     private JsonNullable<String> volumeUnit;

@@ -2666,7 +2666,7 @@
     },
     "receivingBranch": 66,
     "documentationPartner": 484,
-    "triangulationPartner": 2312,
+    "triangulationPartner": [2312],
     "departureDetails": {
       "ctoid": {},
       "cfsid": {},
@@ -2793,7 +2793,7 @@
       },
       "triangulationPartner": {
         "label": "DPWCANADA_SS",
-        "value": 2312,
+        "value": [2312],
         "TenantId": 2312
       },
       "carrierDetails": {
@@ -11460,7 +11460,7 @@
     "cargoFinanceBooking": false,
     "sourceTenantId": 937,
     "documentationPartner": 728,
-    "triangulationPartner": 728,
+    "triangulationPartner": [728],
     "receivingBranch": 728,
     "intraBranch": false,
     "client": {

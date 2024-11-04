@@ -98,7 +98,7 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Long> warehouseId;
     private JsonNullable<Long> sourceTenantId;
     private JsonNullable<String> ediTransactionId;
-    private JsonNullable<Long> triangulationPartner;
+    private JsonNullable<List<Long>> triangulationPartner;
     private JsonNullable<Long> receivingBranch;
     private JsonNullable<Boolean> intraBranch;
     private JsonNullable<Long> documentationPartner;

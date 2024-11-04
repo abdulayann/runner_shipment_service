@@ -1,5 +1,26 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -9,7 +30,16 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -20,13 +50,32 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckTaskExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.PostArValidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -49,6 +98,18 @@ import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,14 +125,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -895,7 +948,7 @@ class EntityTransferServiceTest {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
-        consolidationDetails.setTriangulationPartner(231L);
+        consolidationDetails.setTriangulationPartner(List.of(231L));
         ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
         shipmentDetailsDrt.setGuid(UUID.randomUUID());
         shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -910,7 +963,7 @@ class EntityTransferServiceTest {
         consolidationDetailsImp.setGuid(UUID.randomUUID());
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
-        consolidationDetailsImp.setTriangulationPartner(33L);
+        consolidationDetailsImp.setTriangulationPartner(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
         shipmentDetailsImp1.setGuid(UUID.randomUUID());
@@ -921,7 +974,7 @@ class EntityTransferServiceTest {
         consolidationDetailsImp1.setGuid(UUID.randomUUID());
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
-        consolidationDetailsImp1.setTriangulationPartner(33L);
+        consolidationDetailsImp1.setTriangulationPartner(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
         shipmentDetailsImp2.setGuid(UUID.randomUUID());
@@ -965,7 +1018,7 @@ class EntityTransferServiceTest {
         originShipConsole.setGuid(UUID.randomUUID());
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
-        originShipConsole.setTriangulationPartner(33L);
+        originShipConsole.setTriangulationPartner(List.of(33L));
         originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
@@ -975,7 +1028,7 @@ class EntityTransferServiceTest {
         originShipConsole1.setGuid(UUID.randomUUID());
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
-        originShipConsole1.setTriangulationPartner(33L);
+        originShipConsole1.setTriangulationPartner(List.of(33L));
         originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
@@ -985,7 +1038,7 @@ class EntityTransferServiceTest {
         originShipConsole2.setGuid(UUID.randomUUID());
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
-        originShipConsole2.setTriangulationPartner(35L);
+        originShipConsole2.setTriangulationPartner(List.of(35L));
         originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
@@ -1000,7 +1053,7 @@ class EntityTransferServiceTest {
         originShipConsole3.setGuid(UUID.randomUUID());
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
-        originShipConsole3.setTriangulationPartner(33L);
+        originShipConsole3.setTriangulationPartner(List.of(33L));
         originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
 
         ShipmentDetails receivingShipment = new ShipmentDetails();

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,7 +75,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String route;
     private long sourceTenantId;
     private long documentationPartner;
-    private long triangulationPartner;
+    private List<Long> triangulationPartner;
     private long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
