@@ -6,12 +6,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchRequest.shipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
@@ -684,25 +682,17 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Override
     public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel) {
         String responseMsg;
-        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = (ShipmentSettingsPatchRequest) commonRequestModel.getData();
+        shipmentSettingsPatchRequest shipmentSettingsPatchRequest = (shipmentSettingsPatchRequest) commonRequestModel.getData();
         if(shipmentSettingsPatchRequest == null) {
             log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
         }
-
         if(shipmentSettingsPatchRequest.getId() == null && shipmentSettingsPatchRequest.getTenantId() == null) {
             log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
         if(shipmentSettingsPatchRequest.getTenantId() != null) {
-            ListCommonRequest newRequest = new ListCommonRequest();
-            newRequest.setPageNo(1);
-            newRequest.setPageSize(Integer.MAX_VALUE);
-            newRequest.setFilterCriteria(new ArrayList<>());
-            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
-            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(!shipmentSettingsPage.get().toList().isEmpty())
-                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
+            oldEntity = shipmentSettingsDao.findByTenantId(shipmentSettingsPatchRequest.getTenantId().intValue());
         }
         else {
             long id = shipmentSettingsPatchRequest.getId();
@@ -714,21 +704,17 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         try {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
-            if (oldShipmentSettingsDetails.getEntityTransfer() && oldShipmentSettingsDetails.getEntityTransferEnabledDate()!=null) {
-                shipmentSettingsPatchRequest.setEntityTransferEnabledDate(null);
-                shipmentSettingsPatchRequest.setEntityTransfer(null);
-            }
+            Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getEntityTransfer();
+            Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getEntityTransfer() != null)
+                    && shipmentSettingsPatchRequest.getEntityTransfer().orElse(false);
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
-            oldShipmentSettingsDetails.setEntityTransferEnabledDate(null);
-            if(oldShipmentSettingsDetails.getEntityTransfer()) {
+            oldShipmentSettingsDetails.setEntityTransfer(newEntityTransferFlag);
+            if(!oldEntityTransferFlag && newEntityTransferFlag) {
                 oldShipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
+            } else if(oldEntityTransferFlag && !newEntityTransferFlag) {
+                oldShipmentSettingsDetails.setEntityTransferEnabledDate(null);
             }
             ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);
-            try {
-                shipmentSettingsSync.sync(newShipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
-            }
             ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(newShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {

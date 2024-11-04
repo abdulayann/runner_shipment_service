@@ -17,7 +17,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentSettingsPatchRequest extends CommonRequest implements IRunnerRequest {
+public class shipmentSettingsPatchRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long tenantId;
     private JsonNullable<Boolean> autoUpdateShipmentAWB;

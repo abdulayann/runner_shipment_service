@@ -14,7 +14,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplat
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentSettingsPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchRequest.shipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -45,6 +45,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -591,12 +592,13 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void partialUpdate_Success(){
-        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = ShipmentSettingsPatchRequest.builder().id(1L).build();
+        shipmentSettingsPatchRequest shipmentSettingsPatchRequest = new shipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
-        when(shipmentSettingsSync.sync(any())).thenThrow(new RuntimeException());
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
         ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -604,12 +606,14 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void partialUpdate_failure(){
-        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = ShipmentSettingsPatchRequest.builder().id(1L).build();
+        shipmentSettingsPatchRequest shipmentSettingsPatchRequest = new shipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(1L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        ShipmentSettingsService spyService = spy(shipmentSettingsService);
-        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
-        Assertions.assertThrows(RuntimeException.class, () -> spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
     }
 
     @Test
@@ -620,7 +624,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void partialUpdate_IdNull(){
-        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest shipmentSettingsPatchRequest = new shipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(null);
         shipmentSettingsPatchRequest.setTenantId(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
@@ -629,7 +633,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void partialUpdate_TenantIdNull(){
-        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest shipmentSettingsPatchRequest = new shipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(1L);
         shipmentSettingsPatchRequest.setTenantId(null);
         when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.empty());
