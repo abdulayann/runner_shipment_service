@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -358,12 +359,19 @@ public class AwbDao implements IAwbDao {
     @Transactional
     public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
         Awb awb = null;
+        String destinationPortLocCode = null;
         List<Awb> awbList;
         if(shipmentId != null) {
             awbList = findByShipmentId(shipmentId);
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+            if(shipmentDetails.isPresent())
+                destinationPortLocCode = shipmentDetails.get().getCarrierDetails().getDestinationPortLocCode();
         }
         else {
             awbList = findByConsolidationId(consolidationId);
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolidationId);
+            if(consolidationDetails.isPresent())
+                destinationPortLocCode = consolidationDetails.get().getCarrierDetails().getDestinationPortLocCode();
         }
         awb = !awbList.isEmpty() ? awbList.get(0) : null;
 
@@ -373,7 +381,7 @@ public class AwbDao implements IAwbDao {
                 awb.setPrintType(printType);
             if(Boolean.TRUE.equals(isOriginal)) {
                 awb.setOriginalPrintedAt(printedAt);
-                checkForMandatoryHsCodeForUAE(awb);
+                checkForMandatoryHsCodeForUAE(awb, destinationPortLocCode);
             }
             try {
                 save(awb);
@@ -383,13 +391,13 @@ public class AwbDao implements IAwbDao {
         }
     }
 
-    private void checkForMandatoryHsCodeForUAE(Awb awb) {
-        String destinationCountry = awb.getAwbShipmentInfo().getDestinationAirport();
-        if(destinationCountry.equalsIgnoreCase("UAE")) {
+    private void checkForMandatoryHsCodeForUAE(Awb awb, String destinationPortLocCode) {
+        //String destinationCountry = awb.getAwbShipmentInfo().getDestinationAirport();
+        if(destinationPortLocCode != null && destinationPortLocCode.startsWith("AE")) {
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
             awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
                 if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
-                    throw new RuntimeException("Please enter the HS code in the goods description of the cargo information tab.");
+                    throw new ValidationException("Please enter the HS code in the goods description of the cargo information tab.");
                 }
             });
         }
