@@ -13,4 +13,5 @@ public class CarrierBookingConstants {
     public static final String BOOKING_ID = "Booking Id";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Carrier Booking Data Retrieval By Id";
     public static final String BOOKING_GUID = "Booking Guid";
+    public static final String CARRIER_BOOKING_LOCKED = "Current Carrier Booking is Locked, try unlocking it first !";
 }

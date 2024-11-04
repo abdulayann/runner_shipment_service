@@ -36,16 +36,16 @@ public class CarrierBookingRequest extends CommonRequest implements IRunnerReque
     private String prohibitedTransshipment;
     private LocalDateTime latesetDeliveryDate;
     private LocalDateTime earliestDepartureDate;
-    private boolean isLinked;
-    private boolean isTempControlled;
+    private Boolean isLinked;
+    private Boolean isTempControlled;
     private String shipperRefNumber;
     private String contractNumber;
     private String purchaseOrderNumber;
     private UUID consolidationGuid;
-    private boolean isOverride;
+    private Boolean isOverride;
     private String referenceNo;
     private List<PartiesRequest> consolidationAddresses;
-    private boolean isSplitBooking;
+    private Boolean isSplitBooking;
     private String parentBookingNumber;
     private String splitBookingSequence;
     private String carrierComments;
@@ -54,7 +54,6 @@ public class CarrierBookingRequest extends CommonRequest implements IRunnerReque
     private List<BookingPaymentRequest> bookingPaymentsList;
     private List<ContainerRequest> containersList;
     private List<PackingRequest> packingList;
-    private List<OrderInfoRequest> orderIds;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private LocalDateTime estimatedTerminalCutoff;
     private LocalDateTime terminalCutoff;
@@ -68,5 +67,5 @@ public class CarrierBookingRequest extends CommonRequest implements IRunnerReque
     private LocalDateTime earliestEmptyEquPickUp;
     private List<EventsRequest> eventsList;
     private Integer lockedBy;
-    private boolean isLocked;
+    private Boolean isLocked;
 }

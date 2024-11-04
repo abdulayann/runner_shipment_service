@@ -30,11 +30,11 @@ public interface IPackingDao {
 
     List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookindId);
 
-    List<Packing> saveEntityFromCarrierBooking(List<Packing> packings, Long carrierBookingId);
-
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws RunnerException;
 
     List<Packing> updateEntityFromCarrierBooking(List<Packing> packings, Long carrierBookingId) throws RunnerException;
+
+    List<Packing> updateEntityFromShippingInstruction(List<Packing> packings, Long shippingInstructionId) throws RunnerException;
 
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, Long carrierBookingId) throws RunnerException;
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException;

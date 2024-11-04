@@ -19,4 +19,8 @@ public interface ICarrierBookingDao {
     Optional<CarrierBooking> findByGuid(UUID id);
 
     void delete(CarrierBooking carrierBooking);
+
+    Optional<Long> getMaxId();
+
+    boolean existsByIntraBookingId(String intraBookingId);
 }

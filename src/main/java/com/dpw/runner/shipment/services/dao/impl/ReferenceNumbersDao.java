@@ -224,7 +224,6 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
             Map<Long, ReferenceNumbers> hashMap;
             ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
             Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
@@ -372,45 +371,6 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         return res;
     }
 
-    @Override
-    public List<ReferenceNumbers> saveEntityFromCarrierBooking(List<ReferenceNumbers> referenceNumbersRequests, Long carrierBookingId) {
-        List<ReferenceNumbers> res = new ArrayList<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (oldEntity.isEmpty()) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
-            req.setCarrierBookingId(carrierBookingId);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
-                                .parent(ConsolidationDetails.class.getSimpleName())
-                                .parentId(carrierBookingId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
-        }
-        return res;
-    }
-
-    @Override
     public List<ReferenceNumbers> saveEntityFromCarrierBooking(List<ReferenceNumbers> referenceNumbersRequests, Long carrierBookingId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();

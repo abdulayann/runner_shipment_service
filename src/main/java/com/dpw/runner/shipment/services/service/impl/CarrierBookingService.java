@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.azure.core.implementation.util.ObjectsUtil;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -12,29 +14,43 @@ import com.dpw.runner.shipment.services.dto.response.CarrierBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -62,6 +78,9 @@ public class CarrierBookingService implements ICarrierBookingService {
     private IPackingDao packingDao;
 
     @Autowired
+    private IPartiesDao partiesDao;
+
+    @Autowired
     private IContainerDao containerDao;
 
     @Autowired
@@ -71,10 +90,19 @@ public class CarrierBookingService implements ICarrierBookingService {
     private IBookingPaymentDao bookingPaymentDao;
 
     @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private IEventDao eventDao;
+
+    @Autowired
     private IReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("origin", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("origin").build()),
@@ -83,50 +111,151 @@ public class CarrierBookingService implements ICarrierBookingService {
             Map.entry("destinationPort", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("destinationPort").build()),
             Map.entry("bookingNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_BOOKING).dataType(String.class).fieldName("bookingNumber").isContainsText(true).build()),
             Map.entry("status", RunnerEntityMapping.builder().tableName(Constants.CARRIER_BOOKING).dataType(BookingStatus.class).fieldName("status").build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CARRIER_BOOKING).dataType(String.class).fieldName("createdBy").build())
+            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CARRIER_BOOKING).dataType(String.class).fieldName("createdBy").build()),
+            Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.CARRIER_BOOKING).dataType(String.class).fieldName("id").build())
     );
 
     @Override
-    @Transactional
-    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) throws RunnerException {
+    @Transactional(rollbackFor = RunnerException.class)
+    public ResponseEntity<IRunnerResponse> create(@NotNull CommonRequestModel commonRequestModel) throws RunnerException {
         CarrierBookingRequest request = (CarrierBookingRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Carrier Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
-        CarrierBooking carrierBooking = jsonHelper.convertValue(request, CarrierBooking.class);
+        CarrierBooking carrierBookingDetails = jsonHelper.convertValue(request, CarrierBooking.class);
+        beforeSave(carrierBookingDetails, Boolean.TRUE);
+        carrierBookingDetails = carrierBookingDao.save(carrierBookingDetails);
+        afterSave(carrierBookingDetails, request, Boolean.TRUE);
 
-        carrierBooking = carrierBookingDao.save(carrierBooking);
+        createAuditMetaData(carrierBookingDetails, DBOperationType.CREATE.name(), null);
+        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(carrierBookingDetails, CarrierBookingResponse.class));
+    }
+
+    private void createAuditMetaData(CarrierBooking carrierBookingDetails, String operation, CarrierBooking prevData){
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .newData(carrierBookingDetails)
+                            .prevData(prevData)
+                            .parent(CarrierBooking.class.getSimpleName())
+                            .parentId(carrierBookingDetails.getId())
+                            .operation(operation).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+    }
+
+    private void beforeSave(CarrierBooking carrierBooking, Boolean isCreate){
+        if(Boolean.TRUE.equals(isCreate) && StringUtility.isEmpty(carrierBooking.getReferenceNo()))
+            carrierBooking.setReferenceNo(carrierBooking.getIntraBookingId());
+
+        if (Objects.isNull(carrierBooking.getSourceTenantId()))
+            carrierBooking.setSourceTenantId(UserContext.getUser().TenantId);
+
+        if(Boolean.TRUE.equals(isCreate) && StringUtility.isEmpty(carrierBooking.getIntraBookingId())){
+            var tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+            String prefix = (tenantSettingsResponse != null && StringUtility.isNotEmpty(tenantSettingsResponse.getBookingPrefix()))
+                    ? tenantSettingsResponse.getBookingPrefix() : "";
+
+            if (tenantSettingsResponse != null
+                    && ObjectUtils.isNotEmpty(tenantSettingsResponse.getBookingNumberGeneration())
+                    && tenantSettingsResponse.getBookingNumberGeneration() == GenerationType.Serial.getValue()
+            ) {
+
+                Optional<Long> maxDbId = carrierBookingDao.getMaxId();
+                Long maxId = maxDbId.map(aLong -> aLong + 1).orElse(1L);
+                String intraBookingId = prefix + maxId;
+                carrierBooking.setIntraBookingId(intraBookingId);
+
+            } else {
+                String intraBookingId;
+                do {
+                    intraBookingId = prefix + StringUtility.getRandomString(10);
+                } while (carrierBookingDao.existsByIntraBookingId(intraBookingId));
+                carrierBooking.setIntraBookingId(intraBookingId);
+            }
+        }
+
+    }
+
+    private void afterSave(@NotNull CarrierBooking carrierBooking, @NotNull CarrierBookingRequest request, Boolean isCreate) throws RunnerException {
         Long bookingId = carrierBooking.getId();
-
         List<PackingRequest> packingRequest = request.getPackingList();
-        if (packingRequest != null)
-            carrierBooking.setPackingList(packingDao.saveEntityFromCarrierBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
-
         List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-        if (referenceNumbersRequest != null)
-            carrierBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromCarrierBooking(commonUtils.convertToEntityList(referenceNumbersRequest, ReferenceNumbers.class), bookingId));
-
         List<ContainerRequest> containerRequest = request.getContainersList();
+        List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriagesList();
+        List<BookingPaymentRequest> bookingPaymentRequest = request.getBookingPaymentsList();
+        List<PartiesRequest> consolidationAddressRequest = request.getConsolidationAddresses();
+        List<EventsRequest> eventsRequestList = request.getEventsList();
+
+        if (packingRequest != null)
+            carrierBooking.setPackingList(packingDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        if (referenceNumbersRequest != null)
+            carrierBooking.setReferenceNumbersList(referenceNumbersDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(referenceNumbersRequest, ReferenceNumbers.class), bookingId));
+
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             carrierBooking.setContainersList(containers);
         }
 
-        List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriagesList();
         if (bookingCarriageRequest != null) {
-            List<BookingCarriage> bookingCarriages = bookingCarriageDao.saveEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingCarriageRequest, BookingCarriage.class), bookingId);
+            List<BookingCarriage> bookingCarriages = bookingCarriageDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingCarriageRequest, BookingCarriage.class), bookingId);
             carrierBooking.setBookingCarriagesList(bookingCarriages);
         }
 
-        List<BookingPaymentRequest> bookingPaymentRequest = request.getBookingPaymentsList();
         if (bookingPaymentRequest!=null){
-            List<BookingPayment> bookingPayments = bookingPaymentDao.saveEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingPaymentRequest, BookingPayment.class), bookingId);
+            List<BookingPayment> bookingPayments = bookingPaymentDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingPaymentRequest, BookingPayment.class), bookingId);
             carrierBooking.setBookingPaymentsList(bookingPayments);
         }
 
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(carrierBooking, CarrierBookingResponse.class));
+        if (consolidationAddressRequest != null) {
+            List<Parties> updatedConsolidationAddresses = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class, false), bookingId, Constants.CONSOLIDATION_ADDRESSES);
+            carrierBooking.setConsolidationAddresses(updatedConsolidationAddresses);
+        }
+
+        if (eventsRequestList != null) {
+            List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
+            eventDao.updateEntityFromOtherEntity(eventsList, bookingId, Constants.CARRIER_BOOKING);
+            carrierBooking.setEventsList(eventsList);
+        }
+
+        if(Boolean.TRUE.equals(isCreate) && ObjectUtils.isNotEmpty(request.getConsolidationGuid()))
+            autoGenerateCreateEvent(carrierBooking);
     }
+
+    private void autoGenerateCreateEvent(CarrierBooking carrierBooking) {
+        Events response;
+        String description = "Carrier Booking created by " + TenantContext.getCurrentTenant().toString();
+        response = createAutomatedEvents(carrierBooking, EventConstants.BKCRT, description);
+
+        if (carrierBooking.getEventsList() == null) {
+            carrierBooking.setEventsList(new ArrayList<>());
+        }
+        carrierBooking.getEventsList().add(response);
+    }
+
+    private Events createAutomatedEvents(CarrierBooking carrierBooking, String eventCode, String description) {
+        Optional<Long> consolidationDetails = consolidationDetailsDao.findIdByGuid(carrierBooking.getConsolidationGuid());
+        Events events = new Events();
+        if (consolidationDetails.isPresent()) {
+            events.setActual(LocalDateTime.now());
+            events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+            events.setIsPublicTrackingEvent(false);
+            events.setEntityType(Constants.CONSOLIDATION);
+            events.setEntityId(consolidationDetails.get());
+            events.setTenantId(TenantContext.getCurrentTenant());
+            events.setEventCode(eventCode);
+            events.setDescription(description);
+            // Persist the event
+            eventDao.save(events);
+        }
+        return events;
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
@@ -144,7 +273,7 @@ public class CarrierBookingService implements ICarrierBookingService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             carrierBookingDao.delete(carrierBooking.get());
-            log.info("Deleted Booking details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            log.info("Deleted Carrier Booking details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
@@ -159,7 +288,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
-                log.error("Request is empty for Booking list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request is empty for Carrier Booking list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Pair<Specification<CarrierBooking>, Pageable> tuple = fetchData(request, CarrierBooking.class, tableNames);
@@ -176,7 +305,9 @@ public class CarrierBookingService implements ICarrierBookingService {
         }
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<CarrierBooking> lst) {
+
+    @NotNull
+    private List<IRunnerResponse> convertEntityListToDtoList(@NotNull List<CarrierBooking> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(carrierBooking -> {
             CarrierBookingResponse response = modelMapper.map(carrierBooking, CarrierBookingResponse.class);
@@ -187,8 +318,8 @@ public class CarrierBookingService implements ICarrierBookingService {
     }
 
     @Override
-    @Transactional
-    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    @Transactional(rollbackFor = RunnerException.class)
+    public ResponseEntity<IRunnerResponse> update(@NotNull CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         CarrierBookingRequest request = (CarrierBookingRequest) commonRequestModel.getData();
         if (request == null || request.getId() == null) {
             log.error("Request is empty for Carrier Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -197,7 +328,7 @@ public class CarrierBookingService implements ICarrierBookingService {
         long id = request.getId();
         Optional<CarrierBooking> oldEntity = carrierBookingDao.findById(id);
         if (oldEntity.isEmpty()) {
-            log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug(CarrierBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
@@ -205,36 +336,12 @@ public class CarrierBookingService implements ICarrierBookingService {
         carrierBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         carrierBooking.setCreatedBy(oldEntity.get().getCreatedBy());
 
-
+        beforeSave(carrierBooking, Boolean.FALSE);
         carrierBooking = carrierBookingDao.save(carrierBooking);
-        Long bookingId = carrierBooking.getId();
 
-        List<PackingRequest> packingRequest = request.getPackingList();
-        if (packingRequest != null)
-            carrierBooking.setPackingList(packingDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+        createAuditMetaData(carrierBooking, DBOperationType.UPDATE.name(), oldEntity.get());
 
-
-        List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-        if (referenceNumbersRequest != null)
-            carrierBooking.setReferenceNumbersList(referenceNumbersDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(referenceNumbersRequest, ReferenceNumbers.class), bookingId));
-
-        List<ContainerRequest> containerRequest = request.getContainersList();
-        if (containerRequest != null) {
-            List<Containers> containers = containerDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
-            carrierBooking.setContainersList(containers);
-        }
-
-        List<BookingCarriageRequest> bookingCarriageRequest = request.getBookingCarriagesList();
-        if (bookingCarriageRequest != null) {
-            List<BookingCarriage> bookingCarriages = bookingCarriageDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingCarriageRequest, BookingCarriage.class), bookingId);
-            carrierBooking.setBookingCarriagesList(bookingCarriages);
-        }
-
-        List<BookingPaymentRequest> bookingPaymentRequest = request.getBookingPaymentsList();
-        if (bookingPaymentRequest!=null){
-            List<BookingPayment> bookingPayments = bookingPaymentDao.updateEntityFromCarrierBooking(commonUtils.convertToEntityList(bookingPaymentRequest, BookingPayment.class), bookingId);
-            carrierBooking.setBookingPaymentsList(bookingPayments);
-        }
+        afterSave(carrierBooking, request, Boolean.FALSE);
 
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(carrierBooking, CarrierBooking.class));
     }
@@ -246,7 +353,7 @@ public class CarrierBookingService implements ICarrierBookingService {
             double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null || (request.getId() == null && request.getGuid() == null)) {
-                log.error("Request Id and Guid are null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error("Request Id and Guid are null for Carrier Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Long id = request.getId();
@@ -268,13 +375,193 @@ public class CarrierBookingService implements ICarrierBookingService {
             CarrierBookingResponse carrierBookingResponse = jsonHelper.convertValue(carrierBooking.get(), CarrierBookingResponse.class);
             double _next = System.currentTimeMillis();
             log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
-//            createCustomerBookingResponse(carrierBooking.get(), carrierBookingResponse);
+            createCarrierBookingResponse(carrierBooking.get(), carrierBookingResponse);
             return ResponseHelper.buildSuccessResponse(carrierBookingResponse);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    /**
+     * To be used to fetch dependent master-data
+     *
+     * @param carrierBooking:
+     * @param carrierBookingResponse:
+     */
+    private void createCarrierBookingResponse(CarrierBooking carrierBooking, CarrierBookingResponse carrierBookingResponse) {
+        try {
+            double _start = System.currentTimeMillis();
+            var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(carrierBookingResponse)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(carrierBookingResponse)), executorService);
+            var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(carrierBookingResponse)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllCarrierDataInSingleCall(carrierBookingResponse)), executorService);
+            var containerTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllContainerTypesInSingleCall(carrierBookingResponse)), executorService);
+            var chargeTypeFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllChargeTypesInSingleCall(carrierBookingResponse)), executorService);
+            CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
+            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", System.currentTimeMillis() - _start, LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception ex) {
+            log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", carrierBooking.getBookingNumber(), ex.getMessage());
+        }
+    }
+
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext = UserContext.getUser();
+        return () -> {
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext);
+                runnable.run();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
+        };
+    }
+
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(CarrierBookingResponse carrierBookingResponse) {
+        try {
+            // Preprocessing
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(carrierBookingResponse, CarrierBooking.class, fieldNameKeyMap, CarrierBooking.class.getSimpleName() ));
+            if (!Objects.isNull(carrierBookingResponse.getContainersList()))
+                carrierBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId() )));
+            if (!Objects.isNull(carrierBookingResponse.getPackingList()))
+                carrierBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests);
+            // fetching from V1 in single call
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+
+            // Postprocessing
+            carrierBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, true));
+
+            if (!Objects.isNull(carrierBookingResponse.getContainersList()))
+                carrierBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+            if (!Objects.isNull(carrierBookingResponse.getPackingList()))
+                carrierBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+
+    }
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllLocationDataInSingleCall(CarrierBookingResponse carrierBookingResponse) {
+        try {
+            // Preprocessing
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> locationCodes = new ArrayList<>();
+            if (!Objects.isNull(carrierBookingResponse.getCarrierDetails()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(carrierBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+
+            if (!Objects.isNull(carrierBookingResponse.getBookingPaymentsList()))
+                carrierBookingResponse.getBookingPaymentsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingPayment.class, fieldNameKeyMap, BookingPayment.class.getSimpleName() + r.getId() )));
+
+            // fetching from V1 in single call
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+
+            // Postprocessing
+            if (!Objects.isNull(carrierBookingResponse.getCarrierDetails()))
+                carrierBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, false));
+            if (!Objects.isNull(carrierBookingResponse.getBookingPaymentsList()))
+                carrierBookingResponse.getBookingPaymentsList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingPayment.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS, false)));
+
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllLocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CarrierBookingResponse carrierBookingResponse) {
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> containerTypes = new ArrayList<>();
+            if (!Objects.isNull(carrierBookingResponse.getContainersList()))
+                carrierBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+
+            Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+
+            if (!Objects.isNull(carrierBookingResponse.getContainersList()))
+                carrierBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE, false)));
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(CarrierBookingResponse carrierBookingResponse) {
+        try {
+            if (!Objects.isNull(carrierBookingResponse.getCarrierDetails())) {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(carrierBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
+                carrierBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, false));
+            }
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllVesselDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall(CarrierBookingResponse carrierBookingResponse) {
+        try {
+            if (!Objects.isNull(carrierBookingResponse.getCarrierDetails())) {
+                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(carrierBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
+                Map v1Data = masterDataUtils.fetchInBulkCarriers(vesselList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
+                carrierBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, false));
+            }
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+
+//    @Async
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CarrierBookingResponse customerBookingResponse) {
+        try {
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            List<String> chargeTypes = new ArrayList<>();
+
+            if (!Objects.isNull(customerBookingResponse.getBookingPaymentsList()))
+                customerBookingResponse.getBookingPaymentsList().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingPayment.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
+            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
+
+            if (!Objects.isNull(customerBookingResponse.getBookingPaymentsList()))
+                customerBookingResponse.getBookingPaymentsList().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingPayment.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE, false)));
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllChargeTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CarrierBookingService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
     }
 

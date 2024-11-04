@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingPaymentRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -49,7 +50,7 @@ public class BookingPaymentDao implements IBookingPaymentDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private AuditLogService auditLogService;
+    private IAuditLogService auditLogService;
 
 
     @Override
@@ -61,7 +62,7 @@ public class BookingPaymentDao implements IBookingPaymentDao {
         if (bookingpayment.getId() != null) {
             Optional<BookingPayment> oldEntity = findById(bookingpayment.getId());
             if (oldEntity.isEmpty()) {
-                log.debug("Customer Booking is null for Id {}", bookingpayment.getId());
+                log.debug("Carrier Booking is null for Id {}", bookingpayment.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
         }
@@ -83,43 +84,13 @@ public class BookingPaymentDao implements IBookingPaymentDao {
         bookingPaymentRepository.delete(bookingpayment);
     }
 
-
-    public List<BookingPayment> saveEntityFromCarrierBooking(List<BookingPayment> bookingPayments, Long carrierBookingId) {
-        List<BookingPayment> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
-        Pair<Specification<BookingPayment>, Pageable> pair = fetchData(listCommonRequest, BookingPayment.class);
-        Page<BookingPayment> bookingPaymentPage = findAll(pair.getLeft(), pair.getRight());
-        Map<Long, BookingPayment> hashMap = bookingPaymentPage.stream().collect(Collectors.toMap(BookingPayment::getId, Function.identity()));
-        for (BookingPayment req : bookingPayments) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if (req.getId() != null) {
-                long id = req.getId();
-                if (hashMap.get(id) == null) {
-                    log.debug(BOOKING_PAYMENT_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
-                operation = DBOperationType.UPDATE.name();
-            }
-            req.setCarrierBookingId(carrierBookingId);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
-                                .parent(CarrierBooking.class.getSimpleName())
-                                .parentId(carrierBookingId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
+    public List<BookingPayment> saveAll(List<BookingPayment> bookingPaymentList) {
+        for(var bookingPayment : bookingPaymentList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingPayment), Constants.BOOKING_PAYMENT, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(String.join(",", errors));
         }
-        return res;
+        return bookingPaymentRepository.saveAll(bookingPaymentList);
     }
 
     public List<BookingPayment> updateEntityFromCarrierBooking(List<BookingPayment> bookingPaymentsList, Long carrierBookingId) throws RunnerException {
@@ -128,8 +99,9 @@ public class BookingPaymentDao implements IBookingPaymentDao {
         try {
             ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
             Pair<Specification<BookingPayment>, Pageable> pair = fetchData(listCommonRequest, BookingPayment.class);
-            Page<BookingPayment> packings = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, BookingPayment> hashMap = packings.stream().collect(Collectors.toMap(BookingPayment::getId, Function.identity()));
+            Page<BookingPayment> bookingPayments = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, BookingPayment> hashMap = bookingPayments.stream().collect(Collectors.toMap(BookingPayment::getId, Function.identity()));
+            Map<Long, BookingPayment> hashMapCopy = new HashMap<>(hashMap);
             List<BookingPayment> bookingPaymentRequestList = new ArrayList<>();
             if (bookingPaymentsList != null && !bookingPaymentsList.isEmpty()) {
                 for (BookingPayment request : bookingPaymentsList) {
@@ -139,7 +111,7 @@ public class BookingPaymentDao implements IBookingPaymentDao {
                     }
                     bookingPaymentRequestList.add(request);
                 }
-                responseBookingPayments = saveEntityFromCarrierBooking(bookingPaymentRequestList, carrierBookingId);
+                responseBookingPayments = saveEntityFromCarrierBooking(bookingPaymentRequestList, carrierBookingId, hashMapCopy);
             }
             deleteBookingPayments(hashMap, "CarrierBooking", carrierBookingId);
             return responseBookingPayments;
@@ -150,8 +122,50 @@ public class BookingPaymentDao implements IBookingPaymentDao {
         }
     }
 
+    public List<BookingPayment> saveEntityFromCarrierBooking(List<BookingPayment> bookingPayments, Long carrierBookingId,  Map<Long, BookingPayment> oldEntityMap) {
+        List<BookingPayment> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for (BookingPayment req : bookingPayments) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug(BOOKING_PAYMENT_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingPayment.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return res;
+    }
 
-    private void deleteBookingPayments(Map<Long, BookingPayment> hashMap, String entity, Long entityId) {
+    void deleteBookingPayments(Map<Long, BookingPayment> hashMap, String entity, Long entityId) {
         String responseMsg;
         try {
             hashMap.values().forEach(bookingPayment -> {
@@ -175,8 +189,7 @@ public class BookingPaymentDao implements IBookingPaymentDao {
                 }
             });
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
     }

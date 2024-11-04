@@ -17,8 +17,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -32,7 +34,6 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
     @Autowired
     private JsonHelper jsonHelper;
 
-
     @Override
     public ShippingInstruction save(ShippingInstruction shippingInstruction) {
 
@@ -42,7 +43,7 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
         if (shippingInstruction.getId() != null) {
             Optional<ShippingInstruction> oldEntity = findById(shippingInstruction.getId());
             if (oldEntity.isEmpty()) {
-                log.debug("Customer Booking is null for Id {}", shippingInstruction.getId());
+                log.debug("Shipping Instruction is null for Id {}", shippingInstruction.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
         }
@@ -60,7 +61,21 @@ public class ShippingInstructionDao implements IShippingInstructionDao {
     }
 
     @Override
+    public Optional<ShippingInstruction> findByGuid(UUID id) {
+        return shippingInstructionRepository.findByGuid(id);
+    }
+
+    @Override
     public void delete(ShippingInstruction shippingInstruction) {
         shippingInstructionRepository.delete(shippingInstruction);
+    }
+
+    public List<ShippingInstruction> saveAll(List<ShippingInstruction> shippingInstructionList) {
+        for(var shippingInstruction : shippingInstructionList){
+            Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(shippingInstruction), Constants.SHIPPING_INSTRUCTION, LifecycleHooks.ON_CREATE, false);
+            if (!errors.isEmpty())
+                throw new ValidationException(String.join(",", errors));
+        }
+        return shippingInstructionRepository.saveAll(shippingInstructionList);
     }
 }

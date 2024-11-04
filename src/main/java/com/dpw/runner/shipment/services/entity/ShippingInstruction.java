@@ -6,11 +6,11 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
+import lombok.*;
+import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
@@ -21,11 +21,15 @@ import java.util.List;
 
 
 @Entity
-@Getter
-@Setter
+@Data
 @Table(name = "shipping_instruction")
-@AllArgsConstructor
+@Accessors(chain = true)
+@ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@SQLDelete(sql = "UPDATE shipping_instruction SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class ShippingInstruction extends MultiTenancy {
 
     @Column(name = "shipment_guid")
@@ -38,14 +42,14 @@ public class ShippingInstruction extends MultiTenancy {
     private Long bookingId;
 
     @Column(name = "is_uca")
-    private boolean isUca;
+    private Boolean isUca;
 
     @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
     @Column(name = "carrier")
-    @Size(max = 255, message = "max size is 255 for contract number")
+    @Size(max = 255, message = "max size is 255 for carrier")
     private String carrier;
 
     @Column(name = "carrier_booking_number")
@@ -162,16 +166,16 @@ public class ShippingInstruction extends MultiTenancy {
     private LocalDateTime reqDateOfIssue;
 
     @Column(name = "original_seaway")
-    private boolean originalSeaway;
+    private Boolean originalSeaway;
 
     @Column(name = "is_stand_alone_hbl")
-    private boolean isStandAloneHbl;
+    private Boolean isStandAloneHbl;
 
     @Column(name = "hbl_number")
-    private boolean hblNumber;
+    private Boolean hblNumber;
 
     @Column(name = "original_bill")
-    private boolean originalBill;
+    private Boolean originalBill;
 
     @Column(name = "original_freighted_copies")
     private String originalFreightedCopies;
@@ -186,7 +190,7 @@ public class ShippingInstruction extends MultiTenancy {
     private String originalNonNegotiableUnFreightedCopies;
 
     @Column(name = "seaway_express_bill")
-    private boolean seawayExpressBill;
+    private Boolean seawayExpressBill;
 
     @Column(name = "seaway_express_freighted_copies")
     @Size(max=255, message = "max size is 255 for seaway_express_freighted_copies")
@@ -211,9 +215,10 @@ public class ShippingInstruction extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Packing> packingList;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "shippingInstructionId") // check
-//    @BatchSize(size = 50)
-//    private List<Events> eventsList;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "event_code = 'CarrierBookingEvents'")
+    @BatchSize(size = 50)
+    private List<Events> eventsList; // todo:
 
     @Column(name = "b_l_object_status")
     private String bLObjectStatus;
@@ -267,7 +272,7 @@ public class ShippingInstruction extends MultiTenancy {
     private String reason;
 
     @Column(name = "is_sync_with_bl_object")
-    private boolean isSyncWithBlObject;
+    private Boolean isSyncWithBlObject;
 
 //        [ServiceLookupSelectionEditor(typeof(Entities.ClausesRow), Multiple = true, SelectionDialogColumn = "Default.Clauses", Picker = true)]
 //            [DisplayName("Clauses")]

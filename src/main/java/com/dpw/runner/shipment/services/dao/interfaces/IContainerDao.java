@@ -28,6 +28,8 @@ public interface IContainerDao {
 
     List<Containers> updateEntityFromCarrierBooking(List<Containers> containersList, Long carrierBookingId) throws RunnerException;
 
+    List<Containers> updateEntityFromShippingInstruction(List<Containers> containersList, Long shippingInstructionId) throws RunnerException;
+
     List<Containers> saveAll(List<Containers> containers);
 
     List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws RunnerException;

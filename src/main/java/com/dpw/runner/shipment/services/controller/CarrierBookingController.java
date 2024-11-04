@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CarrierBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.CarrierBookingResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICarrierBookingService;
 import io.swagger.annotations.ApiParam;
@@ -39,17 +40,16 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = CarrierBookingConstants.CREATE_SUCCESSFUL, response = CarrierBookingController.MyResponseClass.class),
+            @ApiResponse(code = 201, message = CarrierBookingConstants.CREATE_SUCCESSFUL, response = CarrierBookingController.MyResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid CarrierBookingRequest request) throws RunnerException {
         String responseMsg;
         try {
             return carrierBookingService.create(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -69,14 +69,13 @@ public class CarrierBookingController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CarrierBookingConstants.UPDATE_SUCCESSFUL, response = CarrierBookingController.MyResponseClass.class)})
-    @PutMapping(ApiConstants.API_UPDATE_BOOKING)
+    @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid CarrierBookingRequest request) {
         String responseMsg;
         try {
             return carrierBookingService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);

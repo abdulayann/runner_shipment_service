@@ -19,7 +19,5 @@ public interface IBookingPaymentDao {
 
     void delete(BookingPayment bookingPayment);
 
-    List<BookingPayment> saveEntityFromCarrierBooking(List<BookingPayment> bookingPayments, Long carrierBookingId);
-
     List<BookingPayment> updateEntityFromCarrierBooking(List<BookingPayment> packings, Long carrierBookingId) throws RunnerException;
 }

@@ -23,6 +23,5 @@ public interface IBookingCarriageDao {
 
 
     List<BookingCarriage> updateEntityFromCarrierBooking(List<BookingCarriage> bookingCarriageList, Long carrierBookingId) throws RunnerException;
-    List<BookingCarriage> saveEntityFromCarrierBooking(List<BookingCarriage> bookingCarriages, Long carrierBookingId);
     List<BookingCarriage> saveEntityFromCarrierBooking(List<BookingCarriage> bookingCarriages, Long carrierBookingId, Map<Long, BookingCarriage> oldEntityMap);
 }

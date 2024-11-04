@@ -116,39 +116,6 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
     }
 
-    public List<BookingCarriage> updateEntityFromCarrierBooking(List<BookingCarriage> bookingCarriageList, Long carrierBookingId) throws RunnerException {
-        String responseMsg;
-        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
-        try {
-            // TODO- Handle Transactions here
-            Map<Long, BookingCarriage> hashMap;
-            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
-            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
-            Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
-            hashMap = bookingCarriages.stream()
-                    .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
-            Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
-            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
-            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
-                for (BookingCarriage request : bookingCarriageList) {
-                    Long id = request.getId();
-                    if (id != null) {
-                        hashMap.remove(id);
-                    }
-                    bookingCarriagesRequestList.add(request);
-                }
-                responseBookingCarriage = saveEntityFromCarrierBooking(bookingCarriagesRequestList, carrierBookingId, copyHashMap);
-            }
-            deleteBookingCarriage(hashMap, CarrierBooking.class.getSimpleName(), carrierBookingId);
-            return responseBookingCarriage;
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
-            log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
-        }
-    }
-
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
         List<BookingCarriage> res = new ArrayList<>();
         for(BookingCarriage req : bookingCarriages){
@@ -175,43 +142,6 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(shipmentId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
-        }
-        return res;
-    }
-
-    public List<BookingCarriage> saveEntityFromCarrierBooking(List<BookingCarriage> bookingCarriages, Long carrierBookingId) {
-        List<BookingCarriage> res = new ArrayList<>();
-        for(BookingCarriage req : bookingCarriages){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<BookingCarriage> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug("Booking Carriage is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
-            req.setCarrierBookingId(carrierBookingId);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
-                                .parent(CarrierBooking.class.getSimpleName())
-                                .parentId(carrierBookingId)
                                 .operation(operation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
@@ -268,6 +198,36 @@ public class BookingCarriageDao implements IBookingCarriageDao {
     }
 
     @Override
+    public List<BookingCarriage> updateEntityFromCarrierBooking(List<BookingCarriage> bookingCarriageList, Long carrierBookingId) throws RunnerException {
+        String responseMsg;
+        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
+        try {
+            Map<Long, BookingCarriage> hashMap;
+            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
+            Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
+            hashMap = bookingCarriages.stream().collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+            Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
+            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
+            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
+                for (BookingCarriage request : bookingCarriageList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    bookingCarriagesRequestList.add(request);
+                }
+                responseBookingCarriage = saveEntityFromCarrierBooking(bookingCarriagesRequestList, carrierBookingId, copyHashMap);
+            }
+            deleteBookingCarriage(hashMap, CarrierBooking.class.getSimpleName(), carrierBookingId);
+            return responseBookingCarriage;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
     public List<BookingCarriage> saveEntityFromCarrierBooking(List<BookingCarriage> bookingCarriages, Long carrierBookingId, Map<Long, BookingCarriage> oldEntityMap) {
         List<BookingCarriage> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
@@ -275,7 +235,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             if(req.getId() != null){
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
-                    log.debug("Booking Carriage is null for Id {}", req.getId());
+                    log.debug("Booking Carriage is null for CarrierBooking Id {}", req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());

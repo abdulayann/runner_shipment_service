@@ -33,6 +33,10 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), guid);
         return findOne(spec);
     }
+
+    @Query(value = "SELECT id FROM consolidation_details WHERE guid = ?1 and tenant_id = ?2", nativeQuery = true)
+    Optional<Long> findIdByGuid (UUID guid, Integer tenantId);
+
     @Query(value = "SELECT * FROM consolidation_details WHERE bol = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ConsolidationDetails> findByBol (String bol, Integer tenantId);
 

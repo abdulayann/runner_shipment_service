@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,9 +25,11 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -375,5 +378,117 @@ class ContainerDaoTest {
         when(containerRepository.save(any())).thenReturn(container1);
 
         assertEquals(containersList, containerDao.updateEntityFromConsolidationV1(containersList, 1L, oldList));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_ExceptionThrown_ReturnsEmptyList() {
+        Long carrierBookingId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        doThrow(new RuntimeException("Test")).when(containerDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> containerDaoSpy.updateEntityFromCarrierBooking(Collections.emptyList(), carrierBookingId));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_ContainerListHasElements_ReturnsResponseContainer() throws RunnerException {
+        Long carrierBookingId = 1L;
+        List<Containers> containerList = Arrays.asList(new Containers(), new Containers());
+        var containerDaoSpy = Mockito.spy(containerDao);
+        doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
+        doReturn(containerList).when(containerDaoSpy).saveEntityFromCarrierBooking(anyList(), eq(carrierBookingId));
+        List<Containers> result = containerDaoSpy.updateEntityFromCarrierBooking(containerList, carrierBookingId);
+        assertEquals(containerList, result);
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ExceptionThrown() {
+        Long carrierBookingId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers container = new Containers();
+        container.setId(1L);
+        doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
+        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(container), carrierBookingId));
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ContainerNewRequest() {
+        Long carrierBookingId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers reqContainer = new Containers();
+        Containers container = new Containers();
+        container.setId(1L);
+        when(containerRepository.findAll((Specification<Containers>) any(), (Pageable) any())).thenReturn(new PageImpl<Containers>(Collections.emptyList()));
+        List<Containers> result = containerDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(reqContainer), carrierBookingId);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ContainerUpdateRequest() {
+        Long carrierBookingId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers container = new Containers();
+        container.setId(1L);
+        testContainer.setId(1L);
+        doReturn(container).when(containerDaoSpy).save(any());
+        when(containerRepository.findAll((Specification<Containers>) any(), (Pageable) any())).thenReturn(new PageImpl<Containers>(List.of(testContainer)));
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<Containers> result = containerDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(container), carrierBookingId);
+        assertNotNull(result);
+    }
+
+
+    @Test
+    void updateEntityFromShippingInstruction_ExceptionThrown_ReturnsEmptyList() {
+        Long shippingInstructionId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        doThrow(new RuntimeException("Test")).when(containerDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> containerDaoSpy.updateEntityFromShippingInstruction(Collections.emptyList(), shippingInstructionId));
+    }
+
+    @Test
+    void updateEntityFromShippingInstruction_ContainerListHasElements_ReturnsResponseContainer() throws RunnerException {
+        Long shippingInstructionId = 1L;
+        List<Containers> containerList = Arrays.asList(new Containers(), new Containers());
+        var containerDaoSpy = Mockito.spy(containerDao);
+        doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
+        doReturn(containerList).when(containerDaoSpy).saveEntityFromShippingInstruction(anyList(), eq(shippingInstructionId));
+        List<Containers> result = containerDaoSpy.updateEntityFromShippingInstruction(containerList, shippingInstructionId);
+        assertEquals(containerList, result);
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_ExceptionThrown() {
+        Long shippingInstructionId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers container = new Containers();
+        container.setId(1L);
+        doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
+        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(container), shippingInstructionId));
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_ContainerNewRequest() {
+        Long shippingInstructionId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers reqContainer = new Containers();
+        Containers container = new Containers();
+        container.setId(1L);
+        when(containerRepository.findAll((Specification<Containers>) any(), (Pageable) any())).thenReturn(new PageImpl<Containers>(Collections.emptyList()));
+        doReturn(container).when(containerDaoSpy).save(any());
+        List<Containers> result = containerDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(reqContainer), shippingInstructionId);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_ContainerUpdateRequest() {
+        Long shippingInstructionId = 1L;
+        var containerDaoSpy = Mockito.spy(containerDao);
+        Containers container = new Containers();
+        container.setId(1L);
+        testContainer.setId(1L);
+        doReturn(container).when(containerDaoSpy).save(any());
+        when(containerRepository.findAll((Specification<Containers>) any(), (Pageable) any())).thenReturn(new PageImpl<Containers>(List.of(testContainer)));
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<Containers> result = containerDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(container), shippingInstructionId);
+        assertNotNull(result);
     }
 }

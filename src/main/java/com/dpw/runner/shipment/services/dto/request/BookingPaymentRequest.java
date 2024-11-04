@@ -8,7 +8,7 @@ import lombok.*;
 
 @Data
 @Builder
-@ApiModel("Carrier Booking Request Model")
+@ApiModel("Booking Payment Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor

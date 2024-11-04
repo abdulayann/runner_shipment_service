@@ -198,6 +198,111 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
+    public List<Containers> saveEntityFromCarrierBooking(List<Containers> containers, Long carrierBookingId) {
+        List<Containers> res = new ArrayList<>();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, Containers> hashMap = containersPage.stream().collect(Collectors.toMap(Containers::getId, Function.identity()));
+        for (Containers req : containers) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (hashMap.get(id) == null) {
+                    log.debug("Containers is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+            res.add(req);
+        }
+        return res;
+    }
+
+    public List<Containers> saveEntityFromShippingInstruction(List<Containers> containers, Long shippingInstructionId) {
+        List<Containers> res = new ArrayList<>();
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shippingInstructionId", shippingInstructionId, "=");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
+        Map<Long, Containers> hashMap = containersPage.stream().collect(Collectors.toMap(Containers::getId, Function.identity()));
+        for (Containers req : containers) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (hashMap.get(id) == null) {
+                    log.debug("Containers is null for Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
+                operation = DBOperationType.UPDATE.name();
+            }
+            req.setShippingInstructionId(shippingInstructionId);
+            req = save(req);
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
+                                .parent(ShippingInstruction.class.getSimpleName())
+                                .parentId(shippingInstructionId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+            res.add(req);
+        }
+        return res;
+    }
+
+    @Override
+    public List<Containers> updateEntityFromShippingInstruction(List<Containers> containersList, Long shippingInstructionId) throws RunnerException {
+        String responseMsg;
+        List<Containers> responseContainers = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shippingInstructionId", shippingInstructionId, "=");
+            Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+            Page<Containers> containers = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Containers> hashMap = containers.stream().collect(Collectors.toMap(Containers::getId, Function.identity()));
+            List<Containers> containersRequestList = new ArrayList<>();
+            if (containersList != null && !containersList.isEmpty()) {
+                for (Containers request : containersList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    containersRequestList.add(request);
+                }
+                responseContainers = saveEntityFromShippingInstruction(containersRequestList, shippingInstructionId);
+            }
+            deleteContainers(hashMap, "ShippingInstruction", shippingInstructionId);
+            return responseContainers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
     public List<Containers> saveEntityFromBooking(List<Containers> containers, Long bookingId) {
         List<Containers> res = new ArrayList<>();
         ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
@@ -226,46 +331,6 @@ public class ContainerDao implements IContainerDao {
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
                                 .parentId(bookingId)
-                                .operation(operation).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                log.error(e.getMessage());
-            }
-            res.add(req);
-        }
-        return res;
-    }
-
-
-    public List<Containers> saveEntityFromCarrierBooking(List<Containers> containers, Long carrierBookingId) {
-        List<Containers> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
-        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
-        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
-        Map<Long, Containers> hashMap = containersPage.stream()
-                .collect(Collectors.toMap(Containers::getId, Function.identity()));
-        for (Containers req : containers) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if (req.getId() != null) {
-                long id = req.getId();
-                if (hashMap.get(id) == null) {
-                    log.debug("Containers is null for Id {}", req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
-                operation = DBOperationType.UPDATE.name();
-            }
-            req.setCarrierBookingId(carrierBookingId);
-            req = save(req);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
-                                .parent(CarrierBooking.class.getSimpleName())
-                                .parentId(carrierBookingId)
                                 .operation(operation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |

@@ -2,15 +2,15 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.SIStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
@@ -21,22 +21,24 @@ import java.util.UUID;
 
 
 @Entity
-@Getter
-@Setter
+@Data
 @Table(name = "carrier_booking")
-@AllArgsConstructor
+@Accessors(chain = true)
+@ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@SQLDelete(sql = "UPDATE carrier_booking SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "source_tenant_id")
     @TenantIdData
     private Integer sourceTenantId;
 
-    @Column(name = "shipment_guid")
-    public UUID shipmentGuid;
-
-//    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "booking_id")
-//    private ShippingInstruction shippingInstruction; // todo: doubt here, one to one map question mapped
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipping_instruction_status")
+    private SIStatus shippingInstructionStatus;
 
     @Column(name = "booking_number")
     @Size(max = 50, message = "max size is 50 for booking number")
@@ -44,20 +46,20 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "booking_id")
     @Size(max = 50, message = "max size is 50 for booking id")
-    private String bookingId;
+    private String intraBookingId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private CarrierBookingStatus status;
 
     @Column(name="consolidation_guid")
-    private UUID consolidationGuid;
+    private UUID consolidationGuid; // one to one mapping
 
     @Column(name = "is_temp_controlled")
-    private boolean isTempControlled;
+    private Boolean isTempControlled;
 
     @Column(name = "is_split_booking")
-    private boolean isSplitBooking;
+    private Boolean isSplitBooking;
 
     @Column(name = "parent_booking_number")
     private String parentBookingNumber;
@@ -66,7 +68,7 @@ public class CarrierBooking extends MultiTenancy {
     private String splitBookingSequence;
 
     @Column(name = "is_trans_shipment")
-    private boolean isTransShipment;
+    private Boolean isTransShipment;
 
     @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
@@ -111,7 +113,7 @@ public class CarrierBooking extends MultiTenancy {
 
     @Column(name = "place_of_carrier_delivery")
     @UnlocationData
-    private String placeOfCarrierDelivery; // TODO: inform abhishek and mayank that i used string here
+    private String placeOfCarrierDelivery;
 
     @Column(name = "lateset_delivery_date")
     private LocalDateTime latesetDeliveryDate;
@@ -122,7 +124,7 @@ public class CarrierBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CARRIER_BOOKING_ADDRESSES'")
     @BatchSize(size = 50)
-    private List<Parties> consolidationAddresses; // TODO- entity type?
+    private List<Parties> consolidationAddresses; // TODO: migration btw v1 and v2
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
     private List<BookingCarriage> bookingCarriagesList;
@@ -131,15 +133,15 @@ public class CarrierBooking extends MultiTenancy {
     private List<BookingPayment> bookingPaymentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'CARRIER_BOOKING'")
+    @Where(clause = "event_code = 'CarrierBookingEvents'")
     @BatchSize(size = 50)
-    private List<Events> eventsList; // TODO- entity type?
+    private List<Events> eventsList;
 
     @Column(name = "is_override")
-    private boolean isOverride;
+    private Boolean isOverride;
 
     @Column(name = "is_linked")
-    private boolean isLinked;
+    private Boolean isLinked;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
     private List<Containers> containersList;
@@ -198,13 +200,10 @@ public class CarrierBooking extends MultiTenancy {
     private Integer lockedBy;
 
     @Column(name = "is_locked")
-    private boolean isLocked;
+    private Boolean isLocked;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
-//    private List<OrderInfo> orderIds; // TODO: doubt here
-
-    @Column(name = "tenant_department_id")
-    private Integer tenantDepartmentId; // TODO: doubt here
+//    @Column(name = "tenant_department_id")
+//    private Integer tenantDepartmentId; // TODO: we can delete this column
 
     @Column(name = "order_id")
     private String orderId;

@@ -20,12 +20,13 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ShippingInstructionRequest extends CommonRequest implements IRunnerRequest {
+    private Long id;
     private Long bookingId;
     private SIStatus status;
     private String shipperDeclaredValue;
     private String shipperDeclaredValueCurrency;
     private String blReleaseOffice;
-    private boolean originalSeaway;
+    private Boolean originalSeaway;
     private String originalFreightedCopies;
     private String originalUnFreightedCopies;
     private String seawayExpressFreightedCopies;
@@ -52,12 +53,12 @@ public class ShippingInstructionRequest extends CommonRequest implements IRunner
     private String reason;
     private String bLObjectStatus;
     private String userDefinedClauses;
-    private List<Containers> containersList;
-    private List<Packing> packingList;
+    private List<ContainerRequest> containersList;
+    private List<PackingRequest> packingList;
     private String totalContainerCount;
     private String totalPackageCount;
     private String totalShipmentWeight;
     private BigDecimal totalShipmentVolume;
     private List<EventsRequest> eventsList;
-    private boolean isSyncWithBlObject;
+    private Boolean isSyncWithBlObject;
 }
