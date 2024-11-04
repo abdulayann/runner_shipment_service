@@ -205,9 +205,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
                 request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
             }
-            request.setEntityTransferEnabledDate(null);
-            if(!oldEntity.get().getEntityTransfer() && request.getEntityTransfer()) {
-                request.setEntityTransferEnabledDate(LocalDateTime.now());
+            if (Boolean.TRUE.equals(request.getEntityTransfer())) {
+                request.setEntityTransferEnabledDate(Boolean.TRUE.equals(oldEntity.get().getEntityTransfer()) ? oldEntity.get().getEntityTransferEnabledDate() : LocalDateTime.now());
+            } else {
+                request.setEntityTransferEnabledDate(null);
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
@@ -705,11 +706,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
             Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getEntityTransfer();
             Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getEntityTransfer() != null) && shipmentSettingsPatchRequest.getEntityTransfer().orElse(false);
+            LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getEntityTransferEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setEntityTransfer(newEntityTransferFlag);
-            if(Boolean.FALSE.equals(oldEntityTransferFlag) && Boolean.TRUE.equals(newEntityTransferFlag)) {
-                oldShipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
-            } else if(Boolean.TRUE.equals(oldEntityTransferFlag) && Boolean.FALSE.equals(newEntityTransferFlag)) {
+            if(Boolean.TRUE.equals(newEntityTransferFlag)) {
+                oldShipmentSettingsDetails.setEntityTransferEnabledDate(Boolean.FALSE.equals(oldEntityTransferFlag) ? LocalDateTime.now(): oldEntityTransferEnabledDate);
+            } else {
                 oldShipmentSettingsDetails.setEntityTransferEnabledDate(null);
             }
             ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);
