@@ -1239,6 +1239,40 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void cloneShipment_nullPacks() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        // Mock
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        shipmentDetails.setPackingList(null);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
+                objectMapper.convertValue(shipmentDetails, ShipmentRequest.class));
+
+        ShipmentDetails mockShip = shipmentDetails;
+        mockShip.setHouseBill(null);
+        mockShip.setBookingNumber(null);
+        mockShip.setContainersList(null);
+        mockShip.setRoutingsList(null);
+        mockShip.setShipmentId(null);
+        mockShip.setMasterBill(null);
+        mockShip.setConsolidationList(null);
+        mockShip.setStatus(ShipmentStatus.Created.getValue());
+        mockShip.setConsolRef(null);
+        mockShip.setEventsList(null);
+        mockShip.setPackingList(null);
+        mockShip.setShipmentCreatedOn(LocalDateTime.now());
+
+        ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+
+        //Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
+        //Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipResponse), httpResponse);
+    }
+
+    @Test
     void generateCustomHouseBL_restrictHblGen() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
         mockShipmentSettings();
