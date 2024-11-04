@@ -4411,6 +4411,7 @@
   "SHIPMENT_SETTINGS": {
     "id": 63,
     "tenantId": 166,
+    "entityTransfer": true,
     "restrictHblGen": true,
     "printPhoneNumber": false,
     "housebillPrefix": "HBL",

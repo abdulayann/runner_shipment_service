@@ -552,4 +552,10 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "hide_manifest")
     private Boolean hideManifest = true;
+
+    @Column(name = "entity_transfer_enabled_date")
+    private LocalDateTime entityTransferEnabledDate = null;
+
+    @Column(name = "entity_transfer")
+    private Boolean entityTransfer = false;
 }

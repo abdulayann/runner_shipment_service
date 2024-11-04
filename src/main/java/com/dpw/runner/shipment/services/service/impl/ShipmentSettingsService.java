@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.mapper.ShipmentSettingsMapper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -33,6 +35,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -44,6 +47,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -95,6 +99,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     IShipmentSettingsRepository shipmentSettingsRepository;
     @Autowired
     ModelMapper modelMapper;
+    @Autowired
+    private ShipmentSettingsMapper shipmentSettingsMapper;
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -107,6 +113,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
+            shipmentSettingsDetails.setEntityTransferEnabledDate(null);
+            if(shipmentSettingsDetails.getEntityTransfer()) {
+                shipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
+            }
 
             if(shipmentSettingsDetails.getHblTermsConditionTemplate() != null) {
                 shipmentSettingsDetails.setHblTermsConditionTemplate(hblTermsConditionTemplateDao.saveEntityFromSettings(shipmentSettingsDetails.getHblTermsConditionTemplate(), shipmentSettingsDetails.getId(), true));
@@ -197,6 +207,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHblLockSettings() != null && oldEntity.get().getHblLockSettings() != null) {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
                 request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
+            }
+            request.setEntityTransferEnabledDate(null);
+            if(!oldEntity.get().getEntityTransfer() && request.getEntityTransfer()) {
+                request.setEntityTransferEnabledDate(LocalDateTime.now());
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
@@ -370,6 +384,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             request.setGuid(oldEntity.get().getGuid());
             if(request.getHideManifest() == null) {
                 request.setHideManifest(oldEntity.get().getHideManifest());
+            }
+            if(request.getEntityTransfer() == null) {
+                request.setEntityTransfer(oldEntity.get().getEntityTransfer());
+            }
+            if(request.getEntityTransferEnabledDate() == null) {
+                request.setEntityTransferEnabledDate(oldEntity.get().getEntityTransferEnabledDate());
             }
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
@@ -659,5 +679,64 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         shipmentSettingsDetails.setHideManifest(hideManifest);
         shipmentSettingsDao.save(shipmentSettingsDetails);
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = (ShipmentSettingsPatchRequest) commonRequestModel.getData();
+        if(shipmentSettingsPatchRequest == null) {
+            log.error(ShipmentSettingsConstants.UPDATE_REQUEST_EMPTY, LoggerHelper.getRequestIdFromMDC());
+        }
+
+        if(shipmentSettingsPatchRequest.getId() == null && shipmentSettingsPatchRequest.getTenantId() == null) {
+            log.error("Request Id and Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
+        if(shipmentSettingsPatchRequest.getTenantId() != null) {
+            ListCommonRequest newRequest = new ListCommonRequest();
+            newRequest.setPageNo(1);
+            newRequest.setPageSize(Integer.MAX_VALUE);
+            newRequest.setFilterCriteria(new ArrayList<>());
+            Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
+            Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
+            shipmentSettingsPage.get().toList();
+            if(!shipmentSettingsPage.get().toList().isEmpty())
+                oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
+        }
+        else {
+            long id = shipmentSettingsPatchRequest.getId();
+            oldEntity = shipmentSettingsDao.findById(id);
+        }
+        if(oldEntity.isEmpty()) {
+            log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, shipmentSettingsPatchRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        try {
+            ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
+            if (oldShipmentSettingsDetails.getEntityTransfer() && oldShipmentSettingsDetails.getEntityTransferEnabledDate()!=null) {
+                shipmentSettingsPatchRequest.setEntityTransferEnabledDate(null);
+                shipmentSettingsPatchRequest.setEntityTransfer(null);
+            }
+            shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
+            oldShipmentSettingsDetails.setEntityTransferEnabledDate(null);
+            if(oldShipmentSettingsDetails.getEntityTransfer()) {
+                oldShipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
+            }
+            ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);
+            try {
+                shipmentSettingsSync.sync(newShipmentSettingsDetails);
+            } catch (Exception e) {
+                log.error("Error Syncing Tenant Settings");
+            }
+            ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(newShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RuntimeException(e);
+        }
     }
 }
