@@ -2191,7 +2191,7 @@ public class ShipmentService implements IShipmentService {
         List<JobRequest> jobRequestList = shipmentRequest.getJobsList();
         List<NotesRequest> notesRequestList = shipmentRequest.getNotesList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
-        List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
+        List<RoutingsRequest> routingsRequestList = jsonHelper.convertValueToList(shipmentDetails.getRoutingsList(), RoutingsRequest.class);
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
         List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
