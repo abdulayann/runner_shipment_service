@@ -603,7 +603,7 @@ class EntityTransferServiceTest {
         consolidationDetails.getCarrierDetails().setOriginPort(null);
         consolidationDetails.getCarrierDetails().setDestinationPort(null);
         consolidationDetails.setReceivingBranch(null);
-        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -809,7 +809,7 @@ class EntityTransferServiceTest {
         shipmentDetails.getCarrierDetails().setOriginPort(null);
         shipmentDetails.getCarrierDetails().setDestinationPort(null);
         shipmentDetails.setReceivingBranch(null);
-        shipmentDetails.setTriangulationPartner(null);
+        shipmentDetails.setTriangulationPartnerList(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -948,7 +948,7 @@ class EntityTransferServiceTest {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
-        consolidationDetails.setTriangulationPartner(List.of(231L));
+        consolidationDetails.setTriangulationPartnerList(List.of(231L));
         ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
         shipmentDetailsDrt.setGuid(UUID.randomUUID());
         shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -963,7 +963,7 @@ class EntityTransferServiceTest {
         consolidationDetailsImp.setGuid(UUID.randomUUID());
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
-        consolidationDetailsImp.setTriangulationPartner(List.of(33L));
+        consolidationDetailsImp.setTriangulationPartnerList(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
         shipmentDetailsImp1.setGuid(UUID.randomUUID());
@@ -974,7 +974,7 @@ class EntityTransferServiceTest {
         consolidationDetailsImp1.setGuid(UUID.randomUUID());
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
-        consolidationDetailsImp1.setTriangulationPartner(List.of(33L));
+        consolidationDetailsImp1.setTriangulationPartnerList(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
         shipmentDetailsImp2.setGuid(UUID.randomUUID());
@@ -1018,7 +1018,7 @@ class EntityTransferServiceTest {
         originShipConsole.setGuid(UUID.randomUUID());
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
-        originShipConsole.setTriangulationPartner(List.of(33L));
+        originShipConsole.setTriangulationPartnerList(List.of(33L));
         originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
@@ -1028,7 +1028,7 @@ class EntityTransferServiceTest {
         originShipConsole1.setGuid(UUID.randomUUID());
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
-        originShipConsole1.setTriangulationPartner(List.of(33L));
+        originShipConsole1.setTriangulationPartnerList(List.of(33L));
         originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
@@ -1038,7 +1038,7 @@ class EntityTransferServiceTest {
         originShipConsole2.setGuid(UUID.randomUUID());
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
-        originShipConsole2.setTriangulationPartner(List.of(35L));
+        originShipConsole2.setTriangulationPartnerList(List.of(35L));
         originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
@@ -1053,7 +1053,7 @@ class EntityTransferServiceTest {
         originShipConsole3.setGuid(UUID.randomUUID());
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
-        originShipConsole3.setTriangulationPartner(List.of(33L));
+        originShipConsole3.setTriangulationPartnerList(List.of(33L));
         originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
 
         ShipmentDetails receivingShipment = new ShipmentDetails();

@@ -1628,8 +1628,8 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getAircraftType(), oldEntity.getCarrierDetails().getAircraftType()) ||
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
-                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartner()).orElse(List.of()))
-                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartner()).orElse(List.of()))) ||
+                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of()))
+                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartnerList()).orElse(List.of()))) ||
                         !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner()) ||
                         !Objects.equals(console.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber()) ||
                         !Objects.equals(console.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
@@ -1647,7 +1647,7 @@ public class ConsolidationService implements IConsolidationService {
                 i.setDirection(console.getShipmentType());
                 i.setBookingNumber(console.getCarrierBookingRef());
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
-                    i.setTriangulationPartner(console.getTriangulationPartner());
+                    i.setTriangulationPartnerList(console.getTriangulationPartnerList());
                     i.setDocumentationPartner(console.getDocumentationPartner());
                     if (!Boolean.TRUE.equals(i.getIsReceivingBranchAdded()))
                         i.setReceivingBranch(console.getReceivingBranch());
@@ -3901,10 +3901,10 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setReceivingBranch(null);
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
-        if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartner())
-                && consolidationDetails.getTriangulationPartner().size() == 1
-                && Long.valueOf(0).equals(consolidationDetails.getTriangulationPartner().get(0)))
-            consolidationDetails.setTriangulationPartner(null);
+        if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartnerList())
+                && consolidationDetails.getTriangulationPartnerList().size() == 1
+                && Long.valueOf(0).equals(consolidationDetails.getTriangulationPartnerList().get(0)))
+            consolidationDetails.setTriangulationPartnerList(null);
 
         if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, commonUtils.getShipmentSettingFromContext())) {
             List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());

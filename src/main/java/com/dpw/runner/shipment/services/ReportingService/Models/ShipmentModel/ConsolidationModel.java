@@ -162,8 +162,8 @@ public class ConsolidationModel implements IDocumentModel {
     private long sourceTenantId;
     @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
-    @JsonProperty("TriangulationPartner")
-    private List<Long> triangulationPartner;
+    @JsonProperty("TriangulationPartnerList")
+    private List<Long> triangulationPartnerList;
     @JsonProperty("ReceivingBranch")
     private long receivingBranch;
     @JsonProperty("IntraBranch")

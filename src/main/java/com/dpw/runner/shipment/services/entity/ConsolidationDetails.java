@@ -252,7 +252,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
     @BatchSize(size = 50)
     @TenantIdData
-    private List<Long> triangulationPartner;
+    private List<Long> triangulationPartnerList;
 
     @Column(name = "receiving_branch")
     @TenantIdData

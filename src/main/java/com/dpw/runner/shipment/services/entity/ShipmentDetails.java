@@ -272,7 +272,7 @@ public class ShipmentDetails extends MultiTenancy {
     @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
     @BatchSize(size = 50)
     @TenantIdData
-    private List<Long> triangulationPartner;
+    private List<Long> triangulationPartnerList;
 
     @Column(name = "receiving_branch")
     @TenantIdData

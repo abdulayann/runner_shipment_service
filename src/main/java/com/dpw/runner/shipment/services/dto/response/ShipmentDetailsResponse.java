@@ -89,7 +89,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
-    private List<Long> triangulationPartner;
+    private List<Long> triangulationPartnerList;
     private Long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;

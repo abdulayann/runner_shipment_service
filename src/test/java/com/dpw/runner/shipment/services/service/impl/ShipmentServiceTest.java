@@ -6373,7 +6373,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6404,7 +6404,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6441,7 +6441,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -7679,7 +7679,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);

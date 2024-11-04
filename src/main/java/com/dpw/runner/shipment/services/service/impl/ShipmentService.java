@@ -2080,10 +2080,10 @@ public class ShipmentService implements IShipmentService {
 
         if(shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
             shipmentDetails.setReceivingBranch(null);
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartner())
-                && shipmentDetails.getTriangulationPartner().size() == 1
-                && Long.valueOf(0).equals(shipmentDetails.getTriangulationPartner().get(0)))
-            shipmentDetails.setTriangulationPartner(null);
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartnerList())
+                && shipmentDetails.getTriangulationPartnerList().size() == 1
+                && Long.valueOf(0).equals(shipmentDetails.getTriangulationPartnerList().get(0)))
+            shipmentDetails.setTriangulationPartnerList(null);
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
             shipmentDetails.setDocumentationPartner(null);
 
@@ -4809,7 +4809,7 @@ public class ShipmentService implements IShipmentService {
                 .consolRef(consolidation.getConsolidationNumber())
                 .receivingBranch(consolidation.getReceivingBranch())
                 .documentationPartner(consolidation.getDocumentationPartner())
-                .triangulationPartner(consolidation.getTriangulationPartner())
+                .triangulationPartnerList(consolidation.getTriangulationPartnerList())
                 .build();
 
         if (consolidation.getConsolidationAddresses() != null) {
