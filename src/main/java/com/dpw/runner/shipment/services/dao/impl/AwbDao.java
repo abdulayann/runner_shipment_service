@@ -361,7 +361,6 @@ public class AwbDao implements IAwbDao {
     @Transactional
     public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
         Awb awb = null;
-        String destinationPortLocCode = null;
         List<Awb> awbList;
         if(shipmentId != null) {
             awbList = findByShipmentId(shipmentId);
