@@ -366,7 +366,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").enableRouteMaster(true).build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
@@ -1044,6 +1044,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false);
 
         ConsolidationDetails consolidationDetails = testConsol;
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
@@ -4397,6 +4398,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+        mockShipmentSettings();
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();

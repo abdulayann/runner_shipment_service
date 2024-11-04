@@ -1594,16 +1594,19 @@ class PackingServiceTest extends CommonMocks {
         achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
 
         AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+        var packingServiceSpy = Mockito.spy(packingService);
 
         // Mocking
         mockTenantSettings();
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
         when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(null);
         when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        doReturn(new PackSummaryResponse()).when(packingServiceSpy).calculatePackSummary(anyList(), any(), any(), any());
 
         try{
-            var response = packingService.calculatePacksUtilisationForConsolidation(request);
-            assertNull(response);
+            var response = packingServiceSpy.calculatePacksUtilisationForConsolidation(request);
+            assertNull(response.getAchievedVolume());
+            assertNull(response.getAchievedWeight());
         }
         catch (Exception e) {
             fail(e);

@@ -688,7 +688,7 @@ public class HawbReport extends IReport{
         if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
             var party = hawbModel.getAwb().getAwbNotifyPartyInfo().get(0);
             dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
-            dictionary.put(AWB_NOTIFY_PARTY_NAME, hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() != null ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
+            dictionary.put(AWB_NOTIFY_PARTY_NAME, (party.getName() != null && !party.getName().isEmpty()) ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }
 
         return dictionary;

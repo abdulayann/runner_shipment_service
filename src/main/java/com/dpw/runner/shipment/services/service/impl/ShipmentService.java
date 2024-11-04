@@ -326,6 +326,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
+    @Value("${include.master.data}")
+    private Boolean includeMasterData;
+
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
@@ -521,7 +524,7 @@ public class ShipmentService implements IShipmentService {
                 response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
             responseList.add(response);
         });
-        if(getMasterData) {
+        if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
                 double _start = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
@@ -762,7 +765,7 @@ public class ShipmentService implements IShipmentService {
             );
 
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)), executorService);
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1617,7 +1620,7 @@ public class ShipmentService implements IShipmentService {
 
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
             ShipmentDetails finalEntity1 = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)), executorService);
             ShipmentDetails finalEntity = entity;
             return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
@@ -1706,7 +1709,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
-        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)));
+        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)), executorService);
         List<Long> tempConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
         boolean syncConsole = false;
@@ -1748,7 +1751,7 @@ public class ShipmentService implements IShipmentService {
 
         if(Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()))
             airDGValidations(shipmentDetails, oldEntity, removedConsolIds, isNewConsolAttached, consolidationDetailsRequests);
-        if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !Boolean.TRUE.equals(oldEntity.getContainsHazardous()) &&
+        if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && (Objects.isNull(oldEntity) || !Boolean.TRUE.equals(oldEntity.getContainsHazardous())) &&
                 !Boolean.TRUE.equals(isNewConsolAttached.getValue()) && !listIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
             dgValidations(shipmentDetails, consolidationDetails1, 0);
@@ -2188,7 +2191,7 @@ public class ShipmentService implements IShipmentService {
         List<JobRequest> jobRequestList = shipmentRequest.getJobsList();
         List<NotesRequest> notesRequestList = shipmentRequest.getNotesList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
-        List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
+        List<RoutingsRequest> routingsRequestList = jsonHelper.convertValueToList(shipmentDetails.getRoutingsList(), RoutingsRequest.class);
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
         List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
@@ -4286,7 +4289,7 @@ public class ShipmentService implements IShipmentService {
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
-            if(getMasterData) {
+            if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, null)), executorService);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, null)), executorService);
                 var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, null)), executorService);
@@ -5720,7 +5723,7 @@ public class ShipmentService implements IShipmentService {
             if(Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
-            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+            List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationIdAll(consoleId);
             for(ConsoleShipmentMapping consoleShipmentMapping: consoleShipmentMappingList) {
                 if(consoleShipmentMapping.getRequestedType() == null) {
                     attachedShipmentCurrentBranchCount++;
@@ -7244,6 +7247,7 @@ public class ShipmentService implements IShipmentService {
 
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
 
@@ -7257,6 +7261,13 @@ public class ShipmentService implements IShipmentService {
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
         shipmentDao.save(shipment, false);
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
+        }
+        pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
 
         return ResponseHelper.buildSuccessResponse();
