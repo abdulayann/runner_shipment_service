@@ -8395,6 +8395,7 @@ ShipmentServiceTest extends CommonMocks {
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), eq(RoutingsRequest.class))).thenReturn(List.of(new RoutingsRequest()));
         when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(shipmentOrderList);
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(shipmentOrderList);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
