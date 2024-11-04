@@ -456,4 +456,8 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=32, message = "max size is 32 for department")
     @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
     private String department;
+
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
 }
