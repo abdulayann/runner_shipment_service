@@ -14,13 +14,12 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
@@ -34,6 +33,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -136,6 +136,12 @@ public class CommonUtils {
 
     @Autowired
     private IV1Service iv1Service;
+
+    @Autowired
+    IShipmentDao shipmentDao;
+
+    @Autowired
+    IConsolidationDetailsDao consolidationDetailsDao;
 
 
 
@@ -1689,6 +1695,28 @@ public class CommonUtils {
             return;
         for(MasterListRequest masterListRequest : masterListRequests) {
             keys.add(masterListRequest.ItemValue + '#' + MasterDataType.getNameFromDescription(masterListRequest.ItemType));
+        }
+    }
+
+    public void checkForMandatoryHsCodeForUAE(Awb awb) {
+        String destinationPortLocCode = null;
+        if(awb.getShipmentId() != null) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
+            if(shipmentDetails.isPresent())
+                destinationPortLocCode = shipmentDetails.get().getCarrierDetails().getDestinationPortLocCode();
+        } else if(awb.getConsolidationId() != null) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
+            if(consolidationDetails.isPresent())
+                destinationPortLocCode = consolidationDetails.get().getCarrierDetails().getDestinationPortLocCode();
+        }
+
+        if(destinationPortLocCode != null && destinationPortLocCode.contains("UAE")) {
+            List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
+            awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
+                if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
+                    throw new ValidationException("Please enter the HS code in the goods description of the cargo information tab.");
+                }
+            });
         }
     }
 

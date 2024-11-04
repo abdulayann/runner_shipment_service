@@ -82,6 +82,8 @@ public class AwbDao implements IAwbDao {
     private EntityManager entityManager;
     private V1ServiceUtil v1ServiceUtil;
     private ModelMapper modelMapper;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Autowired
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
@@ -363,15 +365,9 @@ public class AwbDao implements IAwbDao {
         List<Awb> awbList;
         if(shipmentId != null) {
             awbList = findByShipmentId(shipmentId);
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
-            if(shipmentDetails.isPresent())
-                destinationPortLocCode = shipmentDetails.get().getCarrierDetails().getDestinationPortLocCode();
         }
         else {
             awbList = findByConsolidationId(consolidationId);
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolidationId);
-            if(consolidationDetails.isPresent())
-                destinationPortLocCode = consolidationDetails.get().getCarrierDetails().getDestinationPortLocCode();
         }
         awb = !awbList.isEmpty() ? awbList.get(0) : null;
 
@@ -381,25 +377,13 @@ public class AwbDao implements IAwbDao {
                 awb.setPrintType(printType);
             if(Boolean.TRUE.equals(isOriginal)) {
                 awb.setOriginalPrintedAt(printedAt);
-                checkForMandatoryHsCodeForUAE(awb, destinationPortLocCode);
+                commonUtils.checkForMandatoryHsCodeForUAE(awb);
             }
             try {
                 save(awb);
             } catch (Exception e) {
                 log.error("Exception occurred while saving print information for awb : {}", e.getMessage());
             }
-        }
-    }
-
-    private void checkForMandatoryHsCodeForUAE(Awb awb, String destinationPortLocCode) {
-        //String destinationCountry = awb.getAwbShipmentInfo().getDestinationAirport();
-        if(destinationPortLocCode != null && destinationPortLocCode.startsWith("AE")) {
-            List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
-            awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
-                if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
-                    throw new ValidationException("Please enter the HS code in the goods description of the cargo information tab.");
-                }
-            });
         }
     }
 
