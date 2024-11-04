@@ -619,6 +619,36 @@ class ShipmentSettingsServiceTest extends CommonMocks {
     }
 
     @Test
+    void partialUpdate_Success_WithOldEntityTransferFalse(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(false));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setEntityTransfer(false);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_Success_WithOldEntityTransferTrue(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setEntityTransfer(true);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void partialUpdate_failure(){
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(1L);
