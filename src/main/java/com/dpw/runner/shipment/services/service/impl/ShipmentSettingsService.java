@@ -701,7 +701,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            shipmentSettingsPage.get().toList();
             if(!shipmentSettingsPage.get().toList().isEmpty())
                 oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
