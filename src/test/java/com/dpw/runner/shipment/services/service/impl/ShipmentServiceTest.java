@@ -20,8 +20,8 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
@@ -1227,6 +1227,40 @@ ShipmentServiceTest extends CommonMocks {
         mockShip.setStatus(ShipmentStatus.Created.getValue());
         mockShip.setConsolRef(null);
         mockShip.setEventsList(null);
+        mockShip.setShipmentCreatedOn(LocalDateTime.now());
+
+        ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+
+        //Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
+        //Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipResponse), httpResponse);
+    }
+
+    @Test
+    void cloneShipment_nullPacks() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        // Mock
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        shipmentDetails.setPackingList(null);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
+                objectMapper.convertValue(shipmentDetails, ShipmentRequest.class));
+
+        ShipmentDetails mockShip = shipmentDetails;
+        mockShip.setHouseBill(null);
+        mockShip.setBookingNumber(null);
+        mockShip.setContainersList(null);
+        mockShip.setRoutingsList(null);
+        mockShip.setShipmentId(null);
+        mockShip.setMasterBill(null);
+        mockShip.setConsolidationList(null);
+        mockShip.setStatus(ShipmentStatus.Created.getValue());
+        mockShip.setConsolRef(null);
+        mockShip.setEventsList(null);
+        mockShip.setPackingList(null);
         mockShip.setShipmentCreatedOn(LocalDateTime.now());
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
@@ -6495,7 +6529,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6520,7 +6554,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6545,7 +6579,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6556,7 +6590,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
     @Test
@@ -6567,7 +6601,7 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails.setInterBranchConsole(false);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
 
@@ -6646,6 +6680,26 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void retrieveByMeasurmentBasisTest4() throws RunnerException {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setChargeableWeight(BigDecimal.TEN);
+        packSummaryResponse.setPacksChargeableWeightUnit(Constants.WEIGHT_UNIT_KG);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
+        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(packSummaryResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        MeasurementBasisResponse response = objectMapper.convertValue(runnerResponse.getData(), MeasurementBasisResponse.class);
+
+        assertEquals(BigDecimal.TEN, response.getChargable());
+        assertEquals(Constants.WEIGHT_UNIT_KG, response.getChargeableUnit());
+    }
+
+    @Test
     void testGetAllShipments_Success_CurrentBranch() {
         // Setup
         Long consoleId = 1L;
@@ -6657,7 +6711,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6665,7 +6719,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6684,7 +6738,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6692,7 +6746,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6711,7 +6765,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6719,7 +6773,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6738,7 +6792,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6746,7 +6800,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6765,7 +6819,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6773,7 +6827,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -8395,6 +8449,7 @@ ShipmentServiceTest extends CommonMocks {
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), eq(RoutingsRequest.class))).thenReturn(List.of(new RoutingsRequest()));
         when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(shipmentOrderList);
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(shipmentOrderList);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -8808,15 +8863,21 @@ ShipmentServiceTest extends CommonMocks {
         shipment.setId(1L);
         shipment.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipment));
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+
+        var shipmentServiceSpy = Mockito.spy(shipmentService);
+        doNothing().when(shipmentServiceSpy).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        mockTenantSettings();
 
         // Act
-        ResponseEntity<IRunnerResponse> response = shipmentService.cancel(commonRequestModel);
+        ResponseEntity<IRunnerResponse> response = shipmentServiceSpy.cancel(commonRequestModel);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(ShipmentStatus.Cancelled.getValue(), shipment.getStatus());
         verify(shipmentDao).save(shipment, false);
         verify(shipmentSync).sync(any(), any(), any(), any(), anyBoolean());
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(anyLong());
     }
 
     @Test
@@ -8831,6 +8892,38 @@ ShipmentServiceTest extends CommonMocks {
             shipmentService.cancel(commonRequestModel);
         });
         assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, exception.getMessage());
+    }
+
+    @Test
+    void retrieveByIdWithShipmentStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(1).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertEquals(ShipmentStatus.fromValue(1).toString(), shipmentDetailsResponse.getShipmentStatus());
+    }
+
+    @Test
+    void retrieveByIdWithInvalidStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(Integer.MAX_VALUE).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertNull(shipmentDetailsResponse.getShipmentStatus());
     }
 
 }

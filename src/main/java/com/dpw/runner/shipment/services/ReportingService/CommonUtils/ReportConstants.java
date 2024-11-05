@@ -1165,6 +1165,7 @@ public class ReportConstants {
     public static final String  ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
     public static final String IS_DIRECT_SHIPMENT = "IsDirect";
     public static final String IS_NON_DIRECT_SHIPMENT = "IsNonDirect";
+    public static final String IS_CONSOLIDATION = "IsConsolidation";
 
     /*
     Transport Instruction fields
@@ -1246,5 +1247,26 @@ public class ReportConstants {
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 
     public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
+    public static final String ADDITIONAL_SECURITY_INFORMATION = "AdditionalSecurityInformation";
+    public static final String TRANSIT_AIRPORTS = "TransitAirports";
+    public static final String SECURITY_STATUS_RECEIVED_FROM = "ReceivedFrom";
+    public static final String AOM_FREE_TEXT = "AnyOtherMeans";
+    public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
+
+    public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
+    public static final String INSERT_DATE = "InsertDate";
+    public static final String PWEIGHT_PACKAGES = "PWeightPackages";
+    public static final String SERVICE_LEVEL = "ServiceLevel";
+    public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
+    public static final String TOTAL_PACKAGES = "TotalPackages";
+    public static final String CONTAINER_TYPE_DESCRIPTION = "ContainerTypeDescription";
+
+    //Routing Fields
+    public static final String ROUTINGS = "Routings";
+    public static final String MODE = "Mode";
+    public static final String POLCODE = "PolCode";
+    public static final String PODCODE = "PodCode";
+    public static final String ETD_FOR_PRINT = "ETDForPrint";
+    public static final String ETA_FOR_PRINT = "ETAForPrint";
 
 }

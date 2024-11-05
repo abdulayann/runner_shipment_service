@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.patchRequest;
+package com.dpw.runner.shipment.services.dto.patchrequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
@@ -129,4 +129,5 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private List<Long> shipmentIds;
     private List<PartiesRequest> consolidationAddresses;
     private JsonNullable<Boolean> openForAttachment;
+    private JsonNullable<Boolean> isNetworkFile;
 }

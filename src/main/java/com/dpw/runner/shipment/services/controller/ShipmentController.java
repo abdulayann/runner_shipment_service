@@ -10,7 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -607,10 +607,10 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached) {
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = true) Long consoleId, @RequestParam(required = true) boolean isAttached, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Cosole Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached);
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, isAttached, getMasterData);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }

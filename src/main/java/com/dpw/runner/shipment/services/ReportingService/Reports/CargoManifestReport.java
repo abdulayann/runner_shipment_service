@@ -1,17 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -241,8 +241,11 @@ public class CargoManifestReport extends IReport{
                     v.put(ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.VGMWeight) && v.get(ReportConstants.VGMWeight) != null)
                     v.put(ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
+                if (v.containsKey(CONTAINER_TYPE))
+                    v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE));
             }
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+            dictionary.put(COMMON_CONTAINERS, valuesContainer);
             dictionary.put(ReportConstants.TotalCntrWeight, ConvertToWeightNumberFormat(Total_GrossWeight, v1TenantSettingsResponse));
             dictionary.put(ReportConstants.TotalCntrVolume, ConvertToVolumeNumberFormat(Total_GrossVolume, v1TenantSettingsResponse));
             dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(Total_ContainerCount)));
@@ -274,7 +277,59 @@ public class CargoManifestReport extends IReport{
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
+        if(cargoManifestModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
 
+        if (cargoManifestModel.shipmentDetails.getConsolidationList() != null && !cargoManifestModel.shipmentDetails.getConsolidationList().isEmpty()) {
+            ConsolidationModel consol = cargoManifestModel.shipmentDetails.getConsolidationList().get(0);
+            var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+
+            dictionary.put(CTO_ADDRESS, ctoAddress);
+            dictionary.put(CONSOLIDATION_NUMBER, consol.getConsolidationNumber());
+            dictionary.put(AGENT_REFERENCE, consol.getAgentReference());
+            UnlocationsResponse arrival = consol.getArrivalDetails() == null ? null : getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
+            if (arrival != null)
+                dictionary.put(LAST_FOREIGN_PORT_NAME, arrival.getLocCode());
+        }
+
+        dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(PWEIGHT_PACKAGES, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getWeightUnit());
+        dictionary.put(PVOLUME_UNIT, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolumetricWeight(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getVolumetricWeightUnit());
+        dictionary.put(PCHARGE_UNIT, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getChargeableUnit());
+        dictionary.put(TOTAL_PACKAGES, cargoManifestModel.shipmentDetails.getNoOfPacks());
+        dictionary.put(PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
+        dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingNumber());
+        dictionary.put(SERVICE_LEVEL, cargoManifestModel.shipmentDetails.getServiceType());
+
+        if (cargoManifestModel.shipmentDetails.getRoutingsList() != null && !cargoManifestModel.shipmentDetails.getRoutingsList().isEmpty()) {
+            List<RoutingsModel> mainCarriageRouts = cargoManifestModel.shipmentDetails.getRoutingsList().stream()
+                    .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
+                    .toList();
+            if (!mainCarriageRouts.isEmpty()) {
+                List<Map<String, Object>> mainCarriageRoutsList = new ArrayList<>();
+                for (RoutingsModel route : mainCarriageRouts) {
+                    Map<String, Object> routeMap = new HashMap<>();
+                    routeMap.put(MODE, route.getMode());
+                    routeMap.put(VESSEL_NAME, route.getVesselName());
+                    routeMap.put(VOYAGE, route.getVoyage());
+                    routeMap.put(CARRIER, route.getCarrier());
+                    routeMap.put(POLCODE, route.getPol());
+                    routeMap.put(PODCODE, route.getPod());
+                    routeMap.put(ETD_FOR_PRINT, route.getEtd());
+                    routeMap.put(ETA_FOR_PRINT, route.getEta());
+                    mainCarriageRoutsList.add(routeMap);
+                }
+                dictionary.put(ROUTINGS, mainCarriageRoutsList);
+            }
+        }
+
+        if (cargoManifestModel.shipmentDetails.getReferenceNumbersList() != null && !cargoManifestModel.shipmentDetails.getReferenceNumbersList().isEmpty()) {
+            Optional<ReferenceNumbersModel> refNumberModel = cargoManifestModel.shipmentDetails.getReferenceNumbersList().stream()
+                    .filter(i -> ReportConstants.CEN.equals(i.getType()))
+                    .reduce((first, second) -> second);
+            refNumberModel.ifPresent(referenceNumbersModel -> dictionary.put(CUSTOMS_ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber()));
+        }
         return dictionary;
     }
 

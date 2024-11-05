@@ -1211,8 +1211,7 @@ class CustomerBookingServiceTest extends CommonMocks {
 
     @Test
     void testCancel() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        CustomerStatusUpdateRequest request = CustomerStatusUpdateRequest.builder().id(1l).bookingStatus(BookingStatus.CANCELLED).build();
-        when(jsonHelper.convertValue(any(), eq(CustomerBookingRequest.class))).thenReturn(CustomerBookingRequest.builder().id(1l).bookingStatus(BookingStatus.CANCELLED).build());
+        CustomerBookingRequest request = CustomerBookingRequest.builder().id(1l).bookingStatus(BookingStatus.CANCELLED).build();
 
         var mockBookingEntity = customerBooking;
         mockBookingEntity.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);

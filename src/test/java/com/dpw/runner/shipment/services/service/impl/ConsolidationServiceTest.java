@@ -23,7 +23,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
@@ -252,6 +252,7 @@ import static org.mockito.Mockito.*;
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         objectMapperTest = JsonTestUtility.getMapper();
+        modelMapperTest.getConfiguration().setAmbiguityIgnored(true);
     }
 
     @BeforeEach
@@ -260,7 +261,7 @@ import static org.mockito.Mockito.*;
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").enableRouteMaster(true).build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
         testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
@@ -938,6 +939,7 @@ import static org.mockito.Mockito.*;
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false);
 
         ConsolidationDetails consolidationDetails = testConsol;
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
@@ -4318,6 +4320,7 @@ import static org.mockito.Mockito.*;
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
+        mockShipmentSettings();
 
         Map<String, Map<String, Object>> addressMap = new HashMap<>();
         Map<String, Object> map = new HashMap<>();
@@ -5124,11 +5127,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
-                List.of(consolidationListResponse),
-                1, 1));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
 
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -5139,7 +5140,7 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -5151,10 +5152,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseEntity.of(Optional.empty()));
-
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -5165,11 +5165,9 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(spyService.list(any())).thenReturn(ResponseHelper.buildListSuccessResponse(
-                List.of(),
-                1, 1));
+        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
 
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel);
+        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

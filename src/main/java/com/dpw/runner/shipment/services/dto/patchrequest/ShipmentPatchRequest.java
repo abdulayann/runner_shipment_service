@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.patchRequest;
+package com.dpw.runner.shipment.services.dto.patchrequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
@@ -110,4 +110,5 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<String> orderManagementId;
     private JsonNullable<String> orderManagementNumber;
     private List<ShipmentOrderRequest> shipmentOrders;
+    private JsonNullable<Boolean> isNetworkFile;
 }

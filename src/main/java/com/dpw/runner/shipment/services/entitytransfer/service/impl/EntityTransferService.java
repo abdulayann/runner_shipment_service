@@ -510,7 +510,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(!shipmentGuids.isEmpty()) {
             try {
                 var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())));
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())), executorService);
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }

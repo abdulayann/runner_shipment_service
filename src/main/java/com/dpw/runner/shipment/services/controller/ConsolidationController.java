@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -542,10 +542,10 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.LIST_SHIPMENT_CONSOLIDATION)
-    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(@RequestParam Long shipId) {
+    public ResponseEntity<IRunnerResponse> listRequestedConsolidationForShipment(@RequestParam Long shipId, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(shipId).build();
-            return consolidationService.listRequestedConsolidationForShipment(CommonRequestModel.buildRequest(request));
+            return consolidationService.listRequestedConsolidationForShipment(CommonRequestModel.buildRequest(request), getMasterData);
         } catch (Exception e) {
             log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());

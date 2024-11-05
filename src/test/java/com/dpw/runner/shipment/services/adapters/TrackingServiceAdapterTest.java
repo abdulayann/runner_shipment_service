@@ -40,6 +40,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -97,6 +98,9 @@ class TrackingServiceAdapterTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private CommonUtils commonUtils;
 
     @InjectMocks
     private TrackingServiceAdapter trackingServiceAdapter;

@@ -243,4 +243,6 @@ public class ConsolidationModel implements IDocumentModel {
     private String consoleGrossWeightAndUnit;
     @JsonProperty("Sci")
     private String sci;
+    @JsonProperty("AdditionalSecurityInformation")
+    private String additionalSecurityInformation;
 }

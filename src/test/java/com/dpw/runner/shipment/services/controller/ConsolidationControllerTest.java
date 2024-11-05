@@ -894,9 +894,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment() {
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -904,9 +904,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment2(){
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenThrow(new RuntimeException());
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -914,9 +914,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment3() throws RunnerException {
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
