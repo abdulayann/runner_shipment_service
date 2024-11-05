@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -33,6 +34,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -64,6 +66,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import javax.validation.ConstraintViolation;
@@ -1695,6 +1698,54 @@ public class CommonUtils {
         for(MasterListRequest masterListRequest : masterListRequests) {
             keys.add(masterListRequest.ItemValue + '#' + MasterDataType.getNameFromDescription(masterListRequest.ItemType));
         }
+    }
+
+    /**
+     * @param eventsList
+     * Updates the input events list with description from the master data
+     */
+    public void updateEventWithMasterDataDescription(List<Events> eventsList) {
+        if(CollectionUtils.isEmpty(eventsList))
+            return;
+
+        var eventCodeDescriptionMap = getEventDescription(eventsList.stream().map(Events::getEventCode).toList());
+        // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
+        // or missing entry in the master-data
+        eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
+    }
+
+    /**
+     * @param eventCodes : list of input event codes
+     * @return Map<String, String>
+     * Helper function that returns map of event code vs description
+     */
+    private Map<String, String> getEventDescription(List<String> eventCodes) {
+        Map<String, String> eventCodeDescriptionMap = new HashMap<>();
+        log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+        try {
+            List<Object> masterDataListCriteria = Arrays.asList(
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_TYPE),
+                            "=",
+                            MasterDataType.ORDER_EVENTS.getId()
+                    ),
+                    "and",
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_VALUE),
+                            "IN",
+                            List.of(eventCodes)
+                    )
+            );
+            CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder().criteriaRequests(masterDataListCriteria).build();
+            var v1DataResponse = iv1Service.fetchMasterData(v1ListRequest);
+            List<EntityTransferMasterLists> masterData = jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class);
+            masterData.forEach(i -> eventCodeDescriptionMap.put(i.getItemValue(), i.getItemDescription()));
+        }
+        catch (Exception e) {
+            log.error("EventService : Error fetching event description from event codes", e);
+        }
+
+        return eventCodeDescriptionMap;
     }
 
 }

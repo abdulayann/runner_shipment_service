@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -2725,5 +2726,37 @@ class CommonUtilsTest {
         var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).bookingTransportModeSea(true).build();
         var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
         assertTrue(response);
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescription() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "mock description";
+        Events mockEvent = Events.builder().eventCode("EV1").build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        V1DataResponse mockV1DataResponse = new V1DataResponse();
+        when(iv1Service.fetchMasterData(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(
+                EntityTransferMasterLists.builder().ItemValue(mockEventCode).ItemDescription(mockEventDescription).build()
+        ));
+
+        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderDescriptionInCaseOfExceptionFromV1() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "older description";
+        Events mockEvent = Events.builder().eventCode(mockEventCode).description(mockEventDescription).build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
+
+        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
     }
 }
