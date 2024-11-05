@@ -268,8 +268,11 @@ public class BookingIntegrationsUtility {
                 //.vesselName(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 //.voyage(carrierDetails.getVoyage())
                 .load(createLoad(customerBooking))
-                .route(createRoute(customerBooking))
+                //.route(createRoute(customerBooking))
                 .build();
+        if(customerBooking.getRoutingList() != null && !customerBooking.getRoutingList().isEmpty()) {
+            platformCreateRequest.setRoute(createRoute(customerBooking));
+        }
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
 
