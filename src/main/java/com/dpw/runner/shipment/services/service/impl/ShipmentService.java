@@ -4406,6 +4406,8 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setOceanDGStatus(null);
             cloneShipmentDetails.setCreatedBy(null);
             cloneShipmentDetails.setShipmentOrders(null);
+            if(!Objects.isNull(cloneShipmentDetails.getPackingList()))
+                cloneShipmentDetails.getPackingList().forEach(e -> e.setId(null));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
