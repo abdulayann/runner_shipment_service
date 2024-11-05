@@ -214,4 +214,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isReceivingBranchAdded;
     private OceanDGStatus oceanDGStatus;
     private Boolean syncRoutingFromConsolidation;
+    private Boolean isNetworkFile;
 }
