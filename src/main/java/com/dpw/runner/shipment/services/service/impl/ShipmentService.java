@@ -2822,7 +2822,9 @@ public class ShipmentService implements IShipmentService {
             }
             if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
+                consolidationDetails.getCarrierDetails().setOriginLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
                 consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
+                consolidationDetails.getCarrierDetails().setDestinationLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
             }
             consolidationDetails.setShipmentType(shipmentDetails.getDirection());
             consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
@@ -2859,6 +2861,12 @@ public class ShipmentService implements IShipmentService {
                             consolidationDetails.setSendingAgent(null);
                     }
                 }
+            }
+            if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
+                consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
+            }
+            if(!commonUtils.checkIfPartyExists(consolidationDetails.getReceivingAgent())) {
+                consolidationDetails.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
             }
             List<Routings> routings = new ArrayList<>();
             if(shipmentDetails.getRoutingsList() != null && shipmentDetails.getRoutingsList().size() > 0)
@@ -4661,6 +4669,12 @@ public class ShipmentService implements IShipmentService {
             parties.setId(null);
             parties.setGuid(null);
             shipment.getAdditionalDetails().setExportBroker(parties);
+        }
+        if(!commonUtils.checkIfPartyExists(shipment.getAdditionalDetails().getImportBroker())) {
+            shipment.getAdditionalDetails().setImportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getDestinationLocCode()));
+        }
+        if(!commonUtils.checkIfPartyExists(shipment.getAdditionalDetails().getExportBroker())) {
+            shipment.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getOriginLocCode()));
         }
 
         //Generate HBL

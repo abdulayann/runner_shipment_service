@@ -101,6 +101,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private AllocationsRequest allocations;
     private ArrivalDepartureDetailsRequest arrivalDetails;
     private ArrivalDepartureDetailsRequest departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesRequest sendingAgent;
     private PartiesRequest receivingAgent;
     private PartiesRequest borrowedFrom;
