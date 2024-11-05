@@ -111,7 +111,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
             shipmentSettingsDetails.setEntityTransferEnabledDate(null);
-            if(shipmentSettingsDetails.getEntityTransfer()) {
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getEntityTransfer())) {
                 shipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
             }
 
@@ -386,7 +386,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getEntityTransfer() == null) {
                 request.setEntityTransfer(oldEntity.get().getEntityTransfer());
             }
-            if(request.getEntityTransferEnabledDate() == null) {
+            if(request.getEntityTransferEnabledDate() == null && oldEntity.get().getEntityTransferEnabledDate() !=null) {
                 request.setEntityTransferEnabledDate(oldEntity.get().getEntityTransferEnabledDate());
             }
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
