@@ -8840,4 +8840,36 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, exception.getMessage());
     }
 
+    @Test
+    void retrieveByIdWithShipmentStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(1).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertEquals(ShipmentStatus.fromValue(1).toString(), shipmentDetailsResponse.getShipmentStatus());
+    }
+
+    @Test
+    void retrieveByIdWithInvalidStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(Integer.MAX_VALUE).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertNull(shipmentDetailsResponse.getShipmentStatus());
+    }
+
 }
