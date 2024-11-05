@@ -389,6 +389,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getEntityTransferEnabledDate() == null && oldEntity.get().getEntityTransferEnabledDate() !=null) {
                 request.setEntityTransferEnabledDate(oldEntity.get().getEntityTransferEnabledDate());
             }
+            if(request.getIsNetworkTransferEntityEnabled() == null)
+                request.setIsNetworkTransferEntityEnabled(oldEntity.get().getIsNetworkTransferEntityEnabled());
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
                 request.getHawbLockSettings().setGuid(oldEntity.get().getHawbLockSettings().getGuid());

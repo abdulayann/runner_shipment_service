@@ -182,4 +182,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean hideManifest;
     private LocalDateTime entityTransferEnabledDate;
     private Boolean entityTransfer;
+    private Boolean isNetworkTransferEntityEnabled;
 }

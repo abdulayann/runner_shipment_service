@@ -558,4 +558,8 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "entity_transfer")
     private Boolean entityTransfer = false;
+
+    @Column(name = "is_network_transfer_entity_enabled")
+    private Boolean isNetworkTransferEntityEnabled = false;
+
 }
