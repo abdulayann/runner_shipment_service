@@ -4759,6 +4759,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             calculatePacksAndPacksUnit(consolidationDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, consolidationDetails.get().getContainersList());
+            calculateChargableAndChargableUnit(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4810,6 +4811,14 @@ public class ConsolidationService implements IConsolidationService {
             response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(containersList));
             response.setContainerData(containerCountMap);
             response.setContainerCount(containerCount);
+        }
+    }
+
+    private void calculateChargableAndChargableUnit(ConsolidationDetails consolidationDetails, MeasurementBasisResponse response) throws RunnerException {
+        PackSummaryResponse summaryResponse = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+        if (summaryResponse != null) {
+            response.setChargable(summaryResponse.getChargeableWeight());
+            response.setChargeableUnit(summaryResponse.getPacksChargeableWeightUnit());
         }
     }
 
