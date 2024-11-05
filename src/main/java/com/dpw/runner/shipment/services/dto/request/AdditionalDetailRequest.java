@@ -109,6 +109,8 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private String importBrokerCountry;
+    private String exportBrokerCountry;
     private PartiesRequest notifyParty;
     private PartiesRequest importBroker;
     private PartiesRequest exportBroker;
