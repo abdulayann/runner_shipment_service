@@ -1710,7 +1710,7 @@ public class CommonUtils {
                 destinationPortLocCode = consolidationDetails.get().getCarrierDetails().getDestinationPortLocCode();
         }
 
-        if(destinationPortLocCode != null && destinationPortLocCode.contains("UAE")) {
+        if(destinationPortLocCode != null && destinationPortLocCode.startsWith("AE")) {
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
             awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
                 if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
