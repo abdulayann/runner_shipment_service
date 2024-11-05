@@ -1103,6 +1103,7 @@ public class MasterDataController {
             @ApiResponse(code = 200, message = ShipmentConstants.LIST_BRANCHES, response = DependentServiceResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
+    @PostMapping(ApiConstants.LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS)
     public ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(@RequestBody @Valid Object request) {
         String responseMsg;
         try {
