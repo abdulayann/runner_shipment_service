@@ -161,6 +161,13 @@ class CargoManifestReportTest extends CommonMocks {
         cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
         cargoManifestModel.awb.setOriginalPrintedAt(LocalDateTime.now());
 
+        List<RoutingsModel> routs = new ArrayList<>();
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(2L);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_SEA);
+        routingsModel.setCarrier("test2");
+        routs.add(routingsModel);
+
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -177,6 +184,7 @@ class CargoManifestReportTest extends CommonMocks {
         shipmentModel.setSecurityStatus("Test");
         shipmentModel.setPaymentTerms("PPT");
         shipmentModel.setPacksUnit("PKG");
+        shipmentModel.setRoutingsList(routs);
 
         PartiesModel partiesModel = new PartiesModel();
         partiesModel.setOrgCode("Test");

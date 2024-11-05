@@ -1116,7 +1116,7 @@ public class CommonUtils {
             dictionary.put(SHIPMENT_ASSIGNED_USER_WITH_SLASH, "/ " + shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
-        dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
+        dictionary.put(Constants.CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
         dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
