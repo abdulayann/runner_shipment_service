@@ -1507,6 +1507,14 @@ public class ShipmentService implements IShipmentService {
         return charge;
     }
 
+    private void calculateChargableAndChargableUnit(ShipmentDetails shipmentDetails, MeasurementBasisResponse response) throws RunnerException {
+        PackSummaryResponse summaryResponse = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
+        if (summaryResponse != null) {
+            response.setChargable(summaryResponse.getChargeableWeight());
+            response.setChargeableUnit(summaryResponse.getPacksChargeableWeightUnit());
+        }
+    }
+
     private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
         Integer totalPacks = 0;
         String tempPackingUnit = null;
@@ -6265,6 +6273,7 @@ public class ShipmentService implements IShipmentService {
             MeasurementBasisResponse response = modelMapper.map(shipmentDetails.get(), MeasurementBasisResponse.class);
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, shipmentDetails.get().getContainersList());
+            calculateChargableAndChargableUnit(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
