@@ -18,10 +18,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -168,6 +165,12 @@ class CargoManifestReportTest extends CommonMocks {
         routingsModel.setCarrier("test2");
         routs.add(routingsModel);
 
+        List<ReferenceNumbersModel> modelList = new ArrayList<>();
+        ReferenceNumbersModel refModel = new ReferenceNumbersModel();
+        refModel.setType(CEN);
+        refModel.setReferenceNumber("12345");
+        modelList.add(refModel);
+
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(ReportConstants.SEA);
         shipmentModel.setDirection(ReportConstants.EXP);
@@ -184,7 +187,13 @@ class CargoManifestReportTest extends CommonMocks {
         shipmentModel.setSecurityStatus("Test");
         shipmentModel.setPaymentTerms("PPT");
         shipmentModel.setPacksUnit("PKG");
+        shipmentModel.setWeightUnit("KG");
+        shipmentModel.setVolumetricWeightUnit("M3");
+        shipmentModel.setChargeableUnit("KG");
+        shipmentModel.setBookingNumber("12345");
+        shipmentModel.setServiceType("A2A");
         shipmentModel.setRoutingsList(routs);
+        shipmentModel.setReferenceNumbersList(modelList);
 
         PartiesModel partiesModel = new PartiesModel();
         partiesModel.setOrgCode("Test");
@@ -306,7 +315,17 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(VGMWeight, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
         mockTenantSettings();
-        assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
+        Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
+        assertNotNull(dictionary);
+        assertTrue(dictionary.containsKey(PWEIGHT_PACKAGES));
+        assertTrue(dictionary.containsKey(INSERT_DATE));
+        assertTrue(dictionary.containsKey(PVOLUME_UNIT));
+        assertTrue(dictionary.containsKey(PCHARGE_UNIT));
+        assertTrue(dictionary.containsKey(TOTAL_PACKAGES));
+        assertTrue(dictionary.containsKey(PACKS_UNIT));
+        assertTrue(dictionary.containsKey(CARRIER_BOOKING_REF));
+        assertTrue(dictionary.containsKey(SERVICE_LEVEL));
+        assertTrue(dictionary.containsKey(CUSTOMS_ENTRY_NUMBER));
     }
 
     @Test
