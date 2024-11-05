@@ -617,6 +617,18 @@ class CargoManifestReportTest extends CommonMocks {
         containerModelList.add(shipmentContainers);
         shipmentModel.setContainersList(containerModelList);
 
+        List<ConsolidationModel> consolidationModels = new ArrayList<>();
+        ConsolidationModel model = new ConsolidationModel();
+        model.setConsolidationNumber("AIR-CAN-00001");
+        model.setAgentReference("test");
+        ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
+        arrivalDepartureDetailsModel.setCTOId(null);
+        String randomUUID  = UUID.randomUUID().toString();
+        arrivalDepartureDetailsModel.setLastForeignPort(randomUUID);
+        model.setArrivalDetails(arrivalDepartureDetailsModel);
+        consolidationModels.add(model);
+        shipmentModel.setConsolidationList(consolidationModels);
+
         PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
         delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
         delivertDetails.setDestinationDetail(partiesModel);
@@ -642,6 +654,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
+        unlocationsResponse.setLocCode("test");
         when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -689,24 +702,20 @@ class CargoManifestReportTest extends CommonMocks {
         String serviceType = "A2A";
         String customEntryNumber = "12345";
         String test  = "test";
+        String consolNumber = "AIR-CAN-00001";
 
         Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
         assertNotNull(dictionary);
-        assertTrue(dictionary.containsKey(PWEIGHT_PACKAGES));
-        assertTrue(dictionary.containsKey(INSERT_DATE));
-        assertTrue(dictionary.containsKey(PVOLUME_UNIT));
-        assertTrue(dictionary.containsKey(PCHARGE_UNIT));
-        assertTrue(dictionary.containsKey(TOTAL_PACKAGES));
-        assertTrue(dictionary.containsKey(PACKS_UNIT));
-        assertTrue(dictionary.containsKey(CARRIER_BOOKING_REF));
-        assertTrue(dictionary.containsKey(SERVICE_LEVEL));
-        assertTrue(dictionary.containsKey(CUSTOMS_ENTRY_NUMBER));
-        assertTrue(dictionary.containsKey(ROUTINGS));
 
         List<Map<String, Object>> routing = (List<Map<String, Object>>) dictionary.get(ROUTINGS);
         Map<String, Object> routsMap = routing.get(0);
+        List<String> ctoAddress = ((List<String>) dictionary.get(CTO_ADDRESS));
 
+        assertEquals(test, dictionary.get(LAST_FOREIGN_PORT_NAME));
+        assertEquals(test, dictionary.get(AGENT_REFERENCE));
+        assertEquals(consolNumber, dictionary.get(CONSOLIDATION_NUMBER));
         assertEquals(Constants.TRANSPORT_MODE_SEA, routsMap.get(MODE));
+        assertEquals(0, ctoAddress.size());
         assertEquals(test, routsMap.get(VESSEL_NAME));
         assertEquals(test, routsMap.get(VOYAGE));
         assertEquals(test, routsMap.get(CARRIER));
