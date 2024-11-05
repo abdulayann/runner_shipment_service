@@ -252,6 +252,7 @@ import static org.mockito.Mockito.*;
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         objectMapperTest = JsonTestUtility.getMapper();
+        modelMapperTest.getConfiguration().setAmbiguityIgnored(true);
     }
 
     @BeforeEach

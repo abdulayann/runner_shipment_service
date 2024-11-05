@@ -35,6 +35,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String direction;
     private String shipmentType;
     private Integer status;
+    private String shipmentStatus;
     private String source;
     private String jobType;
     private String serviceType;
