@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -65,6 +67,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
@@ -2725,5 +2728,62 @@ class CommonUtilsTest {
         var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).bookingTransportModeSea(true).build();
         var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
         assertTrue(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetCountryFromUnLocCode(String req) {
+        String response = commonUtils.getCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetCountryFromUnLocCode1() {
+        String response = commonUtils.getCountryFromUnLocCode("IN");
+        assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesObjects")
+    void testCheckIfPartyExists(Parties req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesResponseObjects")
+    void testCheckIfPartyExists1(PartiesResponse req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists2() {
+        PartiesResponse req = new PartiesResponse();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists3() {
+        Parties req = new Parties();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    private static Stream<Parties> providePartiesObjects() {
+        return Stream.of(
+                new Parties(),
+                null
+        );
+    }
+
+    private static Stream<PartiesResponse> providePartiesResponseObjects() {
+        return Stream.of(
+                new PartiesResponse(),
+                null
+        );
     }
 }
