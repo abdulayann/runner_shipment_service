@@ -129,4 +129,5 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private List<Long> shipmentIds;
     private List<PartiesRequest> consolidationAddresses;
     private JsonNullable<Boolean> openForAttachment;
+    private JsonNullable<Boolean> isNetworkFile;
 }

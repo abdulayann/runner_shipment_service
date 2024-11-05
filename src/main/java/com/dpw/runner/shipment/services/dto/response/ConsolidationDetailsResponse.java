@@ -162,4 +162,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime latDate;
     private Integer pendingActionCount;
     private String department;
+    private Boolean isNetworkFlag;
 }
