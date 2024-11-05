@@ -595,7 +595,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
@@ -609,7 +609,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(false));
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
@@ -623,9 +623,9 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(false));
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
-        testShipmentSettingsDetails.setEntityTransfer(false);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(false);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
@@ -638,9 +638,9 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
-        testShipmentSettingsDetails.setEntityTransfer(true);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
@@ -653,7 +653,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
         shipmentSettingsPatchRequest.setId(1L);
         shipmentSettingsPatchRequest.setTenantId(1L);
-        shipmentSettingsPatchRequest.setEntityTransfer(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
