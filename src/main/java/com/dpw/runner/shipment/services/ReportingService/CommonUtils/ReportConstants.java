@@ -1253,5 +1253,20 @@ public class ReportConstants {
     public static final String AOM_FREE_TEXT = "AnyOtherMeans";
     public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
 
+    public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
+    public static final String INSERT_DATE = "InsertDate";
+    public static final String PWEIGHT_PACKAGES = "PWeightPackages";
+    public static final String SERVICE_LEVEL = "ServiceLevel";
+    public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
+    public static final String TOTAL_PACKAGES = "TotalPackages";
+    public static final String CONTAINER_TYPE_DESCRIPTION = "ContainerTypeDescription";
+
+    //Routing Fields
+    public static final String ROUTINGS = "Routings";
+    public static final String MODE = "Mode";
+    public static final String POLCODE = "PolCode";
+    public static final String PODCODE = "PodCode";
+    public static final String ETD_FOR_PRINT = "ETDForPrint";
+    public static final String ETA_FOR_PRINT = "ETAForPrint";
 
 }
