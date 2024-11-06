@@ -4,8 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -370,6 +369,29 @@ public class JsonTestUtility {
     public CustomerBookingRequest getCustomerBookingRequest() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingRequest.class);
     }
+
+    public CarrierBookingRequest getCarrierBookingRequest() {
+        return objectMapper.convertValue(payload.get("CARRIER_BOOKING_REQUEST"), CarrierBookingRequest.class);
+    }
+    public CarrierBooking getCarrierBooking() {
+        return objectMapper.convertValue(payload.get("CARRIER_BOOKING_REQUEST"), CarrierBooking.class);
+    }
+    public BookingPayment getTestBookingPayment() {
+        return objectMapper.convertValue(payload.get("BOOKING_PAYMENT") , BookingPayment.class);
+    }
+    public EVgmRequest getEVgmRequest() {
+        return objectMapper.convertValue(payload.get("EVGM_REQUEST") , EVgmRequest.class);
+    }
+    public EVgm getEVgm() {
+        return objectMapper.convertValue(payload.get("EVGM_REQUEST") , EVgm.class);
+    }
+    public ShippingInstructionRequest getShippingInstructionRequest() {
+        return objectMapper.convertValue(payload.get("SHIPPING_INSTRUCTION_REQUEST") , ShippingInstructionRequest.class);
+    }
+    public ShippingInstruction getShippingInstruction() {
+        return objectMapper.convertValue(payload.get("SHIPPING_INSTRUCTION_REQUEST") , ShippingInstruction.class);
+    }
+
     public CustomerBooking getCustomerBooking() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
     }

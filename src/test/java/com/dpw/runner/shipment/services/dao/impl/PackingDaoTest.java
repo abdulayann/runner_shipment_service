@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
@@ -275,50 +276,50 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromConsole() throws RunnerException {
+    void testUpdateEntityFromConsoleWithCarrierBooking() throws RunnerException {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         routingsList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
         doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
-        doReturn(routingsList).when(spyService).saveEntityFromConsole(anyList(), anyLong(), anyMap());
-        List<Packing> routingsList1 = spyService.updateEntityFromConsole(routingsList, 1L);
+        doReturn(routingsList).when(spyService).saveEntityFromConsole(anyList(), anyLong(), anyLong(), anyMap());
+        List<Packing> routingsList1 = spyService.updateEntityFromConsoleWithCarrierBooking(routingsList, 1L, 1L);
         assertNotNull(routingsList1);
         assertEquals(routingsList, routingsList1);
     }
 
     @Test
-    void testUpdateEntityFromConsole_NullPacking() throws RunnerException {
+    void testUpdateEntityFromConsole_WithCarrierBooking_NullPacking() throws RunnerException {
         PackingDao spyService = spy(packingDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        List<Packing> packings = spyService.updateEntityFromConsole(null, 1L);
+        List<Packing> packings = spyService.updateEntityFromConsoleWithCarrierBooking(null, 1L, 1L);
         assertEquals(new ArrayList<>(), packings);
     }
 
     @Test
-    void testUpdateEntityFromConsole_EmptyPacking() throws RunnerException {
+    void testUpdateEntityFromConsole_WithCarrierBooking_EmptyPacking() throws RunnerException {
         PackingDao spyService = spy(packingDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        List<Packing> packings = spyService.updateEntityFromConsole(new ArrayList<>(), 1L);
+        List<Packing> packings = spyService.updateEntityFromConsoleWithCarrierBooking(new ArrayList<>(), 1L, 1L);
         assertEquals(new ArrayList<>(), packings);
     }
 
     @Test
-    void testUpdateEntityFromConsole_NullId() throws Exception{
+    void testUpdateEntityFromConsole_WithCarrierBooking_NullId() throws Exception{
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        doReturn(packingList).when(spyService).saveEntityFromConsole(any(), anyLong(), anyMap());
-        List<Packing> routings = spyService.updateEntityFromConsole(packingList, 1L);
+        doReturn(packingList).when(spyService).saveEntityFromConsole(any(), anyLong(), anyLong(), anyMap());
+        List<Packing> routings = spyService.updateEntityFromConsoleWithCarrierBooking(packingList, 1L, 1L);
         assertNotNull(routings);
         assertEquals(packingList, routings);
     }
 
     @Test
-    void testUpdateEntityFromConsole_Failure() throws RunnerException {
+    void testUpdateEntityFromConsole_WithCarrierBooking_Failure() throws RunnerException {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsole(routingsList, 1L));
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsoleWithCarrierBooking(routingsList, 1L, 1L));
     }
 
     @Test
@@ -354,7 +355,7 @@ class PackingDaoTest {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
-        List<Packing> routings = spyService.updateEntityFromConsole(routingsList, 1L, null);
+        List<Packing> routings = spyService.updateEntityFromConsole(routingsList, 1L, new ArrayList<>());
         assertNotNull(routings);
         assertEquals(routingsList, routings);
     }
@@ -613,7 +614,7 @@ class PackingDaoTest {
         doReturn(packingList).when(spyService).saveAll(any());
         Map<Long, Packing> map = new HashMap<>();
         map.put(testPacking.getId(), testPacking);
-        List<Packing> routings = spyService.saveEntityFromConsole(packingList, 1L, map);
+        List<Packing> routings = spyService.saveEntityFromConsole(packingList, 1L, 1L, map);
         assertNotNull(routings);
         assertEquals(packingList, routings);
     }
@@ -624,7 +625,7 @@ class PackingDaoTest {
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
         Map<Long, Packing> map = new HashMap<>();
-        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromConsole(packingList, 1L, map));
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromConsole(packingList, 1L, 1L, map));
     }
 
     @Test
@@ -634,7 +635,7 @@ class PackingDaoTest {
         doReturn(packingList).when(spyService).saveAll(any());
         Map<Long, Packing> map = new HashMap<>();
         map.put(testPacking.getId(), testPacking);
-        List<Packing> routings = spyService.saveEntityFromConsole(packingList, 1L, map);
+        List<Packing> routings = spyService.saveEntityFromConsole(packingList, 1L, 1L, map);
         assertNotNull(routings);
         assertEquals(packingList, routings);
     }
@@ -769,6 +770,142 @@ class PackingDaoTest {
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).saveEntityFromShipment(anyList(), anyLong());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new HashMap<>()));
+    }
+
+
+    @Test
+    void updateEntityFromCarrierBooking_ExceptionThrown_ReturnsEmptyList() {
+        Long carrierBookingId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        doThrow(new RuntimeException("Test")).when(packingDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> packingDaoSpy.updateEntityFromCarrierBooking(Collections.emptyList(), carrierBookingId));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_PackingListHasElements_ReturnsResponsePacking() throws RunnerException {
+        Long carrierBookingId = 1L;
+        List<Packing> packingList = Arrays.asList(new Packing(), new Packing());
+        var packingDaoSpy = Mockito.spy(packingDao);
+        doReturn(mock(Page.class)).when(packingDaoSpy).findAll(any(), any());
+        doReturn(packingList).when(packingDaoSpy).saveEntityFromCarrierBooking(anyList(), eq(carrierBookingId), anyMap());
+        List<Packing> result = packingDaoSpy.updateEntityFromCarrierBooking(packingList, carrierBookingId);
+        assertEquals(packingList, result);
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_PackingListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long carrierBookingId = 1L;
+        testPacking.setId(1L);
+        when(packingRepository.findAll((Specification<Packing>) any(), (Pageable) any())).thenReturn(new PageImpl<Packing>(List.of(testPacking)));
+        List<Packing> result = packingDao.updateEntityFromCarrierBooking(Collections.singletonList(testPacking), carrierBookingId);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ExceptionThrown() {
+        Long carrierBookingId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        hashMap.put(2L, packing);
+        assertThrows(DataRetrievalFailureException.class, () -> packingDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(packing), carrierBookingId, hashMap));
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_PackingNewRequest() {
+        Long carrierBookingId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing reqPacking = new Packing();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        doReturn(Collections.singletonList(packing)).when(packingDaoSpy).saveAll(any());
+        List<Packing> result = packingDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(reqPacking), carrierBookingId, hashMap);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_PackingUpdateRequest() {
+        Long carrierBookingId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        hashMap.put(1L, packing);
+        doReturn(Collections.singletonList(packing)).when(packingDaoSpy).saveAll(any());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<Packing> result = packingDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(packing), carrierBookingId, hashMap);
+        assertNotNull(result);
+    }
+
+
+    @Test
+    void updateEntityFromShippingInstruction_ExceptionThrown_ReturnsEmptyList() {
+        Long shippingInstructionId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        doThrow(new RuntimeException("Test")).when(packingDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> packingDaoSpy.updateEntityFromShippingInstruction(Collections.emptyList(), shippingInstructionId));
+    }
+
+    @Test
+    void updateEntityFromShippingInstruction_PackingListHasElements_ReturnsResponsePacking() throws RunnerException {
+        Long shippingInstructionId = 1L;
+        List<Packing> packingList = Arrays.asList(new Packing(), new Packing());
+        var packingDaoSpy = Mockito.spy(packingDao);
+        doReturn(mock(Page.class)).when(packingDaoSpy).findAll(any(), any());
+        doReturn(packingList).when(packingDaoSpy).saveEntityFromShippingInstruction(anyList(), eq(shippingInstructionId), anyMap());
+        List<Packing> result = packingDaoSpy.updateEntityFromShippingInstruction(packingList, shippingInstructionId);
+        assertEquals(packingList, result);
+    }
+
+    @Test
+    void updateEntityFromShippingInstruction_PackingListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long shippingInstructionId = 1L;
+        testPacking.setId(1L);
+        when(packingRepository.findAll((Specification<Packing>) any(), (Pageable) any())).thenReturn(new PageImpl<Packing>(List.of(testPacking)));
+        List<Packing> result = packingDao.updateEntityFromShippingInstruction(Collections.singletonList(testPacking), shippingInstructionId);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_ExceptionThrown() {
+        Long shippingInstructionId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        hashMap.put(2L, packing);
+        assertThrows(DataRetrievalFailureException.class, () -> packingDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(packing), shippingInstructionId, hashMap));
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_PackingNewRequest() {
+        Long shippingInstructionId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing reqPacking = new Packing();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        doReturn(Collections.singletonList(packing)).when(packingDaoSpy).saveAll(any());
+        List<Packing> result = packingDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(reqPacking), shippingInstructionId, hashMap);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromShippingInstruction_PackingUpdateRequest() {
+        Long shippingInstructionId = 1L;
+        var packingDaoSpy = Mockito.spy(packingDao);
+        Packing packing = new Packing();
+        packing.setId(1L);
+        Map<Long, Packing> hashMap = new HashMap<>();
+        hashMap.put(1L, packing);
+        doReturn(Collections.singletonList(packing)).when(packingDaoSpy).saveAll(any());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<Packing> result = packingDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(packing), shippingInstructionId, hashMap);
+        assertNotNull(result);
     }
 
 }

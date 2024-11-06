@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
+import com.dpw.runner.shipment.services.entity.CarrierBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -151,6 +152,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
         return res;
     }
+
     @Override
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId, Map<Long, BookingCarriage> oldEntityMap) {
         List<BookingCarriage> res = new ArrayList<>();
@@ -185,6 +187,80 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(shipmentId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public List<BookingCarriage> updateEntityFromCarrierBooking(List<BookingCarriage> bookingCarriageList, Long carrierBookingId) throws RunnerException {
+        String responseMsg;
+        List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
+        try {
+            Map<Long, BookingCarriage> hashMap;
+            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+            Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
+            Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
+            hashMap = bookingCarriages.stream().collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+            Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
+            List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
+            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
+                for (BookingCarriage request : bookingCarriageList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    bookingCarriagesRequestList.add(request);
+                }
+                responseBookingCarriage = saveEntityFromCarrierBooking(bookingCarriagesRequestList, carrierBookingId, copyHashMap);
+            }
+            deleteBookingCarriage(hashMap, CarrierBooking.class.getSimpleName(), carrierBookingId);
+            return responseBookingCarriage;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public List<BookingCarriage> saveEntityFromCarrierBooking(List<BookingCarriage> bookingCarriages, Long carrierBookingId, Map<Long, BookingCarriage> oldEntityMap) {
+        List<BookingCarriage> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for(BookingCarriage req : bookingCarriages){
+            if(req.getId() != null){
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug("Booking Carriage is null for CarrierBooking Id {}", req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
                                 .operation(operation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |

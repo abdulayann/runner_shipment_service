@@ -51,6 +51,10 @@ public class Constants {
     public static final String Shipment = "Shipment";
     public static final String Consolidation = "Consolidation";
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
+    public static final String CARRIER_BOOKING = "CarrierBooking";
+    public static final String EVGM = "EVgm";
+    public static final String BOOKING_PAYMENT = "BookingPayment";
+    public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
     public static final String BOOKING = "BOOKING";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
     public static final String CONSOLIDATION = "CONSOLIDATION";

@@ -1796,7 +1796,7 @@ public class ShipmentService implements IShipmentService {
                 if(Boolean.TRUE.equals(containerRequest1.getHazardous()))
                     shipmentDetails.setContainsHazardous(true);
             }
-            updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequest, Containers.class, isCreate), consolidationId, id, false);
+            updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequest, Containers.class, isCreate), consolidationId, null, id, false);
         } else if (!Objects.isNull(oldEntity)){
             updatedContainers = oldEntity.getContainersList();
         }
@@ -3760,7 +3760,7 @@ public class ShipmentService implements IShipmentService {
                 consolidationId = newShipmentDetails.getConsolidationList().get(0).getId();
             }
             if (containerRequestList != null) {
-                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, id,
+                updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class), consolidationId, null, id,
                         false);
             } else {
                 updatedContainers = oldShipmentDetails.get().getContainersList();

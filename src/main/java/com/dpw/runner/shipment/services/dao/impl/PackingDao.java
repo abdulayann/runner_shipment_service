@@ -6,10 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -148,7 +145,7 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
-    public List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException {
+    public List<Packing> updateEntityFromConsoleWithCarrierBooking(List<Packing> packingList, Long consolidationId, Long carrierBookingId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -171,7 +168,7 @@ public class PackingDao implements IPackingDao {
                     }
                     packingRequestList.add(request);
                 }
-                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, hashMapCopy);
+                responsePackings = saveEntityFromConsole(packingRequestList, consolidationId, carrierBookingId, hashMapCopy);
             }
             deletePackings(hashMap, null, null);
             return responsePackings;
@@ -354,6 +351,151 @@ public class PackingDao implements IPackingDao {
         return res;
     }
 
+    public List<Packing> saveEntityFromCarrierBooking(List<Packing> packings, Long carrierBookingId, Map<Long, Packing> oldEntityMap) {
+        List<Packing> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setCarrierBookingId(carrierBookingId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .parent(CarrierBooking.class.getSimpleName())
+                                .parentId(carrierBookingId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    public List<Packing> updateEntityFromCarrierBooking(List<Packing> packingList, Long carrierBookingId) throws RunnerException {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("carrierBookingId", carrierBookingId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Packing> hashMap = packings.stream().collect(Collectors.toMap(Packing::getId, Function.identity()));
+            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && !packingList.isEmpty()) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromCarrierBooking(packingRequestList, carrierBookingId, hashMapCopy);
+            }
+            deletePackings(hashMap, "CarrierBooking", carrierBookingId);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    public List<Packing> saveEntityFromShippingInstruction(List<Packing> packings, Long shippingInstructionId, Map<Long, Packing> oldEntityMap) {
+        List<Packing> res = new ArrayList<>();
+        Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
+        for (Packing req : packings) {
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (!oldEntityMap.containsKey(id)) {
+                    log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
+                req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
+                String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+            }
+            req.setShippingInstructionId(shippingInstructionId);
+            res.add(req);
+        }
+        res = saveAll(res);
+        for (var req : res) {
+            String oldEntityJsonString = null;
+            String operation = DBOperationType.CREATE.name();
+            if(oldEntityJsonStringMap.containsKey(req.getId())){
+                oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
+                operation = DBOperationType.UPDATE.name();
+            }
+            try {
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .newData(req)
+                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .parent(ShippingInstruction.class.getSimpleName())
+                                .parentId(shippingInstructionId)
+                                .operation(operation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+        }
+        return res;
+    }
+
+    @Override
+    public List<Packing> updateEntityFromShippingInstruction(List<Packing> packingList, Long shippingInstructionId) throws RunnerException {
+        String responseMsg;
+        List<Packing> responsePackings = new ArrayList<>();
+        try {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("shippingInstructionId", shippingInstructionId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            Map<Long, Packing> hashMap = packings.stream().collect(Collectors.toMap(Packing::getId, Function.identity()));
+            Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
+            List<Packing> packingRequestList = new ArrayList<>();
+            if (packingList != null && !packingList.isEmpty()) {
+                for (Packing request : packingList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    packingRequestList.add(request);
+                }
+                responsePackings = saveEntityFromShippingInstruction(packingRequestList, shippingInstructionId, hashMapCopy);
+            }
+            deletePackings(hashMap, "ShippingInstruction", shippingInstructionId);
+            return responsePackings;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
     @Override
     public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId) {
         List<Packing> res = new ArrayList<>();
@@ -374,7 +516,7 @@ public class PackingDao implements IPackingDao {
         }
         return res;
     }
-    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap) {
+    public List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Long carrierBookingId, Map<Long, Packing> oldEntityMap) {
         List<Packing> res = new ArrayList<>();
         for (Packing req : packings) {
             if (req.getId() != null) {
@@ -387,6 +529,7 @@ public class PackingDao implements IPackingDao {
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
             }
             req.setConsolidationId(consolidationId);
+            req.setCarrierBookingId(carrierBookingId);
             res.add(req);
         }
         res = saveAll(res);
