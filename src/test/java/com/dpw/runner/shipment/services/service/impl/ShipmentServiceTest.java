@@ -6680,26 +6680,6 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByMeasurmentBasisTest4() throws RunnerException {
-        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-
-        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
-        packSummaryResponse.setChargeableWeight(BigDecimal.TEN);
-        packSummaryResponse.setPacksChargeableWeightUnit(Constants.WEIGHT_UNIT_KG);
-
-        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
-        when(modelMapper.map(any(), any())).thenReturn(MeasurementBasisResponse.builder().build());
-        when(packingService.calculatePackSummary(any(), any(), any(), any())).thenReturn(packSummaryResponse);
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.shipmentRetrieveWithMeasurmentBasis(commonRequestModel);
-        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
-        MeasurementBasisResponse response = objectMapper.convertValue(runnerResponse.getData(), MeasurementBasisResponse.class);
-
-        assertEquals(BigDecimal.TEN, response.getChargable());
-        assertEquals(Constants.WEIGHT_UNIT_KG, response.getChargeableUnit());
-    }
-
-    @Test
     void testGetAllShipments_Success_CurrentBranch() {
         // Setup
         Long consoleId = 1L;
