@@ -61,7 +61,6 @@ public class EventConstants {
     public static final String BKCR  = "BKCR";
     public static final String ECCC  = "ECCC";
     public static final String BLRS  = "BLRS";
-    public static final String DHBL  = "DHBL";
     public static final String DNMU  = "DNMU";
     public static final String FNMU  = "FNMU";
     public static final String PRST  = "PRST";
