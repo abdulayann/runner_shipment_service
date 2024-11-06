@@ -170,6 +170,6 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean enablePartyCheckForConsolidation;
     private String csd;
     private Boolean hideManifest;
-    private LocalDateTime entityTransferEnabledDate;
-    private Boolean entityTransfer;
+    private LocalDateTime isEntityTransferPrerequisiteEnabledDate;
+    private Boolean isEntityTransferPrerequisiteEnabled;
 }
