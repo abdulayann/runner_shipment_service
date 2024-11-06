@@ -1,28 +1,51 @@
 package com.dpw.runner.shipment.services.utils;
 
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.*;
+import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
+import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
+import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.IntegrationResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -36,13 +59,27 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -52,12 +89,6 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 
 /**
@@ -88,6 +119,10 @@ public class BookingIntegrationsUtility {
     private EmailServiceUtility emailServiceUtility;
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private IEventDao eventDao;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -714,9 +749,11 @@ public class BookingIntegrationsUtility {
      */
     public void documentUploadEvent(DocumentDto payload) {
 
-        if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payload.getAction())
-                && Objects.equals(payload.getData().getEntityType(), Constants.SHIPMENTS_CAPS)
-                && Boolean.TRUE.equals(payload.getData().getCustomerPortalVisibility())) {
+        Document payloadData = payload.getData();
+        String payloadAction = payload.getAction();
+        if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
+                && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
+                && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
 
             var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
             var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
@@ -726,6 +763,85 @@ public class BookingIntegrationsUtility {
                 this.sendDocumentsToPlatform(shipment, payload);
             }
         }
+
+        handleEventCreation(payloadAction, payloadData);
+
+    }
+
+    /**
+     * Processes the creation or updating of events related to shipment entities based on the provided payload action and data.
+     * <p>
+     * This method identifies the intended action (either creation or update) from the provided payload action.
+     * If the event corresponding to the shipment already exists in the database, it updates the event details.
+     * Otherwise, if no event exists and the payload contains specific event codes, it initiates the auto-generation
+     * of a new event for the shipment entity.
+     * </p>
+     *
+     * @param payloadAction The action to be performed, specifying either "create" or "update" for the event.
+     * @param payloadData   The data payload containing information about the document and associated entity,
+     *                      including attributes such as the entity type, event code, and ID.
+     */
+    private void handleEventCreation(String payloadAction, Document payloadData) {
+        log.info("Starting event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+
+        try {
+            // Check if the action and entity type match the criteria for event handling
+            if ((Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) || Constants.KAFKA_EVENT_UPDATE.equalsIgnoreCase(payloadAction))
+                    && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)) {
+
+                log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", payloadData.getEntityId());
+
+                if (payloadData.getEntityId() == null) {
+                    throw new IllegalArgumentException("Entity ID in payload data is null.");
+                }
+
+                var shipmentDetails = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payloadData.getEntityId())))
+                        .stream().findFirst().orElse(new ShipmentDetails());
+
+                List<Events> eventListFromDb = shipmentDetails.getEventsList();
+
+                // If existing events are found, iterate through them for potential updates
+                if (ObjectUtils.isNotEmpty(eventListFromDb)) {
+                    log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
+
+                    for (Events event : eventListFromDb) {
+                        if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
+                                Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
+
+                            log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
+                            event.setActual(LocalDateTime.now());
+                            event.setEntityType(Constants.SHIPMENT);
+
+                            // Update the event details in the database
+                            eventDao.updateEventDetails(event);
+                            log.info("Event updated successfully for event code: {}", event.getEventCode());
+                        }
+                    }
+                } else {
+                    // Auto-generate events if the event code matches specific codes
+                    if (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
+
+                        if (shipmentDetails.getId() == null) {
+                            throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
+                        }
+
+                        CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+                        eventReq.setEntityId(shipmentDetails.getId());
+                        eventReq.setEntityType(Constants.SHIPMENT);
+                        eventReq.setEventCode(payloadData.getEventCode());
+
+                        log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                        eventDao.autoGenerateEvents(eventReq);
+                        log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.error("Unexpected error in handleEventCreation: {}", ex.getMessage(), ex);
+        }
+
+        log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
     }
 
     private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
