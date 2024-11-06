@@ -109,6 +109,8 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private String importBrokerCountry;
+    private String exportBrokerCountry;
     private PartiesRequest notifyParty;
     private PartiesRequest importBroker;
     private PartiesRequest exportBroker;
@@ -141,4 +143,7 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private LocalDateTime warehouseCargoArrivalDate;
     private Boolean pickupByConsigneeCompleted;
     private Boolean emptyContainerReturned;
+    private Boolean isExportCustomClearanceCompleted;
+    private LocalDateTime blInstructionReceived;
+    private LocalDateTime cargoOutForDelivery;
 }

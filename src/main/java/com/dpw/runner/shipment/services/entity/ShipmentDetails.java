@@ -552,4 +552,9 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "sync_routing_from_consolidation")
      private Boolean syncRoutingFromConsolidation;
 
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
 }

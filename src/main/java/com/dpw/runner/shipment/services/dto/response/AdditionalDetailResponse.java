@@ -128,6 +128,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private String importBrokerCountry;
+    private String exportBrokerCountry;
     private PartiesResponse notifyParty;
     private PartiesResponse importBroker;
     private PartiesResponse exportBroker;
@@ -164,6 +166,9 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private LocalDateTime warehouseCargoArrivalDate;
     private Boolean pickupByConsigneeCompleted;
     private Boolean emptyContainerReturned;
+    private Boolean isExportCustomClearanceCompleted;
+    private LocalDateTime blInstructionReceived;
+    private LocalDateTime cargoOutForDelivery;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

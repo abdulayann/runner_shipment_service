@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
@@ -17,12 +18,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -33,6 +32,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -64,6 +64,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import javax.validation.ConstraintViolation;
@@ -100,6 +101,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAG
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -1116,7 +1118,7 @@ public class CommonUtils {
             dictionary.put(SHIPMENT_ASSIGNED_USER_WITH_SLASH, "/ " + shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
-        dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
+        dictionary.put(Constants.CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
         dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
@@ -1695,6 +1697,68 @@ public class CommonUtils {
         for(MasterListRequest masterListRequest : masterListRequests) {
             keys.add(masterListRequest.ItemValue + '#' + MasterDataType.getNameFromDescription(masterListRequest.ItemType));
         }
+    }
+
+    /**
+     * @param eventsList
+     * Updates the input events list with description from the master data
+     */
+    public void updateEventWithMasterDataDescription(List<Events> eventsList) {
+        if(CollectionUtils.isEmpty(eventsList))
+            return;
+
+        var eventCodeDescriptionMap = getEventDescription(eventsList.stream().map(Events::getEventCode).toList());
+        // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
+        // or missing entry in the master-data
+        eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
+    }
+
+    /**
+     * @param eventCodes : list of input event codes
+     * @return Map<String, String>
+     * Helper function that returns map of event code vs description
+     */
+    private Map<String, String> getEventDescription(List<String> eventCodes) {
+        Map<String, String> eventCodeDescriptionMap = new HashMap<>();
+        log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+        try {
+            List<Object> masterDataListCriteria = Arrays.asList(
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_TYPE),
+                            "=",
+                            MasterDataType.ORDER_EVENTS.getId()
+                    ),
+                    "and",
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_VALUE),
+                            "IN",
+                            List.of(eventCodes)
+                    )
+            );
+            CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder().criteriaRequests(masterDataListCriteria).build();
+            var v1DataResponse = iv1Service.fetchMasterData(v1ListRequest);
+            List<EntityTransferMasterLists> masterData = jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class);
+            masterData.forEach(i -> eventCodeDescriptionMap.put(i.getItemValue(), i.getItemDescription()));
+        }
+        catch (Exception e) {
+            log.error("EventService : Error fetching event description from event codes", e);
+        }
+
+        return eventCodeDescriptionMap;
+    }
+    
+    public boolean checkIfPartyExists(PartiesResponse party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public boolean checkIfPartyExists(Parties party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public String getCountryFromUnLocCode(String unLocCode) {
+        if(IsStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
     }
 
 }
