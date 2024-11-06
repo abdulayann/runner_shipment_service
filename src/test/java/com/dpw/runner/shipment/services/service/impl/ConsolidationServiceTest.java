@@ -5240,7 +5240,7 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(mockConoslidation);
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
-        when(jsonHelper.convertCreateValue(mockRouting, Routings.class)).thenReturn(mockRouting);
+        //when(jsonHelper.convertCreateValue(mockRouting, Routings.class)).thenReturn(mockRouting);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(mockConoslidation, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(masterDataUtils.fetchInBulkContainerTypes(anySet())).thenReturn(keyMasterDataMap);
