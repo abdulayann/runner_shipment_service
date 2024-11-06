@@ -1398,7 +1398,6 @@ public class ContainerService implements IContainerService {
     }
 
     public void afterSave(Containers containers, boolean isCreate) {
-        //todo: call hook pushContainersToDependentServices method
         try {
             if(containers.getTenantId() == null)
                 containers.setTenantId(TenantContext.getCurrentTenant());
