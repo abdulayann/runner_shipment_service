@@ -124,7 +124,7 @@ public class CarrierBooking extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CARRIER_BOOKING_ADDRESSES'")
     @BatchSize(size = 50)
-    private List<Parties> consolidationAddresses; // TODO: migration btw v1 and v2
+    private List<Parties> consolidationAddresses;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "carrierBookingId")
     private List<BookingCarriage> bookingCarriagesList;
@@ -203,7 +203,7 @@ public class CarrierBooking extends MultiTenancy {
     private Boolean isLocked;
 
 //    @Column(name = "tenant_department_id")
-//    private Integer tenantDepartmentId; // TODO: we can delete this column
+//    private Integer tenantDepartmentId;
 
     @Column(name = "order_id")
     private String orderId;

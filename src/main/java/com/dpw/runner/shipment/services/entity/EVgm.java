@@ -27,19 +27,19 @@ import java.util.UUID;
 public class EVgm extends MultiTenancy {
 
     @Column(name = "shipment_guid")
-    private UUID shipmentGuid; // TODO: confirm if need to keep it?
+    private UUID shipmentGuid;
 
     @Column(name="consolidation_guid")
-    private UUID consolidationGuid; // relation or not based on pavan
+    private UUID consolidationGuid;
 
     @Column(name = "booking_id")
     private Long bookingId;
 
     @Column(name = "shipping_instruction_id")
-    private Long shippingInstructionId; // TODO: confirm if need to keep it?
+    private Long shippingInstructionId;
 
     @Column(name = "container_id")
-    private Long containerId; // TODO: confirm if need to keep it? container ka data required in evgm or not?
+    private Long containerId;
 
     @Column(name = "status")
     private String status;
@@ -77,5 +77,5 @@ public class EVgm extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "event_code = 'CarrierBookingEvents'")
     @BatchSize(size = 50)
-    private List<Events> eventsList; // confirm with abhishek how to check the event code thing
+    private List<Events> eventsList;
 }

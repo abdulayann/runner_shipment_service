@@ -218,7 +218,7 @@ public class ShippingInstruction extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "event_code = 'CarrierBookingEvents'")
     @BatchSize(size = 50)
-    private List<Events> eventsList; // todo:
+    private List<Events> eventsList;
 
     @Column(name = "b_l_object_status")
     private String bLObjectStatus;
