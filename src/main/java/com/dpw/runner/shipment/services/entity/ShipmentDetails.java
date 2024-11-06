@@ -555,4 +555,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
 
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
 }
