@@ -457,9 +457,9 @@ class ReferenceNumbersDaoTest {
         var referenceNumberDaoSpy = Mockito.spy(referenceNumbersDao);
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         referenceNumbers.setId(1L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
         Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
-        hashMap.put(2L, referenceNumbers);
-        assertThrows(DataRetrievalFailureException.class, () -> referenceNumberDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(referenceNumbers), carrierBookingId, hashMap));
+        assertThrows(DataRetrievalFailureException.class, () -> referenceNumberDaoSpy.saveEntityFromCarrierBooking(referenceNumbersList, carrierBookingId, hashMap));
     }
 
     @Test

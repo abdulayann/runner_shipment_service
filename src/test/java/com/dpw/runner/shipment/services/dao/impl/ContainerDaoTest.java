@@ -406,7 +406,8 @@ class ContainerDaoTest {
         Containers container = new Containers();
         container.setId(1L);
         doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
-        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(container), carrierBookingId));
+        List<Containers> containersList = Collections.singletonList(container);
+        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromCarrierBooking(containersList, carrierBookingId));
     }
 
     @Test
@@ -461,8 +462,9 @@ class ContainerDaoTest {
         var containerDaoSpy = Mockito.spy(containerDao);
         Containers container = new Containers();
         container.setId(1L);
+        List<Containers> containersList = Collections.singletonList(container);
         doReturn(mock(Page.class)).when(containerDaoSpy).findAll(any(), any());
-        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(container), shippingInstructionId));
+        assertThrows(DataRetrievalFailureException.class, () -> containerDaoSpy.saveEntityFromShippingInstruction(containersList, shippingInstructionId));
     }
 
     @Test

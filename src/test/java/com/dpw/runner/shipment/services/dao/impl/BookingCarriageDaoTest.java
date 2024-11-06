@@ -337,9 +337,10 @@ class BookingCarriageDaoTest {
         var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
         BookingCarriage bookingCarriage = new BookingCarriage();
         bookingCarriage.setId(1L);
+        List<BookingCarriage> bookingCarriageList = Collections.singletonList(bookingCarriage);
         Map<Long, BookingCarriage> hashMap = new HashMap<>();
         hashMap.put(2L, bookingCarriage);
-        assertThrows(DataRetrievalFailureException.class, () -> bookingCarriageDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(bookingCarriage), carrierBookingId, hashMap));
+        assertThrows(DataRetrievalFailureException.class, () -> bookingCarriageDaoSpy.saveEntityFromCarrierBooking(bookingCarriageList, carrierBookingId, hashMap));
     }
 
     @Test
