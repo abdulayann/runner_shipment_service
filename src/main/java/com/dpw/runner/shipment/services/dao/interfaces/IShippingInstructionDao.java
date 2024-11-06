@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.EVgm;
 import com.dpw.runner.shipment.services.entity.ShippingInstruction;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

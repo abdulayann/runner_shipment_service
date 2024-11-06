@@ -387,7 +387,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String carrierBookingRef;
 
     @Column(name = "carrier_booking_id")
-    private Long carrierBookingId; //TODO-  do we need to remove intra booking id and booking number, etc
+    private Long carrierBookingId;
 
     @Column(name = "mode_of_booking")
     @Size(max = 64, message = "max size is 64 for mode_of_booking")

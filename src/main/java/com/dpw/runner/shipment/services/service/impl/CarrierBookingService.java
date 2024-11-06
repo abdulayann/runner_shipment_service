@@ -54,7 +54,6 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Slf4j
 public class CarrierBookingService implements ICarrierBookingService {
     ExecutorService executorService = Executors.newFixedThreadPool(10);
-    private static final Random rnd = new SecureRandom();
 
     @Autowired
     private ModelMapper modelMapper;

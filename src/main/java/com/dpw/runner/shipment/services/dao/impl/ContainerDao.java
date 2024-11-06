@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -210,7 +211,7 @@ public class ContainerDao implements IContainerDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (hashMap.get(id) == null) {
-                    log.debug("Containers is null for Id {}", req.getId());
+                    log.debug(ContainerConstants.NULL_CONTAINER_ID_FOR_REQUEST, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
@@ -248,7 +249,7 @@ public class ContainerDao implements IContainerDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 if (hashMap.get(id) == null) {
-                    log.debug("Containers is null for Id {}", req.getId());
+                    log.debug(ContainerConstants.NULL_CONTAINER_ID_FOR_REQUEST, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
                 oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));

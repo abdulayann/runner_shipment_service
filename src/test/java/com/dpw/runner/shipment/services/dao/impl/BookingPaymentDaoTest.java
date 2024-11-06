@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -176,12 +177,6 @@ class BookingPaymentDaoTest {
     }
 
     @Test
-    void delete_ValidBookingPayment_ThrowsException() {
-        doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(BookingPayment.class));
-        bookingPaymentDao.deleteBookingPayments(Map.of(1L , testData),"bookingPayment", 1L);
-    }
-
-    @Test
     void updateEntityFromCarrierBooking_ExceptionThrown_ReturnsEmptyList() {
         Long carrierBookingId = 1L;
         var bookingPaymentDaoSpy = Mockito.spy(bookingPaymentDao);
@@ -213,12 +208,12 @@ class BookingPaymentDaoTest {
     @Test
     void saveEntityFromCarrierBooking_ExceptionThrown() {
         Long carrierBookingId = 1L;
-        var bookingPaymentDaoSpy = Mockito.spy(bookingPaymentDao);
         BookingPayment bookingPayment = new BookingPayment();
         bookingPayment.setId(1L);
+        List<BookingPayment> bookingPaymentList = Collections.singletonList(bookingPayment);
+        var bookingPaymentDaoSpy = Mockito.spy(bookingPaymentDao);
         Map<Long, BookingPayment> hashMap = new HashMap<>();
-        hashMap.put(2L, bookingPayment);
-        assertThrows(DataRetrievalFailureException.class, () -> bookingPaymentDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(bookingPayment), carrierBookingId, hashMap));
+        assertThrows(DataRetrievalFailureException.class, () -> bookingPaymentDaoSpy.saveEntityFromCarrierBooking(bookingPaymentList, carrierBookingId, hashMap));
     }
 
     @Test

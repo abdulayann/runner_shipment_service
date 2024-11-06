@@ -56,7 +56,7 @@ class CarrierBookingDaoTest {
         carrierBooking.setIsLocked(Boolean.FALSE);
         carrierBooking.setForwarderRefNumber("abcd");
         carrierBooking.setBol("abcd");
-        when(carrierBookingRepository.findByForwarderRefNumber(eq("abcd"), eq(1))).thenReturn(Collections.emptyList());
+        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(Collections.emptyList());
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Collections.emptySet());
         when(carrierBookingRepository.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
@@ -78,8 +78,8 @@ class CarrierBookingDaoTest {
         Parties consolidationAddress = Parties.builder().build().setType("abcd");
         carrierBooking.setConsolidationAddresses(Collections.singletonList(consolidationAddress));
         List<Long> carrierBookingList = Collections.singletonList(1L);
-        when(carrierBookingRepository.findByForwarderRefNumber(eq("abcd"), eq(1))).thenReturn(carrierBookingList);
-        when(carrierBookingRepository.findByBol(eq("abcd"), eq(1))).thenReturn(carrierBookingList);
+        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(carrierBookingList);
+        when(carrierBookingRepository.findByBol("abcd", 1)).thenReturn(carrierBookingList);
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Collections.emptySet());
         when(carrierBookingRepository.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
@@ -105,8 +105,8 @@ class CarrierBookingDaoTest {
 
         List<Long> carrierBookingList = Collections.singletonList(2L);
         Set<String> errors = new HashSet<>();
-        when(carrierBookingRepository.findByForwarderRefNumber(eq("abcd"), eq(1))).thenReturn(carrierBookingList);
-        when(carrierBookingRepository.findByBol(eq("abcd"), eq(1))).thenReturn(carrierBookingList);
+        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(carrierBookingList);
+        when(carrierBookingRepository.findByBol("abcd", 1)).thenReturn(carrierBookingList);
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(errors);
         when(carrierBookingRepository.findById(1L)).thenReturn(Optional.of(carrierBooking));
@@ -196,7 +196,7 @@ class CarrierBookingDaoTest {
     @Test
     void findByBol_ValidBol_ReturnsOptionalOfCarrierBookingIdList() {
         Long carrierBookingId = 1L;
-        when(carrierBookingRepository.findByBol(eq("abcd"), eq(1))).thenReturn(Collections.singletonList(carrierBookingId));
+        when(carrierBookingRepository.findByBol("abcd", 1)).thenReturn(Collections.singletonList(carrierBookingId));
         List<Long> result = carrierBookingDao.getCarrierBookingIdsListFromBol("abcd");
 
         assertFalse(result.isEmpty());
@@ -207,7 +207,7 @@ class CarrierBookingDaoTest {
     @Test
     void findByForwarderRefNumber_ValidRef_ReturnsOptionalOfCarrierBookingIdList() {
         Long carrierBookingId = 1L;
-        when(carrierBookingRepository.findByForwarderRefNumber(eq("abcd"), eq(1))).thenReturn(Collections.singletonList(carrierBookingId));
+        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(Collections.singletonList(carrierBookingId));
 
         List<Long> result = carrierBookingDao.getCarrierBookingIdsListFromForwarderRefNumber("abcd");
 

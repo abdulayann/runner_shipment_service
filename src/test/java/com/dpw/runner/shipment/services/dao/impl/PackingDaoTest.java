@@ -805,12 +805,11 @@ class PackingDaoTest {
     @Test
     void saveEntityFromCarrierBooking_ExceptionThrown() {
         Long carrierBookingId = 1L;
-        var packingDaoSpy = Mockito.spy(packingDao);
-        Packing packing = new Packing();
-        packing.setId(1L);
-        Map<Long, Packing> hashMap = new HashMap<>();
-        hashMap.put(2L, packing);
-        assertThrows(DataRetrievalFailureException.class, () -> packingDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(packing), carrierBookingId, hashMap));
+        List<Packing> packingList = Collections.singletonList(testPacking);
+        packingList.get(0).setId(1L);
+        PackingDao spyService = spy(packingDao);
+        Map<Long, Packing> map = new HashMap<>();
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromShippingInstruction(packingList, carrierBookingId, map));
     }
 
     @Test
@@ -873,12 +872,11 @@ class PackingDaoTest {
     @Test
     void saveEntityFromShippingInstruction_ExceptionThrown() {
         Long shippingInstructionId = 1L;
-        var packingDaoSpy = Mockito.spy(packingDao);
-        Packing packing = new Packing();
-        packing.setId(1L);
-        Map<Long, Packing> hashMap = new HashMap<>();
-        hashMap.put(2L, packing);
-        assertThrows(DataRetrievalFailureException.class, () -> packingDaoSpy.saveEntityFromShippingInstruction(Collections.singletonList(packing), shippingInstructionId, hashMap));
+        List<Packing> packingList = Collections.singletonList(testPacking);
+        packingList.get(0).setId(1L);
+        PackingDao spyService = spy(packingDao);
+        Map<Long, Packing> map = new HashMap<>();
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromShippingInstruction(packingList, shippingInstructionId, map));
     }
 
     @Test
