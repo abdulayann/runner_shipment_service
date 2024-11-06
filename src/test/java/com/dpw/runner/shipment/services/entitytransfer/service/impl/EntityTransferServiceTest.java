@@ -697,6 +697,30 @@ class EntityTransferServiceTest {
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
     }
+
+    @Test
+    void testSendConsolidationValidation_Failure_Air_NON_STD_ShipmentFieldsException() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.getCarrierDetails().setFlightNumber("A123");
+        consolidationDetails.getCarrierDetails().setShippingLine("Air India");
+        ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.CONSOLIDATION_TYPE_CLD);
+        shipmentDetails.getCarrierDetails().setFlightNumber(null);
+        shipmentDetails.getCarrierDetails().setShippingLine(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.IATAAgent = true;
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+    }
     @Test
     void testSendConsolidationValidation_Failure_Air_ShipmentFieldsException_InterBranch() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();

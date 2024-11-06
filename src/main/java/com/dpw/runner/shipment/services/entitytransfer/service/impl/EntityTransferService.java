@@ -853,7 +853,8 @@ public class EntityTransferService implements IEntityTransferService {
                         TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
                         // TODO Need to set that.tenant.IATAAgent = true condition for Air
                         if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) &&
-                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent){
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent &&
+                            Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                             List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
                             if(awbs.isEmpty())
                                 hblGenerationError = true;
