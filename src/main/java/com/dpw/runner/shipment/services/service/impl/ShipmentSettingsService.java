@@ -110,9 +110,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
         try {
             shipmentSettingsDetails = shipmentSettingsDao.save(shipmentSettingsDetails);
-            shipmentSettingsDetails.setEntityTransferEnabledDate(null);
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getEntityTransfer())) {
-                shipmentSettingsDetails.setEntityTransferEnabledDate(LocalDateTime.now());
+            shipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(null);
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabled())) {
+                shipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(LocalDateTime.now());
             }
 
             if(shipmentSettingsDetails.getHblTermsConditionTemplate() != null) {
@@ -205,10 +205,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
                 request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
             }
-            if (Boolean.TRUE.equals(request.getEntityTransfer())) {
-                request.setEntityTransferEnabledDate(Boolean.TRUE.equals(oldEntity.get().getEntityTransfer()) ? oldEntity.get().getEntityTransferEnabledDate() : LocalDateTime.now());
+            if (Boolean.TRUE.equals(request.getIsEntityTransferPrerequisiteEnabled())) {
+                request.setIsEntityTransferPrerequisiteEnabledDate(Boolean.TRUE.equals(oldEntity.get().getIsEntityTransferPrerequisiteEnabled()) ? oldEntity.get().getIsEntityTransferPrerequisiteEnabledDate() : LocalDateTime.now());
             } else {
-                request.setEntityTransferEnabledDate(null);
+                request.setIsEntityTransferPrerequisiteEnabledDate(null);
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
@@ -383,11 +383,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHideManifest() == null) {
                 request.setHideManifest(oldEntity.get().getHideManifest());
             }
-            if(request.getEntityTransfer() == null) {
-                request.setEntityTransfer(oldEntity.get().getEntityTransfer());
+            if(request.getIsEntityTransferPrerequisiteEnabled() == null) {
+                request.setIsEntityTransferPrerequisiteEnabled(oldEntity.get().getIsEntityTransferPrerequisiteEnabled());
             }
-            if(request.getEntityTransferEnabledDate() == null && oldEntity.get().getEntityTransferEnabledDate() !=null) {
-                request.setEntityTransferEnabledDate(oldEntity.get().getEntityTransferEnabledDate());
+            if(request.getIsEntityTransferPrerequisiteEnabledDate() == null && oldEntity.get().getIsEntityTransferPrerequisiteEnabledDate() !=null) {
+                request.setIsEntityTransferPrerequisiteEnabledDate(oldEntity.get().getIsEntityTransferPrerequisiteEnabledDate());
             }
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
@@ -704,15 +704,15 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
         try {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
-            Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getEntityTransfer();
-            Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getEntityTransfer() != null) && shipmentSettingsPatchRequest.getEntityTransfer().orElse(false);
-            LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getEntityTransferEnabledDate();
+            Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabled();
+            Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled() != null) && shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled().orElse(false);
+            LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
-            oldShipmentSettingsDetails.setEntityTransfer(newEntityTransferFlag);
+            oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(newEntityTransferFlag);
             if(Boolean.TRUE.equals(newEntityTransferFlag)) {
-                oldShipmentSettingsDetails.setEntityTransferEnabledDate(Boolean.FALSE.equals(oldEntityTransferFlag) ? LocalDateTime.now(): oldEntityTransferEnabledDate);
+                oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(Boolean.FALSE.equals(oldEntityTransferFlag) ? LocalDateTime.now(): oldEntityTransferEnabledDate);
             } else {
-                oldShipmentSettingsDetails.setEntityTransferEnabledDate(null);
+                oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(null);
             }
             ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);
             ShipmentSettingsDetailsResponse response = jsonHelper.convertValue(newShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class);

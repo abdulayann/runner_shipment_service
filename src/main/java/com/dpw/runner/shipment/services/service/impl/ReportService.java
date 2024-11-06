@@ -721,10 +721,16 @@ public class ReportService implements IReportService {
             }
             if (pdfByteContent != null)
             {
+                String documentType = ReportConstants.SHIPMENT_HOUSE_BILL;
+                if(reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                    documentType = ReportConstants.ORIGINAL_HOUSE_BILL;
+                } else if(reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                    documentType = ReportConstants.DRAFT_HOUSE_BILL;
+                }
                 DocUploadRequest docUploadRequest = new DocUploadRequest();
                 docUploadRequest.setEntityType(Constants.Shipments);
                 docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
-                docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
+                docUploadRequest.setType(documentType);
                 docUploadRequest.setReportId(reportRequest.getReportId());
                 try {
                     AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType(), StringUtility.convertToString(shipmentDetails.getGuid()));
@@ -736,7 +742,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, tenantSettingsRow);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name()))
             {
