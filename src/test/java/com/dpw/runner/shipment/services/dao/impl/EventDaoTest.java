@@ -7,7 +7,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -15,6 +25,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
@@ -36,7 +47,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -462,8 +472,10 @@ class EventDaoTest {
         Events events = new Events();
         events.setEntityId(1L);
         events.setEntityType(Constants.SHIPMENT);
+        events.setEventCode(EventConstants.BOCO);
 
-        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
+        ShipmentDetails shipment = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR).shipmentId("SHP01").build();
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
         List<ShipmentDetails> shipmentDetailsList = List.of(shipment);
