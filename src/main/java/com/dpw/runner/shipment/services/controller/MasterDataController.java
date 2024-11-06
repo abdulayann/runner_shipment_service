@@ -1114,7 +1114,7 @@ public class MasterDataController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.LIST_BRANCHES, response = DependentServiceResponse.class),
+            @ApiResponse(code = 200, message = ShipmentConstants.TENANT_DATA_RETRIEVAL, response = DependentServiceResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
     @PostMapping(ApiConstants.LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS)
