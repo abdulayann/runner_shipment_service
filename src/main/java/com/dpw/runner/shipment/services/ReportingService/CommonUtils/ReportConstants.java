@@ -691,6 +691,8 @@ public class ReportConstants {
     public static final String AIRWAY_BILL = "AirwayBill";
     public static final String AIRCRAFT_TYPE = "AircraftType";
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
+    public static final String ORIGINAL_HOUSE_BILL = "Original HBL";
+    public static final String DRAFT_HOUSE_BILL = "Draft HBL";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
     public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
