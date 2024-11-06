@@ -35,6 +35,7 @@ import static java.util.stream.Collectors.toMap;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -418,6 +419,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
+    @Autowired
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -4685,6 +4689,13 @@ public class ConsolidationService implements IConsolidationService {
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+            // Populate default department
+            List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE);
+            if(!CollectionUtils.isEmpty(departmentList) && departmentList.size() == 1) {
+                response.setDepartment(StringUtility.convertToString(departmentList.get(0).get(MdmConstants.DEPARTMENT)));
+            }
+
             try {
                 log.info("Fetching Tenant Model");
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
