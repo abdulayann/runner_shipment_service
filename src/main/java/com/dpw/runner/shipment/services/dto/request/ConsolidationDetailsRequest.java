@@ -138,4 +138,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     @ExcludeTimeZone
     private LocalDateTime latDate;
     private String department;
+    private Boolean isNetworkFile;
 }

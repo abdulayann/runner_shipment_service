@@ -45,8 +45,8 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
+
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
@@ -1301,6 +1301,34 @@ class MasterDataUtilsTest {
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(UnlocationsResponse.class))).thenReturn(null);
         var response = masterDataUtils.getLocationData(Set.of(locationGuid));
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getLocationDataFromCache() {
+        var response = masterDataUtils.getLocationDataFromCache(null);
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getLocationDataFromCache2() {
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = masterDataUtils.getLocationDataFromCache(Set.of());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getLocationDataFromCache3() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String locationGuid = StringUtility.convertToString(UUID.randomUUID());
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        doReturn(new HashMap<>()).when(spyService).getLocationData(any());
+        var response = spyService.getLocationDataFromCache(Set.of(locationGuid));
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }

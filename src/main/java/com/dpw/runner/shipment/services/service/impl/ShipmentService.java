@@ -21,8 +21,8 @@ import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
@@ -765,7 +765,7 @@ public class ShipmentService implements IShipmentService {
             );
 
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)), executorService);
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1507,6 +1507,14 @@ public class ShipmentService implements IShipmentService {
         return charge;
     }
 
+    private void calculateChargableAndChargableUnit(ShipmentDetails shipmentDetails, MeasurementBasisResponse response) throws RunnerException {
+        PackSummaryResponse summaryResponse = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
+        if (summaryResponse != null) {
+            response.setChargable(summaryResponse.getChargeableWeight());
+            response.setChargeableUnit(summaryResponse.getPacksChargeableWeightUnit());
+        }
+    }
+
     private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
         Integer totalPacks = 0;
         String tempPackingUnit = null;
@@ -1620,7 +1628,7 @@ public class ShipmentService implements IShipmentService {
 
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
             ShipmentDetails finalEntity1 = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)), executorService);
             ShipmentDetails finalEntity = entity;
             return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
@@ -1709,7 +1717,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
-        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)));
+        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)), executorService);
         List<Long> tempConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
         boolean syncConsole = false;
@@ -2191,7 +2199,7 @@ public class ShipmentService implements IShipmentService {
         List<JobRequest> jobRequestList = shipmentRequest.getJobsList();
         List<NotesRequest> notesRequestList = shipmentRequest.getNotesList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = shipmentRequest.getReferenceNumbersList();
-        List<RoutingsRequest> routingsRequestList = shipmentRequest.getRoutingsList();
+        List<RoutingsRequest> routingsRequestList = jsonHelper.convertValueToList(shipmentDetails.getRoutingsList(), RoutingsRequest.class);
         List<ServiceDetailsRequest> serviceDetailsRequestList = shipmentRequest.getServicesList();
         List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
@@ -2316,6 +2324,7 @@ public class ShipmentService implements IShipmentService {
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
+                commonUtils.updateEventWithMasterDataDescription(eventsList);
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
@@ -3611,6 +3620,8 @@ public class ShipmentService implements IShipmentService {
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+        if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
+            response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
         var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
@@ -4404,6 +4415,8 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setOceanDGStatus(null);
             cloneShipmentDetails.setCreatedBy(null);
             cloneShipmentDetails.setShipmentOrders(null);
+            if(!Objects.isNull(cloneShipmentDetails.getPackingList()))
+                cloneShipmentDetails.getPackingList().forEach(e -> e.setId(null));
 
             cloneShipmentDetails.setShipmentCreatedOn(LocalDateTime.now());
 
@@ -6263,6 +6276,7 @@ public class ShipmentService implements IShipmentService {
             MeasurementBasisResponse response = modelMapper.map(shipmentDetails.get(), MeasurementBasisResponse.class);
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, shipmentDetails.get().getContainersList());
+            calculateChargableAndChargableUnit(shipmentDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -7247,6 +7261,7 @@ public class ShipmentService implements IShipmentService {
 
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
 
@@ -7260,6 +7275,13 @@ public class ShipmentService implements IShipmentService {
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
         shipmentDao.save(shipment, false);
+
+        // Delete the shipment pending pull/push request tasks when the shipment got cancelled
+        if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
+            consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
+        }
+        pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
 
         return ResponseHelper.buildSuccessResponse();

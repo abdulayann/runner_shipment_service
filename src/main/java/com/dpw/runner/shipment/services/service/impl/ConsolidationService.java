@@ -23,8 +23,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchRequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest.ModuleData;
@@ -488,7 +488,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid);
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -521,7 +521,7 @@ public class ConsolidationService implements IConsolidationService {
             getConsolidation(consolidationDetails, false);
 
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
@@ -1427,7 +1427,7 @@ public class ConsolidationService implements IConsolidationService {
 
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
             ConsolidationDetails finalEntity1 = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)));
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
             ConsolidationDetails finalEntity = entity;
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
@@ -3707,7 +3707,7 @@ public class ConsolidationService implements IConsolidationService {
         if(Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
         CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
-        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), finalOldCarrierDetails)));
+        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(consolidationDetails.getCarrierDetails(), finalOldCarrierDetails)), executorService);
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
@@ -3902,6 +3902,7 @@ public class ConsolidationService implements IConsolidationService {
             eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
             List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
             commonUtils.removeDuplicateTrackingEvents(eventsList);
+            commonUtils.updateEventWithMasterDataDescription(eventsList);
             eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.CONSOLIDATION);
             consolidationDetails.setEventsList(eventsList);
         }
@@ -4759,6 +4760,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             calculatePacksAndPacksUnit(consolidationDetails.get().getPackingList(), response);
             calculateContainersAndTeu(response, consolidationDetails.get().getContainersList());
+            calculateChargableAndChargableUnit(consolidationDetails.get(), response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4810,6 +4812,14 @@ public class ConsolidationService implements IConsolidationService {
             response.setTeuCount(masterDataUtils.setContainerTeuDataWithContainers(containersList));
             response.setContainerData(containerCountMap);
             response.setContainerCount(containerCount);
+        }
+    }
+
+    private void calculateChargableAndChargableUnit(ConsolidationDetails consolidationDetails, MeasurementBasisResponse response) throws RunnerException {
+        PackSummaryResponse summaryResponse = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+        if (summaryResponse != null) {
+            response.setChargable(summaryResponse.getChargeableWeight());
+            response.setChargeableUnit(summaryResponse.getPacksChargeableWeightUnit());
         }
     }
 
