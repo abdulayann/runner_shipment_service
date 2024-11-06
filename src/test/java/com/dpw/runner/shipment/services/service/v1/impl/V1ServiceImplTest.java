@@ -5804,4 +5804,40 @@ class V1ServiceImplTest {
         assertNotNull(throwable);
     }
 
+    @Test
+    void listBranchesByDefaultOrgAndAddress() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
 }
