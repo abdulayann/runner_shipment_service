@@ -1252,6 +1252,6 @@ public class ReportConstants {
     public static final String SECURITY_STATUS_RECEIVED_FROM = "ReceivedFrom";
     public static final String AOM_FREE_TEXT = "AnyOtherMeans";
     public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
-
+    public static final String REGULATORY_ENTITY_CATEGORY = "RegulatoryEntityCategory";
 
 }
