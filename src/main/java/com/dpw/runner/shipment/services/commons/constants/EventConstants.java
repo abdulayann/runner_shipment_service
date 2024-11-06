@@ -6,8 +6,6 @@ import java.util.Set;
 public class EventConstants {
 
 
-    public static final String DHBL = "DHBL";
-    public static final String PRST = "PRST";
 
     private EventConstants(){}
     public static final String SHIPMENT = "SHIPMENT";
@@ -62,7 +60,16 @@ public class EventConstants {
     public static final String BKCR  = "BKCR";
     public static final String ECCC  = "ECCC";
     public static final String BLRS  = "BLRS";
+    public static final String DHBL  = "DHBL";
+    public static final String DNMU  = "DNMU";
+    public static final String FNMU  = "FNMU";
+    public static final String PRST  = "PRST";
+    public static final String TSHA  = "TSHA";
     public static final String COOD  = "COOD";
+    public static final String COCR  = "COCR";
+    public static final String COSN  = "COSN";
+    public static final String TCOA  = "TCOA";
+
     // ~~~~~~ end runner event short codes
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");

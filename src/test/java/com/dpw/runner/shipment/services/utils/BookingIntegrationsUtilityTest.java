@@ -1,5 +1,26 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -16,7 +37,13 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
@@ -30,6 +57,15 @@ import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -45,16 +81,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -583,7 +609,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
 
     }
 
@@ -600,7 +626,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
 
     }
 
@@ -616,7 +642,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -631,7 +657,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -643,7 +669,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
