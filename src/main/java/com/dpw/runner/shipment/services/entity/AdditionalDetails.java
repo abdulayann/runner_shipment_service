@@ -338,6 +338,14 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "surrender_printed")
     private Boolean surrenderPrinted;
 
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "import_broker_country")
+    private String importBrokerCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "export_broker_country")
+    private String exportBrokerCountry;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
     @OrganizationData

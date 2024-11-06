@@ -4133,6 +4133,12 @@ public class ConsolidationService implements IConsolidationService {
                 consol.setSendingAgent(parties);
             }
         }
+        if(!commonUtils.checkIfPartyExists(consol.getSendingAgent())) {
+            consol.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getOriginPortLocCode()));
+        }
+        if(!commonUtils.checkIfPartyExists(consol.getReceivingAgent())) {
+            consol.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getDestinationPortLocCode()));
+        }
 
         createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
 
