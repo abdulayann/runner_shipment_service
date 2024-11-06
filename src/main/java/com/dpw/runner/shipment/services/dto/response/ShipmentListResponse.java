@@ -140,4 +140,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private LocalDateTime cargoDeliveryDate;
     private Integer ordersCount;
     private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
 }

@@ -2169,7 +2169,6 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-
     @Test
     void listOrgsTest() {
         // Mock
@@ -2200,7 +2199,34 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest2() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenThrow(new RuntimeException());
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest3() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenThrow(new RuntimeException("RuntimeException"));
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 }

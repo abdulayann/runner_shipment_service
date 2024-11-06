@@ -140,4 +140,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private LocalDateTime requestedOn;
     private Map<String, String> tenantMasterData;
     private Boolean isNetworkFlag;
+    private Boolean isReceivingBranchManually;
 }

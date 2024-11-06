@@ -104,6 +104,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private AllocationsResponse allocations;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
     private PartiesResponse borrowedFrom;
@@ -163,4 +165,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Integer pendingActionCount;
     private String department;
     private Boolean isNetworkFlag;
+    private Boolean isReceivingBranchManually;
 }

@@ -15,6 +15,10 @@ import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -23,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -103,6 +108,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAG
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -1752,6 +1758,20 @@ public class CommonUtils {
         }
 
         return eventCodeDescriptionMap;
+    }
+
+    public boolean checkIfPartyExists(PartiesResponse party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public boolean checkIfPartyExists(Parties party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public String getCountryFromUnLocCode(String unLocCode) {
+        if(IsStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
     }
 
     public void checkForMandatoryHsCodeForUAE(Awb awb) {
