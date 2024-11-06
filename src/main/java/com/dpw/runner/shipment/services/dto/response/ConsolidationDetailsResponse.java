@@ -163,4 +163,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Integer pendingActionCount;
     private String department;
     private Boolean isNetworkFlag;
+    private Boolean isReceivingBranchManually;
 }
