@@ -338,6 +338,14 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "surrender_printed")
     private Boolean surrenderPrinted;
 
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "import_broker_country")
+    private String importBrokerCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "export_broker_country")
+    private String exportBrokerCountry;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
     @OrganizationData
@@ -471,19 +479,12 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "empty_container_returned")
     private Boolean emptyContainerReturned;
 
-    public String getbLRemarks() {
-        return bLRemarks;
-    }
+    @Column(name = "is_export_custom_clearance_completed")
+    private Boolean isExportCustomClearanceCompleted;
 
-    public String getbLRemarksDescription() {
-        return bLRemarksDescription;
-    }
+    @Column(name = "bl_instruction_received")
+    private LocalDateTime blInstructionReceived;
 
-    public Parties geteTailor() {
-        return eTailor;
-    }
-
-    public String getbLTermsandConditionsId() {
-        return bLTermsandConditionsId;
-    }
+    @Column(name = "cargo_out_for_delivery")
+    private LocalDateTime cargoOutForDelivery;
 }

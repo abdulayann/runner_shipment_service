@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,5 +75,17 @@ class CountryListHelperTest {
     void testGetCountryNameByCode_Success_4Digit() {
         String countryName = CountryListHelper.ISO3166.getCountryNameByCode("DZAA");
         assertEquals("", countryName);
+    }
+
+    @Test
+    void testGetAlpha3FromAlpha2() {
+        String country = CountryListHelper.ISO3166.getAlpha3FromAlpha2("IN");
+        assertEquals("IND", country);
+    }
+
+    @Test
+    void testGetAlpha3FromAlpha2_Null() {
+        String country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(null);
+        assertNull(country);
     }
 }

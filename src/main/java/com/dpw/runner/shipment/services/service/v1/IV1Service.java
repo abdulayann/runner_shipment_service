@@ -202,4 +202,5 @@ public interface IV1Service {
     V1DataResponse getCompaniesDetails(Object request);
 
     V1DataResponse listOrgs(Object request);
+    V1DataResponse listBranchesByDefaultOrgAndAddress(Object request);
 }
