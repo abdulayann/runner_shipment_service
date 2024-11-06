@@ -12,6 +12,8 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -19,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
@@ -29,6 +32,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -148,6 +152,12 @@ class CommonUtilsTest {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private ShipmentDao shipmentDao;
+
+    @Mock
+    private ConsolidationDao consolidationDetailsDao;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -2762,7 +2772,7 @@ class CommonUtilsTest {
 
         assertEquals(mockEventDescription, mockEvent.getDescription());
     }
-    
+
     @ParameterizedTest
     @ValueSource(strings = {"", "I"})
     void testGetCountryFromUnLocCode(String req) {
@@ -2818,5 +2828,79 @@ class CommonUtilsTest {
                 new PartiesResponse(),
                 null
         );
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withBothShipmentAndConsolidationIdNull_shouldNotThrowException() {
+
+        Awb awb = new Awb();
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
     }
 }

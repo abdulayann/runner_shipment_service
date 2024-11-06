@@ -232,6 +232,7 @@ public class AwbService implements IAwbService {
 
         Awb awb = convertRequestToEntity(request);
         awb.setAwbNumber(awb.getAwbShipmentInfo().getAwbNumber());
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
 
         try {
             if (request.getId() == null) {
