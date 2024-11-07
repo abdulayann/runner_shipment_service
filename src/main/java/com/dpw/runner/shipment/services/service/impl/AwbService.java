@@ -1401,13 +1401,7 @@ public class AwbService implements IAwbService {
             var shipmentNotifyParty = shipmentDetails.getAdditionalDetails().getNotifyParty();
             if (shipmentNotifyParty.getAddressData() != null && shipmentNotifyParty.getAddressData().containsKey(PartiesConstants.COUNTRY)) {
                 List<String> alpha3CountriesList = new ArrayList<>();
-                String country = StringUtility.convertToString(shipmentNotifyParty.getAddressData().get(PartiesConstants.COUNTRY));
-                if (country != null) {
-                    if (country.length() == 2)
-                        country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
-                    if (country.length() == 3)
-                        alpha3CountriesList.add(country);
-                }
+                alpha3CountriesList = addAlpha3Country(shipmentNotifyParty.getAddressData(), alpha3CountriesList);
                 alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
             }
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
@@ -2204,13 +2198,7 @@ public class AwbService implements IAwbService {
         Map<String, String> alpha2DigitToCountry = shipmentAddressCountryMap(shipmentDetails);
         if (party != null && party.getAddressData() != null && party.getAddressData().containsKey(PartiesConstants.COUNTRY)) {
             List<String> alpha3CountriesList = new ArrayList<>();
-            String country = StringUtility.convertToString(party.getAddressData().get(PartiesConstants.COUNTRY));
-            if (country != null) {
-                if (country.length() == 2)
-                    country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
-                if (country.length() == 3)
-                    alpha3CountriesList.add(country);
-            }
+            alpha3CountriesList = addAlpha3Country(party.getAddressData(), alpha3CountriesList);
             alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
         }
         if(awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()) {
@@ -3453,13 +3441,7 @@ public class AwbService implements IAwbService {
                         EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
                         if(address != null) {
                             var addressMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(address));
-                            String country = addressMap != null && addressMap.containsKey(PartiesConstants.COUNTRY) ? StringUtility.convertToString(addressMap.get(PartiesConstants.COUNTRY)) : null;
-                            if (country != null) {
-                                if (country.length() == 2)
-                                    country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
-                                if (country.length() == 3)
-                                    alpha3CountriesList.add(country);
-                            }
+                            alpha3CountriesList = addAlpha3Country(addressMap, alpha3CountriesList);
                             Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
                             awbShipmentInfo.setIssuingAgentAddress(AwbUtility.constructAddressForAwb(addressMap));
                             constructIssuingAgentAddress(awbShipmentInfo, addressMap, alpha2DigitToCountry);
