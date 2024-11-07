@@ -322,7 +322,7 @@ class AwbServiceTest extends CommonMocks {
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-        when(awbDao.save(any())).thenReturn(testDmawb);
+        when(awbDao.save(any())).thenReturn(testMawb);
 
         // UnLocation response mocking
         when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
