@@ -222,7 +222,7 @@ public class ShipmentDao implements IShipmentDao {
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
                 throw new ValidationException("Please enter a valid MAWB number.");
-            if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (Objects.requireNonNull(oldShipment).getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT) && Objects.requireNonNull(shipmentDetails).getJobType() != null && !shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
+            if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (Objects.requireNonNull(oldShipment).getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
                 directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
         }
 
