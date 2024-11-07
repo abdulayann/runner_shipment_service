@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.MasterDataDto;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -28,6 +29,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field.Str;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +72,7 @@ public class MasterDataUtils{
     private int take;
 
     private static Map<String, Map<String, List<String>>> entityFieldsMasterDataMap = new HashMap<>();
+    private static Map<String, Map<String, Map<String, MasterDataDto>>> entityFieldsMasterDataDtoMap = new HashMap<>();
 
     public Map<String, EntityTransferChargeType> getChargeTypes(List<String> chargeCode) {
         if (Objects.isNull(chargeCode) || chargeCode.isEmpty())
@@ -386,15 +389,18 @@ public class MasterDataUtils{
             return requests;
         Map<String, String> fieldNameKeyMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        List<String> fields = fetchFieldsMap(mainClass, Constants.MASTER_DATA);
-        for (String field: fields){
+        Map<String, MasterDataDto> fields = fetchFieldsMapWithMasterData(mainClass,
+            Constants.MASTER_DATA);
+        for (Map.Entry<String, MasterDataDto> entry: fields.entrySet()){
             try {
+                String field = entry.getKey();
+                MasterDataDto masterDataDto = entry.getValue();
                 Field field1 = Class.forName(entityPayload.getClass().getName()).getDeclaredField(field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
-                String itemType = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).type().getDescription();
-                String itemTypeName = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).type().name();
-                String cascadeField = mainClass.getDeclaredField(field).getDeclaredAnnotation(MasterData.class).cascade();
+                String itemType = masterDataDto.getItemDescription();
+                String itemTypeName = masterDataDto.getItemType();
+                String cascadeField = masterDataDto.getCascade();
                 String cascade = null;
 
                 if(!cascadeField.equals("")){
@@ -792,7 +798,86 @@ public class MasterDataUtils{
             return fields;
         }
     }
-
+    public Map<String, MasterDataDto> fetchFieldsMapWithMasterData(Class mainClass,String masterDataType) {
+        if(entityFieldsMasterDataDtoMap.containsKey(mainClass.getSimpleName()) && entityFieldsMasterDataDtoMap.get(mainClass.getSimpleName()).containsKey(masterDataType)){
+            return entityFieldsMasterDataDtoMap.get(mainClass.getSimpleName()).get(masterDataType);
+        } else {
+            Map<String, MasterDataDto> fields = new HashMap<>();
+            for (Field field : mainClass.getDeclaredFields()) {
+                field.setAccessible(true);
+                MasterData masterDataAnnotation = field.getDeclaredAnnotation(
+                    MasterData.class);
+                DedicatedMasterData masterData = field.getDeclaredAnnotation(
+                    DedicatedMasterData.class);
+                MasterDataDto masterData1 = new MasterDataDto();
+                if (!Objects.isNull(masterDataAnnotation)) {
+                    masterData1.setItemDescription(masterDataAnnotation.type().getDescription());
+                    masterData1.setItemType(masterDataAnnotation.type().name());
+                    masterData1.setCascade(masterDataAnnotation.cascade());
+                }
+                switch (masterDataType) {
+                    case Constants.VESSEL_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.VESSEL_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.CHARGE_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.CHARGE_TYPE_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.COMMODITY_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.COMMODITY_TYPE_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.CURRENCY_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.CURRENCY_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.CONTAINER_TYPE_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.CONTAINER_TYPE_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.CARRIER_MASTER_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.CARRIER_MASTER_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.DG_SUBSTANCE:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.DG_SUBSTANCE))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.WARE_HOUSE_DATA:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.WARE_HOUSE_DATA))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.ACTIVITY_TYPE:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.ACTIVITY_TYPE))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.SALES_AGENT:
+                        if (field.isAnnotationPresent(DedicatedMasterData.class) && masterData.type().equals(Constants.SALES_AGENT))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.TENANT_MASTER_DATA:
+                        if (field.isAnnotationPresent(TenantIdData.class))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.UNLOCATIONS:
+                        if (field.isAnnotationPresent(UnlocationData.class))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    case Constants.MASTER_DATA:
+                        if (field.isAnnotationPresent(MasterData.class))
+                            fields.put(field.getName(), masterData1);
+                        break;
+                    default:
+                }
+            }
+            if(!entityFieldsMasterDataDtoMap.containsKey(mainClass.getSimpleName())){
+                entityFieldsMasterDataDtoMap.put(mainClass.getSimpleName(), new HashMap<>());
+            }
+            entityFieldsMasterDataDtoMap.get(mainClass.getSimpleName()).put(masterDataType, fields);
+            return fields;
+        }
+    }
     public Map<String, EntityTransferVessels> fetchInBulkVessels(Set<String> requests) {
         Map<String, EntityTransferVessels> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
