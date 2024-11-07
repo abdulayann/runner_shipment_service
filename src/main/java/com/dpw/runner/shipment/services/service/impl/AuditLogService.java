@@ -106,7 +106,6 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", Constants.CREATED_AT);
     }
 
-    public ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private IAuditLogDao auditLogDao;
 
