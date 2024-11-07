@@ -735,7 +735,10 @@ public class ShipmentService implements IShipmentService {
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         lst.forEach(shipmentDetail -> {
+            long start = System.currentTimeMillis();
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
+            log.info("Time taken to map ShipmentListResponse using mapper | Time: {} ms. || RequestId: {}", (System.currentTimeMillis() - start) , LoggerHelper.getRequestIdFromMDC());
+
 //            containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
@@ -4569,6 +4572,8 @@ public class ShipmentService implements IShipmentService {
                 CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture,
                         activityDataFuture, salesAgentFuture,
                         containerTypeFuture).join();
+                log.info("Total time taken to retrieve master data {} with RequestId: {}", System.currentTimeMillis()-_start, LoggerHelper.getRequestIdFromMDC());
+
             }
             Map<Long, ContainerResponse> map = new HashMap<>();
             List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
