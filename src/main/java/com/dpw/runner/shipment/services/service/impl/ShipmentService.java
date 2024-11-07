@@ -2415,12 +2415,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-//        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
             processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
                     oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails);
             processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
                     oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails);
-//        }
+        }
     }
 
 
