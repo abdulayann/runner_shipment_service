@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
@@ -301,4 +302,72 @@ class BookingCarriageDaoTest {
         List<BookingCarriage> bookingCarriageList = Arrays.asList(bookingCarriage);
         assertEquals(bookingCarriageList, bookingCarriageDao.saveEntityFromShipment(bookingCarriageList, 1L, map));
     }
+    @Test
+    void updateEntityFromCarrierBooking_ExceptionThrown_ReturnsEmptyList() {
+        Long carrierBookingId = 1L;
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        doThrow(new RuntimeException("Test")).when(bookingCarriageDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> bookingCarriageDaoSpy.updateEntityFromCarrierBooking(Collections.emptyList(), carrierBookingId));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_BookingCarriageListHasElements_ReturnsResponseBookingCarriage() throws RunnerException {
+        Long carrierBookingId = 1L;
+        List<BookingCarriage> bookingCarriageList = Arrays.asList(new BookingCarriage(), new BookingCarriage());
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        doReturn(mock(Page.class)).when(bookingCarriageDaoSpy).findAll(any(), any());
+        doReturn(bookingCarriageList).when(bookingCarriageDaoSpy).saveEntityFromCarrierBooking(anyList(), eq(carrierBookingId), anyMap());
+        List<BookingCarriage> result = bookingCarriageDaoSpy.updateEntityFromCarrierBooking(bookingCarriageList, carrierBookingId);
+        assertEquals(bookingCarriageList, result);
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_BookingCarriageListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long carrierBookingId = 1L;
+        testData.setId(1L);
+        when(bookingCarriageRepository.findAll((Specification<BookingCarriage>) any(), (Pageable) any())).thenReturn(new PageImpl<BookingCarriage>(List.of(testData)));
+        List<BookingCarriage> result = bookingCarriageDao.updateEntityFromCarrierBooking(Collections.singletonList(testData), carrierBookingId);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ExceptionThrown() {
+        Long carrierBookingId = 1L;
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+        List<BookingCarriage> bookingCarriageList = Collections.singletonList(bookingCarriage);
+        Map<Long, BookingCarriage> hashMap = new HashMap<>();
+        hashMap.put(2L, bookingCarriage);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingCarriageDaoSpy.saveEntityFromCarrierBooking(bookingCarriageList, carrierBookingId, hashMap));
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_BookingCarriageNewRequest() {
+        Long carrierBookingId = 1L;
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        BookingCarriage reqBookingCarriage = new BookingCarriage();
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+        Map<Long, BookingCarriage> hashMap = new HashMap<>();
+        doReturn(Collections.singletonList(bookingCarriage)).when(bookingCarriageDaoSpy).saveAll(any());
+        List<BookingCarriage> result = bookingCarriageDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(reqBookingCarriage), carrierBookingId, hashMap);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_BookingCarriageUpdateRequest() {
+        Long carrierBookingId = 1L;
+        var bookingCarriageDaoSpy = Mockito.spy(bookingCarriageDao);
+        BookingCarriage bookingCarriage = new BookingCarriage();
+        bookingCarriage.setId(1L);
+        Map<Long, BookingCarriage> hashMap = new HashMap<>();
+        hashMap.put(1L, bookingCarriage);
+        doReturn(Collections.singletonList(bookingCarriage)).when(bookingCarriageDaoSpy).saveAll(any());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<BookingCarriage> result = bookingCarriageDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(bookingCarriage), carrierBookingId, hashMap);
+        assertNotNull(result);
+    }
+
 }

@@ -22,9 +22,13 @@ public interface IContainerDao {
 
     void delete(Containers containers);
 
-    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long shipmentId, boolean fromConsolidation) throws RunnerException;
+    List<Containers> updateEntityFromShipmentConsole(List<Containers> containersList, Long consolidationId, Long carrierBookingId, Long shipmentId, boolean fromConsolidation) throws RunnerException;
 
     List<Containers> updateEntityFromBooking(List<Containers> containersList, Long bookingId) throws RunnerException;
+
+    List<Containers> updateEntityFromCarrierBooking(List<Containers> containersList, Long carrierBookingId) throws RunnerException;
+
+    List<Containers> updateEntityFromShippingInstruction(List<Containers> containersList, Long shippingInstructionId) throws RunnerException;
 
     List<Containers> saveAll(List<Containers> containers);
 

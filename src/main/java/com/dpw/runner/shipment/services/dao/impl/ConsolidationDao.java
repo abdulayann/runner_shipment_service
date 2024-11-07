@@ -212,6 +212,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findByGuid(guid);
     }
 
+    public Optional<Long> findIdByGuid (UUID guid) {
+        return consolidationRepository.findIdByGuid(guid, TenantContext.getCurrentTenant());
+    }
+
     public List<ConsolidationDetails> findByBol (String bol) {
         return consolidationRepository.findByBol(bol, TenantContext.getCurrentTenant());
     }

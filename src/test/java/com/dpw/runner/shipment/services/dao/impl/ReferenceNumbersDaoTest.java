@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
@@ -261,6 +262,7 @@ class ReferenceNumbersDaoTest {
         List<ReferenceNumbers> savedEntities = referenceNumbersDao.saveEntityFromConsole(
                 List.of(referenceNumbers1, testData),
                 123L,
+                123L,
                 Map.of(1L , referenceNumbers1, testData.getId(), testData)
         );
 
@@ -285,21 +287,23 @@ class ReferenceNumbersDaoTest {
         assertThrows(Exception.class, () -> referenceNumbersDao.saveEntityFromConsole(
                 List.of(referenceNumbers1, testData),
                 123L,
+                123L,
                 Collections.emptyMap()
         ));
     }
 
     @Test
-    void updateEntityFromConsole_ValidInput_ReturnsResponseReferenceNumbers() throws RunnerException {
+    void updateEntityFromConsole_WithCarrierBooking_ValidInput_ReturnsResponseReferenceNumbers() throws RunnerException {
         // Arrange
         long consolidationId = 123L;
+        long carrierBookingId = 123L;
 
         List<ReferenceNumbers> referenceNumbers = List.of(testData);
         List<Long> shipmentIds = List.of(1L, 2L);
         when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<>(referenceNumbers));
 
         // Act
-        List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsole(referenceNumbers, consolidationId);
+        List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsoleWithCarrierBooking(referenceNumbers, consolidationId, carrierBookingId);
 
         // Assert
         assertNotNull(result);
@@ -308,14 +312,15 @@ class ReferenceNumbersDaoTest {
     }
 
     @Test
-    void updateEntityFromConsole_EmptyShipmentIds_ReturnsEmptyList() throws RunnerException {
+    void updateEntityFromConsole_WithCarrierBooking_EmptyShipmentIds_ReturnsEmptyList() throws RunnerException {
         // Arrange
         long consolidationId = 123L;
+        long carrierBookingId = 123L;
 //        when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(new ArrayList<>());
         when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<>(List.of(testData)));
 
         // Act
-        List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsole(new ArrayList<>(), consolidationId);
+        List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsoleWithCarrierBooking(new ArrayList<>(), consolidationId, carrierBookingId);
 
         // Assert
         assertNotNull(result);
@@ -415,5 +420,72 @@ class ReferenceNumbersDaoTest {
         when(referenceNumbersRepository.save(any())).thenReturn(referenceNumbers1);
 
         assertEquals(referenceNumbersList, referenceNumbersDao.updateEntityFromConsole(referenceNumbersList, 1L, oldList));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_ExceptionThrown_ReturnsEmptyList() {
+        Long carrierBookingId = 1L;
+        var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
+        doThrow(new RuntimeException("Test")).when(referenceNumbersDaoSpy).findAll(any(),any());
+        assertThrows(RunnerException.class, () -> referenceNumbersDaoSpy.updateEntityFromCarrierBooking(Collections.emptyList(), carrierBookingId));
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_ReferenceNumbersListHasElements_ReturnsResponseReferenceNumbers() throws RunnerException {
+        Long carrierBookingId = 1L;
+        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(new ReferenceNumbers(), new ReferenceNumbers());
+        var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
+        doReturn(mock(Page.class)).when(referenceNumbersDaoSpy).findAll(any(), any());
+        doReturn(referenceNumbersList).when(referenceNumbersDaoSpy).saveEntityFromCarrierBooking(anyList(), eq(carrierBookingId), anyMap());
+        List<ReferenceNumbers> result = referenceNumbersDaoSpy.updateEntityFromCarrierBooking(referenceNumbersList, carrierBookingId);
+        assertEquals(referenceNumbersList, result);
+    }
+
+    @Test
+    void updateEntityFromCarrierBooking_ReferenceNumbersListIsEmpty_ReturnsEmptyList() throws RunnerException {
+        Long carrierBookingId = 1L;
+        testData.setId(1L);
+        when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<ReferenceNumbers>(List.of(testData)));
+        List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromCarrierBooking(Collections.singletonList(testData), carrierBookingId);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ExceptionThrown() {
+        Long carrierBookingId = 1L;
+        var referenceNumberDaoSpy = Mockito.spy(referenceNumbersDao);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+        assertThrows(DataRetrievalFailureException.class, () -> referenceNumberDaoSpy.saveEntityFromCarrierBooking(referenceNumbersList, carrierBookingId, hashMap));
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ReferenceNumbersNewRequest() {
+        Long carrierBookingId = 1L;
+        var referenceNumberDaoSpy = Mockito.spy(referenceNumbersDao);
+        ReferenceNumbers reqReferenceNumbers = new ReferenceNumbers();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+        Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+        doReturn(Collections.singletonList(referenceNumbers)).when(referenceNumberDaoSpy).saveAll(any());
+        List<ReferenceNumbers> result = referenceNumberDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(reqReferenceNumbers), carrierBookingId, hashMap);
+        assertNotNull(result);
+    }
+
+    @Test
+    void saveEntityFromCarrierBooking_ReferenceNumbersUpdateRequest() {
+        Long carrierBookingId = 1L;
+        var referenceNumberDaoSpy = Mockito.spy(referenceNumbersDao);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+        Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+        hashMap.put(1L, referenceNumbers);
+        doReturn(Collections.singletonList(referenceNumbers)).when(referenceNumberDaoSpy).saveAll(any());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        List<ReferenceNumbers> result = referenceNumberDaoSpy.saveEntityFromCarrierBooking(Collections.singletonList(referenceNumbers), carrierBookingId, hashMap);
+        assertNotNull(result);
     }
 }

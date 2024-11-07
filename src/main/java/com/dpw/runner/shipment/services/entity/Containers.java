@@ -368,4 +368,10 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
+
+    @Column(name = "carrier_booking_id")
+    private Long carrierBookingId;
+
+    @Column(name = "shipping_instruction_id")
+    private Long  shippingInstructionId;
 }
