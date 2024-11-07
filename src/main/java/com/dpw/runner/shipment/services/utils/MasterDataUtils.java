@@ -457,6 +457,7 @@ public class MasterDataUtils{
 
     public Map<String, String> getCountriesMasterListData(List<String> alpha3Countries) {
         Set<MasterListRequest> listRequests = alpha3Countries.stream()
+                .filter(country -> country != null && country.length() == 3)
                 .map(country -> MasterListRequest.builder()
                         .ItemType(MasterDataType.COUNTRIES.getDescription())
                         .ItemValue(country)
