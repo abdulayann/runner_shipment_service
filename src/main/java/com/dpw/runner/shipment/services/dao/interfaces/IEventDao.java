@@ -41,5 +41,5 @@ public interface IEventDao {
 
     void updateEventDetails(Events event);
 
-    void updateEventDetails(List<Events> events);
+    boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode);
 }
