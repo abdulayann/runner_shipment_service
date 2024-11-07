@@ -902,13 +902,7 @@ public class AwbService implements IAwbService {
         } catch (Exception e) {
             throw new RunnerException("Failed while fetching tenant info from V1");
         }
-        List<String> alpha3CountriesList = new ArrayList<>();
-        alpha3CountriesList = addAlpha3Country(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null,alpha3CountriesList);
-        alpha3CountriesList = addAlpha3Country(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null,alpha3CountriesList);
-        for (var orgRow : consolidationDetails.getConsolidationAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = consolidationAddressCountryMap(consolidationDetails);
         awbShipmentInfo.setEntityId(consolidationDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
@@ -1054,11 +1048,7 @@ public class AwbService implements IAwbService {
     private List<AwbNotifyPartyInfo> generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
         if (consolidationDetails.getConsolidationAddresses() != null &&
                 consolidationDetails.getConsolidationAddresses().size() > 0) {
-            List<String> alpha3CountriesList = new ArrayList<>();
-            for (var orgRow : consolidationDetails.getConsolidationAddresses())
-                if (orgRow.getType().equals(Constants.FAG))
-                    alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-            Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+            Map<String, String> alpha2DigitToCountry = consolidationAddressCountryMap(consolidationDetails);
             List<AwbNotifyPartyInfo> notifyPartyList = new ArrayList<>();
             for (var party : consolidationDetails.getConsolidationAddresses()) {
                 if (party.getType() != null && (party.getType().equals("Notify Part 1") ||
@@ -1339,13 +1329,7 @@ public class AwbService implements IAwbService {
 
     private AwbShipmentInfo generateAwbShipmentInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
-        List<String> alpha3CountriesList = new ArrayList<>();
-        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null,alpha3CountriesList);
-        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null,alpha3CountriesList);
-        for (var orgRow : shipmentDetails.getShipmentAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = shipmentAddressCountryMap(shipmentDetails);
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
         awbShipmentInfo.setEntityType(request.getAwbType());
         awbShipmentInfo.setAwbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill());
@@ -1413,11 +1397,7 @@ public class AwbService implements IAwbService {
         if (shipmentDetails.getAdditionalDetails() != null &&
                 shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
                 shipmentDetails.getAdditionalDetails().getNotifyParty().getId() != null) {
-            List<String> alpha3CountriesList = new ArrayList<>();
-            for (var orgRow : shipmentDetails.getShipmentAddresses())
-                if (orgRow.getType().equals(Constants.FAG))
-                    alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-            Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+            Map<String, String> alpha2DigitToCountry = shipmentAddressCountryMap(shipmentDetails);
             var shipmentNotifyParty = shipmentDetails.getAdditionalDetails().getNotifyParty();
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
             notifyPartyInfo.setIsShipmentCreated(true);
@@ -2139,13 +2119,7 @@ public class AwbService implements IAwbService {
 
     private void updateShipmentInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
-        List<String> alpha3CountriesList = new ArrayList<>();
-        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null,alpha3CountriesList);
-        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null,alpha3CountriesList);
-        for (var orgRow : shipmentDetails.getShipmentAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = shipmentAddressCountryMap(shipmentDetails);
         if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAwbNumberLock()) ||
                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAwbNumberLock()))
             awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
@@ -2216,11 +2190,7 @@ public class AwbService implements IAwbService {
         var party = shipmentDetails.getAdditionalDetails().getNotifyParty();
         boolean createNotifyParty = true;
         AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo();
-        List<String> alpha3CountriesList = new ArrayList<>();
-        for (var orgRow : shipmentDetails.getShipmentAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = shipmentAddressCountryMap(shipmentDetails);
         if(awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()) {
             for (var awbParty : awb.getAwbNotifyPartyInfo()) {
                 if (awbParty.getIsShipmentCreated() != null && awbParty.getIsShipmentCreated()) {
@@ -2546,13 +2516,7 @@ public class AwbService implements IAwbService {
 
     private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
-        List<String> alpha3CountriesList = new ArrayList<>();
-        alpha3CountriesList = addAlpha3Country(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null,alpha3CountriesList);
-        alpha3CountriesList = addAlpha3Country(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null,alpha3CountriesList);
-        for (var orgRow : consolidationDetails.getConsolidationAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = consolidationAddressCountryMap(consolidationDetails);
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         if(!mawbLockSettings.getFirstCarrierLock())
@@ -2586,11 +2550,7 @@ public class AwbService implements IAwbService {
                 }
             }
         }
-        List<String> alpha3CountriesList = new ArrayList<>();
-        for (var orgRow : consolidationDetails.getConsolidationAddresses())
-            if (orgRow.getType().equals(Constants.FAG))
-                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
-        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+        Map<String, String> alpha2DigitToCountry = consolidationAddressCountryMap(consolidationDetails);
         List<AwbNotifyPartyInfo> deleteAwbPartyList = new ArrayList<>();
         if(awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()){
             for (var awbParty: awb.getAwbNotifyPartyInfo()){
@@ -3829,5 +3789,25 @@ public class AwbService implements IAwbService {
             if (!errorShipments.isEmpty())
                 throw new ValidationException(String.format(ErrorConstants.HAWB_NOT_GENERATED_ERROR, String.join(", ", errorShipments)));
         }
+    }
+
+    private Map<String, String> consolidationAddressCountryMap(ConsolidationDetails consolidationDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : consolidationDetails.getConsolidationAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+    }
+
+    private Map<String, String> shipmentAddressCountryMap(ShipmentDetails shipmentDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : shipmentDetails.getShipmentAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
     }
 }
