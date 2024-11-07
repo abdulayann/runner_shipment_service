@@ -923,7 +923,6 @@ public class ShipmentService implements IShipmentService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
-        //ExecutorService executorService = Executors.newFixedThreadPool(100);
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         this.setColoadingStation(request);
         ShipmentDetailsResponse shipmentDetailsResponse = this.createShipment(request, false);
@@ -1794,7 +1793,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     private ShipmentDetailsResponse completeUpdateShipment(ShipmentRequest shipmentRequest) throws RunnerException {
+        long start = System.currentTimeMillis();
+        log.info("{} | starts completeUpdateShipment....", LoggerHelper.getRequestIdFromMDC());
+        long mid = System.currentTimeMillis();
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
+        log.info("{} | completeUpdateShipment db query: retrieveByIdOrGuid.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
         long id=oldEntity.get().getId();
         Integer previousStatus = oldEntity.get().getStatus();
         if (!oldEntity.isPresent()) {
@@ -1803,24 +1806,29 @@ public class ShipmentService implements IShipmentService {
         }
 
         try {
+            mid = System.currentTimeMillis();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setId(oldEntity.get().getId());
             List<Long> removedConsolIds = new ArrayList<>();
             MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
+            mid = System.currentTimeMillis();
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
+            log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(oldEntity.get().getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(oldEntity.get())) {
                 throw new ValidationException(ErrorConstants.VALIDATE_JOB_TYPE_CHANGE);
             }
+            mid = System.currentTimeMillis();
             boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
-
+            log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
-
-
+            log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            mid = System.currentTimeMillis();
             try {
                 // audit logs
                 auditLogService.addAuditLog(
@@ -1835,11 +1843,15 @@ public class ShipmentService implements IShipmentService {
             catch (Exception e) {
                 log.error("Error creating audit service log", e);
             }
+            log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
+            mid = System.currentTimeMillis();
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false);
+            log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)), executorService);
             ShipmentDetails finalEntity = entity;
+            log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return shipmentDetailsMapper.map(entity);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -2534,7 +2546,7 @@ public class ShipmentService implements IShipmentService {
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
-                commonUtils.updateEventWithMasterDataDescription(eventsList);
+//                commonUtils.updateEventWithMasterDataDescription(eventsList);
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
