@@ -88,4 +88,16 @@ class CountryListHelperTest {
         String country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(null);
         assertNull(country);
     }
+
+    @Test
+    void testGetAlpha2FromAlpha3() {
+        String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3("IND");
+        assertEquals("IN", country);
+    }
+
+    @Test
+    void testGetAlpha2FromAlpha3_Null() {
+        String country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(null);
+        assertNull(country);
+    }
 }

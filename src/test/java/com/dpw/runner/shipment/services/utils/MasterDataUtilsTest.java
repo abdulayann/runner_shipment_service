@@ -2184,6 +2184,14 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void getCountriesMasterDataList() {
+        var response = masterDataUtils.getCountriesMasterListData(new ArrayList<>());
+
+        assertNotNull(response);
+        assertEquals(0, response.size());
+    }
+
+    @Test
     void setContainerTeuDataWithContainerList() {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
