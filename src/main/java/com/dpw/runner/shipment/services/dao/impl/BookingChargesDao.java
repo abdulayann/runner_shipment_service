@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -102,7 +103,7 @@ public class BookingChargesDao implements IBookingChargesDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
+                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCharges.class))
                                         .parent(entity)
@@ -145,7 +146,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
+                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCharges.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())

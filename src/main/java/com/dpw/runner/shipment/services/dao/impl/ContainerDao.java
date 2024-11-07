@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -192,7 +193,7 @@ public class ContainerDao implements IContainerDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
+                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -218,7 +219,7 @@ public class ContainerDao implements IContainerDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
+                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Containers.class))
                                         .parent(entity)
@@ -305,7 +306,7 @@ public class ContainerDao implements IContainerDao {
                         }
                         try {
                             auditLogService.addAuditLog(
-                                    AuditLogMetaData.builder()
+                                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                             .newData(container)
                                             .prevData(oldEntityJson)
                                             .parent(ShipmentDetails.class.getSimpleName())

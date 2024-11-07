@@ -208,7 +208,7 @@ public class AwbService implements IAwbService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(awb)
                             .prevData(null)
                             .parent(Awb.class.getSimpleName())
@@ -274,7 +274,7 @@ public class AwbService implements IAwbService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(awb)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Awb.class))
                             .parent(Awb.class.getSimpleName())

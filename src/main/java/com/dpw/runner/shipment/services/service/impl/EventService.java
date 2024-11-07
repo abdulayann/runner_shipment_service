@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
@@ -143,7 +144,7 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(event)
                             .prevData(null)
                             .parent(Events.class.getSimpleName())
@@ -193,7 +194,7 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(events)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Events.class))
                             .parent(Events.class.getSimpleName())
@@ -286,7 +287,7 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Events.class))
                             .parent(Events.class.getSimpleName())

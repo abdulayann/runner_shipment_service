@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -143,7 +144,7 @@ public class PartiesDao implements IPartiesDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
+                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -188,7 +189,7 @@ public class PartiesDao implements IPartiesDao {
             }
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
+                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -213,7 +214,7 @@ public class PartiesDao implements IPartiesDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
+                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Parties.class))
                                         .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)

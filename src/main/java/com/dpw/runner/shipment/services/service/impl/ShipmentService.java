@@ -693,7 +693,7 @@ public class ShipmentService implements IShipmentService {
             }
 
             auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
+                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                         .newData(shipmentDetails)
                         .prevData(null)
                         .parent(ShipmentDetails.class.getSimpleName())
@@ -744,7 +744,7 @@ public class ShipmentService implements IShipmentService {
                 for (Containers container: shipmentDetails.getContainersList()) {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
+                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                         .newData(container)
                                         .prevData(null)
                                         .parent(ShipmentDetails.class.getSimpleName())
@@ -761,7 +761,7 @@ public class ShipmentService implements IShipmentService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(shipmentDetails)
                             .prevData(null)
                             .parent(ShipmentDetails.class.getSimpleName())
@@ -1611,7 +1611,7 @@ public class ShipmentService implements IShipmentService {
             try {
                 // audit logs
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
+                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                 .newData(entity)
                                 .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -2210,7 +2210,7 @@ public class ShipmentService implements IShipmentService {
                 try {
                     if( ObjectUtils.isEmpty(oldEntity) || ObjectUtils.notEqual(oldEntity.getMasterBill(), shipmentDetails.getMasterBill())) {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
+                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                                         .newData(MblDuplicatedLog.builder()
                                                 .tenantId(consolidation.getTenantId())
                                                 .consolidationNo(consolidation.getConsolidationNumber())
@@ -3568,7 +3568,7 @@ public class ShipmentService implements IShipmentService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
                             .parent(ShipmentDetails.class.getSimpleName())
@@ -4195,7 +4195,7 @@ public class ShipmentService implements IShipmentService {
         try {
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(entity)
                             .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class) : null)
                             .parent(ShipmentDetails.class.getSimpleName())
@@ -6432,7 +6432,7 @@ public class ShipmentService implements IShipmentService {
 
         try {
             auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
+                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                     .newData(OceanDGRequestLog.builder()
                         .time(LocalDateTime.now())
                         .userName(UserContext.getUser().getUsername())
@@ -6482,7 +6482,7 @@ public class ShipmentService implements IShipmentService {
         closeOceanDgTask(request);
         try {
             auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
+                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                 .newData(OceanDGRequestLog.builder()
                     .time(LocalDateTime.now())
                     .userName(UserContext.getUser().DisplayName)
@@ -7217,7 +7217,7 @@ public class ShipmentService implements IShipmentService {
             setShipmentFromBooking(shipmentDetails, notesRequest);
 
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
+                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
                             .newData(shipmentDetails)
                             .prevData(null)
                             .parent(ShipmentDetails.class.getSimpleName())
