@@ -263,7 +263,7 @@ public class ShipmentSettingsController {
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_PARTIAL_UPDATE_SUCCESSFUL, response = MyResponseClass.class) })
-    @PutMapping(ApiConstants.API_PARTIAL_UPDATE)
+    @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid ShipmentSettingsPatchRequest shipmentSettingsPatchRequest) {
         String responseMsg;
         try {
