@@ -326,6 +326,12 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
+    @Autowired
+    private INetworkTransferService networkTransferService;
+
+    @Autowired
+    private INetworkTransferDao networkTransferDao;
+
     @Value("${include.master.data}")
     private Boolean includeMasterData;
 
@@ -2402,6 +2408,45 @@ public class ShipmentService implements IShipmentService {
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+
+        createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, shipmentDetails, oldEntity);
+    }
+
+    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
+
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())){
+            if (Objects.nonNull(oldEntity) && oldEntity.getReceivingBranch()!=null){
+                updateNetworkTransferEntityIfChanged(oldEntity.getReceivingBranch(),
+                        shipmentDetails.getReceivingBranch(), shipmentDetails
+                );
+            }else{
+                createNetworkTransferEntityIfNotNull(shipmentDetails.getReceivingBranch(), shipmentDetails);
+            }
+
+            if (Objects.nonNull(oldEntity) && oldEntity.getTriangulationPartner()!=null){
+                updateNetworkTransferEntityIfChanged(oldEntity.getTriangulationPartner(),
+                        shipmentDetails.getTriangulationPartner(), shipmentDetails
+                );
+            }else{
+                createNetworkTransferEntityIfNotNull(shipmentDetails.getTriangulationPartner(), shipmentDetails);
+            }
+
+        }
+    }
+
+    private void createNetworkTransferEntityIfNotNull(Long tenantId, ShipmentDetails shipmentDetails) {
+        if (tenantId != null) {
+            networkTransferService.createNetworkTransferEntity(Constants.SHIPMENT, shipmentDetails, tenantId, null);
+        }
+    }
+
+    private void updateNetworkTransferEntityIfChanged(Long oldTenantId, Long newTenantId, ShipmentDetails shipmentDetails) {
+        if (!Objects.equals(oldTenantId, newTenantId)) {
+            networkTransferDao.findById(oldTenantId).ifPresent(networkTransferEntity ->
+                    networkTransferDao.deleteAndLog(networkTransferEntity, Constants.SHIPMENT, oldTenantId)
+            );
+            createNetworkTransferEntityIfNotNull(newTenantId, shipmentDetails);
+        }
     }
 
     public void syncMainLegRoute(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<RoutingsRequest> routingsRequests) {
@@ -3845,6 +3890,8 @@ public class ShipmentService implements IShipmentService {
             if(fromV1 == null || !fromV1) {
                 syncShipment(newShipmentDetails, null, null, null, consolidationDetails, true);
             }
+
+            createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, newShipmentDetails, oldEntity);
 
             pushShipmentDataToDependentService(newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(newShipmentDetails);

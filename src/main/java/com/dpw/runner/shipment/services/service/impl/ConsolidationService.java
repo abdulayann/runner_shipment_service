@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListRespo
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -257,6 +258,12 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
+
+    @Autowired
+    private INetworkTransferService networkTransferService;
+
+    @Autowired
+    private NetworkTransferDao networkTransferDao;
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
@@ -3923,6 +3930,8 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
+        createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity);
+
         pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
         try {
             if (!isFromBooking)
@@ -3937,6 +3946,41 @@ public class ConsolidationService implements IConsolidationService {
             });
         }
     }
+
+    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())){
+            if (Objects.nonNull(oldEntity) && oldEntity.getReceivingBranch()!=null){
+                updateNetworkTransferEntityIfChanged(oldEntity.getReceivingBranch(),
+                        consolidationDetails.getReceivingBranch(), consolidationDetails);
+            }else{
+                createNetworkTransferEntityIfNotNull(consolidationDetails.getReceivingBranch(), consolidationDetails);
+            }
+
+            if (Objects.nonNull(oldEntity) && oldEntity.getTriangulationPartner()!=null){
+                updateNetworkTransferEntityIfChanged(oldEntity.getTriangulationPartner(),
+                        consolidationDetails.getTriangulationPartner(), consolidationDetails);
+            }else{
+                createNetworkTransferEntityIfNotNull(consolidationDetails.getTriangulationPartner(), consolidationDetails);
+            }
+        }
+    }
+
+    private void createNetworkTransferEntityIfNotNull(Long tenantId, ConsolidationDetails consolidationDetails) {
+        if (tenantId != null) {
+            networkTransferService.createNetworkTransferEntity(Constants.CONSOLIDATION, null, tenantId, consolidationDetails);
+        }
+    }
+
+    private void updateNetworkTransferEntityIfChanged(Long oldTenantId, Long newTenantId, ConsolidationDetails consolidationDetails) {
+        if (!Objects.equals(oldTenantId, newTenantId)) {
+            networkTransferDao.findById(oldTenantId).ifPresent(networkTransfer ->
+                    networkTransferDao.deleteAndLog(networkTransfer, Constants.CONSOLIDATION, consolidationDetails.getId())
+            );
+
+            createNetworkTransferEntityIfNotNull(newTenantId, consolidationDetails);
+        }
+    }
+
 
     public void syncMainLegRoute(ConsolidationDetailsRequest consolidationDetailsRequest, ConsolidationDetails oldEntity) {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Constants.TRANSPORT_MODE_AIR.equals(consolidationDetailsRequest.getTransportMode())) {
