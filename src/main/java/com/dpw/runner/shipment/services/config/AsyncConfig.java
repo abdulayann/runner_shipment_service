@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -30,6 +31,7 @@ public class AsyncConfig implements AsyncConfigurer {
 
     // Used for Completable future
     @Bean
+    @Primary
     public ExecutorService executorService() {
         int corePoolSize = 10; // Min threads
         int maximumPoolSize = 100; // Adjusted max pool size
