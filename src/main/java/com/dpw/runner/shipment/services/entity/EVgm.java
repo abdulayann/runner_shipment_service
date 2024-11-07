@@ -75,7 +75,7 @@ public class EVgm extends MultiTenancy {
     private Integer weightMethod;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "event_code = 'CarrierBookingEvents'")
+    @Where(clause = "event_code = 'Evgm'")
     @BatchSize(size = 50)
     private List<Events> eventsList;
 }

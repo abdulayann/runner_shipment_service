@@ -9,6 +9,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.impl.ContainerDao;
+import com.dpw.runner.shipment.services.dao.impl.EventDao;
+import com.dpw.runner.shipment.services.dao.impl.PackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ShippingInstructionRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -41,9 +44,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,13 +65,13 @@ class ShippingInstructionServiceTest extends CommonMocks {
     @Mock
     private ModelMapper modelMapper;
     @Mock
-    private IPackingDao packingDao;
+    private PackingDao packingDao;
     @Mock
     private IReferenceNumbersDao referenceNumbersDao;
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
-    private IContainerDao containerDao;
+    private ContainerDao containerDao;
     @Mock
     private AuditLogService auditLogService;
     @Mock
@@ -82,7 +83,7 @@ class ShippingInstructionServiceTest extends CommonMocks {
     @Mock
     private IPartiesDao partiesDao;
     @Mock
-    private IEventDao eventDao;
+    private EventDao eventDao;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
 
@@ -281,6 +282,25 @@ class ShippingInstructionServiceTest extends CommonMocks {
     @Test
     void testCreateWithCompletePayload() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         var inputShippingInstruction = shippingInstruction;
+        ShippingInstructionRequest request = objectMapper.convertValue(inputShippingInstruction, ShippingInstructionRequest.class);
+        ShippingInstructionResponse shippingInstructionResponse = objectMapper.convertValue(inputShippingInstruction, ShippingInstructionResponse.class);
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(ShippingInstruction.class))).thenReturn(inputShippingInstruction);
+        when(shippingInstructionDao.save(any())).thenReturn(inputShippingInstruction);
+        when(jsonHelper.convertValue(any(), eq(ShippingInstructionResponse.class))).thenReturn(shippingInstructionResponse);
+        doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = shippingInstructionService.create(CommonRequestModel.buildRequest(request));
+        // Assert
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testCreateWithCompletePayloadWithEmptyContainer() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        var inputShippingInstruction = shippingInstruction;
+        inputShippingInstruction.setContainersList(new ArrayList<>());
+        inputShippingInstruction.setEventsList(new ArrayList<>());
+        inputShippingInstruction.setPackingList(new ArrayList<>());
         ShippingInstructionRequest request = objectMapper.convertValue(inputShippingInstruction, ShippingInstructionRequest.class);
         ShippingInstructionResponse shippingInstructionResponse = objectMapper.convertValue(inputShippingInstruction, ShippingInstructionResponse.class);
         // Mock

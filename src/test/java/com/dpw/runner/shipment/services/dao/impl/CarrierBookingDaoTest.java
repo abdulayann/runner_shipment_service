@@ -53,10 +53,9 @@ class CarrierBookingDaoTest {
     @Test
     void save_ValidCarrierBooking_ReturnsNewCarrierBooking() {
         CarrierBooking carrierBooking = new CarrierBooking();
-        carrierBooking.setIsLocked(Boolean.FALSE);
-        carrierBooking.setForwarderRefNumber("abcd");
-        carrierBooking.setBol("abcd");
-        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(Collections.emptyList());
+//        carrierBooking.setForwarderRefNumber("abcd");
+//        carrierBooking.setBol("abcd");
+//        when(carrierBookingRepository.findByForwarderRefNumber("abcd", 1)).thenReturn(Collections.emptyList());
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(Collections.emptySet());
         when(carrierBookingRepository.save(any(CarrierBooking.class))).thenReturn(carrierBooking);
@@ -114,6 +113,25 @@ class CarrierBookingDaoTest {
     }
 
     @Test
+    void save_ValidCarrierBooking_SavedCarrierBooking_ThrowsValidationException() {
+        CarrierBooking carrierBooking = new CarrierBooking();
+        carrierBooking.setId(1L);
+        carrierBooking.setIsLocked(Boolean.TRUE);
+        carrierBooking.setForwarderRefNumber("abcd");
+        carrierBooking.setBol("abcd");
+        Parties consolidationAddress = Parties.builder().build().setType("abcd");
+        Parties consolidationAddress2 = Parties.builder().build().setType("abcd");
+        Parties consolidationAddress3 = Parties.builder().build().setType("abcde");
+        carrierBooking.setConsolidationAddresses(Arrays.asList(consolidationAddress, consolidationAddress2, consolidationAddress3));
+
+        Set<String> errors = new HashSet<>();
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(validatorUtility.applyValidation(anyString(), anyString(), any(), anyBoolean())).thenReturn(errors);
+        when(carrierBookingRepository.findById(1L)).thenReturn(Optional.of(carrierBooking));
+        assertThrows(ValidationException.class, () -> carrierBookingDao.save(carrierBooking));
+    }
+
+    @Test
     void save_ValidCarrierBooking_ThrowsValidationException() {
         CarrierBooking carrierBooking = new CarrierBooking();
         when(jsonHelper.convertToJson(any())).thenReturn("");
@@ -123,7 +141,7 @@ class CarrierBookingDaoTest {
     }
 
     @Test
-    void save_ExistingCarrierBooking_ThrowsValidationException() {
+    void save_ExistingCarrierBooking_ThrowsDataRetrievalException() {
         CarrierBooking carrierBooking = new CarrierBooking();
         carrierBooking.setId(1L);
         when(jsonHelper.convertToJson(any())).thenReturn("");
