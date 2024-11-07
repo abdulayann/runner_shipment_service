@@ -1720,7 +1720,9 @@ public class CommonUtils {
         if(CollectionUtils.isEmpty(eventsList))
             return;
 
-        var eventCodeDescriptionMap = getEventDescription(eventsList.stream().map(Events::getEventCode).toList());
+        var eventCodeDescriptionMap = getEventDescription(eventsList.stream()
+                .filter(i -> Objects.isNull(i.getId()))
+                .map(Events::getEventCode).toList());
         // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
         // or missing entry in the master-data
         eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));

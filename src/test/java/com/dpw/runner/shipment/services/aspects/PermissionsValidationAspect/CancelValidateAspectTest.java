@@ -3,8 +3,9 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -17,13 +18,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 class CancelValidateAspectTest {
 
@@ -32,9 +32,12 @@ class CancelValidateAspectTest {
     @Mock
     private JoinPoint joinPoint;
 
+    private IShipmentDao shipmentDao;
+
     @BeforeEach
     public void setUp() {
-        cancelValidateAspect = new CancelValidateAspect();
+        shipmentDao = Mockito.spy(IShipmentDao.class);
+        cancelValidateAspect = Mockito.spy(new CancelValidateAspect(shipmentDao));
     }
 
     @ParameterizedTest
@@ -58,8 +61,9 @@ class CancelValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        mockGetShipment(mockShipment);
+
         cancelValidateAspect.validateShipmentCancel(joinPoint, commonRequestModel);
         assert (true);
     }
@@ -85,10 +89,15 @@ class CancelValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
+        mockGetShipment(mockShipment);
 
         assertThrows(RunnerException.class, () -> cancelValidateAspect.validateShipmentCancel(joinPoint, commonRequestModel));
     }
+
+    void mockGetShipment(ShipmentDetails mockShipment) {
+        Mockito.when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockShipment));
+    }
+
 
 }

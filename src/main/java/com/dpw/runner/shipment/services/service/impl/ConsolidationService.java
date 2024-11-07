@@ -2920,39 +2920,44 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null && request.getGuid() == null) {
-                log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
-            }
-            Long id = request.getId();
-            Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
-            if(id != null ){
-                consolidationDetails = consolidationDetailsDao.findById(id);
-            } else {
-                UUID guid = UUID.fromString(request.getGuid());
-                consolidationDetails = consolidationDetailsDao.findByGuid(guid);
-            }
-            if (!consolidationDetails.isPresent()) {
-                log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
-                consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
-            }
-            ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
-            createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
-            return ResponseHelper.buildSuccessResponse(response);
+            return ResponseHelper.buildSuccessResponse(retrieveConsolidationData(commonRequestModel, getMasterData));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ConsolidationDetailsResponse retrieveConsolidationData(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getId() == null && request.getGuid() == null) {
+            log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+        }
+        Long id = request.getId();
+        Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+        if(id != null ){
+            consolidationDetails = consolidationDetailsDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
+            consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
+        }
+        ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
+        createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
+
+        return response;
     }
 
     @Async
