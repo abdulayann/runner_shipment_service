@@ -117,10 +117,14 @@ public class ShipmentController {
     })
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ShipmentRequest request) {
+        long start = System.currentTimeMillis();
         log.info("Received Shipment create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
-            return shipmentService.create(CommonRequestModel.buildRequest(request));
+            ResponseEntity<IRunnerResponse> response = shipmentService.create(
+                CommonRequestModel.buildRequest(request));
+            log.info("Total time taken to create shipment : {} with RequestId: {}", System.currentTimeMillis()-start, LoggerHelper.getRequestIdFromMDC());
+            return response;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -140,12 +144,14 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+        long start = System.currentTimeMillis();
         log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
             if(Boolean.TRUE.equals(getFullShipment)) {
                 return shipmentService.fullShipmentsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
            ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+           log.info("Total time taken to fetch shipment list: {} with RequestId: {}", System.currentTimeMillis()-start, LoggerHelper.getRequestIdFromMDC());
             return  response;
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
@@ -156,11 +162,15 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+        long start = System.currentTimeMillis();
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveById(
+            CommonRequestModel.buildRequest(request), getMasterData);
+        log.info("Total time taken to retrieve shipment by Id: {} with RequestId: {}", System.currentTimeMillis()-start, LoggerHelper.getRequestIdFromMDC());
+        return response;
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
