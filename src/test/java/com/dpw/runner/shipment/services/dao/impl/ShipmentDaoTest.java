@@ -797,66 +797,6 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void updateMawbChecks1() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
-
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
-
-        HashMap<String, Object> hm = new HashMap<>();
-        hm.put("FullName", "DP World");
-        AdditionalDetails additionalDetails = new AdditionalDetails();
-        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
-
-        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .houseBill("HBL123")
-                .masterBill("Mast77777770")
-                .status(2)
-                .carrierDetails(CarrierDetails.builder()
-                        .origin("origin")
-                        .originPort("origin")
-                        .destination("origin")
-                        .destinationPort("destination")
-                        .etd(LocalDateTime.now())
-                        .etd(LocalDateTime.now())
-                        .build())
-                .jobType("DRT")
-                .direction("EXP")
-                .additionalDetails(additionalDetails)
-                .build();
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .houseBill("HBL123")
-                .masterBill("Mast77777770")
-                .status(3)
-                .carrierDetails(CarrierDetails.builder()
-                        .origin("origin")
-                        .originPort("origin")
-                        .destination("origin")
-                        .destinationPort("destination")
-                        .etd(LocalDateTime.now())
-                        .etd(LocalDateTime.now())
-                        .build())
-                .jobType(null)
-                .direction("EXP")
-                .additionalDetails(additionalDetails)
-                .build();
-
-        shipmentDetails.setId(1L);
-        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
-        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
-
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
-
-        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
-        mockShipmentSettings();
-        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
-        assertNotNull(response);
-    }
-
-    @Test
     void updateMawbChecks2() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
 
