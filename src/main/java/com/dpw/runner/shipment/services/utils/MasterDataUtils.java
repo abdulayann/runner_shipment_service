@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -452,6 +453,38 @@ public class MasterDataUtils{
         }
 
         return keyMasterDataMap;
+    }
+
+    public Map<String, String> getCountriesMasterListData(List<String> alpha3Countries) {
+        Set<MasterListRequest> listRequests = alpha3Countries.stream()
+                .map(country -> MasterListRequest.builder()
+                        .ItemType(MasterDataType.COUNTRIES.getDescription())
+                        .ItemValue(country)
+                        .build())
+                .collect(Collectors.toSet());
+
+        if (listRequests.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(new ArrayList<>(listRequests));
+        masterListRequestV2.setIncludeCols(List.of(
+                MasterDataConstants.ITEM_TYPE,
+                MasterDataConstants.ITEM_VALUE,
+                "ItemDescription",
+                "ValuenDesc",
+                "Cascade"
+        ));
+
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = fetchInBulkMasterList(masterListRequestV2);
+
+        return keyMasterDataMap.values().stream()
+                .filter(entity -> entity != null && entity.getIdentifier1() != null)
+                .collect(Collectors.toMap(
+                        EntityTransferMasterLists::getIdentifier1,
+                        EntityTransferMasterLists::getItemDescription
+                ));
     }
 
     public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE

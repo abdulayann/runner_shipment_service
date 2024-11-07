@@ -12,6 +12,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String shipperName;
     private String shipperAddress;
     private String shipperCountry;
+    private String shipperCountryName;
     private String shipperState;
     private String shipperCity;
     private String shipperZipCode;
@@ -20,6 +21,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String consigneeName;
     private String consigneeAddress;
     private String consigneeCountry;
+    private String consigneeCountryName;
     private String consigneeState;
     private String consigneeCity;
     private String consigneeZipCode;
@@ -28,6 +30,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String issuingAgentName;
     private String issuingAgentAddress;
     private String issuingAgentCountry;
+    private String issuingAgentCountryName;
     private String issuingAgentState;
     private String issuingAgentCity;
     private String issuingAgentZipCode;
