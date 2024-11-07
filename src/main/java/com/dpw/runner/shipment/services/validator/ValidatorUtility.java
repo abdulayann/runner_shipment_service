@@ -709,4 +709,8 @@ public class ValidatorUtility {
         return error;
     }
 
+    public void clearValidationsMap() {
+        validationsMap.clear();
+    }
+
 }
