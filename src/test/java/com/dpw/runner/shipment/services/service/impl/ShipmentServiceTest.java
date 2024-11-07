@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -249,6 +250,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private ConsolidationDetails consolidationDetails;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -1373,6 +1377,49 @@ ShipmentServiceTest extends CommonMocks {
 //        assertEquals(expectedResponse.getSourceTenantId(), shipmentDetailsResponse.getSourceTenantId());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void getDefaultShipmentPopulatesDefaultDepartmentFromMdm() {
+        // Mock data
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("AIR");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        UsersDto user = new UsersDto();
+        user.setTenantId(1);
+        UserContext.setUser(user);
+
+        TenantModel tenantModel = new TenantModel();
+        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
+        mockTenantResponse.setEntity(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
+
+        LocalDateTime mockDateTime = LocalDateTime.now();
+
+        ShipmentDetailsResponse expectedResponse = new ShipmentDetailsResponse();
+        expectedResponse.setSource(Constants.SYSTEM);
+        expectedResponse.setStatus(ShipmentStatus.Created.getValue());
+        expectedResponse.setAdditionalDetails(new AdditionalDetailResponse());
+        expectedResponse.setCarrierDetails(new CarrierDetailResponse());
+        expectedResponse.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+        expectedResponse.setShipmentCreatedOn(mockDateTime);
+        expectedResponse.setSourceTenantId(1L);
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
+        ));
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+
+        // Execute the method under test
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getDefaultShipment();
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals("AE", shipmentDetailsResponse.getDepartment());
     }
 
 

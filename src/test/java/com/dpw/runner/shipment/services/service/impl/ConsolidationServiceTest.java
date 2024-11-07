@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -39,6 +40,7 @@ import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.Perm
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -337,6 +339,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @InjectMocks
     private ConsolidationService consolidationService;
@@ -1038,6 +1043,41 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         assertEquals("Username", responseBody.getCreatedBy());
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
+    }
+
+    @Test
+    void testGetDefaultConsolidationPopulatesDefaultDepartment() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("ShipmentType");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
+        ));
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("ShipmentType", responseBody.getShipmentType());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals(1, responseBody.getSourceTenantId());
+        assertEquals("AE", responseBody.getDepartment());
     }
 
     @Test
