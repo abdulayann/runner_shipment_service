@@ -133,4 +133,6 @@ public class ApiConstants {
 
     public static final String CANCEL = "/cancel";
 
+    public static final String UPDATE_NT_TRANSFERRED_STATUS = "/transferred";
+
 }

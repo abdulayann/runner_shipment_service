@@ -263,9 +263,6 @@ public class ConsolidationService implements IConsolidationService {
     private INetworkTransferService networkTransferService;
 
     @Autowired
-    private NetworkTransferDao networkTransferDao;
-
-    @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
     @Value("${consolidationsKafka.queue}")
@@ -3930,8 +3927,6 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity);
-
         pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
         try {
             if (!isFromBooking)
@@ -3945,39 +3940,21 @@ public class ConsolidationService implements IConsolidationService {
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
         }
+
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
     }
 
-    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())){
-            if (Objects.nonNull(oldEntity) && oldEntity.getReceivingBranch()!=null){
-                updateNetworkTransferEntityIfChanged(oldEntity.getReceivingBranch(),
-                        consolidationDetails.getReceivingBranch(), consolidationDetails);
-            }else{
-                createNetworkTransferEntityIfNotNull(consolidationDetails.getReceivingBranch(), consolidationDetails);
-            }
-
-            if (Objects.nonNull(oldEntity) && oldEntity.getTriangulationPartner()!=null){
-                updateNetworkTransferEntityIfChanged(oldEntity.getTriangulationPartner(),
-                        consolidationDetails.getTriangulationPartner(), consolidationDetails);
-            }else{
-                createNetworkTransferEntityIfNotNull(consolidationDetails.getTriangulationPartner(), consolidationDetails);
-            }
-        }
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails) {
+        networkTransferService.processNetworkTransferEntity(Constants.CONSOLIDATION, null, consolidationDetails,
+                tenantId, oldTenantId, consolidationDetails.getId());
     }
 
-    private void createNetworkTransferEntityIfNotNull(Long tenantId, ConsolidationDetails consolidationDetails) {
-        if (tenantId != null) {
-            networkTransferService.createNetworkTransferEntity(Constants.CONSOLIDATION, null, tenantId, consolidationDetails);
-        }
-    }
-
-    private void updateNetworkTransferEntityIfChanged(Long oldTenantId, Long newTenantId, ConsolidationDetails consolidationDetails) {
-        if (!Objects.equals(oldTenantId, newTenantId)) {
-            networkTransferDao.findById(oldTenantId).ifPresent(networkTransfer ->
-                    networkTransferDao.deleteAndLog(networkTransfer, Constants.CONSOLIDATION, consolidationDetails.getId())
-            );
-
-            createNetworkTransferEntityIfNotNull(newTenantId, consolidationDetails);
+    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+            processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails);
+            processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
+                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails);
         }
     }
 

@@ -17,6 +17,8 @@ public interface INetworkTransferDao {
 
     Optional<NetworkTransfer> findByGuid(UUID id);
 
+    Optional<NetworkTransfer> findByTenantIdAndEntityId(Integer id, Long entityId);
+
     void delete(NetworkTransfer networkTransfer);
 
     void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType, Long entityId);
