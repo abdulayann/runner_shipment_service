@@ -579,6 +579,8 @@ public class Constants {
     public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+
+    public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransferEntity";
     private Constants() {
     }
 
