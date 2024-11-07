@@ -1046,7 +1046,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
-    public void testGetDefaultConsolidationPopulatesDefaultDepartment() {
+    void testGetDefaultConsolidationPopulatesDefaultDepartment() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");

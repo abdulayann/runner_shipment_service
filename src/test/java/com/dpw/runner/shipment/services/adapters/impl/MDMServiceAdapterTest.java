@@ -226,18 +226,17 @@ class MDMServiceAdapterTest {
     }
 
     @Test
-    void getDepartmentListReturnsNullInCaseOfException() throws Exception {
+    void getDepartmentListReturnsEmptyListInCaseOfException() throws Exception {
         String transportMode = "AIR";
         String shipmentType = "EXP";
         String module = "SHP";
         // Arrange
-        MdmListCriteriaRequest mdmListCriteriaRequest = MdmListCriteriaRequest.builder().build();
         String jsonRequest = "{}";
         when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
         when(restTemplate.postForEntity(anyString(), any(), any())).thenThrow(new RuntimeException("MDM Service Error"));
 
         // Act & Assert
         var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
-        assertNull(response);
+        assertEquals(0, response.size());
     }
 }

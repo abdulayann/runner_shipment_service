@@ -4754,10 +4754,7 @@ public class ShipmentService implements IShipmentService {
                 response.setHouseBill(generateCustomHouseBL(null));
 
             // Populate default department
-            List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE);
-            if(!CollectionUtils.isEmpty(departmentList) && departmentList.size() == 1) {
-                response.setDepartment(StringUtility.convertToString(departmentList.get(0).get(MdmConstants.DEPARTMENT)));
-            }
+            populateDepartment(response);
 
             try {
                 log.info("Fetching Tenant Model");
@@ -7272,6 +7269,14 @@ public class ShipmentService implements IShipmentService {
         syncShipment(shipment, null, null, null, null, false);
 
         return ResponseHelper.buildSuccessResponse();
+    }
+
+
+    private void populateDepartment(ShipmentDetailsResponse response) {
+        List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE);
+        if(!CollectionUtils.isEmpty(departmentList) && departmentList.size() == 1) {
+            response.setDepartment(StringUtility.convertToString(departmentList.get(0).get(MdmConstants.DEPARTMENT)));
+        }
     }
 
 }

@@ -21,7 +21,7 @@ public class MdmListCriteriaRequest implements IRunnerRequest {
     private int pageSize;
     private String sortBy;
     private String sortOrder;
-    private List<SearchCriteria> searchCriteriaList;
+    private transient List<SearchCriteria> searchCriteriaList;
 
     @Data
     @Builder

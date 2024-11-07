@@ -28,9 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -50,7 +48,8 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Value("${mdm.createShipmentTaskFromBooking}")
     String createShipmentTaskFromBookingUrl;
 
-    String departmentListUrl = "mdm/api/v2/department-rules/list";
+    @Value("${mdm.departmentListUrl}")
+    String departmentListUrl;
 
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -136,15 +135,14 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             )).build();
 
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
-            DependentServiceResponse dependentServiceResponse = responseEntity.getBody();
+            DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
             log.info("MDM getDepartmentList response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
-            List<Map<String, Object>> departmentList = jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
-            return departmentList;
+            return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
         }
         catch (Exception e) {
             log.error("MDM Service - error while fetching departments list", e);
         }
-        return null;
+        return Collections.emptyList();
     }
 
 }
