@@ -4248,9 +4248,6 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
             ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
             Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
-            if(shipmentDetails.getClient() != null && StringUtility.isNotEmpty(shipmentDetails.getClient().getOrgCode())) {
-                fetchCreditLimitMasterData(shipmentDetails.getClient().getOrgCode(), shipmentDetails.getClient().getAddressCode(), response);
-            }
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -5442,31 +5439,6 @@ public class ShipmentService implements IShipmentService {
         }
 
         return ResponseHelper.buildSuccessResponse();
-    }
-
-    public void fetchCreditLimitMasterData(String orgCode, String addressCode, Map<String, Object> response) {
-        if(StringUtility.isEmpty(orgCode)) {
-            return;
-        }
-        AddressTranslationRequest.OrgAddressCode orgAddressCode = AddressTranslationRequest.OrgAddressCode.builder().OrgCode(orgCode).AddressCode(addressCode).build();
-        try {
-            V1DataResponse v1DataResponse = v1Service.fetchCreditLimit(orgAddressCode);
-            if(v1DataResponse.entities == null) {
-                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
-                return ;
-            }
-            List<CreditLimitResponse> creditLimitResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), CreditLimitResponse.class);
-            if(creditLimitResponses == null || creditLimitResponses.size() == 0) {
-                log.debug(ShipmentConstants.NO_DATA_FOUND_FOR_ORG_CODE, orgCode);
-                return;
-            }
-            if(response == null) {
-                response = new HashMap<>();
-            }
-            response.put(Constants.CREDIT_LIMIT, creditLimitResponses.get(0));
-        } catch (Exception e) {
-            log.debug("No Data found for org code {} {}", orgCode, e.getMessage());
-        }
     }
 
     @Override
