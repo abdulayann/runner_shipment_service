@@ -33,7 +33,7 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean
     @Primary
     public ExecutorService executorService() {
-        int corePoolSize = 20; // Min threads
+        int corePoolSize = 50; // Min threads
         int maximumPoolSize = 50; // Adjusted max pool size
         long keepAliveTime = 60; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
@@ -55,7 +55,7 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean
     public ExecutorService executorServiceMasterData() {
-        int corePoolSize = 30; // Min threads
+        int corePoolSize = 50; // Min threads
         int maximumPoolSize = 50; // Adjusted max pool size
         long keepAliveTime = 60; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
