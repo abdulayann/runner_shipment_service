@@ -734,7 +734,8 @@ public class ContainerService implements IContainerService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
                             .parent(Containers.class.getSimpleName())

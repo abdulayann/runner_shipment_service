@@ -137,7 +137,9 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId())
+                                .userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -181,7 +183,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             }
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -206,7 +209,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                                AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCarriage.class))
                                         .parent(entityType)

@@ -144,7 +144,8 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(event)
                             .prevData(null)
                             .parent(Events.class.getSimpleName())
@@ -194,7 +195,8 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(events)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Events.class))
                             .parent(Events.class.getSimpleName())
@@ -287,7 +289,8 @@ public class EventService implements IEventService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Events.class))
                             .parent(Events.class.getSimpleName())

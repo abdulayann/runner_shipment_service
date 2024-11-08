@@ -701,7 +701,8 @@ public class ConsolidationService implements IConsolidationService {
         // audit logs
         try {
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(consolidationDetails)
                             .prevData(null)
                             .parent(ConsolidationDetails.class.getSimpleName())
@@ -1596,7 +1597,8 @@ public class ConsolidationService implements IConsolidationService {
             try {
                 // audit logs
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(entity)
                                 .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                                 .parent(ConsolidationDetails.class.getSimpleName())
@@ -2896,7 +2898,8 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetailsDao.delete(consolidationDetails.get());
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                             .parent(ConsolidationDetails.class.getSimpleName())

@@ -78,7 +78,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                                AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(truckDriverDetails)
                                         .parent(entity)
@@ -156,7 +157,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -200,7 +202,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             }
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, TruckDriverDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())

@@ -154,7 +154,8 @@ public class RoutingsDao implements IRoutingsDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -198,7 +199,8 @@ public class RoutingsDao implements IRoutingsDao {
             }
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -268,7 +270,8 @@ public class RoutingsDao implements IRoutingsDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -407,7 +410,8 @@ public class RoutingsDao implements IRoutingsDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                                AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Routings.class))
                                         .parent(entity)

@@ -161,7 +161,8 @@ public class AuditLogServiceTest {
         newData.setId(1L);
         newData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         newData.setUpdatedBy("def");
-        AuditLogMetaData.AuditLogMetaDataBuilder parentIdResult = AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+        AuditLogMetaData.AuditLogMetaDataBuilder parentIdResult = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                 .newData(newData)
                 .operation("Operation")
                 .parent("Parent");
@@ -182,7 +183,8 @@ public class AuditLogServiceTest {
     void testAddAuditLog3() {
         AuditLogMetaData.AuditLogMetaDataBuilder auditLogMetaDataBuilder = mock(
                 AuditLogMetaData.AuditLogMetaDataBuilder.class);
-        when(auditLogMetaDataBuilder.newData(any())).thenReturn(AuditLogMetaData.builder().userName(UserContext.getUser().Username));
+        when(auditLogMetaDataBuilder.newData(any())).thenReturn(AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username));
 
         BaseEntity newData = new BaseEntity();
         newData.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -253,7 +255,8 @@ public class AuditLogServiceTest {
         prevData.setShipmentCompletedOn(LocalDateTime.now());
         prevData.setDirection("EXP");
         //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().userName(UserContext.getUser().Username).prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
+        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username).prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
     }
@@ -269,7 +272,8 @@ public class AuditLogServiceTest {
         newData.setUpdatedBy("def");
 
         //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().userName(UserContext.getUser().Username).prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
+        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username).prevData(null).newData(newData).parent("Shipment").operation("CREATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
     }
@@ -277,7 +281,8 @@ public class AuditLogServiceTest {
     @Test
     void addAuditLog6_1() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().userName(UserContext.getUser().Username).prevData(null).newData(MblDuplicatedLog.builder().build()).parent("Shipment").operation("LOG").parentId(1L).build();
+        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username).prevData(null).newData(MblDuplicatedLog.builder().build()).parent("Shipment").operation("LOG").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
     }
@@ -298,7 +303,8 @@ public class AuditLogServiceTest {
         prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         prevData.setUpdatedBy("def");
 
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().userName(UserContext.getUser().Username).prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
+        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username).prevData(prevData).newData(newData).parent("Shipment").operation("UPDATE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(0)).save(any());
     }
@@ -313,7 +319,8 @@ public class AuditLogServiceTest {
         prevData.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         prevData.setUpdatedBy("def");
         //when(auditLogDao.save(any())).thenReturn(new AuditLog());
-        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder().userName(UserContext.getUser().Username).prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
+        AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username).prevData(prevData).newData(null).parent("Shipment").operation("DELETE").parentId(1L).build();
         auditLogService.addAuditLog(auditLogMetaData);
         verify(auditLogDao, times(1)).save(any());
     }

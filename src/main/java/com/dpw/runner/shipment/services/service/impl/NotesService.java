@@ -103,7 +103,8 @@ public class NotesService implements INotesService {
             notes = notesDao.save(notes);
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(null)
                             .parent(request.getEntityType())
@@ -145,7 +146,8 @@ public class NotesService implements INotesService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(request.getEntityType())
@@ -225,7 +227,8 @@ public class NotesService implements INotesService {
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(parent)

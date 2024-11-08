@@ -16,4 +16,5 @@ public class AuditLogMetaData {
     private Long parentId;
     private String entityType;
     private String userName;
+    private Integer tenantId;
 }

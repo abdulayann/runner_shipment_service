@@ -77,7 +77,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             afterSave(pickupDeliveryDetails, true, request);
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(pickupDeliveryDetails)
                             .prevData(null)
                             .parent(PickupDeliveryDetails.class.getSimpleName())
@@ -132,7 +133,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
             // audit logs
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(pickupDeliveryDetails)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
                             .parent(PickupDeliveryDetails.class.getSimpleName())
@@ -204,7 +206,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             pickupDeliveryDetailsDao.delete(pickupDeliveryDetails.get());
 
             auditLogService.addAuditLog(
-                    AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
                             .parent(PickupDeliveryDetails.class.getSimpleName())

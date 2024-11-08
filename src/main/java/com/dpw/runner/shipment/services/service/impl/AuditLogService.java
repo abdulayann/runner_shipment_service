@@ -167,6 +167,7 @@ public class AuditLogService implements IAuditLogService {
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
         auditLog.setParentId(auditLogMetaData.getParentId());
+        auditLog.setTenantId(auditLogMetaData.getTenantId());
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {

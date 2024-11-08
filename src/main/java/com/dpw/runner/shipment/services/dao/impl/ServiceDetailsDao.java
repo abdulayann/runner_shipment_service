@@ -132,7 +132,8 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             req = save(req);
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -175,7 +176,8 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             }
             try {
                 auditLogService.addAuditLog(
-                        AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -199,7 +201,8 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                 {
                     try {
                         auditLogService.addAuditLog(
-                                AuditLogMetaData.builder().userName(UserContext.getUser().Username)
+                                AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ServiceDetails.class))
                                         .parent(entity)
