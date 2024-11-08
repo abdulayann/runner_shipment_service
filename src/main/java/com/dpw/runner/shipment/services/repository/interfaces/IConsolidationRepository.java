@@ -77,4 +77,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         "where csm.isAttachmentDone = false and csm.requestedType = ?1")
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
+    @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
+    Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
+
 }

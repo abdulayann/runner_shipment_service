@@ -565,6 +565,8 @@ public class Constants {
     public static final String AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT = "DG Consolidation is not allowed to have more than one shipment attached.";
     public static final String CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL = "Cannot attach more shipments to a DG Consolidation - %s.";
     public static final String CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS = "Cannot update Shipment as DG Shipment, attached consolidation consists of multiple shipments.";
+    public static final String NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE = "You are not allowed to view this shipment as this tenant is not part of receiving agent or triangulation partner.";
+    public static final String NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE = "You are not allowed to view this consolidation as this tenant is not part of receiving agent or triangulation partner.";
 
     public static final String SHIPMENTS_CAPS = "SHIPMENTS";
 

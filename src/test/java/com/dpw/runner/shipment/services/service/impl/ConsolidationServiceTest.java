@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -3489,7 +3490,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
 
@@ -3498,7 +3499,7 @@ import static org.mockito.Mockito.*;
     }
     @Test
     void testGetAllMasterData_Failure() {
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.empty());
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAllMasterData(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -5398,6 +5399,47 @@ import static org.mockito.Mockito.*;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTEAuthError() {
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTERetrievalError() {
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.empty());
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTEIdNullError() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE() {
+        testConsol.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE1() {
+        testConsol.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }

@@ -594,4 +594,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entityManager.detach(consolidationDetail);
         }
     }
+
+    @Override
+    @Transactional
+    public Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id) {
+        return consolidationRepository.findConsolidationByIdWithQuery(id);
+    }
 }
