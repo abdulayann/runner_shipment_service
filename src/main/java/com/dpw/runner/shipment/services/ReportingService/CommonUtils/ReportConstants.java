@@ -1244,6 +1244,10 @@ public class ReportConstants {
     public static final String AWB_NOTIFY_PARTY_NAME = "AWBNotifyPartyName";
 
     public static final String SLAC = "SLAC";
+    public static final String SLAC_CODE = "SlaCCode";
+    public static final String COMMA_HS_CODE1 = "CommaHsCode1";
+    public static final String HSCODE = "HS Code";
+    public static final String COMMA_SLAC1 = "CommaSLAC1";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 
     public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
