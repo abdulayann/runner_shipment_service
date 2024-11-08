@@ -1813,7 +1813,6 @@ public class ShipmentService implements IShipmentService {
             MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
             mid = System.currentTimeMillis();
-            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
@@ -1832,7 +1831,7 @@ public class ShipmentService implements IShipmentService {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .newData(entity)
-                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ShipmentDetails.class))
+                                .prevData(oldConvertedShipment)
                                 .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(entity.getId())
                                 .operation(DBOperationType.UPDATE.name()).build()
@@ -2408,6 +2407,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean includeGuid) throws RunnerException {
+        log.info("shipment afterSave start.... ");
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -2425,6 +2425,7 @@ public class ShipmentService implements IShipmentService {
         CarrierDetailRequest carrierDetailRequest = shipmentRequest.getCarrierDetails();
         List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequests = shipmentRequest.getPickupDeliveryDetailsInstructions();
         List<ShipmentOrderRequest> shipmentOrderRequestList = shipmentRequest.getShipmentOrders();
+        log.info("shipment afterSave request build.... ");
 
         if (StringUtils.isNotBlank(shipmentDetails.getMasterBill())) {
             List<ConsolidationDetailsProjection> consolidations = consolidationDetailsDao.findMblNumberInDifferentTenant(shipmentDetails.getMasterBill());
@@ -2452,6 +2453,7 @@ public class ShipmentService implements IShipmentService {
 
             });
         }
+        log.info("shipment afterSave mblcheck.... ");
 
         Long id = shipmentDetails.getId();
         Long consolidationId = null;
@@ -2497,25 +2499,27 @@ public class ShipmentService implements IShipmentService {
                 awbDao.updatedAwbInformationEvent(shipmentDetails, oldEntity);
             }
         }
-
+        log.info("shipment afterSave isCreate .... ");
         shipmentRequest.setId(id);
         dateTimeChangeLogService.createEntryFromShipment(shipmentRequest, oldEntity);
-
+        log.info("shipment afterSave dateTimeChangeLogService .... ");
         if (bookingCarriageRequestList != null) {
             List<BookingCarriage> updatedBookingCarriages = bookingCarriageDao.updateEntityFromShipment(commonUtils.convertToEntityList(bookingCarriageRequestList, BookingCarriage.class, isCreate), id);
             shipmentDetails.setBookingCarriagesList(updatedBookingCarriages);
         }
+        log.info("shipment afterSave bookingCarriageDao.... ");
         if (truckDriverDetailsRequestList != null) {
             List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isCreate), id);
             shipmentDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
-
+        log.info("shipment afterSave truckDriverDetailsDao.... ");
         if (elDetailsRequestList != null) {
             List<ELDetails> updatedELDetails = elDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(elDetailsRequestList, ELDetails.class, isCreate), id);
             shipmentDetails.setElDetailsList(updatedELDetails);
         }
-
+        log.info("shipment afterSave elDetailsDao.... ");
         ConsolidationDetails consolidationDetails = updateLinkedShipmentData(shipmentDetails, oldEntity, shipmentRequest);
+        log.info("shipment afterSave updateLinkedShipmentData.... ");
         if(!Objects.isNull(consolidationDetails)) {
             shipmentDetails.setConsolidationList(new ArrayList<>(Arrays.asList(consolidationDetails)));
             syncConsole = true;
@@ -2530,15 +2534,17 @@ public class ShipmentService implements IShipmentService {
                     changeConsolidationDGValues(false, new AtomicBoolean(true), removedConsolIds.get(0), shipmentDetails, consolidationDetails);
             }
         }
+        log.info("shipment afterSave DG Check.... ");
 
         // Sci status update for attach and detach in console mawb
         if(removedConsolIds != null && !removedConsolIds.isEmpty() && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)){
             consolidationService.checkSciForDetachConsole(removedConsolIds.get(0));
         }
+        log.info("shipment afterSave checkSciForDetachConsole.... ");
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             consolidationService.checkSciForAttachConsole(consolidationId);
         }
-
+        log.info("shipment afterSave checkSciForAttachConsole.... ");
         if (eventsRequestList != null) {
             eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
@@ -2550,63 +2556,72 @@ public class ShipmentService implements IShipmentService {
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
             }
         }
+        log.info("shipment afterSave eventDao.updateEntityFromOtherEntity.... ");
 
         // create Shipment event on the bases of auto create event flag
         if(isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
             autoGenerateCreateEvent(shipmentDetails);
+        log.info("shipment afterSave autoGenerateCreateEvent.... ");
 
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
+        log.info("shipment afterSave autoGenerateEvents.... ");
 
         if (packingRequestList != null) {
             packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
             updatedPackings = packingDao.updateEntityFromShipment(commonUtils.convertToEntityList(packingRequestList, Packing.class, !includeGuid && isCreate), id, deleteContainerIds);
             shipmentDetails.setPackingList(updatedPackings);
         }
-
+        log.info("shipment afterSave packingDao.updateEntityFromShipment..... ");
         if (referenceNumbersRequestList != null) {
             List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromShipment(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isCreate), id);
             shipmentDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
+        log.info("shipment afterSave referenceNumbersDao.updateEntityFromShipment..... ");
         if (routingsRequestList != null) {
             if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
                 syncMainLegRoute(shipmentDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
             shipmentDetails.setRoutingsList(updatedRoutings);
         }
+        log.info("shipment afterSave routingsDao.updateEntityFromShipment..... ");
         if (serviceDetailsRequestList != null) {
             List<ServiceDetails> updatedServiceDetails = serviceDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(serviceDetailsRequestList, ServiceDetails.class, isCreate), id);
             shipmentDetails.setServicesList(updatedServiceDetails);
         }
+        log.info("shipment afterSave serviceDetailsDao.updateEntityFromShipment..... ");
         if (notesRequestList != null) {
             List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequestList, Notes.class, isCreate), id, Constants.SHIPMENT);
             shipmentDetails.setNotesList(updatedNotes);
         }
-
+        log.info("shipment afterSave partiesDao.updateEntityFromOtherEntity..... ");
         if (shipmentAddressList != null) {
             List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(shipmentAddressList, Parties.class, isCreate), id, Constants.SHIPMENT_ADDRESSES);
             shipmentDetails.setShipmentAddresses(updatedParties);
         }
-
+        log.info("shipment afterSave partiesDao.updateEntityFromOtherEntity..... ");
         if (pickupDeliveryDetailsRequests != null){
             List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.updateEntityFromShipment(commonUtils.convertToEntityList(pickupDeliveryDetailsRequests, PickupDeliveryDetails.class , isCreate) , id);
             shipmentDetails.setPickupDeliveryDetailsInstructions(pickupDeliveryDetailsList);
         }
-
+        log.info("shipment afterSave pickupDeliveryDetailsDao.updateEntityFromShipment..... ");
         if(shipmentOrderRequestList != null) {
             List<ShipmentOrder> shipmentOrders = shipmentOrderDao.updateEntityFromShipment(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class), id);
             shipmentDetails.setShipmentOrders(shipmentOrders);
         }
-
+        log.info("shipment afterSave shipmentOrderDao.updateEntityFromShipment..... ");
         // Create Shipment Route in Console for Auto Attach Consolidation;
         if (shipmentRequest.getReplaceConsoleRoute() != null && shipmentRequest.getReplaceConsoleRoute()){
             createShipmentRouteInConsole(shipmentRequest);
         }
+        log.info("shipment afterSave createShipmentRouteInConsole..... ");
         Hbl hbl = null;
         if(updatedContainers != null && updatedContainers.size() > 0) {
             hbl = hblService.checkAllContainerAssigned(shipmentDetails, updatedContainers, updatedPackings);
         }
+        log.info("shipment afterSave hblService.checkAllContainerAssigned..... ");
         pushShipmentDataToDependentService(shipmentDetails, isCreate, Boolean.TRUE.equals(shipmentRequest.getIsAutoSellRequired()), Optional.ofNullable(oldEntity).map(ShipmentDetails::getContainersList).orElse(null));
+        log.info("shipment afterSave pushShipmentDataToDependentService..... ");
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().get(0);
@@ -2618,10 +2633,13 @@ public class ShipmentService implements IShipmentService {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
         }
+        log.info("shipment afterSave consoleShipmentMappingDao.deletePendingStateByShipmentId..... ");
         // Syncing shipment to V1
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
+        log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+        log.info("shipment afterSave end..... ");
     }
 
     public void syncMainLegRoute(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<RoutingsRequest> routingsRequests) {
