@@ -2547,7 +2547,7 @@ public class ShipmentService implements IShipmentService {
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
-//                commonUtils.updateEventWithMasterDataDescription(eventsList);
+                commonUtils.updateEventWithMasterDataDescription(eventsList);
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
@@ -3828,7 +3828,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private ShipmentDetailsResponse retireveShipmentData(CommonRequestModel commonRequestModel, boolean measurmentBasis, boolean getMasterData) throws RunnerException {
+    public ShipmentDetailsResponse retireveShipmentData(CommonRequestModel commonRequestModel, boolean measurmentBasis, boolean getMasterData) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         double start = System.currentTimeMillis();
         if(request.getId() == null && request.getGuid() == null) {
