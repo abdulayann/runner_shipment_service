@@ -33,8 +33,8 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean
     @Primary
     public ExecutorService executorService() {
-        int corePoolSize = 10; // Min threads
-        int maximumPoolSize = 100; // Adjusted max pool size
+        int corePoolSize = 20; // Min threads
+        int maximumPoolSize = 50; // Adjusted max pool size
         long keepAliveTime = 60; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
         int queueCapacity = 250; // Define queue capacity
