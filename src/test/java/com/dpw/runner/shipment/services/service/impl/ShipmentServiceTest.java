@@ -1407,9 +1407,7 @@ ShipmentServiceTest extends CommonMocks {
         expectedResponse.setShipmentCreatedOn(mockDateTime);
         expectedResponse.setSourceTenantId(1L);
 
-        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
-                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
-        ));
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
 
         // Execute the method under test

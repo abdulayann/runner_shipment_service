@@ -1,14 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -152,6 +150,9 @@ public class CommonUtils {
 
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    IMDMServiceAdapter mdmServiceAdapter;
 
 
 
@@ -1796,6 +1797,18 @@ public class CommonUtils {
                 }
             });
         }
+    }
+
+    public String getAutoPopulateDepartment(String transportMode, String direction, String module) {
+        String department = null;
+        List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(transportMode, direction, module);
+        if(!CollectionUtils.isEmpty(departmentList)) {
+            List<String> uniqueDepartments = departmentList.stream()
+                    .map(i -> StringUtility.convertToString(i.get(MdmConstants.DEPARTMENT)))
+                    .distinct().toList();
+            department = uniqueDepartments.size() == 1 ? StringUtility.convertToString(uniqueDepartments.get(0)) : null;
+        }
+        return department;
     }
 
 }

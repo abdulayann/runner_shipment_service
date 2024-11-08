@@ -1057,9 +1057,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
-        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
-                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
-        ));
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
