@@ -4852,7 +4852,7 @@ public class ShipmentService implements IShipmentService {
                 .triangulationPartner(consolidation.getTriangulationPartner())
                 .build();
 
-        shipment.setDirection(commonUtils.getAutoPopulateDepartment(
+        shipment.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipment.getTransportMode(), shipment.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
 
