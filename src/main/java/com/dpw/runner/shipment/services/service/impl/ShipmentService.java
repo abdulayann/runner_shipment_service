@@ -2793,8 +2793,8 @@ public class ShipmentService implements IShipmentService {
                                 shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), event.getActual());
                     }
                 }else{
-//                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-//                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
+                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
+                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
                 }
             }
 
@@ -2831,8 +2831,8 @@ public class ShipmentService implements IShipmentService {
                     handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
                 }
             }else{
-//                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
-//                        LocalDateTime.now(), LocalDateTime.now()));
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
+                        LocalDateTime.now(), LocalDateTime.now()));
             }
         }
     }
@@ -2908,18 +2908,18 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
         }
 
-//        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
-//            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-//                    shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
-//        }
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
+                    shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
+        }
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isLclOrFclOrAir(shipmentDetails)) {
             events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now(), LocalDateTime.now()));
         }
 
-//        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
-//            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
-//        }
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
+        }
 
     }
 

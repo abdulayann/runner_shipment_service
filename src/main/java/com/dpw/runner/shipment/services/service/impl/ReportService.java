@@ -334,6 +334,7 @@ public class ReportService implements IReportService {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
+            //todo: check for event: HBL
             createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));

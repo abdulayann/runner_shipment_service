@@ -240,7 +240,7 @@ public class AwbDao implements IAwbDao {
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                            //this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
+                            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
                             var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
@@ -248,7 +248,7 @@ public class AwbDao implements IAwbDao {
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                               // this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
+                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
                             }
                         }
                     }
@@ -261,7 +261,7 @@ public class AwbDao implements IAwbDao {
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                           // this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
+                            this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
                         }
 
                     }

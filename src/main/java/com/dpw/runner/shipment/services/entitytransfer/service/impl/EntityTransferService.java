@@ -282,7 +282,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         //this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
         List<String> tenantName = getTenantName(successTenantIds);
-        //String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
+//        String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
             // Set TenantId Context for inter branch shipment for Event creation
             if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
