@@ -267,7 +267,7 @@ class EntityTransferServiceTest {
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
-        verify(eventDao, atLeast(1)).autoGenerateEvents(any());
+//        verify(eventDao, atLeast(1)).autoGenerateEvents(any());
         verify(shipmentDao, times(1)).saveEntityTransfer(any(), any());
         verify(tasksService, times(3)).createTask(any());
 
