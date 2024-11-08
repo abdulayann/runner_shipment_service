@@ -52,7 +52,7 @@ public class ConsolidationConstants {
     public static final String SHOW_CREATE_BOOKING_SUCCESSFUL = "show or create bookingSuccessful";
 
     public static final String  API_RETRIEVE_SHOW_CREATE_BOOKING = "/retrieve/show_create_booking";
-    public static final String API_CONSOLIDATION_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte/consolidation";
+    public static final String API_CONSOLIDATION_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
     public static final String SHOW_CREATE_BOOKING_OPERATION = "Operation Name (CREATE/VIEW)";
     public static final String CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR = "Consolidation Details is null for Id {}";
