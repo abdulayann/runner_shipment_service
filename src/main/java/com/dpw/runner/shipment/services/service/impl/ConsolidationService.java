@@ -696,6 +696,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(consolidationDetails)
                             .prevData(null)
                             .parent(ConsolidationDetails.class.getSimpleName())
@@ -1593,6 +1594,7 @@ public class ConsolidationService implements IConsolidationService {
                 // audit logs
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(entity)
                                 .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                                 .parent(ConsolidationDetails.class.getSimpleName())
@@ -2893,6 +2895,7 @@ public class ConsolidationService implements IConsolidationService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                             .parent(ConsolidationDetails.class.getSimpleName())
