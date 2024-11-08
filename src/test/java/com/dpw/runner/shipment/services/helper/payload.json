@@ -517,19 +517,18 @@
       "entityType": "HAWB",
       "shipperName": "TEST VG CREDIT LIMIT",
       "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
-      "shipperCountry": "IN",
-      "shipperCountryName": "India",
       "consigneeName": "NATIONWIDE PAPER LTD",
       "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
-      "consigneeCountry": "IN",
-      "consigneeCountryName": "India",
       "consigneeReferenceNumber": "2436215",
       "iataCode": "5678",
       "awbNumber": "235-88998641",
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -1472,8 +1471,6 @@
       "entityType": "MAWB",
       "shipperName": "RA BRANCH",
       "shipperAddress": "\r\nADDRESS\r\nAP\r\nANANTHAPUR\r\nIND",
-      "shipperCountry": "IN",
-      "shipperCountryName": "India",
       "consigneeName": "RJ_TEST_ORG",
       "consigneeAddress": "\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nEGY\r\n99999\r\n20-202-27962043",
       "consigneeReferenceNumber": "648578",
@@ -1485,8 +1482,9 @@
       "destinationAirport": "bagani",
       "firstCarrier": "Air Transat",
       "agentCASSCode": "123",
-      "consigneeCountry": "IN",
-      "consigneeCountryName": "India"
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "awbNotifyPartyInfo": [
       {
@@ -1574,12 +1572,8 @@
       "entityType": "MAWB",
       "shipperName": "RA BRANCH",
       "shipperAddress": "\r\nADDRESS\r\nAP\r\nANANTHAPUR\r\nIND",
-      "shipperCountry": "IN",
-      "shipperCountryName": "India",
       "consigneeName": "RJ_TEST_ORG",
       "consigneeAddress": "\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nCAIRO\r\nEGY\r\n99999\r\n20-202-27962043",
-      "consigneeCountry": "IN",
-      "consigneeCountryName": "India",
       "consigneeReferenceNumber": "648578",
       "issuingAgentName": "ABB EGYPT",
       "issuingAgentAddress": "\r\n696 El Houria st., 8th Floor, apartment No. 806,  Louran\r\nEG\r\nEl Iskandariya (Alexandria)\r\nEGY\r\n999999999",
@@ -1587,7 +1581,10 @@
       "awbNumber": "986-55667780",
       "originAirport": "brussel",
       "destinationAirport": "bagani",
-      "firstCarrier": "Air Transat"
+      "firstCarrier": "Air Transat",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
