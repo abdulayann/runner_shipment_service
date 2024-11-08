@@ -88,7 +88,7 @@ public class ShipmentConstants {
     public static final String GET_DATETIME_CHANGES = "/get/dateTimeChanges";
     public static final String GET_CONTAINERS = "/get/ts/containers";
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
-    public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte/shipment";
+    public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
 
     public static final String SHIPMENT_CREATION = "SHPCR";
