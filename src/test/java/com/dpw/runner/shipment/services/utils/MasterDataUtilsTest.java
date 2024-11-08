@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -2184,6 +2185,14 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void getCountriesMasterDataList() {
+        var response = masterDataUtils.getCountriesMasterListData(new ArrayList<>());
+
+        assertNotNull(response);
+        assertEquals(0, response.size());
+    }
+
+    @Test
     void setContainerTeuDataWithContainerList() {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
@@ -2243,4 +2252,55 @@ class MasterDataUtilsTest {
         assertNotNull(response);
     }
 
+    @Test
+    void addAlpha3CountryWithData() {
+        Map<String, Object> address = new HashMap<>();
+        address.put(PartiesConstants.COUNTRY, "IN");
+        List<String> countryList = new ArrayList<>();
+        var resp = masterDataUtils.addAlpha3Country(address, countryList);
+
+        assertEquals(1, resp.size());
+        assertEquals("IND", resp.get(0));
+    }
+
+    @Test
+    void addAlpha3CountryWithDuplicateData() {
+        Map<String, Object> address = new HashMap<>();
+        address.put(PartiesConstants.COUNTRY, "IN");
+        List<String> countryList = new ArrayList<>(List.of("IND"));
+        var resp = masterDataUtils.addAlpha3Country(address, countryList);
+
+        assertEquals(1, resp.size());
+        assertEquals("IND", resp.get(0));
+    }
+
+    @Test
+    void addAlpha3CountryWithNoData() {
+        Map<String, Object> address = new HashMap<>();
+        List<String> countryList = new ArrayList<>();
+        var resp = masterDataUtils.addAlpha3Country(address, countryList);
+
+        assertEquals(0, resp.size());
+    }
+
+    @Test
+    void shipmentAddressCountryMasterData() {
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(EntityTransferMasterLists.builder().Identifier1("NA").ItemDescription("Namibia").build()));
+        Map<String, String> response = masterDataUtils.shipmentAddressCountryMasterData(completeShipment);
+        assertNotNull(response);
+        assertEquals("Namibia", response.get("NA"));
+    }
+
+    @Test
+    void consoleAddressCountryMasterData() {
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(EntityTransferMasterLists.builder().Identifier1("NA").ItemDescription("Namibia").build()));
+
+        Parties parties = Parties.builder().addressData(Map.of(PartiesConstants.COUNTRY, "NAM")).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().receivingAgent(parties).consolidationAddresses(new ArrayList<>()).build();
+        Map<String, String> response = masterDataUtils.consolidationAddressCountryMasterData(consolidationDetails);
+        assertNotNull(response);
+        assertEquals("Namibia", response.get("NA"));
+    }
 }
