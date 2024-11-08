@@ -85,6 +85,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
@@ -3626,6 +3627,43 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            double start = System.currentTimeMillis();
+            if(request.getId() == null) {
+                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id can't be null!");
+            }
+            Long id = request.getId();
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(id);
+            if (!shipmentDetails.isPresent()) {
+                log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(!Objects.equals(shipmentDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue()) &&
+                    !Objects.equals(shipmentDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+            }
+            List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
+            double current = System.currentTimeMillis();
+            log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+            ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+            if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
+                response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+            log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+            response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
+            createShipmentPayload(shipmentDetails.get(), response, true);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return retrieveById(commonRequestModel, false);
     }
@@ -4287,7 +4325,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(id);
             if(!shipmentDetailsOptional.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

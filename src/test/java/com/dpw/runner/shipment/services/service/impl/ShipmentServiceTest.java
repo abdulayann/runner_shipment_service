@@ -5739,14 +5739,14 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void getAllMasterDataEmptyShipmentTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().id(1L).build();
-        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.empty());
         assertEquals(HttpStatus.BAD_REQUEST, shipmentService.getAllMasterData(commonRequestModel).getStatusCode());
     }
 
     @Test
     void getAllMasterDataTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().id(1L).build();
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         Map<String, Object> response = new HashMap<>();
@@ -8924,6 +8924,61 @@ ShipmentServiceTest extends CommonMocks {
         RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
         ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
         assertNull(shipmentDetailsResponse.getShipmentStatus());
+    }
+
+    @Test
+    void testRetrieveForNTEAuthError() {
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTERetrievalError() {
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.empty());
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTEIdNullError() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE() {
+        shipmentDetails.setStatus(null);
+        shipmentDetails.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE1() {
+        shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE2() {
+        shipmentDetails.setStatus(100);
+        shipmentDetails.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }
