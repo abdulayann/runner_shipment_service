@@ -53,7 +53,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -542,8 +541,6 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
 
-    @Autowired
-    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -4837,6 +4834,10 @@ public class ShipmentService implements IShipmentService {
                 .triangulationPartner(consolidation.getTriangulationPartner())
                 .build();
 
+        shipment.setDirection(commonUtils.getAutoPopulateDepartment(
+                shipment.getTransportMode(), shipment.getDirection(), MdmConstants.SHIPMENT_MODULE
+        ));
+
         if (consolidation.getConsolidationAddresses() != null) {
             consolidation.getConsolidationAddresses().stream().forEach(party -> {
                 if (party.getType().equals("NP1")) {
@@ -4981,7 +4982,9 @@ public class ShipmentService implements IShipmentService {
                 response.setHouseBill(generateCustomHouseBL(null));
 
             // Populate default department
-            populateDepartment(response);
+            response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE
+            ));
 
             try {
                 log.info("Fetching Tenant Model");
@@ -7499,12 +7502,5 @@ public class ShipmentService implements IShipmentService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-
-    private void populateDepartment(ShipmentDetailsResponse response) {
-        List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE);
-        if(!CollectionUtils.isEmpty(departmentList) && departmentList.size() == 1) {
-            response.setDepartment(StringUtility.convertToString(departmentList.get(0).get(MdmConstants.DEPARTMENT)));
-        }
-    }
 
 }

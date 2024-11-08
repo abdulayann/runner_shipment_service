@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -7,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -158,6 +160,9 @@ class CommonUtilsTest {
 
     @Mock
     private ConsolidationDao consolidationDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -2902,5 +2907,49 @@ class CommonUtilsTest {
         AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
         awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
         commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnSingleUniqueDepartmentValue() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertEquals("AE", res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfMoreThanSingleUniqueDepartment() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "ACT"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfNoResponseFromMDM() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(Collections.emptyList());
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
     }
 }
