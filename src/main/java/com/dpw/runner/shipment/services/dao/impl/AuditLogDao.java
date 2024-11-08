@@ -2,7 +2,11 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAuditLogRepository;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Optional;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
@@ -14,9 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-
-import java.util.List;
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 @Slf4j
@@ -24,28 +26,31 @@ public class AuditLogDao implements IAuditLogDao {
     @Autowired
     private IAuditLogRepository auditLogRepository;
 
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
+    @Transactional
     public AuditLog save(AuditLog auditLog) {
         log.info("AuditLog Save : preparing event save native query");
 
         Query query = entityManager.createNativeQuery(
-                "INSERT INTO audit_log (id, operation, entity, entity_id, changes, parent_type, parent_id, tenant_id, guid, is_deleted, created_at, updated_at) " +
-                    "VALUES (?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?, ?, ?)")
-            .setParameter(1, auditLog.getId())
-            .setParameter(2, auditLog.getOperation())
-            .setParameter(3, auditLog.getEntity())
-            .setParameter(4, auditLog.getEntityId())
-            .setParameter(5, auditLog.getChanges() != null ? auditLog.getChanges().toString() : null) // Convert map to JSON string
-            .setParameter(6, auditLog.getParentType())
-            .setParameter(7, auditLog.getParentId())
-            .setParameter(8, auditLog.getTenantId()) // Assuming `tenant_id` is inherited from `MultiTenancy`
-            .setParameter(9, auditLog.getGuid())
-            .setParameter(10, auditLog.getIsDeleted())
-            .setParameter(11, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, auditLog.getCreatedAt()))
-            .setParameter(12, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, auditLog.getUpdatedAt()));
+                "INSERT INTO audit_log (operation, entity, parent_type, parent_id, tenant_id, is_deleted, updated_by, updated_at, changes, created_at, created_by) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?)")
+            .setParameter(1, auditLog.getOperation())
+            .setParameter(2, auditLog.getEntity())
+            .setParameter(3, auditLog.getParentType())
+            .setParameter(4, auditLog.getParentId())
+            .setParameter(5, auditLog.getTenantId())
+            .setParameter(6, auditLog.getIsDeleted())
+            .setParameter(7, auditLog.getUpdatedBy())
+            .setParameter(8, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getUpdatedAt())))
+            .setParameter(9, jsonHelper.convertToJson(auditLog.getChanges()))
+            .setParameter(10, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getCreatedAt())))
+            .setParameter(11, auditLog.getCreatedBy());
 
         log.info("Executing native query for AuditLog save");
         query.executeUpdate();

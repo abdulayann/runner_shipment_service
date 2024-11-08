@@ -77,6 +77,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -158,6 +159,7 @@ public class AuditLogService implements IAuditLogService {
     }
 
     @Async
+    @Transactional
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
         String skipAuditLog = MDC.get("skip-audit-log");
         if(skipAuditLog != null && skipAuditLog.equals("true"))
@@ -168,6 +170,10 @@ public class AuditLogService implements IAuditLogService {
         auditLog.setParentType(auditLogMetaData.getParent());
         auditLog.setParentId(auditLogMetaData.getParentId());
         auditLog.setTenantId(auditLogMetaData.getTenantId());
+        auditLog.setCreatedBy(auditLogMetaData.getUserName());
+        auditLog.setUpdatedBy(auditLogMetaData.getUserName());
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setUpdatedAt(LocalDateTime.now());
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
