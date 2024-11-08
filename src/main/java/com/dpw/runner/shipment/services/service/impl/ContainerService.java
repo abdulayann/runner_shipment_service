@@ -1617,7 +1617,9 @@ public class ContainerService implements IContainerService {
     public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
         Map<Long, String> oldContsMap = new HashMap<>();
         if(oldContainers != null && !oldContainers.isEmpty()) {
-            oldContsMap = oldContainers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            for(Containers container: oldContainers) {
+                oldContsMap.put(container.getId(), container.getContainerNumber());
+            }
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
