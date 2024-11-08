@@ -22,6 +22,13 @@ public class CountryListHelper {
             return iso3166Country.getAlpha3();
         }
 
+        public static String getAlpha2FromAlpha3(String alpha3) {
+            if(IsStringNullOrEmpty(alpha3))
+                return null;
+            ISO3166Country iso3166Country = fromAlpha3(alpha3);
+            return iso3166Country.getAlpha2();
+        }
+
         public static ISO3166Country fromAlpha3(String alpha3)
         {
             List<ISO3166Country> collection = buildCollection();
