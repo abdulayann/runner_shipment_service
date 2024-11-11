@@ -10,4 +10,6 @@ public interface INetworkTransferService{
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
     void createNetworkTransferEntity(String entityType, ShipmentDetails shipmentDetails, Long tenantId, ConsolidationDetails consolidationDetails);
+    ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,4 +21,5 @@ public interface INetworkTransferDao {
     void delete(NetworkTransfer networkTransfer);
 
     void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType, Long entityId);
+    void updateStatusAndCreatedEntityId(Long id, NetworkTransferStatus status, Long createdEntityId);
 }
