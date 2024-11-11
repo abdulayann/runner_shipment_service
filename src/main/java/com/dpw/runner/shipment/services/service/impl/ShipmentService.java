@@ -154,24 +154,7 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -298,6 +281,7 @@ import com.nimbusds.jose.util.Pair;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -341,7 +325,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.PropertyMap;
 import org.modelmapper.TypeMap;
+import org.modelmapper.config.Configuration;
+import org.modelmapper.convention.MatchingStrategies;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -3353,13 +3340,12 @@ public class ShipmentService implements IShipmentService {
 //                }
 
                 for( var curr:shipmentDetailsPage.getContent()){
+                    ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = getShipmentDetailsResponse(curr, request.getIncludeColumns());
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
-                    filteredList.add( res);
+                    //res.setData(partialFetchUtils.fetchPartialListData(shipmentDetailsResponse,request.getIncludeColumns()));
+                    filteredList.add( shipmentDetailsLazyResponse);
 
                 }
-
-                getShipmentDetailsResponse()
                 long endTime = System.currentTimeMillis();   // End time
                 long duration = endTime - startTime;         // Duration in milliseconds
 
@@ -3377,36 +3363,143 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ShipmentDetailsResponse getShipmentDetailsResponse(Long id, List<String> includeColumns) {
-        ShipmentDetails shipmentDetail = shipmentDao.findShipmentDetails(id);
+    public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
+       // ShipmentDetails shipmentDetail = shipmentDao.findShipmentDetails(id);
 
-        return mapWithModelMapper(shipmentDetail, includeColumns);
+        return mapWithModelMapper2(shipmentDetails, includeColumns);
     }
 
-    public ShipmentDetailsResponse mapWithModelMapper(ShipmentDetails shipmentDetail, List<String> includeColumns) {
-        ModelMapper modelMapper = new ModelMapper();
-        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+//    public ShipmentDetailsResponse mapWithModelMapper(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+//        ModelMapper modelMapper = new ModelMapper();
+//        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+//
+//
+//        // Use reflection to set values dynamically
+//        for (String field : includeColumns) {
+//                try {
+//                    // Dynamically get the getter method for the field in source
+//                    Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
+//                    Object value = getter.invoke(shipmentDetail);
+//
+//                    // Dynamically get the setter method for the field in destination
+//                    Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalize(field), List.class);
+//
+//                    // Set the value in the destination object
+//                    setter.invoke(shipmentDetailsResponse, value);
+//                } catch (Exception e) {
+//                    // Handle exceptions such as NoSuchMethodException or IllegalAccessException
+//                    e.printStackTrace();
+//                }
+//        }
+//        return shipmentDetailsResponse;
+//    }
+//
+//
+//    public ShipmentDetailsResponse mapWithModelMapper1(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+//      //  ModelMapper modelMapper = new ModelMapper();
+//        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+//
+//        // Configure ModelMapper to avoid mapping unspecified fields automatically
+//        modelMapper.getConfiguration()
+//                .setFieldMatchingEnabled(true)
+//                .setFieldAccessLevel(Configuration.AccessLevel.PRIVATE)
+//                .setSkipNullEnabled(true);
+//
+//        // Dynamically add mappings for fields specified in includeColumns
+//        for (String field : includeColumns) {
+//            try {
+//                // Find the getter method in ShipmentDetails
+//                Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
+//                // Find the setter method in ShipmentDetailsResponse with the same field type
+//                Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalize(field), getter.getReturnType());
+//
+//                // Configure ModelMapper to use the getter and setter for the specified field
+//                modelMapper.typeMap(ShipmentDetails.class, ShipmentDetailsResponse.class)
+//                        .addMappings(mapper -> {
+//                            try {
+//                                // Using lambdas to map the field dynamically
+//                                mapper.map(src -> {
+//                                    try {
+//                                        return getter.invoke(src);
+//                                    } catch (IllegalAccessException e) {
+//                                        throw new RuntimeException(e);
+//                                    } catch (InvocationTargetException e) {
+//                                        throw new RuntimeException(e);
+//                                    }
+//                                }, (dest, value) -> {
+//                                    try {
+//                                        setter.invoke(dest, value);
+//                                    } catch (IllegalAccessException e) {
+//                                        throw new RuntimeException(e);
+//                                    } catch (InvocationTargetException e) {
+//                                        throw new RuntimeException(e);
+//                                    }
+//                                });
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
+//                        });
+//
+//            } catch (NoSuchMethodException e) {
+//                e.printStackTrace(); // Handle missing methods gracefully
+//            }
+//        }
+//
+//        // Map shipmentDetail to shipmentDetailsResponse with only specified fields
+//        modelMapper.map(shipmentDetail, shipmentDetailsResponse);
+//
+//        return shipmentDetailsResponse;
+//    }
 
+    public ShipmentDetailsLazyResponse mapWithModelMapper2(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+        ModelMapper modelMapper = this.modelMapper;
+        modelMapper.getConfiguration().setImplicitMappingEnabled(false);
+        ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
 
-        // Use reflection to set values dynamically
-        for (String field : includeColumns) {
-                try {
-                    // Dynamically get the getter method for the field in source
-                    Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
-                    Object value = getter.invoke(shipmentDetail);
-
-                    // Dynamically get the setter method for the field in destination
-                    Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalize(field), value.getClass());
-
-                    // Set the value in the destination object
-                    setter.invoke(shipmentDetailsResponse, value);
-                } catch (Exception e) {
-                    // Handle exceptions such as NoSuchMethodException or IllegalAccessException
-                    e.printStackTrace();
-                }
+        // Create or retrieve existing TypeMap
+        TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap = modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
+        if (typeMap == null) {
+            // If no TypeMap exists, create a new one
+            typeMap = modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
         }
-        return shipmentDetailsResponse;
+        modelMapper.getConfiguration().setImplicitMappingEnabled(true);
+        // Dynamically add mappings based on includeColumns
+        for (String field : includeColumns) {
+            try {
+                // Reflectively obtain the getter and setter methods for the specified field
+                Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
+                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalize(field), getter.getReturnType());
+
+                // Add mappings to the TypeMap for the specified fields only
+                typeMap.addMappings(mapper -> {
+
+                    mapper.map(src -> {
+                        try {
+                            return getter.invoke(src);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }, (dest, value) -> {
+                        try {
+                            setter.invoke(dest, value);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                });
+
+            } catch (NoSuchMethodException e) {
+                // Handle the case where the method does not exist for the specified field
+                System.err.println("No such field: " + field);
+            }
+        }
+
+        // Perform mapping from source to destination
+        typeMap.map(shipmentDetail, shipmentDetailsLazyResponse);
+
+        return shipmentDetailsLazyResponse;
     }
+
 
     private String capitalize(String str) {
         if (str == null || str.isEmpty()) return str;
