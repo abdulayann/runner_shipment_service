@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.JoinPoint;
@@ -52,7 +53,7 @@ class CreateValidateAspectTest {
     @ParameterizedTest
     @ValueSource(strings = {"Shipments:Creation:All Shipment:AllShipmentCreate", "Operations:Shipments:SEA:Export:Create"})
     // Should work for both older and new permissions
-    void testCreateShipmentAspect(String permission) throws RunnerException {
+    void testCreateShipmentAspect(String permission) throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -79,7 +80,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspect2() throws RunnerException {
+    void testCreateShipmentAspect2() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -101,11 +102,11 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
     }
 
     @Test
-    void testCreateShipmentAspect3() throws RunnerException {
+    void testCreateShipmentAspect3() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -127,11 +128,11 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
     }
 
     @Test
-    void testCreateShipmentAspect4() throws RunnerException {
+    void testCreateShipmentAspect4() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -158,7 +159,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspect5() throws RunnerException {
+    void testCreateShipmentAspect5() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -181,7 +182,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateShipmentAspectException() throws RunnerException {
+    void testCreateShipmentAspectException() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -203,11 +204,11 @@ class CreateValidateAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateShipmentCreate(joinPoint, commonRequestModel));
     }
 
     @Test
-    void testCreateConsolidationAspect() throws RunnerException {
+    void testCreateConsolidationAspect() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -234,7 +235,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspect2() throws RunnerException {
+    void testCreateConsolidationAspect2() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -256,11 +257,11 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
     }
 
     @Test
-    void testCreateConsolidationAspect3() throws RunnerException {
+    void testCreateConsolidationAspect3() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -282,11 +283,11 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
     }
 
     @Test
-    void testCreateConsolidationAspect4() throws RunnerException {
+    void testCreateConsolidationAspect4() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -313,7 +314,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspect5() throws RunnerException {
+    void testCreateConsolidationAspect5() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -336,7 +337,7 @@ class CreateValidateAspectTest {
     }
 
     @Test
-    void testCreateConsolidationAspectException() throws RunnerException {
+    void testCreateConsolidationAspectException() throws ValidationException {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -358,6 +359,6 @@ class CreateValidateAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         createValidateAspect = new CreateValidateAspect();
-        assertThrows(RunnerException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
+        assertThrows(ValidationException.class, () -> createValidateAspect.validateConsolidationCreate(joinPoint, commonRequestModel));
     }
 }
