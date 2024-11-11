@@ -690,4 +690,8 @@ public class ShipmentDao implements IShipmentDao {
     public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
         return shipmentRepository.save(shipmentDetails);
     }
+
+    public ShipmentDetails findShipmentDetails(Long id) {
+        return shipmentRepository.findShipmentDetails(id);
+    }
 }

@@ -15,8 +15,10 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -94,4 +96,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @ExcludeTenantFilter
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
+
+    @Query("SELECT s FROM ShipmentDetails s WHERE s.id = :id")
+    @EntityGraph(attributePaths = {"field1", "field2", "field3"})  // Specify fields to eagerly load
+    ShipmentDetails findShipmentDetails(@Param("id") Long id);
+
 }

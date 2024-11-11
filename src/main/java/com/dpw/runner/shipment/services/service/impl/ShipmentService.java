@@ -299,6 +299,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
@@ -340,6 +341,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeMap;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -3318,6 +3320,7 @@ public class ShipmentService implements IShipmentService {
 
 
     public ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel) {
+        long startTime = System.currentTimeMillis(); // Start time
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
@@ -3330,19 +3333,37 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
+                long endTime = System.currentTimeMillis();   // End time
+                long duration = endTime - startTime;         // Duration in milliseconds
+
+                log.info("Full list API call with null/empty included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
                         shipmentDetailsPage.getTotalPages(),
                         shipmentDetailsPage.getTotalElements());
+            }
             else {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
-                for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
+//                for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
+//                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+//                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+//                    filteredList.add( res);
+//
+//                }
+
+                for( var curr:shipmentDetailsPage.getContent()){
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
                     res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
                     filteredList.add( res);
 
                 }
+
+                getShipmentDetailsResponse()
+                long endTime = System.currentTimeMillis();   // End time
+                long duration = endTime - startTime;         // Duration in milliseconds
+
+                log.info("Full list API call with included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         filteredList,
                         shipmentDetailsPage.getTotalPages(),
@@ -3354,6 +3375,42 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ShipmentDetailsResponse getShipmentDetailsResponse(Long id, List<String> includeColumns) {
+        ShipmentDetails shipmentDetail = shipmentDao.findShipmentDetails(id);
+
+        return mapWithModelMapper(shipmentDetail, includeColumns);
+    }
+
+    public ShipmentDetailsResponse mapWithModelMapper(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+        ModelMapper modelMapper = new ModelMapper();
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+
+
+        // Use reflection to set values dynamically
+        for (String field : includeColumns) {
+                try {
+                    // Dynamically get the getter method for the field in source
+                    Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
+                    Object value = getter.invoke(shipmentDetail);
+
+                    // Dynamically get the setter method for the field in destination
+                    Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalize(field), value.getClass());
+
+                    // Set the value in the destination object
+                    setter.invoke(shipmentDetailsResponse, value);
+                } catch (Exception e) {
+                    // Handle exceptions such as NoSuchMethodException or IllegalAccessException
+                    e.printStackTrace();
+                }
+        }
+        return shipmentDetailsResponse;
+    }
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
 
@@ -3649,6 +3706,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        long startTime = System.currentTimeMillis();
         String responseMsg;
         int totalPage = 0;
         long totalElements = 0;
@@ -3678,11 +3736,16 @@ public class ShipmentService implements IShipmentService {
                 totalPage = shipmentDetailsPage.getTotalPages();
                 totalElements = shipmentDetailsPage.getTotalElements();
             }
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
+                long endTime = System.currentTimeMillis();   // End time
+                long duration = endTime - startTime;         // Duration in milliseconds
+
+                log.info("List API call with null/empty included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData),
                         totalPage,
                         totalElements);
+            }
             else {
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData)){
@@ -3691,6 +3754,10 @@ public class ShipmentService implements IShipmentService {
                     filtered_list.add( res);
 
                 }
+                long endTime = System.currentTimeMillis();   // End time
+                long duration = endTime - startTime;         // Duration in milliseconds
+
+                log.info("List API call with included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         filtered_list,
                         totalPage,
