@@ -2,7 +2,9 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -80,6 +82,8 @@ public class AwbDao implements IAwbDao {
     private EntityManager entityManager;
     private V1ServiceUtil v1ServiceUtil;
     private ModelMapper modelMapper;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Autowired
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
@@ -370,8 +374,10 @@ public class AwbDao implements IAwbDao {
             // if not original printed
             if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
                 awb.setPrintType(printType);
-            if(Boolean.TRUE.equals(isOriginal))
+            if(Boolean.TRUE.equals(isOriginal)) {
                 awb.setOriginalPrintedAt(printedAt);
+                commonUtils.checkForMandatoryHsCodeForUAE(awb);
+            }
             try {
                 save(awb);
             } catch (Exception e) {

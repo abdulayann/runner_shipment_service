@@ -649,7 +649,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
@@ -668,7 +668,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setShipmentsList(List.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
@@ -708,7 +708,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setShipmentsList(List.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);

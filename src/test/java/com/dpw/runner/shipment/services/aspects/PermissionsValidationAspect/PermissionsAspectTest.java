@@ -73,7 +73,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel);
+        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
         assert (true);
     }
 
@@ -100,7 +100,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel);
+        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
         assert (true);
     }
 
@@ -127,7 +127,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
     }
 
     @Test
@@ -153,7 +153,7 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel);
+        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
         assert (true);
     }
 
@@ -180,7 +180,7 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel);
+        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
         assert (true);
     }
 
@@ -207,7 +207,7 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel);
+        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
         assert (true);
     }
 
@@ -234,7 +234,7 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        assertThrows(RunnerException.class, () -> permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel));
+        assertThrows(RunnerException.class, () -> permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
     }
 
     @Test
@@ -260,7 +260,7 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel);
+        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
         assert (true);
     }
 }

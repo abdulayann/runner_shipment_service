@@ -104,6 +104,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private AllocationsResponse allocations;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
     private PartiesResponse borrowedFrom;
@@ -152,6 +154,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PartiesResponse consigner;
     private PartiesResponse consignee;
     private String sci;
+    private String additionalSecurityInformation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
@@ -161,4 +164,6 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime latDate;
     private Integer pendingActionCount;
     private String department;
+    private Boolean isNetworkFlag;
+    private Boolean isReceivingBranchManually;
 }

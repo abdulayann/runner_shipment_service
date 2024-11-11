@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.masterdata.enums;
 
 import lombok.Getter;
 
+import java.util.Objects;
+
 @Getter
 public enum MasterDataType {
     ORDER_STATUS(1, "OrderStatus"),
@@ -178,5 +180,16 @@ public enum MasterDataType {
                 return d;
         }
         return null;
+    }
+
+    public static String getNameFromDescription(String description) {
+        if(Objects.isNull(description))
+            return "";
+        for (MasterDataType masterDataType : MasterDataType.values()) {
+            if (masterDataType.getDescription().equalsIgnoreCase(description)) {
+                return masterDataType.name();
+            }
+        }
+        return "";
     }
 }

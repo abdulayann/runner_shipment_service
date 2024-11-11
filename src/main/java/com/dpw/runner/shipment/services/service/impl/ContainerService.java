@@ -505,7 +505,7 @@ public class ContainerService implements IContainerService {
 //        ColumnsToIgnore(fieldNameMap, request);
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
-            List<String> unlocationsRefGuids = new ArrayList<>();
+            Set<String> unlocationsRefGuids = new HashSet<>();
             for (ContainersExcelModel model : modelList){
                 unlocationsRefGuids.add(model.getContainerStuffingLocation());
             }
@@ -735,6 +735,7 @@ public class ContainerService implements IContainerService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Containers.class))
                             .parent(Containers.class.getSimpleName())
@@ -1586,20 +1587,21 @@ public class ContainerService implements IContainerService {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoListWithMasterData(List<Containers> lst) {
+        Map<String, Object> cacheMap = new HashMap<>();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Set<String> commodityTypes = new HashSet<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
         lst.forEach(containers -> {
             ContainerResponse containerResponse = (ContainerResponse) convertEntityToDto(containers);
             responseList.add(containerResponse);
-            commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId() ));
+            commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(containerResponse, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + containers.getId(), cacheMap));
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
-        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY);
+        masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
         if (!Objects.isNull(responseList)) {
             for (IRunnerResponse containerResponse : responseList) {
                 ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
-                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY));
+                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
             }
         }
         return responseList;
@@ -1619,7 +1621,9 @@ public class ContainerService implements IContainerService {
                 oldContainers != null ? oldContainers.size() : 0);
         Map<Long, String> oldContsMap = new HashMap<>();
         if(oldContainers != null && !oldContainers.isEmpty()) {
-            oldContsMap = oldContainers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+            for(Containers container: oldContainers) {
+                oldContsMap.put(container.getId(), container.getContainerNumber());
+            }
             log.debug("Old containers map created with size: {}", oldContsMap.size());
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();

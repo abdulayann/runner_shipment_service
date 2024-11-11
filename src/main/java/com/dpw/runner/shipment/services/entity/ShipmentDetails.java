@@ -11,15 +11,15 @@ import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import javax.persistence.OrderBy;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
-import javax.persistence.*;
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.OrderBy;
 import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -128,9 +128,11 @@ public class ShipmentDetails extends MultiTenancy {
     private String goodsDescription;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<BookingCarriage> bookingCarriagesList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ELDetails> elDetailsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
@@ -138,24 +140,26 @@ public class ShipmentDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Events> eventsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'SHIPMENT'")
-    private List<FileRepo> fileRepoList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<Packing> packingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @OrderBy("leg ASC")
+    @BatchSize(size = 50)
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ServiceDetails> servicesList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckDriverDetails;
 
     @Column(name = "weight")
@@ -316,20 +320,42 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
+    @BatchSize(size = 50)
     private List<Notes> notesList;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails deliveryDetails;
 
+    @Column(name = "delivery_details_id", insertable = false, updatable = false)
+    private Long deliveryDetailsId;
+
     @OneToOne(fetch = FetchType.LAZY, targetEntity = PickupDeliveryDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_details_id", referencedColumnName = "id")
     private PickupDeliveryDetails pickupDetails;
+
+    @Column(name = "pickup_details_id", insertable = false, updatable = false)
+    private Long pickupDetailsId;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "client_id", referencedColumnName = "id")
     @OrganizationData
     private Parties client;
+
+    @Column(name = "client_id", insertable = false, updatable = false)
+    private Long clientId;
+
+    @Column(name = "consigner_id", insertable = false, updatable = false)
+    private Long consignerId;
+
+    @Column(name = "consignee_id", insertable = false, updatable = false)
+    private Long consigneeId;
+
+    @Column(name = "carrier_detail_id", insertable = false, updatable = false)
+    private Long carrierDetailId;
+
+    @Column(name = "additional_details_id", insertable = false, updatable = false)
+    private Long additionalDetailId;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consigner_id", referencedColumnName = "id")
@@ -342,6 +368,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Parties consignee;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<Jobs> jobsList;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -350,10 +377,12 @@ public class ShipmentDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "consolidation_id"))
     @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
+    @BatchSize(size = 50)
     private List<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")
+    @BatchSize(size = 50)
     private List<Parties> shipmentAddresses;
 
     @Column(name = "job_status")
@@ -391,6 +420,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String orderManagementNumber;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<ShipmentOrder> shipmentOrders;
 
     @Enumerated(EnumType.STRING)
@@ -482,6 +512,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String destinationContractType;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
+    @BatchSize(size = 50)
     private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
 
      @Column(name = "date_type")
@@ -506,6 +537,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @Where(clause = "is_attachment_done = 'false'")
+    @BatchSize(size = 50)
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
     @Column(name = "department")
@@ -520,4 +552,9 @@ public class ShipmentDetails extends MultiTenancy {
      @Column(name = "sync_routing_from_consolidation")
      private Boolean syncRoutingFromConsolidation;
 
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
 }

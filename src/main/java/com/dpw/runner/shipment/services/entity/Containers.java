@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -286,9 +287,11 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "entity_id")
     @Where(clause = "entity_type = 'CONTAINER'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
+    @BatchSize(size = 50)
     private List<Packing> packsList;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -296,11 +299,13 @@ public class Containers extends MultiTenancy {
             joinColumns = @JoinColumn(name = "container_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "containersList", allowSetters = true)
+    @BatchSize(size = 50)
     private List<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
             mappedBy = "containersList")
     @JsonIgnore
+    @BatchSize(size = 50)
     private List<BookingCharges> bookingCharges;
 
     @Column(name = "commodity_group")
@@ -328,6 +333,7 @@ public class Containers extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_id")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckingDetails;
 
     @Column(name = "invoice_number")

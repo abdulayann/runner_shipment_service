@@ -92,6 +92,9 @@ public class BookingOrderReport extends IReport {
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
+        if(bookingOrderModel.getShipmentModel().getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(bookingOrderModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
+        }
 
         return dictionary;
     }

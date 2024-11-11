@@ -510,7 +510,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(!shipmentGuids.isEmpty()) {
             try {
                 var shipmentDetailsList = shipmentDao.findShipmentsByGuids(new HashSet<>(shipmentGuids));
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())));
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendGroupedEmailForShipmentImport(shipmentDetailsList, entityTransferConsolidationDetails.getSourceBranchTenantName())), executorService);
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
@@ -761,6 +761,9 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_RAI)) {
+            throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
+        }
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
 
@@ -850,7 +853,8 @@ public class EntityTransferService implements IEntityTransferService {
                         TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
                         // TODO Need to set that.tenant.IATAAgent = true condition for Air
                         if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) &&
-                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent){
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent &&
+                            Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                             List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
                             if(awbs.isEmpty())
                                 hblGenerationError = true;

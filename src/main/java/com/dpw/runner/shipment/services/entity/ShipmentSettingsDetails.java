@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -96,6 +97,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "restricted_locations")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
+    @BatchSize(size = 50)
     private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")
@@ -125,10 +127,12 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Where(clause = "is_front_print = true")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<HblTermsConditionTemplate> hblTermsConditionTemplate;
 
     @Where(clause = "is_front_print = false")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<HblTermsConditionTemplate> hblHawbBackPrintTemplate;
 
     // CommonSettings
@@ -199,6 +203,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String defaultFailureEmailIds;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<EmailTemplates> emailTemplates;
 
     // Quote Settings
@@ -463,9 +468,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean customisedSequence;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<TenantProducts> tenantProducts;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<ProductSequenceConfig> productSequenceConfig;
 
     //AWB Lock Settings
@@ -545,4 +552,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "hide_manifest")
     private Boolean hideManifest = true;
+
+    @Column(name = "is_entity_transfer_prerequisite_enabled_date")
+    private LocalDateTime isEntityTransferPrerequisiteEnabledDate = null;
+
+    @Column(name = "is_entity_transfer_prerequisite_enabled")
+    private Boolean isEntityTransferPrerequisiteEnabled = false;
+
 }

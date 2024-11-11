@@ -10,13 +10,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
+
 @Component
 public class V1AuthHelper {
 
     @Value("${v1service.dataSync.xApiKey}")
     private String xApiKey;
 
-    public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
     public static final String SHIPMENT = "Shipment";
 
     public static HttpHeaders getHeaders() {

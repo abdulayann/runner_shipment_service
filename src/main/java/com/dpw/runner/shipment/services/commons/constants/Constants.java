@@ -468,6 +468,7 @@ public class Constants {
     public static final String FLOW = "Flow";
     public static final String TASK_TYPE = "TaskType";
     public static final String TASK_STATUS = "TaskStatus";
+    public static final String AIR_AUTHORISING_ENTITY = "AirAuthorisingEntity";
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
@@ -577,6 +578,8 @@ public class Constants {
     public static final String ROUTING_VALIDATION = "Carriage should be MAIN_CARRIAGE";
     public static final String SHIPMENTS_PERMISSION_KEY = "Shipments";
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
+    public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
+    public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
     private Constants() {
     }
 

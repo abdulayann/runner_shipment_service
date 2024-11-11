@@ -62,7 +62,7 @@ public class ResponseHelper {
     }
 
     public static ResponseEntity<IRunnerResponse> buildListSuccessResponse(List<IRunnerResponse> data, int pageNo, long count) {
-        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
+//        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .data(data).numberOfRecords(count).totalPages(pageNo).build();
@@ -79,7 +79,7 @@ public class ResponseHelper {
 
     public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, HttpStatus httpStatus) {
         httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
-        log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
+        log.error(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
         return new ResponseEntity<>(runnerResponse, httpStatus);
     }

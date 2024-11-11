@@ -18,10 +18,8 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -35,6 +33,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.kafka.common.protocol.types.Field;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -501,6 +500,237 @@ class CargoManifestReportTest extends CommonMocks {
                 ? cargoManifestModel.awb.getOriginalPrintedAt()
                 : null;
         assertNull(dateTime, "dateTime should be null when getOriginalPrintedAt returns null");
+    }
+
+    @Test
+    void populateDictionaryNewTags() {
+        CargoManifestModel cargoManifestModel = new CargoManifestModel();
+
+        cargoManifestModel.tenantDetails =  new TenantModel();
+        cargoManifestModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        cargoManifestModel.usersDto = UserContext.getUser();
+        cargoManifestModel.awb = new Awb();
+        AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
+        awbCargoInfo.setSci("test");
+        cargoManifestModel.awb.setAwbCargoInfo(awbCargoInfo);
+        cargoManifestModel.awb.setOriginalPrintedAt(LocalDateTime.now());
+
+        List<RoutingsModel> routs = new ArrayList<>();
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(2L);
+        routingsModel.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsModel.setMode(Constants.TRANSPORT_MODE_SEA);
+        routingsModel.setVesselName("test");
+        routingsModel.setVoyage("test");
+        routingsModel.setCarrier("test");
+        routingsModel.setPod("test");
+        routingsModel.setPol("test");
+        LocalDateTime localDate = LocalDateTime.now();
+        routingsModel.setEta(localDate);
+        routingsModel.setEtd(localDate);
+        routs.add(routingsModel);
+
+        List<ReferenceNumbersModel> modelList = new ArrayList<>();
+        ReferenceNumbersModel refModel = new ReferenceNumbersModel();
+        refModel.setType(CEN);
+        refModel.setReferenceNumber("12345");
+        modelList.add(refModel);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+        shipmentModel.setSecurityStatus("Test");
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setPacksUnit("PKG");
+        shipmentModel.setWeightUnit("KG");
+        shipmentModel.setVolumetricWeightUnit("M3");
+        shipmentModel.setChargeableUnit("KG");
+        shipmentModel.setBookingNumber("12345");
+        shipmentModel.setServiceType("A2A");
+        shipmentModel.setRoutingsList(routs);
+        shipmentModel.setReferenceNumbersList(modelList);
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setOrgCode("Test");
+        partiesModel.setAddressCode("Test");
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        orgData.put(COMPANY_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setDestinationPort(UUID.randomUUID().toString());
+        carrierDetailModel.setShippingLine("MAERSK");
+
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        additionalDetailModel.setExportBroker(partiesModel);
+        additionalDetailModel.setImportBroker(partiesModel);
+        additionalDetailModel.setScreeningStatus(Arrays.asList(Constants.AOM));
+        additionalDetailModel.setExemptionCodes("Test");
+        additionalDetailModel.setAomFreeText("Test");
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+
+        List<ContainerModel> containerModelList = new ArrayList<>();
+        ContainerModel shipmentContainers = new ContainerModel();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setContainerNumber("CONT000283");
+        shipmentContainers.setGrossVolume(BigDecimal.TEN);
+        shipmentContainers.setGrossVolumeUnit("M3");
+        shipmentContainers.setGrossWeight(BigDecimal.TEN);
+        shipmentContainers.setGrossWeightUnit("KG");
+        shipmentContainers.setPacksType("PKG");
+        shipmentContainers.setPacks("100");
+        containerModelList.add(shipmentContainers);
+        shipmentModel.setContainersList(containerModelList);
+
+        List<ConsolidationModel> consolidationModels = new ArrayList<>();
+        ConsolidationModel model = new ConsolidationModel();
+        model.setConsolidationNumber("AIR-CAN-00001");
+        model.setAgentReference("test");
+        ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
+        arrivalDepartureDetailsModel.setCTOId(null);
+        String randomUUID  = UUID.randomUUID().toString();
+        arrivalDepartureDetailsModel.setLastForeignPort(randomUUID);
+        model.setArrivalDetails(arrivalDepartureDetailsModel);
+        consolidationModels.add(model);
+        shipmentModel.setConsolidationList(consolidationModels);
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        cargoManifestModel.shipmentDetails = shipmentModel;
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        shipmentModel.setPackingList(Arrays.asList(packingModel));
+
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setIataCode("Test");
+        unlocationsResponse.setName("Test");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponse.setPortName("Test");
+        unlocationsResponse.setLocCode("test");
+        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+
+        Parties parties = new Parties();
+        parties.setOrgCode("Test");
+        parties.setAddressCode("Test");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        Map<String, Object> addressDataMap = new HashMap<>();
+        addressDataMap.put(REGULATED_AGENT, true);
+        addressDataMap.put(KCRA_NUMBER, ONE);
+        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
+        addressMap.put(parties.getOrgCode()+"#"+parties.getAddressCode(), addressDataMap);
+
+        Parties parties2 = new Parties();
+        parties2.setOrgCode("Test2");
+        parties2.setAddressCode("Test2");
+        addressDataMap = new HashMap<>();
+        addressDataMap.put(KNOWN_CONSIGNOR, true);
+        addressDataMap.put(KCRA_NUMBER, TWO);
+        addressDataMap.put(KCRA_EXPIRY, LocalDateTime.now());
+        addressMap.put(parties2.getOrgCode()+"#"+parties2.getAddressCode(), addressDataMap);
+
+        OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
+        orgAddressResponse.setAddresses(addressMap);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+        when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
+        when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
+        when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
+
+        Map<String, Object> containerMap = new HashMap<>();
+        containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
+        containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
+        containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
+        containerMap.put(TareWeight, BigDecimal.TEN);
+        containerMap.put(VGMWeight, BigDecimal.TEN);
+        doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
+        mockTenantSettings();
+
+        String PWeight = BigDecimal.TEN + " KG";
+        String PVolume = BigDecimal.TEN + " M3";
+        String chargable = BigDecimal.TEN + " KG";
+        String packsUnit = "PKG";
+        String carrBookingRef = "12345";
+        String serviceType = "A2A";
+        String customEntryNumber = "12345";
+        String test  = "test";
+        String consolNumber = "AIR-CAN-00001";
+
+        Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
+        assertNotNull(dictionary);
+
+        List<Map<String, Object>> routing = (List<Map<String, Object>>) dictionary.get(ROUTINGS);
+        Map<String, Object> routsMap = routing.get(0);
+        List<String> ctoAddress = ((List<String>) dictionary.get(CTO_ADDRESS));
+
+        assertEquals(test, dictionary.get(LAST_FOREIGN_PORT_NAME));
+        assertEquals(test, dictionary.get(AGENT_REFERENCE));
+        assertEquals(consolNumber, dictionary.get(CONSOLIDATION_NUMBER));
+        assertEquals(Constants.TRANSPORT_MODE_SEA, routsMap.get(MODE));
+        assertEquals(0, ctoAddress.size());
+        assertEquals(test, routsMap.get(VESSEL_NAME));
+        assertEquals(test, routsMap.get(VOYAGE));
+        assertEquals(test, routsMap.get(CARRIER));
+        assertEquals(test, routsMap.get(POLCODE));
+        assertEquals(test, routsMap.get(PODCODE));
+        assertEquals(localDate, routsMap.get(ETD_FOR_PRINT));
+        assertEquals(localDate, routsMap.get(ETA_FOR_PRINT));
+        assertEquals(customEntryNumber, dictionary.get(CUSTOMS_ENTRY_NUMBER));
+        assertEquals(10, dictionary.get(TOTAL_PACKAGES));
+        assertEquals(chargable, dictionary.get(PCHARGE_UNIT));
+        assertEquals(PVolume, dictionary.get(PVOLUME_UNIT));
+        assertEquals(PWeight, dictionary.get(PWEIGHT_PACKAGES));
+        assertEquals(carrBookingRef, dictionary.get(CARRIER_BOOKING_REF));
+        assertEquals(serviceType, dictionary.get(SERVICE_LEVEL));
+        assertEquals(packsUnit, dictionary.get(PACKS_UNIT));
     }
 
 }

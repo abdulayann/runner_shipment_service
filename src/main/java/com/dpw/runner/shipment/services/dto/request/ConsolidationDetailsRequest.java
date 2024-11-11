@@ -101,6 +101,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private AllocationsRequest allocations;
     private ArrivalDepartureDetailsRequest arrivalDetails;
     private ArrivalDepartureDetailsRequest departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesRequest sendingAgent;
     private PartiesRequest receivingAgent;
     private PartiesRequest borrowedFrom;
@@ -131,10 +133,13 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String exemptionCodes;
     private String aomFreeText;
     private String sci;
+    private String additionalSecurityInformation;
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
     @ExcludeTimeZone
     private LocalDateTime latDate;
     private String department;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
 }

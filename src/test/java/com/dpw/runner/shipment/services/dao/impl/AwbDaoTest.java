@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,6 +88,8 @@ class AwbDaoTest {
     private V1ServiceUtil v1ServiceUtil;
     @Mock
     private ModelMapper modelMapper;
+    @Mock
+    private CommonUtils commonUtils;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -865,6 +868,7 @@ class AwbDaoTest {
         var mock = Mockito.spy(awbDao);
         LocalDateTime mockDateTime = LocalDateTime.now();
         when(mock.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
+        doNothing().when(commonUtils).checkForMandatoryHsCodeForUAE(mockAwb);
 
         mock.updateAwbPrintInformation(null, consolidationId, PrintType.ORIGINAL_PRINTED, true, mockDateTime);
 

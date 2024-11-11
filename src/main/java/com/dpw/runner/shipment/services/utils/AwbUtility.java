@@ -286,7 +286,7 @@ public class AwbUtility {
         }
 
         List<String> unlocoRequests = new ArrayList<>();
-        List<String> carrierRequests = new ArrayList<>();
+        Set<String> carrierRequests = new HashSet<>();
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -467,7 +467,7 @@ public class AwbUtility {
         }
 
         List<String> unlocoRequests = new ArrayList<>();
-        List<String> carrierRequests = new ArrayList<>();
+        Set<String> carrierRequests = new HashSet<>();
 
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());

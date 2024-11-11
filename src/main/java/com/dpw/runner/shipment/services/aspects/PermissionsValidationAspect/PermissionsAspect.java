@@ -26,8 +26,8 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @Component
 public class PermissionsAspect {
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
-    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class) || checkExcludePermissionsFilter(joinPoint)) {
             return;
         }
@@ -58,8 +58,8 @@ public class PermissionsAspect {
         }
     }
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel)")
-    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }

@@ -207,7 +207,7 @@ public abstract class IReport {
         }
         ship.MarinePollutant = Boolean.TRUE.equals(row.getMarinePollutant()) ? "Marine Pollutant" : null;
         try {
-            List<MasterListRequest> requests = new ArrayList<>();
+            Set<MasterListRequest> requests = new HashSet<>();
             Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, ship.GrossVolumeUnit));
@@ -232,10 +232,12 @@ public abstract class IReport {
 
             if(requests.size() > 0) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                masterListRequestV2.setMasterListRequests(requests);
+                masterListRequestV2.setMasterListRequests(requests.stream().toList());
                 masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                Set<String> keys = new HashSet<>();
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                commonUtils.createMasterDataKeysList(requests, keys);
+                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), null);
             }
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit, MasterDataType.VOLUME_UNIT.name(), false);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit, MasterDataType.WEIGHT_UNIT.name(), false);
@@ -360,13 +362,19 @@ public abstract class IReport {
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
         if (shipment.getReferenceNumbersList() != null) {
-            dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(AMS)));
+            dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(AMS))
+                .findFirst()
+                .map(ReferenceNumbersModel::getReferenceNumber)
+                .orElse(null));
         }
 
-        if (shipment.getReferenceNumbersList() != null) {
-            dictionary.put(CARGO_LOCATION, shipment.getReferenceNumbersList().stream().findFirst()
-                .filter(i -> i.getType().equalsIgnoreCase(CAL)));
+        if (shipment.getShipmentAddresses() != null) {
+            dictionary.put(CARGO_LOCATION, shipment.getShipmentAddresses().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(CAL))
+                .findFirst()
+                .map(ReportHelper::getOrgAddressDetails)
+                .orElse(null));
         }
         UnlocationsResponse pol = unlocationsMap.get(shipment.getCarrierDetails().getOriginPort());
         UnlocationsResponse pod = unlocationsMap.get(shipment.getCarrierDetails().getDestinationPort());
@@ -1018,6 +1026,9 @@ public abstract class IReport {
                     if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MORN) && !dict.containsKey(ReportConstants.MORN))
                         dict.put(ReportConstants.MORN, referenceNumbersModel.getReferenceNumber());
                 }
+            }
+            if(shipmentModel.getAdditionalDetails() != null) {
+                dict.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(shipmentModel.getAdditionalDetails().getNotifyParty()));
             }
             shipAwbDataList.add(dict);
         }
@@ -2683,7 +2694,7 @@ public abstract class IReport {
             if(!StringUtility.isEmpty(pack.getProperShippingName()))
                 dict.put(OCEAN_DG_PSN, pack.getProperShippingName());
             try {
-                List<MasterListRequest> requests = new ArrayList<>();
+                Set<MasterListRequest> requests = new HashSet<>();
                 Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
                 Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getDGClass()));
                 if(Objects.isNull(value1))
@@ -2694,10 +2705,12 @@ public abstract class IReport {
 
                 if(requests.size() > 0) {
                     MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                    masterListRequestV2.setMasterListRequests(requests);
+                    masterListRequestV2.setMasterListRequests(requests.stream().toList());
                     masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
                     Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+                    Set<String> keys = new HashSet<>();
+                    commonUtils.createMasterDataKeysList(requests, keys);
+                    masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), null);
                 }
             } catch (Exception ignored) {}
             if(!StringUtility.isEmpty(pack.getDGClass()))
@@ -3253,11 +3266,16 @@ public abstract class IReport {
                     }
                     screeningCodes.add(aomString);
                     dictionary.put(SCREENING_CODES, screeningCodes);
+                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
                 } else {
                     dictionary.put(SCREENING_CODES, screeningCodes);
                 }
 
             }
+
+            dictionary.put(RA_NUMBER, additionalDetailModel.getRegulatedEntityCategory());
+            dictionary.put(SECURITY_STATUS_RECEIVED_FROM, additionalDetailModel.getSecurityStatusReceivedFrom());
+            dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(additionalDetailModel.getAdditionalSecurityInformation()));
         }
 
         if(shipmentModel.getSecurityStatus() != null ) {
@@ -3297,12 +3315,14 @@ public abstract class IReport {
                     }
                     screeningCodes.add(aomString);
                     dictionary.put(SCREENING_CODES, screeningCodes);
+                    dictionary.put(AOM_FREE_TEXT, consolidationModel.getAomFreeText());
                 } else {
                     dictionary.put(SCREENING_CODES, screeningCodes);
                 }
 
             }
         }
+        dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(consolidationModel.getAdditionalSecurityInformation()));
 
         if(consolidationModel.getSecurityStatus() != null ) {
             dictionary.put(CONSIGNMENT_STATUS, consolidationModel.getSecurityStatus());
@@ -3497,6 +3517,26 @@ public abstract class IReport {
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {
         return commonUtils.getCurrentTenantSettings();
+    }
+
+    public String getDefaultRANumber() {
+        String defaultRANumber = null;
+        try {
+            TenantModel tenantModel = getTenant();
+            CommonV1ListRequest commonV1ListRequest = new CommonV1ListRequest();
+            commonV1ListRequest.setCriteriaRequests(List.of(
+                    List.of("Id"),
+                    "=",
+                    tenantModel.getDefaultAddressId()
+            ));
+            V1DataResponse response = v1Service.addressList(commonV1ListRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(response.getEntities(), AddressDataV1.class);
+            defaultRANumber = Optional.of(addressDataList.get(0)).map(AddressDataV1::getKcraNumber).orElse(null);
+        }
+        catch (Exception e) {
+            log.error("Error while getting RA Number for tenant's default address");
+        }
+        return defaultRANumber;
     }
 
 }

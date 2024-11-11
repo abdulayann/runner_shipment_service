@@ -103,7 +103,6 @@ class ShipmentSyncTest {
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputAdditionalDetails.setNotifyParty(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setEventsList(List.of(new Events()));
-        inputShipment.setFileRepoList(List.of(new FileRepo()));
         // Mock
         var mockCustomShipmentSyncRequest = new CustomShipmentSyncRequest();
         mockCustomShipmentSyncRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);

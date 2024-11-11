@@ -8,10 +8,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Component
 public class CountryListHelper {
 
     public static class ISO3166 {
+
+        public static String getAlpha3FromAlpha2(String alpha2) {
+            if(IsStringNullOrEmpty(alpha2))
+                return null;
+            ISO3166Country iso3166Country = fromAlpha2(alpha2);
+            return iso3166Country.getAlpha3();
+        }
+
+        public static String getAlpha2FromAlpha3(String alpha3) {
+            if(IsStringNullOrEmpty(alpha3))
+                return null;
+            ISO3166Country iso3166Country = fromAlpha3(alpha3);
+            return iso3166Country.getAlpha2();
+        }
 
         public static ISO3166Country fromAlpha3(String alpha3)
         {

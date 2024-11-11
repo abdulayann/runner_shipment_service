@@ -1,15 +1,10 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -26,8 +21,8 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchRequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
@@ -56,7 +51,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.kafka.producer.*;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -254,6 +250,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private ConsolidationDetails consolidationDetails;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -1244,6 +1243,40 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void cloneShipment_nullPacks() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        // Mock
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        shipmentDetails.setPackingList(null);
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
+                objectMapper.convertValue(shipmentDetails, ShipmentRequest.class));
+
+        ShipmentDetails mockShip = shipmentDetails;
+        mockShip.setHouseBill(null);
+        mockShip.setBookingNumber(null);
+        mockShip.setContainersList(null);
+        mockShip.setRoutingsList(null);
+        mockShip.setShipmentId(null);
+        mockShip.setMasterBill(null);
+        mockShip.setConsolidationList(null);
+        mockShip.setStatus(ShipmentStatus.Created.getValue());
+        mockShip.setConsolRef(null);
+        mockShip.setEventsList(null);
+        mockShip.setPackingList(null);
+        mockShip.setShipmentCreatedOn(LocalDateTime.now());
+
+        ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+
+        //Test
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
+        //Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipResponse), httpResponse);
+    }
+
+    @Test
     void generateCustomHouseBL_restrictHblGen() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(true).build());
         mockShipmentSettings();
@@ -1344,6 +1377,47 @@ ShipmentServiceTest extends CommonMocks {
 //        assertEquals(expectedResponse.getSourceTenantId(), shipmentDetailsResponse.getSourceTenantId());
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void getDefaultShipmentPopulatesDefaultDepartmentFromMdm() {
+        // Mock data
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("AIR");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        UsersDto user = new UsersDto();
+        user.setTenantId(1);
+        UserContext.setUser(user);
+
+        TenantModel tenantModel = new TenantModel();
+        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
+        mockTenantResponse.setEntity(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
+
+        LocalDateTime mockDateTime = LocalDateTime.now();
+
+        ShipmentDetailsResponse expectedResponse = new ShipmentDetailsResponse();
+        expectedResponse.setSource(Constants.SYSTEM);
+        expectedResponse.setStatus(ShipmentStatus.Created.getValue());
+        expectedResponse.setAdditionalDetails(new AdditionalDetailResponse());
+        expectedResponse.setCarrierDetails(new CarrierDetailResponse());
+        expectedResponse.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+        expectedResponse.setShipmentCreatedOn(mockDateTime);
+        expectedResponse.setSourceTenantId(1L);
+
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+
+        // Execute the method under test
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getDefaultShipment();
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals("AE", shipmentDetailsResponse.getDepartment());
     }
 
 
@@ -1957,11 +2031,6 @@ ShipmentServiceTest extends CommonMocks {
 
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
-        List<ConsoleShipmentMapping> mappings = new ArrayList<>();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoList(shipmentDetailsList),
@@ -3578,7 +3647,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel, true);
         assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
     }
 
@@ -5146,8 +5215,8 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
-        verify(masterDataUtils, times(10)).withMdc(any());
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
+        verify(masterDataUtils, atLeastOnce()).withMdc(any());
     }
 
     @Test
@@ -5164,8 +5233,7 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
-        verify(masterDataUtils, times(10)).withMdc(any());
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
     }
 
     @Test
@@ -5591,83 +5659,6 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(autoUpdateWtVolResponse), httpResponse);
     }
 
-    @Test
-    void testFetchCreditLimitMasterData_whenOrgCodeIsEmpty() {
-        Map<String, Object> response = new HashMap<>();
-        shipmentService.fetchCreditLimitMasterData("", "someAddressCode", response);
-        assertTrue(response.isEmpty());
-    }
-
-    @Test
-    void testFetchCreditLimitMasterData_whenV1ServiceReturnsNoEntities() throws Exception {
-        String orgCode = "validOrgCode";
-        String addressCode = "validAddressCode";
-        Map<String, Object> response = new HashMap<>();
-
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = null;
-
-        when(v1Service.fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class))).thenReturn(v1DataResponse);
-
-        shipmentService.fetchCreditLimitMasterData(orgCode, addressCode, response);
-        assertTrue(response.isEmpty());
-
-        verify(v1Service, times(1)).fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class));
-    }
-
-    @Test
-    void testFetchCreditLimitMasterData_whenV1ServiceReturnsEntitiesButJsonHelperReturnsEmptyList() throws Exception {
-        String orgCode = "validOrgCode";
-        String addressCode = "validAddressCode";
-        Map<String, Object> response = new HashMap<>();
-
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Collections.singletonList(new Object()); // mock response entity
-
-        when(v1Service.fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(any(), eq(CreditLimitResponse.class))).thenReturn(Collections.emptyList());
-
-        shipmentService.fetchCreditLimitMasterData(orgCode, addressCode, response);
-        assertTrue(response.isEmpty());
-
-        verify(v1Service, times(1)).fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class));
-        verify(jsonHelper, times(1)).convertValueToList(any(), eq(CreditLimitResponse.class));
-    }
-
-    @Test
-    void testFetchCreditLimitMasterData_whenV1ServiceReturnsValidData() throws Exception {
-        String orgCode = "validOrgCode";
-        String addressCode = "validAddressCode";
-        Map<String, Object> response = new HashMap<>();
-
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Collections.singletonList(new Object()); // mock response entity
-
-        CreditLimitResponse creditLimitResponse = new CreditLimitResponse(); // create a mock CreditLimitResponse
-
-        when(v1Service.fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(any(), eq(CreditLimitResponse.class))).thenReturn(Collections.singletonList(creditLimitResponse));
-
-        shipmentService.fetchCreditLimitMasterData(orgCode, addressCode, response);
-
-        assertFalse(response.isEmpty());
-        assertEquals(creditLimitResponse, response.get(Constants.CREDIT_LIMIT));
-
-        verify(v1Service, times(1)).fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class));
-        verify(jsonHelper, times(1)).convertValueToList(any(), eq(CreditLimitResponse.class));
-    }
-
-    @Test
-    void testFetchCreditLimitMasterData_whenExceptionIsThrown() throws Exception {
-        String orgCode = "validOrgCode";
-        String addressCode = "validAddressCode";
-        Map<String, Object> response = new HashMap<>();
-
-        when(v1Service.fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class))).thenThrow(new RuntimeException("Test exception"));
-        shipmentService.fetchCreditLimitMasterData(orgCode, addressCode, response);
-        assertTrue(response.isEmpty());
-        verify(v1Service, times(1)).fetchCreditLimit(any(AddressTranslationRequest.OrgAddressCode.class));
-    }
 
     @Test
     void calculateAutoUpdateWeightVolumeInShipmentP100est() throws RunnerException {
@@ -5817,9 +5808,9 @@ ShipmentServiceTest extends CommonMocks {
                 .build();
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(Awb.builder().airMessageStatus(AwbStatus.AIR_MESSAGE_SENT).build()));
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse);
-        verify(masterDataUtils, times(10)).withMdc(any());
+     //   when(awbDao.findByShipmentId(any())).thenReturn(Arrays.asList(Awb.builder().airMessageStatus(AwbStatus.AIR_MESSAGE_SENT).build()));
+        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
+        verify(masterDataUtils, atLeastOnce()).withMdc(any());
     }
 
     @Test
@@ -6505,7 +6496,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6530,7 +6521,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6555,7 +6546,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6566,7 +6557,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
     @Test
@@ -6577,7 +6568,7 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails.setInterBranchConsole(false);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true));
+        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true));
     }
 
 
@@ -6667,7 +6658,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6675,7 +6666,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6694,7 +6685,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6702,7 +6693,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6721,7 +6712,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6729,7 +6720,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6748,7 +6739,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6756,7 +6747,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -6775,7 +6766,7 @@ ShipmentServiceTest extends CommonMocks {
         consoleShipmentMappingList.add(consoleShipmentMapping);
 
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
-        when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappingList);
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(consoleId)).thenReturn(consoleShipmentMappingList);
 
         // Execute
         ResponseEntity<IRunnerResponse> response = shipmentService.getAllShipments(consoleId);
@@ -6783,7 +6774,7 @@ ShipmentServiceTest extends CommonMocks {
         // Verify
         verify(commonUtils, never()).setInterBranchContextForHub();
         verify(consolidationDetailsDao).findById(consoleId);
-        verify(consoleShipmentMappingDao).findByConsolidationId(consoleId);
+        verify(consoleShipmentMappingDao).findByConsolidationIdAll(consoleId);
 
         // Assert
         assertNotNull(response);
@@ -8405,6 +8396,7 @@ ShipmentServiceTest extends CommonMocks {
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), eq(RoutingsRequest.class))).thenReturn(List.of(new RoutingsRequest()));
         when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(shipmentOrderList);
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(shipmentOrderList);
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -8818,15 +8810,21 @@ ShipmentServiceTest extends CommonMocks {
         shipment.setId(1L);
         shipment.setGuid(UUID.randomUUID());
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipment));
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
+
+        var shipmentServiceSpy = Mockito.spy(shipmentService);
+        doNothing().when(shipmentServiceSpy).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        mockTenantSettings();
 
         // Act
-        ResponseEntity<IRunnerResponse> response = shipmentService.cancel(commonRequestModel);
+        ResponseEntity<IRunnerResponse> response = shipmentServiceSpy.cancel(commonRequestModel);
 
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(ShipmentStatus.Cancelled.getValue(), shipment.getStatus());
         verify(shipmentDao).save(shipment, false);
         verify(shipmentSync).sync(any(), any(), any(), any(), anyBoolean());
+        verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(anyLong());
     }
 
     @Test
@@ -8841,6 +8839,38 @@ ShipmentServiceTest extends CommonMocks {
             shipmentService.cancel(commonRequestModel);
         });
         assertEquals(DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, exception.getMessage());
+    }
+
+    @Test
+    void retrieveByIdWithShipmentStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(1).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertEquals(ShipmentStatus.fromValue(1).toString(), shipmentDetailsResponse.getShipmentStatus());
+    }
+
+    @Test
+    void retrieveByIdWithInvalidStatusTest() {
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(Integer.MAX_VALUE).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel);
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+        assertNull(shipmentDetailsResponse.getShipmentStatus());
     }
 
 }

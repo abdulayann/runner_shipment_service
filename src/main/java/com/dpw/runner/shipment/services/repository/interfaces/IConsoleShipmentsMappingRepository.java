@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
 import java.util.Set;
+
+import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -50,4 +52,10 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
 
     @Query(value = "SELECT COUNT(*) FROM console_shipment_mapping WHERE shipment_id = ?1 AND is_attachment_done <> true", nativeQuery = true)
     int countByShipmentIdAndIsAttachmentDoneNotTrue(Long shipmentId);
+
+    @Query(value = "SELECT shipment_id, COUNT(*) FROM console_shipment_mapping WHERE shipment_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by shipment_id", nativeQuery = true)
+    List<Object[]> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestType);
+
+    @Query(value = "SELECT consolidation_id, COUNT(*) FROM console_shipment_mapping WHERE consolidation_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by consolidation_id", nativeQuery = true)
+    List<Object[]> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestType);
 }

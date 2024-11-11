@@ -1,13 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -17,12 +16,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -33,9 +36,14 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -61,6 +69,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.TransactionSystemException;
+import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
 import javax.validation.ConstraintViolation;
@@ -97,6 +106,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAG
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
@@ -134,6 +144,15 @@ public class CommonUtils {
 
     @Autowired
     private IV1Service iv1Service;
+
+    @Autowired
+    IShipmentDao shipmentDao;
+
+    @Autowired
+    IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    IMDMServiceAdapter mdmServiceAdapter;
 
 
 
@@ -1113,7 +1132,7 @@ public class CommonUtils {
             dictionary.put(SHIPMENT_ASSIGNED_USER_WITH_SLASH, "/ " + shipmentDetails.getAssignedTo());
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER, getShipmentIdHyperLink(shipmentDetails.getShipmentId(), shipmentDetails.getId()));
         dictionary.put(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK, shipmentDetails.getShipmentId());
-        dictionary.put(CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
+        dictionary.put(Constants.CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(MAWB_NUMBER, consolidationDetails.getMawb());
         dictionary.put(ETD_CAPS, convertToDPWDateFormat(consolidationDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
@@ -1339,7 +1358,7 @@ public class CommonUtils {
                     || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
                     || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
                     || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
-                List<String> unlocoRequests = new ArrayList<>();
+                Set<String> unlocoRequests = new HashSet<>();
                 if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
                     unlocoRequests.add(carrierDetails.getOrigin());
                 if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
@@ -1348,15 +1367,19 @@ public class CommonUtils {
                     unlocoRequests.add(carrierDetails.getDestination());
                 if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
                     unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-                UnlocationsResponse pol = unlocationsMap.get(carrierDetails.getOriginPort());
-                UnlocationsResponse pod = unlocationsMap.get(carrierDetails.getDestinationPort());
-                UnlocationsResponse origin = unlocationsMap.get(carrierDetails.getOrigin());
-                UnlocationsResponse destination = unlocationsMap.get(carrierDetails.getDestination());
-                carrierDetails.setOriginLocCode(origin.getLocCode());
-                carrierDetails.setDestinationLocCode(destination.getLocCode());
-                carrierDetails.setOriginPortLocCode(pol.getLocCode());
-                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests);
+                EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
+                EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
+                EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());
+                EntityTransferUnLocations destination = unlocationsMap.get(carrierDetails.getDestination());
+                if(!Objects.isNull(origin))
+                    carrierDetails.setOriginLocCode(origin.getLocCode());
+                if(!Objects.isNull(destination))
+                    carrierDetails.setDestinationLocCode(destination.getLocCode());
+                if(!Objects.isNull(pol))
+                    carrierDetails.setOriginPortLocCode(pol.getLocCode());
+                if(!Objects.isNull(pod))
+                    carrierDetails.setDestinationPortLocCode(pod.getLocCode());
             }
         }
         catch (Exception e) {
@@ -1680,6 +1703,112 @@ public class CommonUtils {
             transportModes.add(Constants.TRANSPORT_MODE_ROA);
 
         return transportModes;
+    }
+    
+    public void createMasterDataKeysList(Set<MasterListRequest> masterListRequests, Set<String> keys) {
+        if(Objects.isNull(masterListRequests))
+            return;
+        for(MasterListRequest masterListRequest : masterListRequests) {
+            keys.add(masterListRequest.ItemValue + '#' + MasterDataType.getNameFromDescription(masterListRequest.ItemType));
+        }
+    }
+
+    /**
+     * @param eventsList
+     * Updates the input events list with description from the master data
+     */
+    public void updateEventWithMasterDataDescription(List<Events> eventsList) {
+        if(CollectionUtils.isEmpty(eventsList))
+            return;
+
+        var eventCodeDescriptionMap = getEventDescription(eventsList.stream()
+                .filter(i -> Objects.isNull(i.getId()))
+                .map(Events::getEventCode).toList());
+        // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
+        // or missing entry in the master-data
+        eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
+    }
+
+    /**
+     * @param eventCodes : list of input event codes
+     * @return Map<String, String>
+     * Helper function that returns map of event code vs description
+     */
+    private Map<String, String> getEventDescription(List<String> eventCodes) {
+        Map<String, String> eventCodeDescriptionMap = new HashMap<>();
+        log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+        try {
+            List<Object> masterDataListCriteria = Arrays.asList(
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_TYPE),
+                            "=",
+                            MasterDataType.ORDER_EVENTS.getId()
+                    ),
+                    "and",
+                    List.of(
+                            List.of(MasterDataConstants.ITEM_VALUE),
+                            "IN",
+                            List.of(eventCodes)
+                    )
+            );
+            CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder().criteriaRequests(masterDataListCriteria).build();
+            var v1DataResponse = iv1Service.fetchMasterData(v1ListRequest);
+            List<EntityTransferMasterLists> masterData = jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class);
+            masterData.forEach(i -> eventCodeDescriptionMap.put(i.getItemValue(), i.getItemDescription()));
+        }
+        catch (Exception e) {
+            log.error("EventService : Error fetching event description from event codes", e);
+        }
+
+        return eventCodeDescriptionMap;
+    }
+
+    public boolean checkIfPartyExists(PartiesResponse party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public boolean checkIfPartyExists(Parties party) {
+        return !Objects.isNull(party) && !IsStringNullOrEmpty(party.getOrgCode());
+    }
+
+    public String getCountryFromUnLocCode(String unLocCode) {
+        if(IsStringNullOrEmpty(unLocCode) || unLocCode.length() < 2)
+            return null;
+        return getAlpha3FromAlpha2(unLocCode.substring(0, 2));
+    }
+
+    public void checkForMandatoryHsCodeForUAE(Awb awb) {
+        String destinationPortLocCode = null;
+        if(awb.getShipmentId() != null) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
+            if(shipmentDetails.isPresent())
+                destinationPortLocCode = shipmentDetails.get().getCarrierDetails().getDestinationPortLocCode();
+        } else if(awb.getConsolidationId() != null) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
+            if(consolidationDetails.isPresent())
+                destinationPortLocCode = consolidationDetails.get().getCarrierDetails().getDestinationPortLocCode();
+        }
+
+        if(destinationPortLocCode != null && destinationPortLocCode.startsWith(UAE_TWO_DIGIT_IATA_CODE)) {
+            List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo();
+            awbGoodsDescriptionInfoList.forEach(awbGoodsDescriptionInfo -> {
+                if(Objects.isNull(awbGoodsDescriptionInfo.getHsCode())) {
+                    throw new ValidationException("Please enter the HS code in the goods description of the cargo information tab.");
+                }
+            });
+        }
+    }
+
+    public String getAutoPopulateDepartment(String transportMode, String direction, String module) {
+        String department = null;
+        List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(transportMode, direction, module);
+        if(!CollectionUtils.isEmpty(departmentList)) {
+            List<String> uniqueDepartments = departmentList.stream()
+                    .map(i -> StringUtility.convertToString(i.get(MdmConstants.DEPARTMENT)))
+                    .distinct().toList();
+            department = uniqueDepartments.size() == 1 ? StringUtility.convertToString(uniqueDepartments.get(0)) : null;
+        }
+        return department;
     }
 
 }

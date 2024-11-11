@@ -1,23 +1,32 @@
 package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameterFromPermission;
 
 @Aspect
+@Component
 public class CancelValidateAspect {
+
+    private final IShipmentDao shipmentDao;
+
+    @Autowired
+    public CancelValidateAspect(IShipmentDao shipmentDao) {
+        this.shipmentDao = shipmentDao;
+    }
 
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.cancel(..)) && args(commonRequestModel)")
@@ -25,7 +34,7 @@ public class CancelValidateAspect {
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CANCEL_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+        ShipmentDetails shipmentRequest = getShipment(commonRequestModel);
         if(shipmentRequest != null){
             String transportMode = null;
             String direction = null;
@@ -70,7 +79,7 @@ public class CancelValidateAspect {
             }
 
             if (validatedFields.size() < retrieveValidationFields)
-                throw new RunnerException("Unavailable to cancel Shipment due to insufficient update permissions");
+                throw new RunnerException("Unavailable to cancel Shipment due to insufficient cancel permissions");
         }
     }
 
@@ -79,6 +88,12 @@ public class CancelValidateAspect {
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.cancel(..)) && args(commonRequestModel)")
     public void validateConsolidationCancel(JoinPoint joinPoint, CommonRequestModel commonRequestModel) {
         // empty since we don't have cancel status in consolidation yet !
+    }
+
+    private ShipmentDetails getShipment(CommonRequestModel commonRequestModel) {
+        CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
+        Optional<ShipmentDetails> optional = shipmentDao.findById(commonGetRequest.getId());
+        return optional.orElse(null);
     }
 
 }

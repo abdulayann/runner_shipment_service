@@ -1,40 +1,19 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -46,19 +25,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -67,6 +33,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -113,51 +87,55 @@ public class MasterDataUtils{
      */
     public void setLocationData(List<IRunnerResponse> responseList, String onField) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            double _start = System.currentTimeMillis();
             Set<String> locCodes = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
                 if (response instanceof CustomerBookingResponse bookingResponse) {
                     if (bookingResponse.getCarrierDetails() != null) {
-                        locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()));
+                        locCodes.addAll(createInBulkUnLocationsRequest(bookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId(), cacheMap));
                     }
                 }
                 else if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null) {
-                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
                     }
                     if (shipmentListResponse.getAdditionalDetails() != null)
-                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()));
+                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId(), cacheMap));
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
-                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
                 }
                 else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null) {
-                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
+                    locCodes.addAll(createInBulkUnLocationsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
                 }
             }
 
-            Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes.stream().toList(), onField);
-            pushToCache(v1Data, CacheConstants.UNLOCATIONS);
+            Map<String, EntityTransferUnLocations> v1Data = fetchInBulkUnlocations(locCodes, onField);
+            pushToCache(v1Data, CacheConstants.UNLOCATIONS, locCodes, new EntityTransferUnLocations(), cacheMap);
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof CustomerBookingResponse bookingResponse) {
                     if (bookingResponse.getCarrierDetails() != null)
-                        bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+                        bookingResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + bookingResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
 
                 } else if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null)
-                        shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+                        shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
 
                     if (shipmentListResponse.getAdditionalDetails() != null)
-                        shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS));
+                        shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
                 }
                  else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
-                    consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+                    consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
                 }
                 else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null) {
-                    consolidationDetailsResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS));
+                    consolidationDetailsResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
                 }
             }
+            log.info("Time taken to fetch location Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setLocationData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -165,40 +143,43 @@ public class MasterDataUtils{
 
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
         try {
-            Set<String> locCodes = new HashSet<>();
+            Map<String, Object> cacheMap = new HashMap<>();
+            double _start = System.currentTimeMillis();
+            Set<String> vessels = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel())) {
-                        locCodes.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()));
+                        vessels.addAll(createInBulkVesselsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
                     }
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse) {
                     if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel())) {
-                        locCodes.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()));
+                        vessels.addAll(createInBulkVesselsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
                     }
                 }
                 else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-                    locCodes.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()));
+                    vessels.addAll(createInBulkVesselsRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
                 }
             }
 
-            Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(locCodes.stream().toList());
-            pushToCache(v1Data, CacheConstants.VESSELS);
+            Map<String, EntityTransferVessels> v1Data = fetchInBulkVessels(vessels);
+            pushToCache(v1Data, CacheConstants.VESSELS, vessels, new EntityTransferVessels(), cacheMap);
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
-                        shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+                        shipmentListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse) {
                     if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getVessel()))
-                        consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+                        consolidationListResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
                 }
                 else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getVessel())) {
-                    consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS));
+                    consolidationDetailsResponse.getCarrierDetails().setVesselsMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.VESSELS, cacheMap));
                 }
             }
+            log.info("Time taken to fetch vessel Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -206,42 +187,46 @@ public class MasterDataUtils{
 
     public void fetchTenantIdForList(List<IRunnerResponse> responseList) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            double _start = System.currentTimeMillis();
             Set<String> tenantIdList = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
                     if (shipmentListResponse.getTenantId() != null) {
-                        tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()));
+                        tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + shipmentListResponse.getId(), cacheMap));
                     }
-                    tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()));
+                    tenantIdList.addAll(createInBulkTenantsRequest(shipmentListResponse, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId(), cacheMap));
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
-                    tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()));
+                    tenantIdList.addAll(createInBulkTenantsRequest(consolidationDetailsResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId(), cacheMap));
                 }
                 if (response instanceof ConsolidationListResponse consolidationListResponse && (consolidationListResponse.getTenantId() != null)) {
-                        tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()));
+                        tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId(), cacheMap));
                 }
             }
 
-            Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList.stream().toList());
-            pushToCache(v1Data, CacheConstants.TENANTS);
+            Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList);
+            pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel(), cacheMap);
 
             for (IRunnerResponse response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
                     shipmentListResponse.setTenantMasterData(new HashMap<>());
                     if (shipmentListResponse.getTenantId() != null)
-                        shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
-                    shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS));
+                        shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+                    shipmentListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(ShipmentDetails.class.getSimpleName() + shipmentListResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
                 if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && (consolidationDetailsResponse.getTenantId() != null)) {
-                    consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS));
+                    consolidationDetailsResponse.setTenantIdsData(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationDetailsResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
                 if (response instanceof ConsolidationListResponse consolidationListResponse) {
                     consolidationListResponse.setTenantMasterData(new HashMap<>());
                     if (consolidationListResponse.getTenantId() != null)
-                        consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS));
+                        consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
             }
+            log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchTenantIdForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -249,29 +234,44 @@ public class MasterDataUtils{
 
     public void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<IRunnerResponse> responseList) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            double _start = System.currentTimeMillis();
             Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
             for (IRunnerResponse response : responseList)
                 dataMap.put(((ShipmentListResponse) response).getId(), (ShipmentListResponse) response);
 
             Set<String> containerTypes = new HashSet<>();
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             for(ShipmentDetails shipment : shipmentDetailsList) {
                 if(!Objects.isNull(shipment.getContainersList()))
-                    shipment.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+                    shipment.getContainersList().forEach(r -> {
+                        Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                        if (Objects.isNull(cacheValue))
+                            containerTypes.add(r.getContainerCode());
+                        else cacheMap.put(r.getContainerCode(), cacheValue.get());
+                    });
             }
 
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
 
             BigDecimal teu;
             for(ShipmentDetails shipment : shipmentDetailsList) {
+                containerCountUpdate(shipment, dataMap.get(shipment.getId()));
                 teu = BigDecimal.ZERO;
                 if (shipment.getContainersList() != null) {
                     for(Containers c : shipment.getContainersList()) {
                         if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            Object cache = null;
+                            if(cacheMap.isEmpty()) {
+                                var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                                if(!Objects.isNull(resp)) cache = resp.get();
+                            } else {
+                                cache = cacheMap.get(c.getContainerCode());
+                            }
                             if (!Objects.isNull(cache)) {
-                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                                EntityTransferContainerType object = (EntityTransferContainerType) cache;
                                 if (!Objects.isNull(object.getTeu()))
                                     teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
                             }
@@ -280,26 +280,75 @@ public class MasterDataUtils{
                 }
                 dataMap.get(shipment.getId()).setTeuCount(teu);
             }
+            log.info("Time taken to fetch COntainer Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
     }
 
+    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        if (shipmentDetail.getContainersList() != null) {
+            for (Containers container : shipmentDetail.getContainersList()) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    }
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerNumbers(containerNumber);
+    }
+
     public void setConsolidationContainerTeuData(List<ConsolidationDetails> consolidationDetailsList, List<IRunnerResponse> responseList) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<Long, ConsolidationListResponse> dataMap = new HashMap<>();
             for (IRunnerResponse response : responseList)
                 dataMap.put(((ConsolidationListResponse) response).getId(), (ConsolidationListResponse) response);
 
             Set<String> containerTypes = new HashSet<>();
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
 
             for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
-                if(!Objects.isNull(consolidationDetails.getContainersList()))
-                    consolidationDetails.getContainersList().forEach(r -> containerTypes.add(r.getContainerCode()));
+                if(!Objects.isNull(consolidationDetails.getContainersList())) {
+                    consolidationDetails.getContainersList().forEach(r -> {
+                        Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                        if (Objects.isNull(cacheValue))
+                            containerTypes.add(r.getContainerCode());
+                        else cacheMap.put(r.getContainerCode(), cacheValue.get());
+                    });
+                }
             }
 
-            Map v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
 
             BigDecimal teu;
             for(ConsolidationDetails consolidationDetails : consolidationDetailsList) {
@@ -307,9 +356,15 @@ public class MasterDataUtils{
                 if (consolidationDetails.getContainersList() != null) {
                     for(Containers c : consolidationDetails.getContainersList()) {
                         if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount())) {
-                            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            Object cache = null;
+                            if(cacheMap.isEmpty()) {
+                                var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                                if(!Objects.isNull(resp)) cache = resp.get();
+                            } else {
+                                cache = cacheMap.get(c.getContainerCode());
+                            }
                             if (!Objects.isNull(cache)) {
-                                EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                                EntityTransferContainerType object = (EntityTransferContainerType) cache;
                                 if (!Objects.isNull(object.getTeu()))
                                     teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
                             }
@@ -323,7 +378,7 @@ public class MasterDataUtils{
         }
     }
 
-    public List<MasterListRequest> createInBulkMasterListRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<MasterListRequest> createInBulkMasterListRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<MasterListRequest> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -347,10 +402,9 @@ public class MasterDataUtils{
                 }
                 if(itemValue != null) {
                     String key = itemValue + '#' + itemTypeName;
-                    log.info("createInBulkMasterListRequest before cache.get: {}", StringUtility.convertToString(cache));
                     Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
-                    log.info("createInBulkMasterListRequest after cache.get");
                     if (Objects.isNull(value))  requests.add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).Cascade(cascade).build());
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(key, value.get());
                     fieldNameKeyMap.put(field, key);
                 }
             } catch (Exception e) {
@@ -398,6 +452,72 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public Map<String, String> consolidationAddressCountryMasterData(ConsolidationDetails consolidationDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : consolidationDetails.getConsolidationAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return getCountriesMasterListData(alpha3CountriesList);
+    }
+
+    public Map<String, String> shipmentAddressCountryMasterData(ShipmentDetails shipmentDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : shipmentDetails.getShipmentAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return getCountriesMasterListData(alpha3CountriesList);
+    }
+
+    public List<String> addAlpha3Country(Map<String, Object> address, List<String> alpha3CountriesList) {
+        Set<String> alpha3CountriesSet = new HashSet<>(alpha3CountriesList);
+
+        if (address != null && address.containsKey(PartiesConstants.COUNTRY)) {
+            String country = StringUtility.convertToString(address.get(PartiesConstants.COUNTRY));
+            if (country != null && country.length() == 2)
+                country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
+            if (country != null && !country.isEmpty())
+                alpha3CountriesSet.add(country);
+        }
+        return new ArrayList<>(alpha3CountriesSet);
+    }
+
+    public Map<String, String> getCountriesMasterListData(List<String> alpha3Countries) {
+        Set<MasterListRequest> listRequests = alpha3Countries.stream()
+                .filter(country -> country != null && country.length() == 3)
+                .map(country -> MasterListRequest.builder()
+                        .ItemType(MasterDataType.COUNTRIES.getDescription())
+                        .ItemValue(country)
+                        .build())
+                .collect(Collectors.toSet());
+
+        if (listRequests.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(new ArrayList<>(listRequests));
+        masterListRequestV2.setIncludeCols(List.of(
+                MasterDataConstants.ITEM_TYPE,
+                MasterDataConstants.ITEM_VALUE,
+                "ItemDescription",
+                "ValuenDesc",
+                "Cascade"
+        ));
+
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = fetchInBulkMasterList(masterListRequestV2);
+
+        return keyMasterDataMap.values().stream()
+                .filter(entity -> entity != null && entity.getIdentifier1() != null)
+                .collect(Collectors.toMap(
+                        EntityTransferMasterLists::getIdentifier1,
+                        EntityTransferMasterLists::getItemDescription
+                ));
+    }
+
     public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE
         if(!IsStringNullOrEmpty(key)) {
             String value = null;
@@ -425,7 +545,7 @@ public class MasterDataUtils{
     }
 
     // Fetch All Locations in single call from V1
-    public List<String> createInBulkUnLocationsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkUnLocationsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -438,11 +558,10 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String locCode = (String) field1.get(entityPayload);
-                log.info("createInBulkUnLocationsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
-                log.info("createInBulkUnLocationsRequest after cache.get");
                 if(locCode != null && !locCode.equals("")) {
                     if (Objects.isNull(cacheValue))  locCodesList.add(locCode);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(locCode, cacheValue.get());
                     fieldNameKeyMap.put(field, locCode);
                 }
             } catch (Exception e) {
@@ -455,7 +574,7 @@ public class MasterDataUtils{
         return locCodesList;
     }
 
-    public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(List<String> requests, String onField) {
+    public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(Set<String> requests, String onField) {
         Map<String, EntityTransferUnLocations> keyMasterDataMap = new HashMap<>();
         if (requests.isEmpty()) {
             return keyMasterDataMap;
@@ -493,7 +612,7 @@ public class MasterDataUtils{
 
 
     // Fetch All Charge Master in single call from V1
-    public List<String> createInBulkChargeTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkChargeTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -511,6 +630,7 @@ public class MasterDataUtils{
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CHARGE_TYPE, itemValue));
                 if(itemValue != null && !itemValue.equals("")) {
                     if(Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
@@ -540,7 +660,7 @@ public class MasterDataUtils{
 
 
     // Fetch All Charge Master in single call from V1
-    public List<String> createInBulkContainerTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkContainerTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -558,6 +678,7 @@ public class MasterDataUtils{
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, itemValue));
                 if(itemValue != null && !itemValue.equals("")) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
@@ -567,7 +688,7 @@ public class MasterDataUtils{
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
         return itemValueList;
     }
-    public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(List<String> requests) {
+    public Map<String, EntityTransferContainerType> fetchInBulkContainerTypes(Set<String> requests) {
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || ContainersList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -587,7 +708,7 @@ public class MasterDataUtils{
     }
 
     // Fetch All Commodity Master in single call from V1
-    public List<String> createInBulkCommodityTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkCommodityTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -605,6 +726,7 @@ public class MasterDataUtils{
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.COMMODITY, itemValue));
                 if(itemValue != null && !itemValue.equals("")) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
@@ -635,7 +757,7 @@ public class MasterDataUtils{
     }
 
 
-    public List<String> createInBulkVesselsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkVesselsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -650,16 +772,14 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 String itemValue = (String) field1.get(entityPayload);
-                log.info("createInBulkVesselsRequest before cache.get: {}", StringUtility.convertToString(cache));
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.VESSELS, itemValue));
-                log.info("createInBulkVesselsRequest after cache.get");
                 if(itemValue != null && !itemValue.isEmpty()) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         }
@@ -737,7 +857,7 @@ public class MasterDataUtils{
         }
     }
 
-    public Map<String, EntityTransferVessels> fetchInBulkVessels(List<String> requests) {
+    public Map<String, EntityTransferVessels> fetchInBulkVessels(Set<String> requests) {
         Map<String, EntityTransferVessels> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || VesselsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -756,7 +876,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkCarriersRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkCarriersRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -774,6 +894,7 @@ public class MasterDataUtils{
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CARRIER, itemValue));
                 if(itemValue != null && !itemValue.equals("")) {
                     if (Objects.isNull(cacheValue)) itemValueList.add(itemValue);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(itemValue, cacheValue.get());
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
@@ -784,7 +905,7 @@ public class MasterDataUtils{
         return itemValueList;
     }
 
-    public Map<String, EntityTransferCarrier> fetchInBulkCarriers(List<String> requests) {
+    public Map<String, EntityTransferCarrier> fetchInBulkCarriers(Set<String> requests) {
         Map<String, EntityTransferCarrier> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {}, CarrierList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
@@ -824,33 +945,51 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public void pushToCache (Map<String, ?> v1Data, String type) {
-        if (Objects.isNull(v1Data) || v1Data.isEmpty())
+    public void pushToCache (Map<String, ?> v1Data, String type, Set<String> keys, Object object, Map<String, Object> cacheMap) {
+        if (Objects.isNull(v1Data))
             return;
         for (var key : v1Data.keySet()) {
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), v1Data.get(key));
+            if(!Objects.isNull(cacheMap))
+                cacheMap.put(key, v1Data.get(key));
+        }
+        if(!Objects.equals(v1Data.size(), keys.size())) {
+            for(String key : keys) {
+                if (!v1Data.containsKey(key)) {
+                    cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), object);
+                    if (!Objects.isNull(cacheMap))
+                        cacheMap.put(key, object);
+                }
+            }
         }
     }
 
-    public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
-        return setMasterDataImpl(fieldNameKeyMap, masterDataType, isBooking);
+    public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking, Map<String, Object> cacheMap) {
+        return setMasterDataImpl(fieldNameKeyMap, masterDataType, isBooking, cacheMap);
     }
 
-    public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType) {
-        return setMasterDataImpl(fieldNameKeyMap, masterDataType, false);
+    public Map<String, String> setMasterData (Map<String, String> fieldNameKeyMap, String masterDataType, Map<String, Object> cacheMap) {
+        return setMasterDataImpl(fieldNameKeyMap, masterDataType, false, cacheMap);
     }
 
-    public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking) {
+    public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking, Map<String, Object> cacheMap) {
         Map<String, String> fieldNameMasterDataMap = new HashMap<>();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return fieldNameMasterDataMap;
 
         fieldNameKeyMap.forEach((key, value) -> {
-            var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
+            Object cache = null;
+            if(Objects.isNull(cacheMap)) {
+                var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
+                if(!Objects.isNull(resp))
+                    cache = resp.get();
+            } else {
+                cache = cacheMap.get(value);
+            }
             if(!Objects.isNull(cache)) {
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
-                        EntityTransferUnLocations object = (EntityTransferUnLocations) cache.get();
+                        EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
                         if(isBooking) fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
                         else fieldNameMasterDataMap.put(key, object.lookupDesc);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
@@ -859,20 +998,20 @@ public class MasterDataUtils{
 
                         break;
                     case CacheConstants.UNLOCATIONS_AWB:
-                        EntityTransferUnLocations obj = (EntityTransferUnLocations) cache.get();
+                        EntityTransferUnLocations obj = (EntityTransferUnLocations) cache;
                         fieldNameMasterDataMap.put(key, obj.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, obj.Country);
                         break;
                     case CacheConstants.CONTAINER_TYPE:
-                        EntityTransferContainerType object1 = (EntityTransferContainerType) cache.get();
+                        EntityTransferContainerType object1 = (EntityTransferContainerType) cache;
                         fieldNameMasterDataMap.put(key, String.format("%s - %s", object1.getCode(), object1.getDescription()));
                         break;
                     case CacheConstants.CHARGE_TYPE:
-                        EntityTransferChargeType object2 = (EntityTransferChargeType) cache.get();
+                        EntityTransferChargeType object2 = (EntityTransferChargeType) cache;
                         fieldNameMasterDataMap.put(key, object2.getDescription());
                         break;
                     case CacheConstants.MASTER_LIST:
-                        EntityTransferMasterLists object3 = (EntityTransferMasterLists) cache.get();
+                        EntityTransferMasterLists object3 = (EntityTransferMasterLists) cache;
                         if(isBooking)
                             fieldNameMasterDataMap.put(key, object3.getItemDescription());
                         else {
@@ -883,36 +1022,36 @@ public class MasterDataUtils{
                         }
                         break;
                     case CacheConstants.VESSELS:
-                        EntityTransferVessels object4 = (EntityTransferVessels) cache.get();
+                        EntityTransferVessels object4 = (EntityTransferVessels) cache;
                         fieldNameMasterDataMap.put(key, object4.getName());
                         break;
                     case CacheConstants.CARRIER:
-                        EntityTransferCarrier object5 = (EntityTransferCarrier) cache.get();
+                        EntityTransferCarrier object5 = (EntityTransferCarrier) cache;
                         fieldNameMasterDataMap.put(key, object5.getItemDescription());
                         break;
                     case CacheConstants.CURRENCIES:
-                        EntityTransferCurrency object6 = (EntityTransferCurrency) cache.get();
+                        EntityTransferCurrency object6 = (EntityTransferCurrency) cache;
                         fieldNameMasterDataMap.put(key, object6.getCurrenyDescription());
                         break;
                     case CacheConstants.TENANTS:
-                        TenantModel object7 = (TenantModel) cache.get();
+                        TenantModel object7 = (TenantModel) cache;
                         fieldNameMasterDataMap.put(key, object7.tenantName);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object7.code);
                         break;
                     case CacheConstants.WAREHOUSES:
-                        WareHouseResponse object8 = (WareHouseResponse) cache.get();
+                        WareHouseResponse object8 = (WareHouseResponse) cache;
                         fieldNameMasterDataMap.put(key, object8.getWarehouseDepotCode() + " - " + object8.getWarehouseDepotName());
                         break;
                     case CacheConstants.ACTIVITY_TYPE:
-                        ActivityMasterResponse object9 = (ActivityMasterResponse) cache.get();
+                        ActivityMasterResponse object9 = (ActivityMasterResponse) cache;
                         fieldNameMasterDataMap.put(key, object9.getActivityCode() + " - " + object9.getActivityName());
                         break;
                     case CacheConstants.SALES_AGENT:
-                        SalesAgentResponse object10 = (SalesAgentResponse) cache.get();
+                        SalesAgentResponse object10 = (SalesAgentResponse) cache;
                         fieldNameMasterDataMap.put(key, object10.getSalesAgentName());
                         break;
                     case CacheConstants.COMMODITY:
-                        EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache.get();
+                        EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache;
                         fieldNameMasterDataMap.put(key, object11.getDescription());
                         break;
                     default:
@@ -923,7 +1062,7 @@ public class MasterDataUtils{
         return fieldNameMasterDataMap;
     }
 
-    public List<String> createInBulkCurrencyRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkCurrencyRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -938,6 +1077,7 @@ public class MasterDataUtils{
                 Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CURRENCIES, currencyCode));
                 if(currencyCode != null && !currencyCode.equals("")) {
                     if (Objects.isNull(cacheValue)) requests.add(currencyCode);
+                    else cacheMap.put(currencyCode, cacheValue.get());
                     fieldNameKeyMap.put(field, currencyCode);
                 }
             } catch (Exception e) {
@@ -948,7 +1088,7 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public Map<String, EntityTransferCurrency> fetchInCurrencyList(List<String> requests) {
+    public Map<String, EntityTransferCurrency> fetchInCurrencyList(Set<String> requests) {
         Map<String, EntityTransferCurrency> keyMasterDataMap = new HashMap<>();
         if(requests.size() > 0) {
             log.info("Request: {} || CurrencyList: {}", LoggerHelper.getRequestIdFromMDC(), requests);
@@ -967,7 +1107,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkTenantsRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkTenantsRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -987,6 +1127,7 @@ public class MasterDataUtils{
                 if(tenantId != null) {
                     Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
                     if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(tenantId));
+                    else cacheMap.put(StringUtility.convertToString(tenantId), cacheValue.get());
                     fieldNameKeyMap.put(field, StringUtility.convertToString(tenantId));
                 }
             } catch (Exception e) {
@@ -997,9 +1138,10 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public Map<String, TenantModel> fetchInTenantsList(List<String> requests) {
+    public Map<String, TenantModel> fetchInTenantsList(Set<String> requests) {
         Map<String, TenantModel> keyMasterDataMap = new HashMap<>();
-        if(requests.size() > 0) {
+        requests = requests.stream().filter(c -> Objects.nonNull(c) && !Objects.equals(c, "0")).collect(Collectors.toSet());
+        if(!requests.isEmpty()) {
             log.info("Request: {} || TenantsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
             CommonV1ListRequest request = new CommonV1ListRequest();
             List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.TENANT_ID));
@@ -1013,7 +1155,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkDGSubstanceRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkDGSubstanceRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1033,6 +1175,7 @@ public class MasterDataUtils{
                 if(dgSubstanceId != null) {
                     Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.DG_SUBSTANCES, StringUtility.convertToString(dgSubstanceId)));
                     if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(dgSubstanceId));
+                    else cacheMap.put(StringUtility.convertToString(dgSubstanceId), cacheValue.get());
                     fieldNameKeyMap.put(field, StringUtility.convertToString(dgSubstanceId));
                 }
             } catch (Exception e) {
@@ -1060,7 +1203,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkWareHouseRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkWareHouseRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1076,6 +1219,7 @@ public class MasterDataUtils{
                 if(wareHouseId != null) {
                     Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.WAREHOUSES, StringUtility.convertToString(wareHouseId)));
                     if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(wareHouseId));
+                    else cacheMap.put(StringUtility.convertToString(wareHouseId), cacheValue.get());
                     fieldNameKeyMap.put(field, StringUtility.convertToString(wareHouseId));
                 }
             } catch (Exception e) {
@@ -1107,7 +1251,7 @@ public class MasterDataUtils{
         List<MasterDataDescriptionResponse> res = new ArrayList<>();
         Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
 
-        List<MasterListRequest> listRequests = new ArrayList<>(createInBulkMasterListRequest(shipmentSettingsDetailsResponse, ShipmentSettingsDetails.class, fieldNameKeyMap, ShipmentSettingsDetails.class.getSimpleName()));
+        List<MasterListRequest> listRequests = new ArrayList<>(createInBulkMasterListRequest(shipmentSettingsDetailsResponse, ShipmentSettingsDetails.class, fieldNameKeyMap, ShipmentSettingsDetails.class.getSimpleName(), null));
         MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
         masterListRequestV2.setMasterListRequests(listRequests);
         Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(masterListRequestV2);
@@ -1151,7 +1295,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkActivityTypeRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkActivityTypeRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1167,6 +1311,7 @@ public class MasterDataUtils{
                 if(StringUtility.isNotEmpty(activityId)) {
                     Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ACTIVITY_TYPE, activityId));
                     if (Objects.isNull(cacheValue)) requests.add(activityId);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(StringUtility.convertToString(activityId), cacheValue.get());
                     fieldNameKeyMap.put(field, activityId);
                 }
             } catch (Exception e) {
@@ -1177,7 +1322,7 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public List<String> createInBulkSalesAgentRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code) {
+    public List<String> createInBulkSalesAgentRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1193,6 +1338,7 @@ public class MasterDataUtils{
                 if(salesAgentId != null) {
                     Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.SALES_AGENT, StringUtility.convertToString(salesAgentId)));
                     if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(salesAgentId));
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(StringUtility.convertToString(salesAgentId), cacheValue.get());
                     fieldNameKeyMap.put(field, StringUtility.convertToString(salesAgentId));
                 }
             } catch (Exception e) {
@@ -1257,6 +1403,29 @@ public class MasterDataUtils{
 
         List<UnlocationsResponse> unLocationsList = jsonHelper.convertValueToList(response.entities, UnlocationsResponse.class);
         return unLocationsList.isEmpty() ? null : unLocationsList.get(0);
+    }
+
+    public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes) {
+        if(Objects.isNull(locCodes))
+            return new HashMap<>();
+        Map<String, EntityTransferUnLocations> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> locCodesFetchFromV1 = new HashSet<>();
+        for(String locCode: locCodes) {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
+            if(Objects.isNull(value))
+                locCodesFetchFromV1.add(locCode);
+            else
+                responseMap.put(locCode, (EntityTransferUnLocations) value.get());
+        }
+        if(!locCodesFetchFromV1.isEmpty()) {
+            Map<String, EntityTransferUnLocations> unLocationsMap = getLocationData(locCodesFetchFromV1).entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, entry -> jsonHelper.convertValue(entry.getValue(), EntityTransferUnLocations.class)));
+            responseMap.putAll(unLocationsMap);
+            pushToCache(unLocationsMap, CacheConstants.UNLOCATIONS, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
     }
 
     public Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
@@ -1357,25 +1526,32 @@ public class MasterDataUtils{
      */
     public void fetchBillDataForShipments(List<ShipmentDetails> shipmentDetails, List<IRunnerResponse> responseList) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<Long, ShipmentListResponse> dataMap = new HashMap<>();
             for (IRunnerResponse response : responseList)
                 dataMap.put(((ShipmentListResponse)response).getId(), (ShipmentListResponse)response);
 
             if(shipmentDetails != null && shipmentDetails.size() > 0) {
-                List<UUID> guidsList = createBillRequest(shipmentDetails);
+                List<UUID> guidsList = createBillRequest(shipmentDetails, cacheMap);
                 if (!guidsList.isEmpty()) {
                     ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder()
                             .guidsList(guidsList).build();
                     ShipmentBillingListResponse shipmentBillingListResponse = getShipmentBillingListResponse(shipmentBillingListRequest);
-                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING);
+                    pushToCache(shipmentBillingListResponse.getData(), CacheConstants.BILLING, guidsList.stream().map(UUID::toString).collect(Collectors.toSet()), new ShipmentBillingListResponse.BillingData(), cacheMap);
                 }
 
                 for (ShipmentDetails details: shipmentDetails) {
-                    var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
-                            get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
+                    Object cache = null;
+                    if(cacheMap.isEmpty()) {
+                        var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).
+                                get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, details.getGuid().toString()));
+                        if(!Objects.isNull(resp)) cache = resp.get();
+                    } else {
+                        cache = cacheMap.get(details.getGuid().toString());
+                    }
 
                     if (!Objects.isNull(cache)) {
-                        var billingData = (ShipmentBillingListResponse.BillingData) cache.get();
+                        var billingData = (ShipmentBillingListResponse.BillingData) cache;
                         if (!Objects.isNull(billingData)) {
                             ShipmentListResponse shipmentListResponse = dataMap.get(details.getId());
 
@@ -1410,12 +1586,13 @@ public class MasterDataUtils{
         return v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
     }
 
-    private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails) {
+    private List<UUID> createBillRequest(List<ShipmentDetails> shipmentDetails, Map<String, Object> cacheMap) {
         List<UUID> guidsList = new ArrayList<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
         shipmentDetails.forEach(shipment -> {
             Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.BILLING, shipment.getGuid().toString()));
             if (Objects.isNull(value)) guidsList.add(shipment.getGuid());
+            else cacheMap.put(shipment.getGuid().toString(), value.get());
         });
         return guidsList;
     }
@@ -1438,14 +1615,14 @@ public class MasterDataUtils{
     public String getVesselName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkVessels(List.of(code));
+        var resp = fetchInBulkVessels(Set.of(code));
         return resp.containsKey(code) ? resp.get(code).getName() : null;
     }
 
     public String getCarrierName(String code) {
         if (StringUtility.isEmpty(code))
             return null;
-        var resp = fetchInBulkCarriers(List.of(code));
+        var resp = fetchInBulkCarriers(Set.of(code));
         return resp.containsKey(code) ? resp.get(code).getItemDescription() : null;
     }
 
@@ -1464,22 +1641,34 @@ public class MasterDataUtils{
 
     public BigDecimal setContainerTeuDataWithContainers(List<Containers> containerResponses) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
-
+            Cache cacheQueue = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
             if(!Objects.isNull(containerResponses))
-                containerResponses.forEach(r -> containerTypes.add(r.getContainerCode()));
+                containerResponses.forEach(r -> {
+                    Cache.ValueWrapper cacheValue = cacheQueue.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, r.getContainerCode()));
+                    if (Objects.isNull(cacheValue))
+                        containerTypes.add(r.getContainerCode());
+                    else cacheMap.put(r.getContainerCode(), cacheValue.get());
+                });
 
-            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).toList());
-            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            Map<String, EntityTransferContainerType> v1Data = fetchInBulkContainerTypes(containerTypes.stream().filter(Objects::nonNull).collect(Collectors.toSet()));
+            pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
 
             BigDecimal teu;
             teu = BigDecimal.ZERO;
             if (containerResponses != null) {
                 for(Containers c : containerResponses) {
                     if (!Objects.isNull(c.getContainerCode()) && !Objects.isNull(c.getContainerCount()) && cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA) != null) {
-                        var cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                        Object cache = null;
+                        if(cacheMap.isEmpty()) {
+                            var resp = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, c.getContainerCode()));
+                            if(!Objects.isNull(resp)) cache = resp.get();
+                        } else {
+                            cache = cacheMap.get(c.getContainerCode());
+                        }
                         if (!Objects.isNull(cache)) {
-                            EntityTransferContainerType object = (EntityTransferContainerType) cache.get();
+                            EntityTransferContainerType object = (EntityTransferContainerType) cache;
                             if (object != null && !Objects.isNull(object.getTeu()))
                                 teu = teu.add(BigDecimal.valueOf(object.getTeu()).multiply(BigDecimal.valueOf(c.getContainerCount())));
                         }
