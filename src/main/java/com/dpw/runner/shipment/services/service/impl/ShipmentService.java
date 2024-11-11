@@ -2732,11 +2732,14 @@ public class ShipmentService implements IShipmentService {
 
     public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents, Boolean isNewShipment) {
         List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
+        // we need db events now instead of the eventslist in shipment
+        List<Events> shipmentEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
 
+        //TODO Group create and update method together into single method
         if (Boolean.FALSE.equals(isNewShipment) && ObjectUtils.isNotEmpty(oldEntity)) {
-            updateTrackingEvent(shipmentDetails, oldEntity, newUpdatedEvents);
+            updateTrackingEvent(shipmentDetails, oldEntity, shipmentEvents);
         }else{
-            createTrackingEvents(newUpdatedEvents, shipmentDetails);
+            createTrackingEvents(shipmentEvents, shipmentDetails);
         }
 
         // update events with consolidation id with condition
@@ -2748,6 +2751,8 @@ public class ShipmentService implements IShipmentService {
                     .forEach(event -> event.setConsolidationId(consolidationId));
         }
 
+        // TODO : now this should be saved independent of shipment save
+        // add eventDao.saveAll(newUpdatedEvents)
         return newUpdatedEvents;
     }
 
@@ -2992,7 +2997,7 @@ public class ShipmentService implements IShipmentService {
 
     private void handleEventDateTimeUpdate(Events event, LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         event.setActual(actualDateTime);
-        event.setEstimated(estimatedDateTime);
+//        event.setEstimated(estimatedDateTime);
     }
 
 
@@ -5786,6 +5791,7 @@ public class ShipmentService implements IShipmentService {
     private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
         if(shipmentDetails.getStatus() != null) {
+            // TODO : remove this
             if(response != null) {
                 if (shipmentDetails.getEventsList() == null)
                     shipmentDetails.setEventsList(new ArrayList<>());
@@ -5798,6 +5804,7 @@ public class ShipmentService implements IShipmentService {
         Events response = null;
         response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), LocalDateTime.now());
 
+        // TODO: remove this
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
         }
