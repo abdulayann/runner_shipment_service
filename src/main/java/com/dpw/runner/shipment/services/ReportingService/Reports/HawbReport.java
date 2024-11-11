@@ -409,8 +409,8 @@ public class HawbReport extends IReport{
                     }
                     if(value.get(PIECES_NO) != null)
                         value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
-                    if (value.get(HS_CODE) != null) {
-                        String hsCode = value.get(HS_CODE).toString();
+                    if (value.get(HS_CODE1) != null) {
+                        String hsCode = value.get(HS_CODE1).toString();
                         if (!hsCode.isEmpty())
                             hsCodesSet.add(hsCode);
                     }
