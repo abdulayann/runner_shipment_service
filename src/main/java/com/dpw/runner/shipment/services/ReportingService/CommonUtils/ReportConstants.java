@@ -181,6 +181,7 @@ public class ReportConstants {
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
+    public static final String HS_CODE1 = "HsCode";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
     public static final String PICKUPTIME_TYPE = "PickupTimeType";
