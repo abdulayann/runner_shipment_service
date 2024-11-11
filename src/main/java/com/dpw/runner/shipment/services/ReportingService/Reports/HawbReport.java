@@ -300,6 +300,7 @@ public class HawbReport extends IReport{
 
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
+            List<AwbPackingInfo> awbPackingInfo = hawbModel.awb.getAwbPackingInfo();
             AtomicInteger TotalPieces = new AtomicInteger();
             final BigDecimal[] TotalGrossWeight = {BigDecimal.ZERO};
             final BigDecimal[] SumOfTotalAmount = {BigDecimal.ZERO};
@@ -369,7 +370,14 @@ public class HawbReport extends IReport{
 
             dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  FreightAmountText);
             dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, OtherAmountText);
-
+            Set<String> hsCodesSet = new HashSet<>();
+            Set<String> slacCodeSet = new HashSet<>();
+            if (awbPackingInfo != null && !awbPackingInfo.isEmpty()) {
+                awbPackingInfo.forEach(packInfo -> {
+                    if (packInfo.getHsCode() != null && !packInfo.getHsCode().isEmpty())
+                        hsCodesSet.add(packInfo.getHsCode());
+                });
+            }
             if (awbGoodsDescriptionInfo != null && awbGoodsDescriptionInfo.size() > 0){
                 String finalNtrQtyGoods = NtrQtyGoods;
                 List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
@@ -401,6 +409,16 @@ public class HawbReport extends IReport{
                     }
                     if(value.get(PIECES_NO) != null)
                         value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
+                    if (value.get(HS_CODE1) != null) {
+                        String hsCode = value.get(HS_CODE1).toString();
+                        if (!hsCode.isEmpty())
+                            hsCodesSet.add(hsCode);
+                    }
+                    if (value.get(SLAC_CODE) != null) {
+                        String slacCode = value.get(SLAC_CODE).toString();
+                        if (!slacCode.isEmpty())
+                            slacCodeSet.add(slacCode);
+                    }
                 });
                 dictionary.put(ReportConstants.PACKING_LIST, values);
                 String finalFreightAmountText = FreightAmountText;
@@ -438,6 +456,18 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT_FAT, FreightAmountText);
                 dictionary.put(ReportConstants.SUM_OF_CHARGEABLE_WT, ConvertToWeightNumberFormat(SumOfChargeableWt[0], v1TenantSettingsResponse));
             }
+
+            if (!hsCodesSet.isEmpty()) {
+                String commaHsCode = HSCODE + ": ";
+                commaHsCode += String.join(", ", hsCodesSet);
+                dictionary.put(COMMA_HS_CODE1, commaHsCode);
+            }
+            if (!slacCodeSet.isEmpty()) {
+                String commaSlacCode = SLAC + ": ";
+                commaSlacCode += String.join(", ", slacCodeSet);
+                dictionary.put(COMMA_SLAC1, commaSlacCode);
+            }
+
             List<AwbRoutingInfo> routingInfoRows = hawbModel.awb.getAwbRoutingInfo();
             Set<String> carrierSet;
             String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();

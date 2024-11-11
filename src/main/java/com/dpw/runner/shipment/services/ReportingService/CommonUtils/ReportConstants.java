@@ -181,6 +181,7 @@ public class ReportConstants {
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";
+    public static final String HS_CODE1 = "HsCode";
     public static final String ESTIMATED_READY_FOR_PICKUP = "EstimatedReadyForPickup";
     public static final String PICKUP_TIME = "PickUpTime";
     public static final String PICKUPTIME_TYPE = "PickupTimeType";
@@ -691,6 +692,8 @@ public class ReportConstants {
     public static final String AIRWAY_BILL = "AirwayBill";
     public static final String AIRCRAFT_TYPE = "AircraftType";
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
+    public static final String ORIGINAL_HOUSE_BILL = "Original HBL";
+    public static final String DRAFT_HOUSE_BILL = "Draft HBL";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
     public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
@@ -1244,6 +1247,10 @@ public class ReportConstants {
     public static final String AWB_NOTIFY_PARTY_NAME = "AWBNotifyPartyName";
 
     public static final String SLAC = "SLAC";
+    public static final String SLAC_CODE = "SlaCCode";
+    public static final String COMMA_HS_CODE1 = "CommaHsCode1";
+    public static final String HSCODE = "HS Code";
+    public static final String COMMA_SLAC1 = "CommaSLAC1";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
 
     public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
@@ -1253,5 +1260,20 @@ public class ReportConstants {
     public static final String AOM_FREE_TEXT = "AnyOtherMeans";
     public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
 
+    public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
+    public static final String INSERT_DATE = "InsertDate";
+    public static final String PWEIGHT_PACKAGES = "PWeightPackages";
+    public static final String SERVICE_LEVEL = "ServiceLevel";
+    public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
+    public static final String TOTAL_PACKAGES = "TotalPackages";
+    public static final String CONTAINER_TYPE_DESCRIPTION = "ContainerTypeDescription";
+
+    //Routing Fields
+    public static final String ROUTINGS = "Routings";
+    public static final String MODE = "Mode";
+    public static final String POLCODE = "PolCode";
+    public static final String PODCODE = "PodCode";
+    public static final String ETD_FOR_PRINT = "ETDForPrint";
+    public static final String ETA_FOR_PRINT = "ETAForPrint";
 
 }

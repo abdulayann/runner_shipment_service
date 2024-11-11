@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.patchRequest;
+package com.dpw.runner.shipment.services.dto.patchrequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;

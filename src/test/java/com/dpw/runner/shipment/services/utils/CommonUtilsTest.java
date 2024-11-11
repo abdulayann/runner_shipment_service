@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -7,11 +8,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -19,14 +23,18 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -47,6 +55,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -65,6 +74,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
@@ -144,6 +154,15 @@ class CommonUtilsTest {
 
     @Mock
     private MasterDataUtils masterDataUtils;
+
+    @Mock
+    private ShipmentDao shipmentDao;
+
+    @Mock
+    private ConsolidationDao consolidationDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -2725,5 +2744,212 @@ class CommonUtilsTest {
         var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).bookingTransportModeSea(true).build();
         var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
         assertTrue(response);
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescription() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "mock description";
+        Events mockEvent = Events.builder().eventCode("EV1").build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        V1DataResponse mockV1DataResponse = new V1DataResponse();
+        when(iv1Service.fetchMasterData(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(
+                EntityTransferMasterLists.builder().ItemValue(mockEventCode).ItemDescription(mockEventDescription).build()
+        ));
+
+        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderDescriptionInCaseOfExceptionFromV1() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "older description";
+        Events mockEvent = Events.builder().eventCode(mockEventCode).description(mockEventDescription).build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
+
+        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetCountryFromUnLocCode(String req) {
+        String response = commonUtils.getCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetCountryFromUnLocCode1() {
+        String response = commonUtils.getCountryFromUnLocCode("IN");
+        assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesObjects")
+    void testCheckIfPartyExists(Parties req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesResponseObjects")
+    void testCheckIfPartyExists1(PartiesResponse req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists2() {
+        PartiesResponse req = new PartiesResponse();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists3() {
+        Parties req = new Parties();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    private static Stream<Parties> providePartiesObjects() {
+        return Stream.of(
+                new Parties(),
+                null
+        );
+    }
+
+    private static Stream<PartiesResponse> providePartiesResponseObjects() {
+        return Stream.of(
+                new PartiesResponse(),
+                null
+        );
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withBothShipmentAndConsolidationIdNull_shouldNotThrowException() {
+
+        Awb awb = new Awb();
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnSingleUniqueDepartmentValue() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertEquals("AE", res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfMoreThanSingleUniqueDepartment() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "ACT"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfNoResponseFromMDM() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(Collections.emptyList());
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
     }
 }

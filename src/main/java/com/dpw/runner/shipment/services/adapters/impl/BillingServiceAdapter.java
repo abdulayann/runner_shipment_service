@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -213,6 +214,13 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return fetchBillingSummary(url, httpEntity);
     }
 
+    @Override
+    public List<BillingDueSummary> fetchBillingDueSummary(BillingBulkSummaryBranchWiseRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise();
+        HttpEntity<BillingBulkSummaryBranchWiseRequest> httpEntity = new HttpEntity<>(request, v2AuthHelper.getInvoiceServiceXApiKeyHeader());
+        return fetchBillingDueSummary(url, httpEntity);
+    }
+
     private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
@@ -246,6 +254,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             }
         } catch (Exception e) {
             throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
+        }
+    }
+
+    private <T> List<BillingDueSummary> fetchBillingDueSummary(String url, HttpEntity<T> httpEntity) {
+        BillingEntityResponse response = executePostRequest(url, httpEntity, new ParameterizedTypeReference<BillingEntityResponse>() {});
+
+        if (response != null && ObjectUtils.isNotEmpty(response.getData())
+                && ObjectUtils.isNotEmpty(response.getData().get(BILLING_SUMMARY))) {
+            List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) response.getData().get(BILLING_SUMMARY);
+            return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {}.getType());
+        } else {
+            log.warn("Billing due summary data not found in response.");
+            return Collections.emptyList();
         }
     }
 

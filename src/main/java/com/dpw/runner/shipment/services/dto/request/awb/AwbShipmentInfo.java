@@ -24,6 +24,7 @@ public class AwbShipmentInfo implements Serializable {
     private String shipperAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String shipperCountry;
+    private String shipperCountryName;
     @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.SHIPPER_COUNTRY)
     private String shipperState;
     private String shipperCity;
@@ -34,6 +35,7 @@ public class AwbShipmentInfo implements Serializable {
     private String consigneeAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String consigneeCountry;
+    private String consigneeCountryName;
     @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.CONSIGNEE_COUNTRY)
     private String consigneeState;
     private String consigneeCity;
@@ -44,6 +46,7 @@ public class AwbShipmentInfo implements Serializable {
     private String issuingAgentAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String issuingAgentCountry;
+    private String issuingAgentCountryName;
     @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.ISSUING_AGENT_COUNTRY)
     private String issuingAgentState;
     private String issuingAgentCity;

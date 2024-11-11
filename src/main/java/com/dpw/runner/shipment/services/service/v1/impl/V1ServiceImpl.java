@@ -378,6 +378,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.listOrgs}")
     private String listOrgs;
 
+    @Value("${v1service.url.base}${v1service.url.listBranchesByDefaultOrgAndAddress}")
+    private String listBranchesByDefaultOrgAndAddress;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -2563,6 +2566,22 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
             response = this.restTemplate.postForEntity(this.listOrgs, entity, V1DataResponse.class);
             log.info("Token time taken in listOrgs() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listBranchesByDefaultOrgAndAddress(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listBranchesByDefaultOrgAndAddress, entity, V1DataResponse.class);
+            log.info("Token time taken in listBranchesByDefaultOrgAndAddress() function {}", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());

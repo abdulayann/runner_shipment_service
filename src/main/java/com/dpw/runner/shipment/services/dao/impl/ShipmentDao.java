@@ -1,10 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -18,16 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -41,27 +27,11 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
-import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import javax.persistence.EntityManager;
-import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -71,6 +41,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
+import javax.persistence.EntityManager;
+import javax.validation.ConstraintViolationException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -222,14 +201,15 @@ public class ShipmentDao implements IShipmentDao {
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
                 throw new ValidationException("Please enter a valid MAWB number.");
-            if (shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
+            if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (oldShipment != null && oldShipment.getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
                 directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
         }
 
 
         validateIataCode(shipmentDetails);
-
+        long start = System.currentTimeMillis();
         shipmentDetails = shipmentRepository.save(shipmentDetails);
+        log.info("{} | Time taken to update shipment query: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
                 setMawbStock(shipmentDetails);
@@ -302,6 +282,13 @@ public class ShipmentDao implements IShipmentDao {
     public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
+        if(Boolean.TRUE.equals(request.getContainsHazardous()) &&
+                Constants.TRANSPORT_MODE_SEA.equals(request.getTransportMode()) &&
+                Constants.SHIPMENT_TYPE_LCL.equals(request.getShipmentType()) &&
+                !Constants.CONSOLIDATION_TYPE_AGT.equals(request.getJobType()) &&
+                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType()) ) {
+            errors.add("For Ocean DG shipments LCL Cargo Type, we can have only AGT and Co Load Master");
+        }
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }

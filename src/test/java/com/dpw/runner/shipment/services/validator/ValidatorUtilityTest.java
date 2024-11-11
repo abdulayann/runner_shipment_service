@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -39,6 +40,12 @@ class ValidatorUtilityTest {
     private ObjectMapper objectMapper;
 
     ValidatorUtilityTest() throws IOException {
+    }
+
+
+    @BeforeEach
+    void setUp() {
+        validatorUtility.clearValidationsMap();
     }
 
 
