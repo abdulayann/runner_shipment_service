@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -40,9 +43,11 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "transport_mode")
     @Size(max = 255, message = "max size is 255 for transportMode")
+    @MasterData(type = MasterDataType.TRANSPORT_MODE)
     private String transportMode;
 
     @Column(name = "source_branch_id")
+    @TenantIdData
     private Integer sourceBranchId;
 
     @Column(name = "status")
@@ -51,11 +56,8 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "job_type")
     @Size(max = 255, message = "max size is 255 for jobType")
+    @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String jobType;
-
-    @Column(name = "source_branch_name")
-    @Size(max = 255, message = "max size is 255 for sourceBranchName")
-    private String sourceBranchName;
 
     @Type(type = "jsonb")
     @Column(name = "entity_payload", columnDefinition = "jsonb")

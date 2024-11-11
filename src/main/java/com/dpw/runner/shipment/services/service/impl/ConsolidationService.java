@@ -3944,20 +3944,32 @@ public class ConsolidationService implements IConsolidationService {
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
     }
 
-    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails) {
-        networkTransferService.processNetworkTransferEntity(Constants.CONSOLIDATION, null, consolidationDetails,
-                tenantId, oldTenantId, consolidationDetails.getId());
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
+        networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
+                consolidationDetails, jobType, null);
     }
 
     private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+        if (consolidationDetails.getTransportMode()!=null && !TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
+        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
             processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
-                    oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails);
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                    reverseDirection(consolidationDetails.getShipmentType()));
             processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
-                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails);
+                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, DIRECTION_CTS);
         }
     }
 
+    private String reverseDirection(String direction) {
+        String res = direction;
+        if(Constants.DIRECTION_EXP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_IMP;
+        }
+        else if(Constants.DIRECTION_IMP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_EXP;
+        }
+        return res;
+    }
 
     public void syncMainLegRoute(ConsolidationDetailsRequest consolidationDetailsRequest, ConsolidationDetails oldEntity) {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Constants.TRANSPORT_MODE_AIR.equals(consolidationDetailsRequest.getTransportMode())) {

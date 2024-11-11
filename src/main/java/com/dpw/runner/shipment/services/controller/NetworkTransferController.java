@@ -2,16 +2,13 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.TransferredNetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -52,19 +49,5 @@ public class NetworkTransferController {
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         return networkTransferService.retrieveById(CommonRequestModel.buildRequest(request));
-    }
-
-    @PutMapping(ApiConstants.UPDATE_NT_TRANSFERRED_STATUS)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = NetworkTransferConstants.UPDATE_NT_TRANSFERRED_STATUS),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    public ResponseEntity<IRunnerResponse> updateNtTransferred(@RequestBody @Valid TransferredNetworkTransferRequest request) {
-        log.info("Request received for updating the network transfer");
-        try {
-            return networkTransferService.transferredNetworkTransferStatus(request);
-        } catch (Exception ex) {
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
-        }
     }
 }

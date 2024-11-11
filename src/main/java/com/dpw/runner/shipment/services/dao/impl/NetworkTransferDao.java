@@ -105,8 +105,8 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
-    public Optional<NetworkTransfer> findByTenantIdAndEntityId(Integer tenantId, Long entityId) {
-        return networkTransferRepository.findByTenantIdAndEntityId(tenantId, entityId);
+    public Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType) {
+        return networkTransferRepository.findByTenantAndEntity(tenantId, entityId, entityType);
     }
 
     public List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList) {

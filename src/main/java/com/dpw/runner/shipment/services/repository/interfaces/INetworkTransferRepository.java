@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -28,6 +29,7 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
         return findOne(spec);
     }
 
-    @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?1 AND entity_id = ?2", nativeQuery = true)
-    Optional<NetworkTransfer> findByTenantIdAndEntityId(Integer tenantId, Long entityId);
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?1 AND entity_id = ?2 AND entity_type = ?3", nativeQuery = true)
+    Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 }

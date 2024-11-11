@@ -2,20 +2,20 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-@Data
 @Builder
-@ApiModel("Network Transfer Response")
-@ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class NetworkTransferResponse implements IRunnerResponse {
+@Data
+public class NetworkTransferListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private String entityType;
@@ -27,8 +27,8 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private NetworkTransferStatus status;
     private String jobType;
     private Map<String, Object> entityPayload;
-    private Map<String, String> masterData;
-    private Map<String, String> tenantIdsData;
     private Integer tenantId;
     private LocalDateTime createdAt;
+    private Map<String, String> tenantMasterData;
+    private Map<String, String> masterData;
 }

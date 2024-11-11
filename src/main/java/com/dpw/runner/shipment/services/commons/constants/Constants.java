@@ -581,6 +581,8 @@ public class Constants {
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
+    public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
+    public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
     private Constants() {
     }
 

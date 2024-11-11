@@ -2406,23 +2406,50 @@ public class ShipmentService implements IShipmentService {
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
 
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, shipmentDetails, oldEntity)), executorService);
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
     }
 
-    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails) {
-        networkTransferService.processNetworkTransferEntity(Constants.SHIPMENT, shipmentDetails, null,
-                tenantId, oldTenantId, shipmentDetails.getId());
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
+        networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
+                null, jobType, null);
     }
 
-    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+    private void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (isEligibleForNetworkTransfer(shipmentDetails)) {
+
             processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails);
+                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                    reverseDirection(shipmentDetails.getDirection()));
+
             processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
-                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails);
+                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
+                    Constants.DIRECTION_CTS);
+        } else{
+            if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
+                networkTransferService.deleteOldNetworkTransfer(oldEntity.getReceivingBranch(),
+                        oldEntity.getId(), Constants.SHIPMENT);
+
+            if(oldEntity!=null && oldEntity.getTriangulationPartner() != null)
+                networkTransferService.deleteOldNetworkTransfer(oldEntity.getTriangulationPartner(),
+                        oldEntity.getId(), Constants.SHIPMENT);
         }
     }
 
+    private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode()) && SHIPMENT_TYPE_DRT.equals(details.getJobType());
+    }
+
+    private String reverseDirection(String direction) {
+        String res = direction;
+        if(Constants.DIRECTION_EXP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_IMP;
+        }
+        else if(Constants.DIRECTION_IMP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_EXP;
+        }
+        return res;
+    }
 
     public void syncMainLegRoute(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<RoutingsRequest> routingsRequests) {
         if(oldEntity == null || !Objects.equals(shipmentDetails.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
@@ -3869,7 +3896,8 @@ public class ShipmentService implements IShipmentService {
             pushShipmentDataToDependentService(newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(newShipmentDetails);
             ShipmentDetails newShipment = newShipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, newShipment, oldEntity)), executorService);
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(newShipment, oldEntity)), executorService);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
