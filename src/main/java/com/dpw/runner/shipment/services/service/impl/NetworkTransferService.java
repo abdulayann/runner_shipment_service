@@ -124,13 +124,13 @@ public class NetworkTransferService implements INetworkTransferService {
         });
 
         List<IRunnerResponse> responseList = new ArrayList<>(networkTransferListResponses);
-        var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCallPacksList(networkTransferListResponses)), executorService);
+        var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCallList(networkTransferListResponses)), executorService);
         var tenantDataFuture = CompletableFuture.runAsync(withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
         CompletableFuture.allOf(masterListFuture, tenantDataFuture).join();
         return responseList;
     }
 
-    private void addAllMasterDataInSingleCallPacksList (List<NetworkTransferListResponse> networkTransferListResponses) {
+    private void addAllMasterDataInSingleCallList(List<NetworkTransferListResponse> networkTransferListResponses) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -320,7 +320,7 @@ public class NetworkTransferService implements INetworkTransferService {
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
                 createNetworkTransfer(networkTransfer, entityPayload);
         } catch (Exception e){
-            log.error(e.getMessage());
+            log.error("Error while processing the Network Transfer Request: {}", e.getMessage());
         }
     }
 

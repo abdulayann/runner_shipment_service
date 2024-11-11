@@ -1,14 +1,15 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -29,10 +30,10 @@ public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
 
     private class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NetworkTransferResponse> {}
+    private class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
 
     @Autowired
-    public NetworkTransferController(ICRPServiceAdapter crpService, JsonHelper jsonHelper, INetworkTransferService networkTransferService){
+    public NetworkTransferController(INetworkTransferService networkTransferService){
         this.networkTransferService = networkTransferService;
     }
 
