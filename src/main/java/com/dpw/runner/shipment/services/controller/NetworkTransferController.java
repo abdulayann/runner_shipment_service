@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -8,8 +10,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -50,5 +56,33 @@ public class NetworkTransferController {
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         return networkTransferService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NetworkTransferController.MyResponseClass.class, message = NetworkTransferConstants.REQUEST_FOR_TRANSFER_SUCCESSFUL)})
+    @PostMapping(NetworkTransferConstants.NETWORK_REQUEST_FOR_TRANSFER)
+    public ResponseEntity<IRunnerResponse> requestForTransfer(@RequestBody @Valid RequestForTransferRequest requestForTransferRequest) {
+        String responseMsg;
+        try {
+            return networkTransferService.requestForTransfer(CommonRequestModel.buildRequest(requestForTransferRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NetworkTransferController.MyResponseClass.class, message = NetworkTransferConstants.REQUEST_FOR_REASSIGNED_SUCCESSFUL)})
+    @PostMapping(NetworkTransferConstants.NETWORK_REASSIGNED)
+    public ResponseEntity<IRunnerResponse> requestForReassign(@RequestBody @Valid ReassignRequest reassignRequest) {
+        String responseMsg;
+        try {
+            return networkTransferService.requestForReassign(CommonRequestModel.buildRequest(reassignRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

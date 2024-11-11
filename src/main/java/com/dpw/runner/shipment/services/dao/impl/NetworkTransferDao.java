@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INetworkTransferRepository;
@@ -116,5 +117,9 @@ public class NetworkTransferDao implements INetworkTransferDao {
                 throw new ValidationException(String.join(",", errors));
         }
         return networkTransferRepository.saveAll(networkTransferEntityList);
+    }
+
+    public void updateStatusAndCreatedEntityId(Long id, NetworkTransferStatus status, Long createdEntityId) {
+        networkTransferRepository.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 }

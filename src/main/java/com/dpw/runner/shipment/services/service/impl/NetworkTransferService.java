@@ -15,6 +15,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
@@ -348,6 +350,32 @@ public class NetworkTransferService implements INetworkTransferService {
             networkTransfer.setEntityPayload(entityPayload);
             networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransferDao.save(networkTransfer);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel) {
+        RequestForTransferRequest requestForTransferRequest = (RequestForTransferRequest) commonRequestModel.getData();
+        var networkTransfer = networkTransferDao.findById(requestForTransferRequest.getId());
+        if(networkTransfer.isEmpty()){
+            log.debug(NetworkTransferConstants.NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR, requestForTransferRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        networkTransfer.get().setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
+        networkTransferDao.save(networkTransfer.get());
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel) {
+        ReassignRequest reassignRequest = (ReassignRequest) commonRequestModel.getData();
+        var networkTransfer = networkTransferDao.findById(reassignRequest.getId());
+        if(networkTransfer.isEmpty()){
+            log.debug(NetworkTransferConstants.NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR, reassignRequest.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
+        networkTransferDao.save(networkTransfer.get());
+        return ResponseHelper.buildSuccessResponse();
     }
 
 }
