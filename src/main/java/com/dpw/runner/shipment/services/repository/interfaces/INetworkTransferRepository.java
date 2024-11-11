@@ -32,6 +32,10 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
         return findOne(spec);
     }
 
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?1 AND entity_id = ?2 AND entity_type = ?3", nativeQuery = true)
+    Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
+
     @Modifying
     @Transactional
     @Query(value = "Update network_transfer set status = ?2, created_entity_id = ?3 Where id = ?1", nativeQuery = true)

@@ -5,10 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -19,7 +16,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sun.xml.bind.v2.TODO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -34,17 +30,23 @@ import java.util.*;
 @Repository
 @Slf4j
 public class NetworkTransferDao implements INetworkTransferDao {
-    @Autowired
-    private INetworkTransferRepository networkTransferRepository;
+
+    private final INetworkTransferRepository networkTransferRepository;
+
+    private final ValidatorUtility validatorUtility;
+
+    private final JsonHelper jsonHelper;
+
+    private final AuditLogService auditLogService;
 
     @Autowired
-    private ValidatorUtility validatorUtility;
-
-    @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
-    private AuditLogService auditLogService;
+    public NetworkTransferDao(INetworkTransferRepository networkTransferRepository, ValidatorUtility validatorUtility,
+                                  JsonHelper jsonHelper, AuditLogService auditLogService) {
+        this.networkTransferRepository = networkTransferRepository;
+        this.validatorUtility = validatorUtility;
+        this.jsonHelper = jsonHelper;
+        this.auditLogService = auditLogService;
+    }
 
 
     @Override
@@ -103,7 +105,10 @@ public class NetworkTransferDao implements INetworkTransferDao {
         }
     }
 
-
+    @Override
+    public Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType) {
+        return networkTransferRepository.findByTenantAndEntity(tenantId, entityId, entityType);
+    }
 
     public List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList) {
         for(var networkTransferEntity : networkTransferEntityList){

@@ -1,31 +1,43 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -33,31 +45,55 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
 @Service
 public class NetworkTransferService implements INetworkTransferService {
-    @Autowired
-    private ModelMapper modelMapper;
+
+    private final ModelMapper modelMapper;
+
+    private final JsonHelper jsonHelper;
+
+    private final INetworkTransferDao networkTransferDao;
+
+    private final MasterDataUtils masterDataUtils;
+
+    private final ExecutorService executorService;
+
+    private final CommonUtils commonUtils;
+
+    private final MasterDataKeyUtils masterDataKeyUtils;
 
     @Autowired
-    private CommonUtils commonUtils;
+    public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
+                                  MasterDataUtils masterDataUtils, ExecutorService executorService,
+                                  CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils) {
+        this.modelMapper = modelMapper;
+        this.jsonHelper = jsonHelper;
+        this.networkTransferDao = networkTransferDao;
+        this.masterDataUtils = masterDataUtils;
+        this.executorService = executorService;
+        this.commonUtils = commonUtils;
+        this.masterDataKeyUtils = masterDataKeyUtils;
+    }
 
-    @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
-    private INetworkTransferDao networkTransferDao;
-
-    @Autowired
-    private AuditLogService auditLogService;
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("status", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(NetworkTransferStatus.class).fieldName("status").build())
+            Map.entry("status", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(NetworkTransferStatus.class).fieldName("status").build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("entityType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
+            Map.entry("transportMode", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
+            Map.entry("jobType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
+            Map.entry("branchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("branchId").isContainsText(true).build()),
+            Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build())
     );
 
 
@@ -82,16 +118,45 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-
     private List<IRunnerResponse> convertEntityListToDtoList(List<NetworkTransfer> lst) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<NetworkTransferListResponse> networkTransferListResponses = new ArrayList<>();
         lst.forEach(networkTransfer -> {
-            NetworkTransferResponse response = modelMapper.map(networkTransfer, NetworkTransferResponse.class);
-            responseList.add(response);
+            var response = modelMapper.map(networkTransfer, NetworkTransferListResponse.class);
+            networkTransferListResponses.add(response);
         });
+
+        List<IRunnerResponse> responseList = new ArrayList<>(networkTransferListResponses);
+        var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCallList(networkTransferListResponses)), executorService);
+        var tenantDataFuture = CompletableFuture.runAsync(withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+        CompletableFuture.allOf(masterListFuture, tenantDataFuture).join();
         return responseList;
     }
 
+    private void addAllMasterDataInSingleCallList(List<NetworkTransferListResponse> networkTransferListResponses) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<MasterListRequest> listRequests = new HashSet<>();
+
+            networkTransferListResponses.forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName(), cacheMap)));
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            networkTransferListResponses.forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap)));
+
+            CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCallPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), NetworkTransfer.class.getSimpleName(), ex.getMessage());
+            CompletableFuture.completedFuture(null);
+        }
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
@@ -122,6 +187,7 @@ public class NetworkTransferService implements INetworkTransferService {
             NetworkTransferResponse networkTransferResponse = jsonHelper.convertValue(networkTransfer.get(), NetworkTransferResponse.class);
             double _next = System.currentTimeMillis();
             log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
+            addDependantServiceData(networkTransferResponse);
             return ResponseHelper.buildSuccessResponse(networkTransferResponse);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -130,7 +196,86 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Long tenantId){
+    public void addDependantServiceData(NetworkTransferResponse networkTransferResponse){
+        Map<String, Object> response = null;
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(networkTransferResponse, response)), executorService);
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(networkTransferResponse, response)), executorService);
+
+        CompletableFuture.allOf(tenantDataFuture, masterListFuture).join();
+    }
+
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> tenantIdList = new HashSet<>(masterDataUtils.createInBulkTenantsRequest(networkTransferResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName(), cacheMap));
+
+            Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel(), cacheMap);
+
+            if(masterDataResponse == null) {
+                networkTransferResponse.setTenantIdsData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()), CacheConstants.TENANTS, cacheMap));
+            }
+            else{
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllTenantDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), NetworkTransferResponse.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+
+    }
+
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
+        try {
+            // Preprocessing
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(networkTransferResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName(), cacheMap));
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            // fetching from V1 in single call
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            // Postprocessing
+            if(masterDataResponse == null)
+                networkTransferResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()), CacheConstants.MASTER_LIST, false, cacheMap));
+            else
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), NetworkTransfer.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext = UserContext.getUser();
+        return () -> {
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext);
+                runnable.run();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
+        };
+    }
+
+    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Long tenantId, String jobType){
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setTenantId(Math.toIntExact(tenantId));
         networkTransfer.setEntityId(shipmentDetails.getId());
@@ -138,10 +283,11 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setEntityNumber(shipmentDetails.getShipmentId());
         networkTransfer.setTransportMode(shipmentDetails.getTransportMode());
         networkTransfer.setSourceBranchId(shipmentDetails.getTenantId());
+        networkTransfer.setJobType(jobType);
         return networkTransfer;
     }
 
-    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Long tenantId){
+    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Long tenantId, String jobType){
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setTenantId(Math.toIntExact(tenantId));
         networkTransfer.setEntityId(consolidationDetails.getId());
@@ -149,20 +295,61 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setEntityNumber(consolidationDetails.getConsolidationNumber());
         networkTransfer.setTransportMode(consolidationDetails.getTransportMode());
         networkTransfer.setSourceBranchId(consolidationDetails.getTenantId());
+        networkTransfer.setJobType(jobType);
         return networkTransfer;
     }
 
-    public void createNetworkTransferEntity(String entityType, ShipmentDetails shipmentDetails, Long tenantId, ConsolidationDetails consolidationDetails){
-        NetworkTransfer networkTransfer = null;
-        if(Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)){
-            networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, tenantId);
-        } else if (Objects.equals(entityType, Constants.CONSOLIDATION)  && ObjectUtils.isNotEmpty(consolidationDetails)) {
-            networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, tenantId);
+    @Transactional
+    public void processNetworkTransferEntity(Long newTenantId, Long oldTenantId, String entityType,
+                                             ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
+                                             String jobType, Map<String, Object> entityPayload){
+        try {
+            NetworkTransfer networkTransfer = null;
+
+            if (Objects.equals(oldTenantId, newTenantId)) {
+                return;  // Skip processing if tenant IDs are identical
+            }
+
+            if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
+                networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, newTenantId, jobType);
+            } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
+                networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, newTenantId, jobType);
+            }
+
+            if (oldTenantId != null && networkTransfer != null)
+                deleteOldNetworkTransfer(oldTenantId, networkTransfer.getEntityId(), networkTransfer.getEntityType());
+
+            if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
+                createNetworkTransfer(networkTransfer, entityPayload);
+        } catch (Exception e){
+            log.error("Error while processing the Network Transfer Request: {}", e.getMessage());
         }
-        if (!Objects.isNull(networkTransfer)){
-            networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+    }
+
+    private String getAuditLogEntityType(String entityType) {
+        return Objects.equals(entityType, Constants.SHIPMENT) ?
+                ShipmentDetails.class.getSimpleName() : ConsolidationDetails.class.getSimpleName();
+    }
+
+    public void deleteOldNetworkTransfer(Long oldTenantId, Long entityId, String entityType) {
+        String auditLogEntityType = getAuditLogEntityType(entityType);
+        networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
+                .ifPresent(networkTransferEntity ->
+                        networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
+    }
+
+    private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
+        networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+        if(entityPayload!=null){
+            networkTransfer.setEntityPayload(entityPayload);
+        }
+        networkTransferDao.save(networkTransfer);
+    }
+
+    public void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
+            networkTransfer.setEntityPayload(entityPayload);
+            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransferDao.save(networkTransfer);
-        }
     }
 
     @Override
