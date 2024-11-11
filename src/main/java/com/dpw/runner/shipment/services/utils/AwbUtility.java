@@ -251,14 +251,9 @@ public class AwbUtility {
                         postCode = address.getZipPostCode();
                     }
                 }
-                String country = awb.getAwbShipmentInfo().getIssuingAgentCountry();
-                if (!Strings.isNullOrEmpty(country) && country.length() == 3)
-                    country = CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2();
-                else if (Strings.isNullOrEmpty(country))
-                    country = null;
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(country)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
@@ -357,31 +352,21 @@ public class AwbUtility {
         awbResponse.getMeta().setRateClass(rateClass);
     }
     private AwbAirMessagingResponse.UnlocDetails populateUnlocFields(UnlocationsResponse unloc) {
-        String country = unloc.getCountry();
-        if (!Strings.isNullOrEmpty(country) && country.length() == 3)
-            country = CountryListHelper.ISO3166.fromAlpha3(unloc.getCountry().toUpperCase()).getAlpha2();
-        else if (Strings.isNullOrEmpty(country))
-            country = null;
         return AwbAirMessagingResponse.UnlocDetails.builder()
                 .name(unloc.getName())
-                .countyCode(country)
+                .countyCode(CountryListHelper.ISO3166.getAlpha2IfAlpha3(unloc.getCountry()))
                 .iataCode(unloc.getIataCode())
                 .locCode(unloc.getLocCode())
                 .build();
     }
 
     private AwbAirMessagingResponse.TenantInfo populateTenantInfoFields(TenantModel tenantModel, ShipmentSettingsDetails shipmentSettingsDetails) {
-        String country = tenantModel.country;
-        if (!Strings.isNullOrEmpty(country) && country.length() == 3)
-            country = CountryListHelper.ISO3166.fromAlpha3(tenantModel.country.toUpperCase()).getAlpha2();
-        else if (Strings.isNullOrEmpty(country))
-            country = null;
         return AwbAirMessagingResponse.TenantInfo.builder()
                 .pimaAddress(tenantModel.PIMAAddress)
                 .number(shipmentSettingsDetails.getRaNumber())
                 .expiry(shipmentSettingsDetails.getRaExpiry())
                 .city(tenantModel.city)
-                .country(country)
+                .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(tenantModel.country))
                 .state(tenantModel.state)
                 .branchCode(tenantModel.code)
                 .branchName(tenantModel.tenantName)
@@ -389,14 +374,10 @@ public class AwbUtility {
     }
 
     private AwbAirMessagingResponse.OrgDetails populateOrgsFields(Map<String, Object> org, Map<String, Object> address, String country, String city, String zipCode) {
-        if (!Strings.isNullOrEmpty(country) && country.length() == 3)
-            country = CountryListHelper.ISO3166.fromAlpha3(country.toUpperCase()).getAlpha2();
-        else if (Strings.isNullOrEmpty(country))
-            country = null;
 
         return AwbAirMessagingResponse.OrgDetails.builder()
                         .city(city)
-                        .country(country)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(country))
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
@@ -451,14 +432,9 @@ public class AwbUtility {
                         postCode = address.getZipPostCode();
                     }
                 }
-                String country = awb.getAwbShipmentInfo().getIssuingAgentCountry();
-                if (!Strings.isNullOrEmpty(country) && country.length() == 3)
-                    country = CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2();
-                else if (Strings.isNullOrEmpty(country))
-                    country = null;
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(country)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
@@ -554,9 +530,7 @@ public class AwbUtility {
         }
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
             String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
-            if (countryCode.length() == 3)
-                countryCode = CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2();
-            awbResponse.getMeta().setCustomOriginCode(countryCode);
+            awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
         }
         return awbResponse;
     }
