@@ -15,6 +15,5 @@ CREATE TABLE if not exists network_transfer (
     source_branch_id integer,
     status varchar(255),
     job_type varchar(255),
-    source_branch_name varchar(255),
     entity_payload jsonb
 );

@@ -1,22 +1,21 @@
-package com.dpw.runner.shipment.services.dto.request;
+package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
-@Data
 @Builder
-@ApiModel("Network Transfer Request Model")
-@ToString
-@AllArgsConstructor
 @NoArgsConstructor
-public class NetworkTransferRequest extends CommonRequest implements IRunnerRequest {
+@AllArgsConstructor
+@Data
+public class NetworkTransferListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private String entityType;
@@ -24,12 +23,12 @@ public class NetworkTransferRequest extends CommonRequest implements IRunnerRequ
     private Long entityId;
     private Long createdEntityId;
     private String transportMode;
-    private Long branchId;
+    private Long sourceBranchId;
     private NetworkTransferStatus status;
     private String jobType;
-    private String branchName;
-    private Long roleId;
     private Map<String, Object> entityPayload;
     private Integer tenantId;
     private LocalDateTime createdAt;
+    private Map<String, String> tenantMasterData;
+    private Map<String, String> masterData;
 }

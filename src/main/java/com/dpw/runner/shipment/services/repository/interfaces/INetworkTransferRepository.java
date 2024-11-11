@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,4 +28,8 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
         Specification<NetworkTransfer> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?1 AND entity_id = ?2 AND entity_type = ?3", nativeQuery = true)
+    Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 }

@@ -49,6 +49,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
@@ -122,9 +123,11 @@ public class EntityTransferService implements IEntityTransferService {
     private DocumentManagerRestClient documentManagerRestClient;
     private ConsolidationSync consolidationSync;
     private ShipmentSync shipmentSync;
+    private INetworkTransferService networkTransferService;
+    private INetworkTransferDao networkTransferDao;
 
     @Autowired
-    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync) {
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -152,6 +155,8 @@ public class EntityTransferService implements IEntityTransferService {
         this.documentManagerRestClient = documentManagerRestClient;
         this.consolidationSync = consolidationSync;
         this.shipmentSync = shipmentSync;
+        this.networkTransferService = networkTransferService;
+        this.networkTransferDao = networkTransferDao;
     }
 
     @Transactional
@@ -193,7 +198,18 @@ public class EntityTransferService implements IEntityTransferService {
 
             taskPayload.setSendToBranch(tenant);
 
-            createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
+            if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                        Math.toIntExact(tenant), shipment.getId(), SHIPMENT);
+                Map<String, Object> entityPayload = getNetworkTransferEntityPayload(taskPayload);
+                if(optionalNetworkTransfer.isPresent())
+                    networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
+                else
+                    networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT, shipment,
+                            null, taskPayload.getDirection(), entityPayload);
+            } else {
+                createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
+            }
             successTenantIds.add(tenant);
         }
 
@@ -215,6 +231,16 @@ public class EntityTransferService implements IEntityTransferService {
 
     private Integer getShipmentConsoleImportApprovalRole(int tenantId) {
         return shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
+    }
+
+    private Map<String, Object> getNetworkTransferEntityPayload(Object taskPayload){
+        String payloadString = jsonHelper.convertToJson(taskPayload);
+        return jsonHelper.convertJsonToMap(payloadString);
+    }
+
+    private Boolean getIsNetworkTransferFeatureEnabled(){
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
     }
 
 
@@ -276,7 +302,19 @@ public class EntityTransferService implements IEntityTransferService {
                 }
             }
 
-            createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
+            if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                        Math.toIntExact(tenant), consol.getId(), CONSOLIDATION);
+                Map<String, Object> entityPayload = getNetworkTransferEntityPayload(consolidationPayload);
+                if (optionalNetworkTransfer.isPresent())
+                    networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
+                else
+                    networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
+                            null, consol, consolidationPayload.getShipmentType(), entityPayload);
+            }else{
+                createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
+            }
+
             successTenantIds.add(tenant);
         }
 

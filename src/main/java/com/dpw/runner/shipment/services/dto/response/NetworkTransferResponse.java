@@ -23,12 +23,12 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private Long entityId;
     private Long createdEntityId;
     private String transportMode;
-    private Long branchId;
+    private Long sourceBranchId;
     private NetworkTransferStatus status;
     private String jobType;
-    private String branchName;
-    private Long roleId;
     private Map<String, Object> entityPayload;
+    private Map<String, String> masterData;
+    private Map<String, String> tenantIdsData;
     private Integer tenantId;
     private LocalDateTime createdAt;
 }
