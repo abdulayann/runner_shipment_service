@@ -3342,8 +3342,9 @@ public class ShipmentService implements IShipmentService {
                 for( var curr:shipmentDetailsPage.getContent()){
                     ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = getShipmentDetailsResponse(curr, request.getIncludeColumns());
                     RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(shipmentDetailsLazyResponse);
                     //res.setData(partialFetchUtils.fetchPartialListData(shipmentDetailsResponse,request.getIncludeColumns()));
-                    filteredList.add( shipmentDetailsLazyResponse);
+                    filteredList.add( res);
 
                 }
                 long endTime = System.currentTimeMillis();   // End time
