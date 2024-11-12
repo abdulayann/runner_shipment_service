@@ -2,8 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
@@ -22,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -37,7 +36,6 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -66,7 +64,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final MasterDataUtils masterDataUtils;
 
-    private final ExecutorService executorService;
+    ExecutorService executorService;
 
     private final CommonUtils commonUtils;
 
@@ -126,9 +124,16 @@ public class NetworkTransferService implements INetworkTransferService {
         });
 
         List<IRunnerResponse> responseList = new ArrayList<>(networkTransferListResponses);
-        var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCallList(networkTransferListResponses)), executorService);
-        var tenantDataFuture = CompletableFuture.runAsync(withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
-        CompletableFuture.allOf(masterListFuture, tenantDataFuture).join();
+        try{
+            if(ObjectUtils.isNotEmpty(networkTransferListResponses)){
+                var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCallList(networkTransferListResponses)), executorService);
+                var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+                CompletableFuture.allOf(masterListFuture, tenantDataFuture).join();
+            }
+        } catch (Exception ex) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_NETWORK_TRANSFER_LIST, ex.getLocalizedMessage());
+        }
+
         return responseList;
     }
 
@@ -197,14 +202,18 @@ public class NetworkTransferService implements INetworkTransferService {
     }
 
     public void addDependantServiceData(NetworkTransferResponse networkTransferResponse){
-        Map<String, Object> response = null;
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(networkTransferResponse, response)), executorService);
-        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(networkTransferResponse, response)), executorService);
+        try{
+            Map<String, Object> response = null;
+            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(networkTransferResponse, response)), executorService);
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(networkTransferResponse, response)), executorService);
 
-        CompletableFuture.allOf(tenantDataFuture, masterListFuture).join();
+            CompletableFuture.allOf(tenantDataFuture, masterListFuture).join();
+        } catch (Exception ex) {
+            log.error("Exception during fetching master data in retrieve API for guid: {} with exception: {}", networkTransferResponse.getGuid(), ex.getMessage());
+        }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -228,7 +237,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(NetworkTransferResponse networkTransferResponse, Map<String, Object> masterDataResponse) {
         try {
             // Preprocessing
             Map<String, Object> cacheMap = new HashMap<>();
@@ -257,27 +266,9 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-    public Runnable withMdc(Runnable runnable) {
-        Map<String, String> mdc = MDC.getCopyOfContextMap();
-        String token = RequestAuthContext.getAuthToken();
-        var userContext = UserContext.getUser();
-        return () -> {
-            try {
-                MDC.setContextMap(mdc);
-                RequestAuthContext.setAuthToken(token);
-                UserContext.setUser(userContext);
-                runnable.run();
-            } finally {
-                RequestAuthContext.removeToken();
-                MDC.clear();
-                UserContext.removeUser();
-            }
-        };
-    }
-
-    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Long tenantId, String jobType){
+    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Integer tenantId, String jobType){
         NetworkTransfer networkTransfer = new NetworkTransfer();
-        networkTransfer.setTenantId(Math.toIntExact(tenantId));
+        networkTransfer.setTenantId(tenantId);
         networkTransfer.setEntityId(shipmentDetails.getId());
         networkTransfer.setEntityType(Constants.SHIPMENT);
         networkTransfer.setEntityNumber(shipmentDetails.getShipmentId());
@@ -287,9 +278,9 @@ public class NetworkTransferService implements INetworkTransferService {
         return networkTransfer;
     }
 
-    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Long tenantId, String jobType){
+    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Integer tenantId, String jobType){
         NetworkTransfer networkTransfer = new NetworkTransfer();
-        networkTransfer.setTenantId(Math.toIntExact(tenantId));
+        networkTransfer.setTenantId(tenantId);
         networkTransfer.setEntityId(consolidationDetails.getId());
         networkTransfer.setEntityType(Constants.CONSOLIDATION);
         networkTransfer.setEntityNumber(consolidationDetails.getConsolidationNumber());
@@ -303,39 +294,41 @@ public class NetworkTransferService implements INetworkTransferService {
     public void processNetworkTransferEntity(Long newTenantId, Long oldTenantId, String entityType,
                                              ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                              String jobType, Map<String, Object> entityPayload){
-        try {
             NetworkTransfer networkTransfer = null;
 
             if (Objects.equals(oldTenantId, newTenantId)) {
                 return;  // Skip processing if tenant IDs are identical
             }
-
+            var intTenantId = (newTenantId!=null) ? Math.toIntExact(newTenantId) : null;
             if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
-                networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, newTenantId, jobType);
+                networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, jobType);
             } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
-                networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, newTenantId, jobType);
+                networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, intTenantId, jobType);
             }
 
             if (oldTenantId != null && networkTransfer != null)
-                deleteOldNetworkTransfer(oldTenantId, networkTransfer.getEntityId(), networkTransfer.getEntityType());
+                deleteNetworkTransferEntity(oldTenantId, networkTransfer.getEntityId(), networkTransfer.getEntityType());
 
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
                 createNetworkTransfer(networkTransfer, entityPayload);
-        } catch (Exception e){
-            log.error("Error while processing the Network Transfer Request: {}", e.getMessage());
         }
-    }
 
     private String getAuditLogEntityType(String entityType) {
         return Objects.equals(entityType, Constants.SHIPMENT) ?
                 ShipmentDetails.class.getSimpleName() : ConsolidationDetails.class.getSimpleName();
     }
 
-    public void deleteOldNetworkTransfer(Long oldTenantId, Long entityId, String entityType) {
-        String auditLogEntityType = getAuditLogEntityType(entityType);
-        networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
-                .ifPresent(networkTransferEntity ->
-                        networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
+    public void deleteNetworkTransferEntity(Long oldTenantId, Long entityId, String entityType) {
+        try{
+            String auditLogEntityType = getAuditLogEntityType(entityType);
+            networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
+                    .ifPresent(networkTransferEntity ->
+                            networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
+        } catch (Exception e){
+            log.error("Error while processing the Network Transfer Delete Request: {} for entityId: {} entityType: {}",
+                    e.getMessage(), entityId, entityType);
+        }
+
     }
 
     private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
@@ -347,10 +340,11 @@ public class NetworkTransferService implements INetworkTransferService {
     }
 
     public void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
-            networkTransfer.setEntityPayload(entityPayload);
-            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
-            networkTransferDao.save(networkTransfer);
+        networkTransfer.setEntityPayload(entityPayload);
+        networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        networkTransferDao.save(networkTransfer);
     }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel) {
@@ -377,5 +371,4 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransferDao.save(networkTransfer.get());
         return ResponseHelper.buildSuccessResponse();
     }
-
 }

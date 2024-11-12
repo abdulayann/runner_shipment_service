@@ -3976,19 +3976,30 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
-        networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
-                consolidationDetails, jobType, null);
+        try{
+            networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
+                    consolidationDetails, jobType, null);
+        } catch (Exception ex) {
+            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+        }
+
     }
 
     private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
-        if (consolidationDetails.getTransportMode()!=null && !TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
-        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
-            processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
-                    oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
-                    reverseDirection(consolidationDetails.getShipmentType()));
-            processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
-                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, DIRECTION_CTS);
+        try{
+            if (consolidationDetails.getTransportMode()!=null &&
+                    !TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
+                    && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+                processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                        oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                        reverseDirection(consolidationDetails.getShipmentType()));
+                processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
+                        oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, DIRECTION_CTS);
+            }
+        } catch (Exception ex) {
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
+
     }
 
     private String reverseDirection(String direction) {
