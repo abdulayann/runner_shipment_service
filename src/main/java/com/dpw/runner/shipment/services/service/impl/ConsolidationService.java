@@ -4857,7 +4857,7 @@ public class ConsolidationService implements IConsolidationService {
 
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
         Events response = null;
-        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
+//        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
 
         if (consolidationDetails.getEventsList() == null) {
             consolidationDetails.setEventsList(new ArrayList<>());

@@ -813,6 +813,7 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetail.getEventsList() != null) {
             for (Events events : shipmentDetail.getEventsList()) {
                 if (StringUtility.isNotEmpty(events.getEventCode())) {
+                    //todo: check for event INVGNTD
                     if (events.getEventCode().equalsIgnoreCase(EventConstants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
                     } else if (events.getEventCode().equalsIgnoreCase(EventConstants.TAXSG)) {
@@ -5558,16 +5559,6 @@ public class ShipmentService implements IShipmentService {
     private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
         if(shipmentDetails.getStatus() != null) {
-            if (previousStauts == null || !shipmentDetails.getStatus().equals(previousStauts)) {
-                if (shipmentDetails.getStatus().equals(ShipmentStatus.Confirmed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCNFRM,
-                            LocalDateTime.now(), LocalDateTime.now());
-                }
-                if (shipmentDetails.getStatus().equals(ShipmentStatus.Completed.getValue())) {
-                    response = createAutomatedEvents(shipmentDetails, EventConstants.SHPCMPLT,
-                            LocalDateTime.now(), LocalDateTime.now());
-                }
-            }
             if(response != null) {
                 if (shipmentDetails.getEventsList() == null)
                     shipmentDetails.setEventsList(new ArrayList<>());
