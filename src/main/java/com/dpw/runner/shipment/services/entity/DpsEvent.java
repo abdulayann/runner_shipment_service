@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
+import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
+import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,6 +13,8 @@ import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embeddable;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -62,16 +68,20 @@ public class DpsEvent {
     private String entityId;
 
     @Column(name = "entity_type", nullable = false)
-    private String entityType;
+    @Enumerated(EnumType.STRING)
+    private DpsEntityType entityType;
 
     @Column(name = "workflow_type")
-    private String workflowType;
+    @Enumerated(EnumType.STRING)
+    private DpsWorkflowType workflowType;
 
     @Column(name = "state")
-    private String state;
+    @Enumerated(EnumType.STRING)
+    private DpsWorkflowState state;
 
     @Column(name = "status")
-    private String status;
+    @Enumerated(EnumType.STRING)
+    private DpsExecutionStatus status;
 
     @Column(name = "text")
     private String text;
@@ -133,40 +143,3 @@ public class DpsEvent {
     }
 
 }
-
-// SQL SCRIPT
-
-/*
-* -- Table: dps_event
-CREATE TABLE dps_event (
-    id SERIAL PRIMARY KEY,
-    guid UUID NOT NULL,
-    execution_id UUID NOT NULL,
-    entity_id VARCHAR(255) NOT NULL,
-    entity_type VARCHAR(255) NOT NULL,
-    workflow_type VARCHAR(255),
-    state VARCHAR(255),
-    status VARCHAR(255),
-    text VARCHAR(255),
-    dps_field_data JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    is_deleted BOOLEAN DEFAULT FALSE
-);
-
--- Table for implication_list
-CREATE TABLE dps_event_implication (
-    dps_event_id INT NOT NULL,
-    implication_list VARCHAR(255),
-    FOREIGN KEY (dps_event_id) REFERENCES dps_event(id) ON DELETE CASCADE
-);
-
--- Table for condition_message_list
-CREATE TABLE dps_event_condition_message (
-    dps_event_id INT NOT NULL,
-    condition_message_list VARCHAR(255),
-    FOREIGN KEY (dps_event_id) REFERENCES dps_event(id) ON DELETE CASCADE
-);
-
-*
-* */
