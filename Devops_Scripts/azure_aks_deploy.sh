@@ -51,6 +51,11 @@ sed -i "s/HEAP_MIN/$HEAP_MIN/g" $app_deployment_yaml_path
 sed -i "s/HEAP_MAX/$HEAP_MAX/g" $app_deployment_yaml_path
 sed -i "s/JVM_ALG/$JVM_ALG/g" $app_deployment_yaml_path
 sed -i "s/ENV_NAME/$env_Name/g" $app_deployment_yaml_path
+sed -i "s/\$POOL/${POOL}/g" $app_deployment_yaml_path
+sed -i "s/\$KEY/${KEY}/g" $app_deployment_yaml_path
+sed -i "s/\$TYPE/${TYPE}/g" $app_deployment_yaml_path
+sed -i "s/\$TOLERATION_KEY/${TOLERATION_KEY}/g" $app_deployment_yaml_path
+sed -i "s/\$TOLERATION_POOL/${TOLERATION_POOL}/g" $app_deployment_yaml_path
 
 # replace HPA variables
 sed -i "s/\$HPA_NAME/${HPA_NAME}/g" $app_hpa_yaml_path
