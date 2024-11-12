@@ -198,7 +198,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         List<String> tenantName = getTenantName(successTenantIds);
-       // createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipId.toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, null);
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
         try {
@@ -280,15 +279,11 @@ public class EntityTransferService implements IEntityTransferService {
             successTenantIds.add(tenant);
         }
 
-        //this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
         List<String> tenantName = getTenantName(successTenantIds);
-//        String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
             // Set TenantId Context for inter branch shipment for Event creation
             if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
                 TenantContext.setCurrentTenant(shipment.getTenantId());
-           // this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
-            //createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
             TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
 
             if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
@@ -493,9 +488,6 @@ public class EntityTransferService implements IEntityTransferService {
             // Attach Shipment Packs to containers
             this.attachPackToContainers(shipmentIds, newVsOldPackingGuid, oldPackVsOldContGuidMap, oldGuidVsNewContainerId);
 
-            // Create console import event
-           // this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
-
             // Prepare copy docs request for doc service
             this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), Consolidations, consolidationDetailsResponse.getTenantId(), entityTransferConsolidationDetails.getAdditionalDocs());
 
@@ -639,9 +631,6 @@ public class EntityTransferService implements IEntityTransferService {
             shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
             oldShipmentDetailsList.get(0).setPackingList(jsonHelper.convertValueToList(shipmentDetailsResponse.getPackingList(), Packing.class));
         }
-
-        // Create shipment import event
-        //this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), Constants.SHIPMENT_IMPORTED, Constants.SHIPMENT);
 
         // Prepare copy docs request for doc service
         this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(), Shipments, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
