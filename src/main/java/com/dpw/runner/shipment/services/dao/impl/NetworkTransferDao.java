@@ -61,8 +61,6 @@ public class NetworkTransferDao implements INetworkTransferDao {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
         }
-        if (!errors.isEmpty())
-            throw new ValidationException(String.join(",", errors));
         return networkTransferRepository.save(networkTransfer);
     }
 
