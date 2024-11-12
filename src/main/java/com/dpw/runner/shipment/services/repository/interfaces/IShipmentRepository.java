@@ -97,8 +97,4 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @ExcludeTenantFilter
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
 
-    @Query("SELECT s FROM ShipmentDetails s WHERE s.id = :id")
-    @EntityGraph(attributePaths = {"field1", "field2", "field3"})  // Specify fields to eagerly load
-    ShipmentDetails findShipmentDetails(@Param("id") Long id);
-
 }

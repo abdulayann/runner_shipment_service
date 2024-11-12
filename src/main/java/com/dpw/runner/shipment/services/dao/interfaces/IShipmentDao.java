@@ -41,5 +41,4 @@ public interface IShipmentDao {
 
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
-    ShipmentDetails findShipmentDetails(Long id);
 }
