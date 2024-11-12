@@ -2412,28 +2412,36 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
-        networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
-                null, jobType, null);
+        try{
+            networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
+                    null, jobType, null);
+        } catch (Exception ex) {
+            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+        }
     }
 
     private void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        if (isEligibleForNetworkTransfer(shipmentDetails)) {
+        try{
+            if (isEligibleForNetworkTransfer(shipmentDetails)) {
 
-            processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                    oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
-                    reverseDirection(shipmentDetails.getDirection()));
+                processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                        oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                        reverseDirection(shipmentDetails.getDirection()));
 
-            processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
-                    oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
-                    Constants.DIRECTION_CTS);
-        } else{
-            if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
-                networkTransferService.deleteOldNetworkTransfer(oldEntity.getReceivingBranch(),
-                        oldEntity.getId(), Constants.SHIPMENT);
+                processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
+                        oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
+                        Constants.DIRECTION_CTS);
+            } else{
+                if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
+                    networkTransferService.deleteNetworkTransferEntity(oldEntity.getReceivingBranch(),
+                            oldEntity.getId(), Constants.SHIPMENT);
 
-            if(oldEntity!=null && oldEntity.getTriangulationPartner() != null)
-                networkTransferService.deleteOldNetworkTransfer(oldEntity.getTriangulationPartner(),
-                        oldEntity.getId(), Constants.SHIPMENT);
+                if(oldEntity!=null && oldEntity.getTriangulationPartner() != null)
+                    networkTransferService.deleteNetworkTransferEntity(oldEntity.getTriangulationPartner(),
+                            oldEntity.getId(), Constants.SHIPMENT);
+            }
+        } catch (Exception ex) {
+            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
     }
 

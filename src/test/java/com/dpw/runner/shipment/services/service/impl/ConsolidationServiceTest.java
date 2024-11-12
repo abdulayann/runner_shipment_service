@@ -5442,4 +5442,56 @@ import static org.mockito.Mockito.*;
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    @Test
+    void testCreateForNTESuccess() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false).setIsNetworkTransferEntityEnabled(true);
+
+        ConsolidationDetails consolidationDetails3 = testConsol;
+        testConsol.setReceivingBranch(1L);
+        testConsol.setTriangulationPartner(12L);
+
+        ConsolidationDetails consolidationDetails2 = testConsol;
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails3);
+        consolidationDetailsList.add(consolidationDetails2);
+
+        for (ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+            ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+            ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+            var spyService = Mockito.spy(consolidationService);
+
+            when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+            when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
+            when(commonUtils.convertToEntityList(anyList(), any(), eq(true))).thenReturn(List.of());
+            when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+            when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+            when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+            when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+            when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+            when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+            when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+            when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+            Runnable mockRunnable = mock(Runnable.class);
+            when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                // Get the argument passed to the withMdc method
+                Runnable argument = invocation.getArgument(0);
+                // Call the run method of the argument
+                argument.run();
+                // Add any additional behavior or return value as needed
+                return mockRunnable;
+            });
+            when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+            mockShipmentSettings();
+            ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
+            assertEquals(expectedEntity, response);
+
+        }
+    }
+
 }
