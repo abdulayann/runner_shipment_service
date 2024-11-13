@@ -115,6 +115,12 @@ public class DpsEvent {
     @Column(name = "is_deleted")
     private Boolean isDeleted = Boolean.FALSE;
 
+    @Column(name = "event_timestamp")
+    private LocalDateTime eventTimestamp;
+
+    @Column(name = "username")
+    private String username;
+
     @PreUpdate
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();

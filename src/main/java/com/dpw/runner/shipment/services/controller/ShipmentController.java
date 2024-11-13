@@ -789,4 +789,19 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.MATCHING_RULES_BY_GUID)
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
+            log.info("Received get matching rules request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            return shipmentService.getMatchingRulesByGuid(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : "";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
 }
