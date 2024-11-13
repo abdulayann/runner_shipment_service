@@ -24,6 +24,20 @@ spec:
       labels:
         app: runner-shipment-service
     spec:
+      affinity:
+        nodeAffinity:
+          $TYPE:
+          - preference:
+              matchExpressions:
+              - key: $KEY
+                operator: In
+                values:
+                - $POOL
+            weight: 100
+      tolerations:
+      - key: $TOLERATION_KEY
+        operator: Equal
+        value: $TOLERATION_POOL
       containers:
       - name: runner-shipment-service
         image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
