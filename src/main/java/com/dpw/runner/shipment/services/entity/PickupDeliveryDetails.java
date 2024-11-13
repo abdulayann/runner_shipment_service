@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -160,4 +161,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "remarks")
     public String remarks;
+
+    @Transient
+    public PickupDeliveryDetailsListResponse pickupDeliveryDetailsListResponse;
 }

@@ -155,6 +155,7 @@ import com.dpw.runner.shipment.services.dto.request.notification.PendingNotifica
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -168,6 +169,7 @@ import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionRespon
 import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
@@ -250,6 +252,7 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
+import com.dpw.runner.shipment.services.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -735,7 +738,8 @@ public class ShipmentService implements IShipmentService {
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
+            ShipmentListResponse response= ShipmentMapper.INSTANCE.toShipmentListResponse(shipmentDetail);
+           // ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
 //            containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
@@ -3195,24 +3199,24 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("MBL Number")).setCellValue(shipment.getMasterBill());
                 itemRow.createCell(headerMap.get("Incoterm")).setCellValue(shipment.getIncoterms());
                 itemRow.createCell(headerMap.get("Service Type")).setCellValue(shipment.getServiceType());
-                itemRow.createCell(headerMap.get("Release Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getReleaseType());
-                itemRow.createCell(headerMap.get("House Bill Type")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getHouseBillType() : "");
+                itemRow.createCell(headerMap.get("Release Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) ? "" : shipment.getAdditionalDetailsResponse().getReleaseType());
+                itemRow.createCell(headerMap.get("House Bill Type")).setCellValue(shipment.getAdditionalDetailsResponse() != null ? shipment.getAdditionalDetailsResponse().getHouseBillType() : "");
                 itemRow.createCell(headerMap.get("Delivery Mode")).setCellValue(Objects.isNull(shipment.getDeliveryDetails()) ? "" : shipment.getDeliveryDetails().getDropMode());
                 itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(String.valueOf(shipment.getJobType()));
-                itemRow.createCell(headerMap.get("Activity Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getActivityType());
+                itemRow.createCell(headerMap.get("Activity Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) ? "" : shipment.getAdditionalDetailsResponse().getActivityType());
                 itemRow.createCell(headerMap.get("Shipment Type")).setCellValue(shipment.getDirection());
                 itemRow.createCell(headerMap.get("Carrier")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getShippingLine());
                 itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails() != null ? masterDataUtils.getVesselName(shipment.getCarrierDetails().getVessel()) : "");
                 itemRow.createCell(headerMap.get("Flight Number")).setCellValue(Optional.ofNullable(shipment.getCarrierDetails()).map(c -> c.getFlightNumber()).orElse(""));
                 itemRow.createCell(headerMap.get("Voyage/Flight No.")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getVoyage());
-                itemRow.createCell(headerMap.get("Paid Place Name")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetails().getUnlocationData().get("paidPlace")) : "");
-                itemRow.createCell(headerMap.get("Issued Place Name")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetails().getUnlocationData().get("placeOfIssue")) : "");
+                itemRow.createCell(headerMap.get("Paid Place Name")).setCellValue(shipment.getAdditionalDetailsResponse() != null && shipment.getAdditionalDetailsResponse().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetailsResponse().getUnlocationData().get("paidPlace")) : "");
+                itemRow.createCell(headerMap.get("Issued Place Name")).setCellValue(shipment.getAdditionalDetailsResponse() != null && shipment.getAdditionalDetailsResponse().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetailsResponse().getUnlocationData().get("placeOfIssue")) : "");
                 itemRow.createCell(headerMap.get("Source1")).setCellValue(String.valueOf(shipment.getSource()));
-                itemRow.createCell(headerMap.get("Date of Issue")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) || Objects.isNull(shipment.getAdditionalDetails().getDateOfIssue()) ? "" : shipment.getAdditionalDetails().getDateOfIssue().toString());
-                itemRow.createCell(headerMap.get("Date of Receipt")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) || Objects.isNull(shipment.getAdditionalDetails().getDateOfReceipt()) ? "" : shipment.getAdditionalDetails().getDateOfReceipt().toString());
-                itemRow.createCell(headerMap.get("Country of Origin")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getGoodsCO());
-                itemRow.createCell(headerMap.get("Notify Party Name")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getNotifyParty() != null && shipment.getAdditionalDetails().getNotifyParty().getOrgData() != null ?
-                        String.valueOf(shipment.getAdditionalDetails().getNotifyParty().getOrgData().get("FullName")) : "");
+                itemRow.createCell(headerMap.get("Date of Issue")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) || Objects.isNull(shipment.getAdditionalDetailsResponse().getDateOfIssue()) ? "" : shipment.getAdditionalDetailsResponse().getDateOfIssue().toString());
+                itemRow.createCell(headerMap.get("Date of Receipt")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) || Objects.isNull(shipment.getAdditionalDetailsResponse().getDateOfReceipt()) ? "" : shipment.getAdditionalDetailsResponse().getDateOfReceipt().toString());
+                itemRow.createCell(headerMap.get("Country of Origin")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) ? "" : shipment.getAdditionalDetailsResponse().getGoodsCO());
+                itemRow.createCell(headerMap.get("Notify Party Name")).setCellValue(shipment.getAdditionalDetailsResponse() != null && shipment.getAdditionalDetailsResponse().getNotifyParty() != null && shipment.getAdditionalDetailsResponse().getNotifyParty().getOrgData() != null ?
+                        String.valueOf(shipment.getAdditionalDetailsResponse().getNotifyParty().getOrgData().get("FullName")) : "");
                 itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(shipment.getShipmentType());
                 itemRow.createCell(headerMap.get("Origin")).setCellValue(origin);
                 itemRow.createCell(headerMap.get("Destination")).setCellValue(destination);
@@ -3222,9 +3226,9 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("Consignor Name")).setCellValue(shipment.getConsigner() != null && shipment.getConsigner().getOrgData() != null ? shipment.getConsigner().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
                 itemRow.createCell(headerMap.get("Consignee Name")).setCellValue(shipment.getConsignee() != null && shipment.getConsignee().getOrgData() != null ? shipment.getConsignee().getOrgData().getOrDefault(PartiesConstants.FULLNAME, "").toString() : "");
                 itemRow.createCell(headerMap.get("HBL Number")).setCellValue(shipment.getHouseBill());
-                itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBOENumber() : "");
-                itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getScreeningStatus() : "");
-                itemRow.createCell(headerMap.get("BOE Date")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getBOEDate() != null ? shipment.getAdditionalDetails().getBOEDate().toString() : "");
+                itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetailsResponse() != null ? shipment.getAdditionalDetailsResponse().getBOENumber() : "");
+                itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetailsResponse() != null ? shipment.getAdditionalDetailsResponse().getScreeningStatus() : "");
+                itemRow.createCell(headerMap.get("BOE Date")).setCellValue(shipment.getAdditionalDetailsResponse() != null && shipment.getAdditionalDetailsResponse().getBOEDate() != null ? shipment.getAdditionalDetailsResponse().getBOEDate().toString() : "");
                 itemRow.createCell(headerMap.get("ETD")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEtd() != null ? shipment.getCarrierDetails().getEtd().toString() : "");
                 itemRow.createCell(headerMap.get("ETA")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEta() != null ? shipment.getCarrierDetails().getEta().toString() : "");
                 itemRow.createCell(headerMap.get("ATD")).setCellValue(shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getAtd() != null ? shipment.getCarrierDetails().getAtd().toString() : "");
@@ -3243,7 +3247,7 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("No. Of Inner Packages")).setCellValue(String.valueOf(shipment.getInnerPacks()));
                 itemRow.createCell(headerMap.get("IU")).setCellValue("");
                 itemRow.createCell(headerMap.get("Customer Booking Number")).setCellValue(String.valueOf(shipment.getBookingNumber()));
-                itemRow.createCell(headerMap.get("Pickup Transporter")).setCellValue(shipment.getPickupDetails() != null && shipment.getPickupDetails().getTransporterDetail() != null && shipment.getPickupDetails().getTransporterDetail().getOrgData() != null ? String.valueOf(shipment.getPickupDetails().getTransporterDetail().getOrgData().get("FullName")) : "");
+                itemRow.createCell(headerMap.get("Pickup Transporter")).setCellValue(shipment.getPickupDeliveryDetailsListResponse() != null && shipment.getPickupDeliveryDetailsListResponse().getTransporterDetail() != null && shipment.getPickupDeliveryDetailsListResponse().getTransporterDetail().getOrgData() != null ? String.valueOf(shipment.getPickupDeliveryDetailsListResponse().getTransporterDetail().getOrgData().get("FullName")) : "");
                 itemRow.createCell(headerMap.get("Delivery Transporter")).setCellValue(shipment.getDeliveryDetails() != null && shipment.getDeliveryDetails().getTransporterDetail() != null && shipment.getDeliveryDetails().getTransporterDetail().getOrgData() != null ? String.valueOf(shipment.getDeliveryDetails().getTransporterDetail().getOrgData().get("FullName")) : "");
                 itemRow.createCell(headerMap.get("Job Status")).setCellValue(String.valueOf(shipment.getJobStatus()));
                 itemRow.createCell(headerMap.get("Assigned To")).setCellValue(String.valueOf(shipment.getAssignedTo()));
@@ -3705,38 +3709,46 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    public Page<ShipmentDetails> findAllWithOutIncludeColumn(Specification<ShipmentDetails> spec, Pageable pageable) {
+    public Page<ShipmentDetails> findAllWithOutIncludeColumn(Specification<ShipmentDetails> spec, Pageable pageable)
+        throws ExecutionException, InterruptedException {
         var start = System.currentTimeMillis();
         var shipmentList = shipmentDao.findAll(spec, pageable);
 
         List<Long> partyIds = shipmentList.stream().map(ShipmentDetails::getClientId).collect(Collectors.toList());
         partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsigneeId).collect(Collectors.toList()));
         partyIds.addAll(shipmentList.stream().map(ShipmentDetails::getConsignerId).collect(Collectors.toList()));
+        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
+        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
+        List<Long> pickupDetailsId = new ArrayList<>();
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
+        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
 
-        Map<Long, Parties> partyMap = partiesDao.findByIds(partyIds.stream().filter(Objects::nonNull).collect(Collectors.toList()))
+        var partyFuture = CompletableFuture.supplyAsync(()->partiesDao.findByIds(partyIds.stream().filter(Objects::nonNull).collect(Collectors.toList())), executorServiceMasterData);
+        var carrierDetailsFuture = CompletableFuture.supplyAsync(()-> carrierDetailsDao.findByIds(carrierIds), executorServiceMasterData);
+        var additionalDetailsFuture = CompletableFuture.supplyAsync(()->  additionalDetailDao.findByIds(additionalDetails), executorServiceMasterData);
+        var pickupDeliveryDetailsFuture = CompletableFuture.supplyAsync(()->  pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList())), executorServiceMasterData);
+        CompletableFuture.allOf(partyFuture, carrierDetailsFuture, additionalDetailsFuture, pickupDeliveryDetailsFuture).join();
+
+        Map<Long, Parties> partyMap = partyFuture.get()
                 .stream().collect(Collectors.toMap(Parties::getId, Function.identity()));
 
         shipmentList.forEach(c -> c.setClient(partyMap.get(c.getClientId())));
         shipmentList.forEach(c -> c.setConsignee(partyMap.get(c.getConsigneeId())));
         shipmentList.forEach(c -> c.setConsigner(partyMap.get(c.getConsignerId())));
 
-        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
-        Map<Long, CarrierDetails> carrierMap = carrierDetailsDao.findByIds(carrierIds).stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
+        Map<Long, CarrierDetails> carrierMap = carrierDetailsFuture.get().stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
         shipmentList.forEach(c -> c.setCarrierDetails(carrierMap.get(c.getCarrierDetailId())));
 
-        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
-        Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
+        Map<Long, AdditionalDetailsListResponse> additionalDetailsMap =additionalDetailsFuture.get().stream().collect(Collectors.toMap(AdditionalDetailsListResponse::getId, Function.identity()));
+        shipmentList.forEach(c -> c.setAdditionalDetailsResponse(additionalDetailsMap.get(c.getAdditionalDetailId())));
 
-        List<Long> pickupDetailsId = new ArrayList<>();
-        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
-        pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
+
         if(pickupDetailsId.size() > 0) {
-            Map<Long, PickupDeliveryDetails> pickupDetailsMap = pickupDeliveryDetailsDao.findByIdIn(pickupDetailsId.stream().filter(Objects::nonNull).collect(Collectors.toList()))
-                    .stream().collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
+            Map<Long, PickupDeliveryDetailsListResponse> pickupDetailsMap =pickupDeliveryDetailsFuture.get()  .stream().collect(Collectors.toMap(
+                PickupDeliveryDetailsListResponse::getId, Function.identity()));
 
-            shipmentList.forEach(c -> c.setPickupDetails(pickupDetailsMap.get(c.getPickupDetailsId())));
-            shipmentList.forEach(c -> c.setDeliveryDetails(pickupDetailsMap.get(c.getDeliveryDetailsId())));
+            shipmentList.forEach(c -> c.setPickupDeliveryDetailsListResponse(pickupDetailsMap.get(c.getPickupDetailsId())));
+            shipmentList.forEach(c -> c.setPickupDeliveryDetailsListResponse(pickupDetailsMap.get(c.getDeliveryDetailsId())));
         }
 
         log.info("{} | findAllWithOutIncludeColumn: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
