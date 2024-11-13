@@ -6,3 +6,4 @@ import lombok.Getter;
 public enum DpsWorkflowType {
     HOLD, WARNING, NO_ACTION;
 }
+

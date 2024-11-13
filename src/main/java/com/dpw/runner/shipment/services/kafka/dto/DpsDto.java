@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -24,6 +25,8 @@ public class DpsDto {
     private List<String> fieldsDetected;
     private List<String> fieldsDetectedValues;
     private String text;
+    private String username;
+    private LocalDateTime eventTimestamp;
     private List<String> implications;
     private List<String> conditionMessage;
 }

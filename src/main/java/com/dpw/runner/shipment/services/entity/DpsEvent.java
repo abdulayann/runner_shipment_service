@@ -86,6 +86,12 @@ public class DpsEvent {
     @Column(name = "text")
     private String text;
 
+    @Column(name = "username")
+    private String username;
+
+    @Column(name = "event_timestamp")
+    private LocalDateTime eventTimestamp;
+
     @Column(name = "implication_list")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "dps_event_implication", joinColumns = @JoinColumn(name = "dps_event_id"))
