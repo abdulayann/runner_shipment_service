@@ -421,7 +421,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
-            networkTransferDao.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED, shipmentDetailsResponse.getId());
+            networkTransferDao.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
         } else if (Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
         }
@@ -454,7 +454,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
-            networkTransferDao.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED, Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
+            networkTransferDao.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
         } else if (Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.APPROVED, importConsolidationRequest.getRejectRemarks());
         }

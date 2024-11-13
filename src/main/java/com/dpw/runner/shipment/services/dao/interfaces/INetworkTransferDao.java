@@ -23,5 +23,5 @@ public interface INetworkTransferDao {
     void delete(NetworkTransfer networkTransfer);
 
     void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType, Long entityId);
-    void updateStatusAndCreatedEntityId(Long id, NetworkTransferStatus status, Long createdEntityId);
+    void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
 }

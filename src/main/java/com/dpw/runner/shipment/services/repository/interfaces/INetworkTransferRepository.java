@@ -39,5 +39,5 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @Modifying
     @Transactional
     @Query(value = "Update network_transfer set status = ?2, created_entity_id = ?3 Where id = ?1", nativeQuery = true)
-    void updateStatusAndCreatedEntityId(Long id, NetworkTransferStatus status, Long createdEntityId);
+    void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
 }

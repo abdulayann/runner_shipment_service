@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
@@ -296,6 +297,9 @@ public class NetworkTransferService implements INetworkTransferService {
                                              String jobType, Map<String, Object> entityPayload){
             NetworkTransfer networkTransfer = null;
 
+            if(Objects.equals(newTenantId, Long.valueOf(TenantContext.getCurrentTenant())))
+                return; // Skip processing if entry is getting created for existing branch
+
             if (Objects.equals(oldTenantId, newTenantId)) {
                 return;  // Skip processing if tenant IDs are identical
             }
@@ -319,15 +323,10 @@ public class NetworkTransferService implements INetworkTransferService {
     }
 
     public void deleteNetworkTransferEntity(Long oldTenantId, Long entityId, String entityType) {
-        try{
-            String auditLogEntityType = getAuditLogEntityType(entityType);
-            networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
-                    .ifPresent(networkTransferEntity ->
-                            networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
-        } catch (Exception e){
-            log.error("Error while processing the Network Transfer Delete Request: {} for entityId: {} entityType: {}",
-                    e.getMessage(), entityId, entityType);
-        }
+        String auditLogEntityType = getAuditLogEntityType(entityType);
+        networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
+                .ifPresent(networkTransferEntity ->
+                        networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
 
     }
 

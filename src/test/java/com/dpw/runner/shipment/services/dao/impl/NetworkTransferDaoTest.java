@@ -64,8 +64,8 @@ class NetworkTransferDaoTest {
 
     @Test
     void updateStatusAndCreatedEntityId(){
-        networkTransferDao.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED, 21L);
-        verify(networkTransferRepository, times(1)).updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED, 21L);
+        networkTransferDao.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 21L);
+        verify(networkTransferRepository, times(1)).updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 21L);
     }
 
     @Test

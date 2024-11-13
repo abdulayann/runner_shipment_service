@@ -320,7 +320,7 @@ class NetworkTransferServiceTest {
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenThrow(new RuntimeException("Connection Time out"));
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
-        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 321L,
+        assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
                 Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
     }
 
@@ -330,7 +330,7 @@ class NetworkTransferServiceTest {
         doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any(), any());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
-        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 321L,
+        assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
                 Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
     }
 

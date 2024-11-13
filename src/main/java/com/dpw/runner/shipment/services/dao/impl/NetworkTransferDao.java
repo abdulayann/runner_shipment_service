@@ -117,7 +117,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
         return networkTransferRepository.saveAll(networkTransferEntityList);
     }
 
-    public void updateStatusAndCreatedEntityId(Long id, NetworkTransferStatus status, Long createdEntityId) {
+    public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
         networkTransferRepository.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 }
