@@ -18,6 +18,8 @@ variables:
   value: $(Build.SourceBranchName)
 - name: myconfigID
   value: $[variables.configID]
+- name: CONFIG_FOLDER_PATH
+  value: src/main/resources/
 
 steps:
   - checkout: self #my_current_repo 
