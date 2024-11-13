@@ -10,7 +10,7 @@ resources:
   - repository: baseline_project_repo
     name: DevOps/_git/devops-common-utils
     type: git
-    ref: main
+    ref: feature/templating-dry-run
 
 pool:
   vmImage: ubuntu-latest
