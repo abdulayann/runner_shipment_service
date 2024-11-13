@@ -1394,7 +1394,6 @@ public class ShipmentService implements IShipmentService {
         if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
             for (EventsRequest req : eventsRequestList) {
                     req.setShipmentNumber(shipmentDetails.getShipmentId());
-                    req.setConsolidationId(consolidationId);
                 }
             }
         return eventsRequestList;
