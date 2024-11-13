@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -86,7 +87,8 @@ public class ShipmentListResponse implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
-    private AdditionalDetailsListResponse additionalDetails;
+    @JsonProperty("additionalDetails")
+    private AdditionalDetailsListResponse additionalDetailsResponse;
     private CarrierDetailResponse carrierDetails;
     private Long container20Count;
     private Long container40Count;
@@ -95,7 +97,8 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private Set<String> containerNumbers;
-    private PickupDeliveryDetailsListResponse pickupDetails;
+    @JsonProperty("pickupDetails")
+    private PickupDeliveryDetailsListResponse pickupDeliveryDetailsListResponse;
     private PickupDeliveryDetailsListResponse deliveryDetails;
     private String createdBy;
     private LocalDateTime createdAt;
