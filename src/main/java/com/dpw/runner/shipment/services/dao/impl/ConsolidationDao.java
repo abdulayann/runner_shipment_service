@@ -149,13 +149,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 }
             }
         }
-        if (!fromV1Sync && consolidationDetails.getTransportMode() != null
-                && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
         // assign consolidation bol to mawb field as well
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             consolidationDetails.setMawb(consolidationDetails.getBol());
         }
+        if (!fromV1Sync && consolidationDetails.getTransportMode() != null
+                && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+
         if(!Objects.isNull(oldConsole)) {
             consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
             consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
