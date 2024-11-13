@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -327,7 +328,7 @@ class NetworkTransferServiceTest {
     @Test
     void testCreateNetworkTransferEntityDBDeleteFailure(){
         when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
-        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any(), any());
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
@@ -338,6 +339,32 @@ class NetworkTransferServiceTest {
     void testUpdateNetworkTransferTransferred(){
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         assertDoesNotThrow(() -> networkTransferService.updateNetworkTransferTransferred(networkTransfer, null));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity2(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.empty());
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity3(){
+        networkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntityException(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
     }
 
 }

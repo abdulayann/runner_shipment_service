@@ -82,7 +82,7 @@ class NetworkTransferDaoTest {
 
     @Test
     void testDeleteAndLog(){
-        networkTransferDao.deleteAndLog(networkTransfer, Constants.SHIPMENT, 123L);
+        networkTransferDao.deleteAndLog(networkTransfer, Constants.SHIPMENT);
         verify(networkTransferRepository, times(1)).delete(any());
     }
 

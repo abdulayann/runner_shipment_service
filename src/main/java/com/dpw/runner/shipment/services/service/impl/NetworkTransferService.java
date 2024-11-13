@@ -311,7 +311,17 @@ public class NetworkTransferService implements INetworkTransferService {
             }
 
             if (oldTenantId != null && networkTransfer != null)
-                deleteNetworkTransferEntity(oldTenantId, networkTransfer.getEntityId(), networkTransfer.getEntityType());
+            {
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                        Math.toIntExact(oldTenantId), networkTransfer.getEntityId(), entityType);
+                String auditLogEntityType = getAuditLogEntityType(entityType);
+                optionalNetworkTransfer.ifPresent(dbNetworkTransfer -> {
+                    if (dbNetworkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
+                        return; // Return if the status is ACCEPTED
+                    }
+                    networkTransferDao.deleteAndLog(dbNetworkTransfer, auditLogEntityType);
+                });
+            }
 
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
                 createNetworkTransfer(networkTransfer, entityPayload);
@@ -322,12 +332,20 @@ public class NetworkTransferService implements INetworkTransferService {
                 ShipmentDetails.class.getSimpleName() : ConsolidationDetails.class.getSimpleName();
     }
 
-    public void deleteNetworkTransferEntity(Long oldTenantId, Long entityId, String entityType) {
-        String auditLogEntityType = getAuditLogEntityType(entityType);
-        networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
-                .ifPresent(networkTransferEntity ->
-                        networkTransferDao.deleteAndLog(networkTransferEntity, auditLogEntityType, entityId));
-
+    @Override
+    public void deleteValidNetworkTransferEntity(Long oldTenantId, Long entityId, String entityType) {
+        try{
+            String auditLogEntityType = getAuditLogEntityType(entityType);
+            networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldTenantId), entityId, entityType)
+                    .ifPresent(networkTransfer -> {
+                        if (networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
+                            networkTransferDao.deleteAndLog(networkTransfer, auditLogEntityType);
+                        }
+                    });
+        } catch (Exception e) {
+            log.error("Error while deleting the Network Transfer Delete Request: {} for entityId: {} entityType: {}",
+                    e.getMessage(), entityId, entityType);
+        }
     }
 
     private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){

@@ -18,10 +18,10 @@ public interface INetworkTransferDao {
 
     Optional<NetworkTransfer> findByGuid(UUID id);
 
-    Optional<NetworkTransfer> findByTenantAndEntity(Integer id, Long entityId, String entityType);
+    Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 
     void delete(NetworkTransfer networkTransfer);
 
-    void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType, Long entityId);
+    void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType);
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
 }

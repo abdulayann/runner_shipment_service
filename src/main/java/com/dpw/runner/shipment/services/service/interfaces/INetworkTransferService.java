@@ -15,7 +15,7 @@ public interface INetworkTransferService{
     void processNetworkTransferEntity(Long tenantId, Long oldTenantId, String entityType,
                                       ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                       String jobType, Map<String, Object> entityPayload);
-    void deleteNetworkTransferEntity(Long oldTenantId, Long entityId, String entityType);
+    void deleteValidNetworkTransferEntity(Long tenantId, Long entityId, String entityType);
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);

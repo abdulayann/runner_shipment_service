@@ -9009,6 +9009,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setId(1L);
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         ShipmentDetails mockShipment = objectMapper.convertValue(shipmentDetails, ShipmentDetails.class);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).build());
 
@@ -9121,6 +9122,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setShipmentId("AIR-CAN-00001");
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).build());
 
 

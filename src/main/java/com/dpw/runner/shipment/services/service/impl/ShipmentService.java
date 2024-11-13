@@ -2433,11 +2433,11 @@ public class ShipmentService implements IShipmentService {
                         Constants.DIRECTION_CTS);
             } else{
                 if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
-                    networkTransferService.deleteNetworkTransferEntity(oldEntity.getReceivingBranch(),
+                    networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getReceivingBranch(),
                             oldEntity.getId(), Constants.SHIPMENT);
 
                 if(oldEntity!=null && oldEntity.getTriangulationPartner() != null)
-                    networkTransferService.deleteNetworkTransferEntity(oldEntity.getTriangulationPartner(),
+                    networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getTriangulationPartner(),
                             oldEntity.getId(), Constants.SHIPMENT);
             }
         } catch (Exception ex) {
@@ -2446,7 +2446,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
-        return TRANSPORT_MODE_AIR.equals(details.getTransportMode()) && SHIPMENT_TYPE_DRT.equals(details.getJobType());
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
+                && SHIPMENT_TYPE_DRT.equals(details.getJobType()) && DIRECTION_EXP.equals(details.getDirection());
     }
 
     private String reverseDirection(String direction) {

@@ -86,7 +86,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
-    public void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType, Long entityId) {
+    public void deleteAndLog(NetworkTransfer networkTransferEntity, String entityType) {
         networkTransferRepository.delete(networkTransferEntity);
         try {
             auditLogService.addAuditLog(
@@ -94,7 +94,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
                             .newData(null)
                             .prevData(networkTransferEntity)
                             .parent(entityType)
-                            .parentId(entityId)
+                            .parentId(networkTransferEntity.getEntityId())
                             .operation(DBOperationType.DELETE.name()).build()
             );
         } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
