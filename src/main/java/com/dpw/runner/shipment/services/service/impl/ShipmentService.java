@@ -3339,12 +3339,11 @@ public class ShipmentService implements IShipmentService {
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
             Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
                         shipmentDetailsPage.getTotalPages(),
                         shipmentDetailsPage.getTotalElements());
-            }
             else {
                 List<IRunnerResponse>filteredList=new ArrayList<>();
                 for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
@@ -3693,7 +3692,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
-        long startTime = System.currentTimeMillis();
         String responseMsg;
         int totalPage = 0;
         long totalElements = 0;
@@ -3723,16 +3721,11 @@ public class ShipmentService implements IShipmentService {
                 totalPage = shipmentDetailsPage.getTotalPages();
                 totalElements = shipmentDetailsPage.getTotalElements();
             }
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
-                long endTime = System.currentTimeMillis();   // End time
-                long duration = endTime - startTime;         // Duration in milliseconds
-
-                log.info("List API call with null/empty included columns took " + duration + " ms");
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData),
                         totalPage,
                         totalElements);
-            }
             else {
                 List<IRunnerResponse>filtered_list=new ArrayList<>();
                 for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData)){
@@ -3741,10 +3734,6 @@ public class ShipmentService implements IShipmentService {
                     filtered_list.add( res);
 
                 }
-                long endTime = System.currentTimeMillis();   // End time
-                long duration = endTime - startTime;         // Duration in milliseconds
-
-                log.info("List API call with included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         filtered_list,
                         totalPage,
