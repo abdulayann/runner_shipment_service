@@ -2,12 +2,9 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.mapper.AdditionalDetailsListResponseMapper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAdditionalDetailRepository;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -15,7 +12,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.transaction.annotation.Transactional;
 
 
 @Repository
@@ -57,10 +53,8 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
     }
 
     @Override
-    @Transactional
-    public List<AdditionalDetailsListResponse> findByIds(List<Long> id) {
-        List<AdditionalDetails> additionalDetails = additionalDetailRepository.findByIdIn(id);
-       return additionalDetails.stream().map(AdditionalDetailsListResponseMapper.INSTANCE::toAdditionalDetailsListResponse).toList();
+    public List<AdditionalDetails> findByIds(List<Long> id) {
+        return additionalDetailRepository.findByIdIn(id);
     }
 
 }
