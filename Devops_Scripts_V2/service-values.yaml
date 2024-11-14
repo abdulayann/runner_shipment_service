@@ -99,6 +99,7 @@ dev:
   configMap:
     data:
       APP_ENV: dev
+      props_profile: dev
       NEW_RELIC_APP_NAME: runner-shipment-service-dev
   secretName: shipment-service-dev-SECRET
   deployment:
@@ -121,6 +122,7 @@ qa:
   configMap:
     data:
       APP_ENV: qa
+      props_profile: qa
       NEW_RELIC_APP_NAME: runner-shipment-service-qa
   secretName: shipment-service-qa-SECRET
   deployment:
@@ -143,6 +145,7 @@ staging:
   configMap:
     data:
       APP_ENV: staging
+      props_profile: staging
       NEW_RELIC_APP_NAME: runner-shipment-service-staging
   secretName: shipment-service-staging-SECRET
   deployment:
@@ -165,6 +168,7 @@ prod:
   configMap:
     data:
       APP_ENV: prod
+      props_profile: prod
       NEW_RELIC_APP_NAME: runner-shipment-service-prod
   secretName: shipment-service-prod-SECRET
   deployment:
@@ -187,6 +191,7 @@ dr:
   configMap:
     data:
       APP_ENV: dr
+      props_profile: dr
       NEW_RELIC_APP_NAME: runner-shipment-service-dr
   secretName: shipment-service-dr-SECRET
   deployment:
