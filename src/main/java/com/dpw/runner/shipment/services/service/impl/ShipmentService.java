@@ -3365,7 +3365,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> fullShipmentsExternalList(CommonRequestModel commonRequestModel) throws InterruptedException, ExecutionException {
+    public ResponseEntity<IRunnerResponse> fullShipmentsExternalList(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
