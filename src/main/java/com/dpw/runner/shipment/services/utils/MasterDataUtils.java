@@ -101,8 +101,8 @@ public class MasterDataUtils{
                     if (shipmentListResponse.getCarrierDetails() != null) {
                         locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
                     }
-                    if (shipmentListResponse.getAdditionalDetails() != null)
-                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId(), cacheMap));
+                    if (shipmentListResponse.getAdditionalDetailsResponse() != null)
+                        locCodes.addAll(createInBulkUnLocationsRequest(shipmentListResponse.getAdditionalDetailsResponse(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetailsResponse().getId(), cacheMap));
                 }
                 else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     locCodes.addAll(createInBulkUnLocationsRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
@@ -124,8 +124,8 @@ public class MasterDataUtils{
                     if (shipmentListResponse.getCarrierDetails() != null)
                         shipmentListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
 
-                    if (shipmentListResponse.getAdditionalDetails() != null)
-                        shipmentListResponse.getAdditionalDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));
+                    if (shipmentListResponse.getAdditionalDetailsResponse() != null)
+                        shipmentListResponse.getAdditionalDetailsResponse().setUnlocationData(setMasterData(fieldNameKeyMap.get(AdditionalDetails.class.getSimpleName() + shipmentListResponse.getAdditionalDetailsResponse().getId()), CacheConstants.UNLOCATIONS, cacheMap));
                 }
                  else if (response instanceof ConsolidationListResponse consolidationListResponse && consolidationListResponse.getCarrierDetails() != null) {
                     consolidationListResponse.getCarrierDetails().setUnlocationData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.UNLOCATIONS, cacheMap));

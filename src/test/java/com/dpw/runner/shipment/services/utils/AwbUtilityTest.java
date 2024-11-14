@@ -406,6 +406,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -468,7 +469,8 @@ class AwbUtilityTest extends CommonMocks {
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
-
+        assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
+        assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
     }
 
     @Test
@@ -491,6 +493,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -557,7 +560,8 @@ class AwbUtilityTest extends CommonMocks {
         var expectedResponse = awbUtility.createAirMessagingRequestForConsole(mockAwb, mockConsol);
 
         assertNotNull(expectedResponse);
-
+        assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
+        assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
     }
 
     @ParameterizedTest
@@ -569,6 +573,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -634,7 +639,8 @@ class AwbUtilityTest extends CommonMocks {
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null);
 
         assertNotNull(expectedResponse);
-
+        assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
+        assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
     }
 
     @Test
@@ -649,6 +655,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -671,6 +678,8 @@ class AwbUtilityTest extends CommonMocks {
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null);
 
         assertNotNull(expectedResponse);
+        assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
+        assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
     }
 
     private void addShipmentDataForAwbGeneration(ShipmentDetails shipment) {

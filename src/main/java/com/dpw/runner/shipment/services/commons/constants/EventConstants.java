@@ -61,7 +61,7 @@ public class EventConstants {
     public static final String FNMU  = "FNMU";
     public static final String PRST  = "PRST";
     // ~~~~~~ end runner event short codes
-    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
+    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 
     public static final String INVGNTD = "INVGNTD";

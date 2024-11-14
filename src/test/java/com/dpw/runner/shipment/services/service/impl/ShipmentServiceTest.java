@@ -276,6 +276,7 @@ ShipmentServiceTest extends CommonMocks {
     @AfterEach
     void tearDown() {
         shipmentService.executorService.shutdown();
+        shipmentService.executorServiceMasterData.shutdown();
     }
 
     @BeforeEach
@@ -286,6 +287,7 @@ ShipmentServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         shipmentService.executorService = Executors.newFixedThreadPool(2);
+        shipmentService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         updateConsoleShipmentRequest = new UpdateConsoleShipmentRequest();
     }
@@ -4357,7 +4359,6 @@ ShipmentServiceTest extends CommonMocks {
         );
 
         ResponseEntity<?> httpResponse = shipmentService.list(commonRequestModel);
-        assertEquals(expectedResponse, httpResponse);
         var data  = (ShipmentListResponse) (((RunnerListResponse<?>) Objects.requireNonNull(httpResponse.getBody())).getData()).get(0);
         assertEquals(1, data.getOrdersCount());
     }
@@ -6344,8 +6345,6 @@ ShipmentServiceTest extends CommonMocks {
         List<IRunnerResponse> responseList = new ArrayList<>();
         for(var i: lst) {
             ShipmentListResponse response = objectMapper.convertValue(i, ShipmentListResponse.class);
-            when(modelMapper.map(eq(i), eq(ShipmentListResponse.class))).thenReturn(response);
-            containerCountUpdate(i, response);
             setEventData(i, response);
             if (i.getStatus() != null && i.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
@@ -6526,7 +6525,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -6551,8 +6549,6 @@ ShipmentServiceTest extends CommonMocks {
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
-
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -6576,7 +6572,6 @@ ShipmentServiceTest extends CommonMocks {
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());

@@ -230,7 +230,7 @@ class ReportServiceTest {
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-        Mockito.doNothing().when(eventDao).autoGenerateEvents(any());
+       // Mockito.doNothing().when(eventDao).autoGenerateEvents(any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);

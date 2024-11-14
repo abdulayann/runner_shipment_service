@@ -2757,8 +2757,10 @@ class CommonUtilsTest {
     void testUpdateEventWithMasterDataDescription() {
         String mockEventCode = "EV1";
         String mockEventDescription = "mock description";
-        Events mockEvent = Events.builder().eventCode("EV1").build();
-        List<Events> mockEventList = List.of(mockEvent);
+        String mockEventDescription2 = "mock description 2";
+        Events mockEvent1 = Events.builder().eventCode("EV1").build();
+        Events mockEvent2 = Events.builder().description(mockEventDescription2).build();
+        List<Events> mockEventList = List.of(mockEvent1, mockEvent2);
 
         V1DataResponse mockV1DataResponse = new V1DataResponse();
         when(iv1Service.fetchMasterData(any())).thenReturn(mockV1DataResponse);
@@ -2768,7 +2770,8 @@ class CommonUtilsTest {
 
         commonUtils.updateEventWithMasterDataDescription(mockEventList);
 
-        assertEquals(mockEventDescription, mockEvent.getDescription());
+        assertEquals(mockEventDescription, mockEvent1.getDescription());
+        assertEquals(mockEventDescription2, mockEvent2.getDescription());
     }
 
     @Test
@@ -2779,6 +2782,17 @@ class CommonUtilsTest {
         List<Events> mockEventList = List.of(mockEvent);
 
         when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
+
+        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescriptionDoesNotFailsIfEventCodeIsNull() {
+        String mockEventDescription = "non updatable description";
+        Events mockEvent = Events.builder().description(mockEventDescription).build();
+        List<Events> mockEventList = List.of(mockEvent);
 
         commonUtils.updateEventWithMasterDataDescription(mockEventList);
 

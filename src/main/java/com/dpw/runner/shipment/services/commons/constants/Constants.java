@@ -580,7 +580,8 @@ public class Constants {
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
-    private Constants() {
+    public static final String FULL_NAME = "FullName";
+  private Constants() {
     }
 
 }

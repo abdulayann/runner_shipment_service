@@ -1726,7 +1726,8 @@ public class CommonUtils {
 
         var eventCodeDescriptionMap = getEventDescription(eventsList.stream()
                 .filter(i -> Objects.isNull(i.getId()))
-                .map(Events::getEventCode).toList());
+                .map(Events::getEventCode)
+                .filter(Objects::nonNull).toList());
         // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
         // or missing entry in the master-data
         eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
@@ -1740,6 +1741,8 @@ public class CommonUtils {
     private Map<String, String> getEventDescription(List<String> eventCodes) {
         Map<String, String> eventCodeDescriptionMap = new HashMap<>();
         log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+        if (CollectionUtils.isEmpty(eventCodes))
+            return eventCodeDescriptionMap;
         try {
             List<Object> masterDataListCriteria = Arrays.asList(
                     List.of(
