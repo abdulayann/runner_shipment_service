@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
@@ -11,6 +10,6 @@ public interface IAdditionalDetailDao {
     AdditionalDetails save(AdditionalDetails additionalDetails);
     Optional<AdditionalDetails> findById(Long id);
     AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException;
-    List<AdditionalDetailsListResponse> findByIds(List<Long> id);
+    List<AdditionalDetails> findByIds(List<Long> id);
 
 }

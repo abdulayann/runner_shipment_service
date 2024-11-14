@@ -1949,7 +1949,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
 
         when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
-        masterDataUtils.setLocationData(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).additionalDetailsResponse(new AdditionalDetailsListResponse()).build()), EntityTransferConstants.UNLOCATION_CODE);
+        masterDataUtils.setLocationData(List.of(ShipmentListResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).additionalDetails(new AdditionalDetailsListResponse()).build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
     }
