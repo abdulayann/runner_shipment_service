@@ -366,7 +366,7 @@ public class BookingIntegrationsUtility {
                         .is_reefer(container.getIsReefer())
                         .reefer_info(ReeferInfoRequest.builder().temperature(!Objects.isNull(container.getMinTemp()) ? container.getMinTemp().intValue() : null).build())
                         .is_hazardous(container.getHazardous() != null && container.getHazardous())
-                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getHazardousUn()).product_class(container.getDgClass()).build()) // TODO
+                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getUnNumber()).product_class(container.getDgClass()).build()) // TODO
                         .weight(container.getGrossWeight())
                         .weight_uom(container.getGrossWeightUnit())
                         .quantity(container.getContainerCount())
