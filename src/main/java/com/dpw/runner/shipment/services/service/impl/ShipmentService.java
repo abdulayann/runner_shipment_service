@@ -3158,7 +3158,7 @@ public class ShipmentService implements IShipmentService {
         }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage = findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
