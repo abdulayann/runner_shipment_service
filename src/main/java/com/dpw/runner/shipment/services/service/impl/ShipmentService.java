@@ -2674,7 +2674,14 @@ public class ShipmentService implements IShipmentService {
             createTrackingEvents(newUpdatedEvents, shipmentDetails);
         }
 
-        newUpdatedEvents.forEach(event -> eventDao.updateEventDetails(event));
+        // update events with consolidation id with condition
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        if(ObjectUtils.isNotEmpty(consolidationList)) {
+            Long consolidationId = consolidationList.get(0).getId();
+            newUpdatedEvents.stream()
+                    .filter(event -> eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                    .forEach(event -> event.setConsolidationId(consolidationId));
+        }
 
         return newUpdatedEvents;
     }
