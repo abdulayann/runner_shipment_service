@@ -1352,4 +1352,26 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testListExternal() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListExternal1() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
 }
