@@ -3158,7 +3158,7 @@ public class ShipmentService implements IShipmentService {
         }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
@@ -3204,7 +3204,7 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("Activity Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetailsResponse()) ? "" : shipment.getAdditionalDetailsResponse().getActivityType());
                 itemRow.createCell(headerMap.get("Shipment Type")).setCellValue(shipment.getDirection());
                 itemRow.createCell(headerMap.get("Carrier")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getShippingLine());
-                itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails() != null ? masterDataUtils.getVesselName(shipment.getCarrierDetails().getVessel()) : "");
+                itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails() != null &&  shipment.getCarrierDetails().getVesselsMasterData()!= null? shipment.getCarrierDetails().getVesselsMasterData().get("vessel") : "");
                 itemRow.createCell(headerMap.get("Flight Number")).setCellValue(Optional.ofNullable(shipment.getCarrierDetails()).map(c -> c.getFlightNumber()).orElse(""));
                 itemRow.createCell(headerMap.get("Voyage/Flight No.")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getVoyage());
                 itemRow.createCell(headerMap.get("Paid Place Name")).setCellValue(shipment.getAdditionalDetailsResponse() != null && shipment.getAdditionalDetailsResponse().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetailsResponse().getUnlocationData().get("paidPlace")) : "");
