@@ -3,7 +3,11 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.mapper.AdditionalDetailsListResponseMapper;
+import com.dpw.runner.shipment.services.mapper.PickupDeliveryDetailsListResponseMapper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -557,4 +561,32 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
+
+    @Transient
+    private AdditionalDetailsListResponse additionalDetailsResponse;
+    @Transient
+    private PickupDeliveryDetailsListResponse pickupDeliveryDetailsListResponse;
+
+    public AdditionalDetailsListResponse getAdditionalDetailsResponse() {
+        if (this.additionalDetailsResponse == null) {
+            setAdditionalDetailsResponseFromAdditionalDetails();
+        }
+        return this.additionalDetailsResponse;
+    }
+    public PickupDeliveryDetailsListResponse getPickupDeliveryDetailsListResponse() {
+        if (this.pickupDeliveryDetailsListResponse == null) {
+            setPickupDeliveryDetailsListResponseFromPickupDetails();
+        }
+        return this.pickupDeliveryDetailsListResponse;
+    }
+    public void setAdditionalDetailsResponseFromAdditionalDetails() {
+        if (this.additionalDetails != null) {
+            this.additionalDetailsResponse= AdditionalDetailsListResponseMapper.INSTANCE.toAdditionalDetailsListResponse(this.additionalDetails);
+        }
+    }
+    public void setPickupDeliveryDetailsListResponseFromPickupDetails() {
+        if (this.pickupDetails!=null) {
+            this.pickupDeliveryDetailsListResponse = PickupDeliveryDetailsListResponseMapper.INSTANCE.toPickupDeliveryDetailsListResponse(this.pickupDetails);
+        }
+    }
 }
