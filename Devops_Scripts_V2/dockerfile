@@ -5,7 +5,7 @@ FROM maven:3.8.1-openjdk-17-slim
 WORKDIR /app
 
 # Copy file with dependencies
-COPY target/runner-shipment-services-0.0.1.jar .
+COPY target/runner-shipment-services-0.0.1.jar runner-shipment-service.jar
 
 # Copy newrelic files for Java application
 RUN mkdir -p /usr/local/newrelic
