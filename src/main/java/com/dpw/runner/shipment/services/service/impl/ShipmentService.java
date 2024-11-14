@@ -3307,7 +3307,6 @@ public class ShipmentService implements IShipmentService {
 
 
     public ResponseEntity<IRunnerResponse> fullShipmentsList(CommonRequestModel commonRequestModel) {
-        long startTime = System.currentTimeMillis(); // Start time
         String responseMsg;
         try {
             // TODO- implement actual logic with filters
@@ -3321,10 +3320,6 @@ public class ShipmentService implements IShipmentService {
             Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
-                long endTime = System.currentTimeMillis();   // End time
-                long duration = endTime - startTime;         // Duration in milliseconds
-
-                log.info("Full list API call with null/empty included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
                         shipmentDetailsPage.getTotalPages(),
@@ -3338,10 +3333,6 @@ public class ShipmentService implements IShipmentService {
                     filteredList.add( res);
 
                 }
-                long endTime = System.currentTimeMillis();   // End time
-                long duration = endTime - startTime;         // Duration in milliseconds
-
-                log.info("Current: Full list API call with included columns took " + duration + " ms");
                 return ResponseHelper.buildListSuccessResponse(
                         filteredList,
                         shipmentDetailsPage.getTotalPages(),
@@ -3356,7 +3347,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     public ResponseEntity<IRunnerResponse> fullShipmentsExternalList(CommonRequestModel commonRequestModel) {
-        long startTime = System.currentTimeMillis(); // Start time
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -3370,89 +3360,24 @@ public class ShipmentService implements IShipmentService {
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
                 throw new ValidationException("Include Columns field is mandatory");
             }
-                List<IRunnerResponse>filteredList=new ArrayList<>();
+            List<IRunnerResponse>filteredList=new ArrayList<>();
 
-                for( var curr:shipmentDetailsPage.getContent()){
-                    ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = getShipmentDetailsResponse(curr, request.getIncludeColumns());
-                    RunnerPartialListResponse res=new RunnerPartialListResponse();
-                    res.setData(shipmentDetailsLazyResponse);
-                    //res.setData(partialFetchUtils.fetchPartialListData(shipmentDetailsResponse,request.getIncludeColumns()));
-                    filteredList.add( res);
-
-                }
-                long endTime = System.currentTimeMillis();   // End time
-                long duration = endTime - startTime;         // Duration in milliseconds
-
-                log.info("External: Full list API call with included columns took " + duration + " ms");
-                return ResponseHelper.buildListSuccessResponse(
-                        filteredList,
-                        shipmentDetailsPage.getTotalPages(),
-                        shipmentDetailsPage.getTotalElements());
+            for( var curr:shipmentDetailsPage.getContent()){
+                ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
+                RunnerPartialListResponse res=new RunnerPartialListResponse();
+                res.setData(shipmentDetailsLazyResponse);
+                filteredList.add( res);
+            }
+            return ResponseHelper.buildListSuccessResponse(
+                    filteredList,
+                    shipmentDetailsPage.getTotalPages(),
+                    shipmentDetailsPage.getTotalElements());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
-    }
-
-    public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
-        return mapWithModelMapper(shipmentDetails, includeColumns);
-    }
-
-    public ShipmentDetailsLazyResponse mapWithModelMapper(ShipmentDetails shipmentDetail, List<String> includeColumns) {
-        ModelMapper modelMapper = this.modelMapper;
-        modelMapper.getConfiguration().setImplicitMappingEnabled(false);
-        ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
-
-        // Create or retrieve existing TypeMap
-        TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap = modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
-        if (typeMap == null) {
-            // If no TypeMap exists, create a new one
-            typeMap = modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
-        }
-        modelMapper.getConfiguration().setImplicitMappingEnabled(true);
-        // Dynamically add mappings based on includeColumns
-        for (String field : includeColumns) {
-            try {
-                // Reflectively obtain the getter and setter methods for the specified field
-                Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
-                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalize(field), getter.getReturnType());
-
-                // Add mappings to the TypeMap for the specified fields only
-                typeMap.addMappings(mapper -> {
-
-                    mapper.map(src -> {
-                        try {
-                            return getter.invoke(src);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }, (dest, value) -> {
-                        try {
-                            setter.invoke(dest, value);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-                });
-
-            } catch (NoSuchMethodException e) {
-                // Handle the case where the method does not exist for the specified field
-                System.err.println("No such field: " + field);
-            }
-        }
-
-        // Perform mapping from source to destination
-        typeMap.map(shipmentDetail, shipmentDetailsLazyResponse);
-
-        return shipmentDetailsLazyResponse;
-    }
-
-
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
 

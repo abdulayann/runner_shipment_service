@@ -155,14 +155,10 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST_EXTERNAL)
-    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(Boolean.TRUE.equals(getFullShipment)) {
-                return shipmentService.fullShipmentsExternalList(CommonRequestModel.buildRequest(listCommonRequest));
-            }
-            ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
-            return  response;
+            return shipmentService.fullShipmentsExternalList(CommonRequestModel.buildRequest(listCommonRequest));
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }

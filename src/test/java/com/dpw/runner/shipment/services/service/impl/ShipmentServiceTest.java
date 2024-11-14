@@ -4198,6 +4198,38 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void testFullShipmentExternalList() throws IOException, IllegalAccessException {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("abc", "def"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(ShipmentDetails.builder().build());
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+          when(commonUtils.getShipmentDetailsResponse(any(), anyList())).thenReturn(ShipmentDetailsLazyResponse.builder().build());
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void testFullShipmentExternalListWithNullIncludeColumn() throws IOException, IllegalAccessException {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(ShipmentDetails.builder().build());
+
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+    @Test
     void assignShipmentContainers() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).build());
         ShipmentContainerAssignRequest shipmentContainerAssignRequest = new ShipmentContainerAssignRequest();
