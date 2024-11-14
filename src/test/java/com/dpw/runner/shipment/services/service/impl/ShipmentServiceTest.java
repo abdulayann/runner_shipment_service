@@ -4200,7 +4200,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testFullShipmentExternalList() throws IOException, IllegalAccessException {
+    void testFullShipmentExternalList() throws InterruptedException {
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         listCommonRequest.setIncludeColumns(List.of("abc", "def"));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
@@ -4217,7 +4217,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testFullShipmentExternalListWithNullIncludeColumn() throws IOException, IllegalAccessException {
+    void testFullShipmentExternalListWithNullIncludeColumn() throws InterruptedException {
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
@@ -4232,7 +4232,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testFullShipmentExternalListWithEmptyIncludeColumn() throws IOException, IllegalAccessException {
+    void testFullShipmentExternalListWithEmptyIncludeColumn() throws InterruptedException {
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         listCommonRequest.setIncludeColumns(List.of());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
