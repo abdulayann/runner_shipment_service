@@ -103,7 +103,7 @@ dev:
   secretName: runner-shipment-service-dev-SECRET
   deployment:
     replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/runner-shipment-service-dev-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dev-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
     minCpu: 300m
     maxCpu: 500m
     minMem: 512Mi
@@ -125,7 +125,7 @@ qa:
   secretName: runner-shipment-service-qa-SECRET
   deployment:
     replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/runner-shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
     minCpu: 300m
     maxCpu: 500m
     minMem: 512Mi
@@ -147,7 +147,7 @@ staging:
   secretName: runner-shipment-service-staging-SECRET
   deployment:
     replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/runner-shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
     minCpu: 300m
     maxCpu: 500m
     minMem: 512Mi
@@ -169,7 +169,7 @@ prod:
   secretName: runner-shipment-service-prod-SECRET
   deployment:
     replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/runner-shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && sleep 10000s
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && sleep 10000s
     minCpu: 300m
     maxCpu: 500m
     minMem: 512Mi
@@ -191,7 +191,7 @@ dr:
   secretName: runner-shipment-service-dr-SECRET
   deployment:
     replicaCount: 0
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/runner-shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
     minCpu: 300m
     maxCpu: 500m
     minMem: 512Mi
