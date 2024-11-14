@@ -1364,7 +1364,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testListExternal1() throws InterruptedException {
+    void testListExternal1() throws RunnerException, InterruptedException {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.fullShipmentsExternalList(any())).thenThrow(new RuntimeException());
