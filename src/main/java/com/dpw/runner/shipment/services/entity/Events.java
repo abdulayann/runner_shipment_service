@@ -122,4 +122,12 @@ public class Events extends MultiTenancy {
 
     @Column(name = "shipment_number")
     private String shipmentNumber;
+
+
+    // TODO : new columns to be added
+
+    private String remarks;
+    private String userName; // user display name
+    private String userEmail;
+    private String branch; // Branch field will show the UN-Locode only
 }
