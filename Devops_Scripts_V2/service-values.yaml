@@ -100,7 +100,7 @@ dev:
     data:
       APP_ENV: dev
       NEW_RELIC_APP_NAME: runner-shipment-service-dev
-  secretName: runner-shipment-service-dev-SECRET
+  secretName: shipment-service-dev-SECRET
   deployment:
     replicaCount: 1
     args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dev-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
@@ -122,7 +122,7 @@ qa:
     data:
       APP_ENV: qa
       NEW_RELIC_APP_NAME: runner-shipment-service-qa
-  secretName: runner-shipment-service-qa-SECRET
+  secretName: shipment-service-qa-SECRET
   deployment:
     replicaCount: 1
     args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
@@ -144,7 +144,7 @@ staging:
     data:
       APP_ENV: staging
       NEW_RELIC_APP_NAME: runner-shipment-service-staging
-  secretName: runner-shipment-service-staging-SECRET
+  secretName: shipment-service-staging-SECRET
   deployment:
     replicaCount: 1
     args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
@@ -166,7 +166,7 @@ prod:
     data:
       APP_ENV: prod
       NEW_RELIC_APP_NAME: runner-shipment-service-prod
-  secretName: runner-shipment-service-prod-SECRET
+  secretName: shipment-service-prod-SECRET
   deployment:
     replicaCount: 1
     args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && sleep 10000s
@@ -188,7 +188,7 @@ dr:
     data:
       APP_ENV: dr
       NEW_RELIC_APP_NAME: runner-shipment-service-dr
-  secretName: runner-shipment-service-dr-SECRET
+  secretName: shipment-service-dr-SECRET
   deployment:
     replicaCount: 0
     args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-service.jar
