@@ -29,7 +29,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> fetchShipments(CommonRequestModel commonRequestModel);
 
-    void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException;
+    void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException;
 
     CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel);
 

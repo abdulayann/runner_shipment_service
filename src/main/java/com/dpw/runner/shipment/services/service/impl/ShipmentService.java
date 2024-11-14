@@ -3155,7 +3155,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         String responseMsg;
 
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
