@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
@@ -1352,4 +1353,27 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getMatchingRulesByGuid() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        // Mock
+        when(shipmentService.getMatchingRulesByGuid(commonRequestModel)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Failure() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        // Mock
+        when(shipmentService.getMatchingRulesByGuid(commonRequestModel)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

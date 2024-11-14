@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -253,6 +254,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
+    private IDpsEventService dpsEventService;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -8873,4 +8877,39 @@ ShipmentServiceTest extends CommonMocks {
         assertNull(shipmentDetailsResponse.getShipmentStatus());
     }
 
+    @Test
+    void getMatchingRulesByGuid_Success() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
+        List<DpsEvent> dpsEvents = new ArrayList<>();
+        dpsEvents.add(dpsEvent);
+        when(dpsEventService.getMatchingRulesByGuid(commonRequestModel)).thenReturn(dpsEvents);
+
+        var responseEntity = shipmentService.getMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Success1() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventService.getMatchingRulesByGuid(commonRequestModel)).thenReturn(null);
+
+        var responseEntity = shipmentService.getMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Exception() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventService.getMatchingRulesByGuid(commonRequestModel)).thenThrow(new DpsException());
+
+        var responseEntity = shipmentService.getMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }
