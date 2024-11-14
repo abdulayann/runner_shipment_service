@@ -2543,7 +2543,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testExportExcel() throws IOException, IllegalAccessException {
+    public void testExportExcel() throws IOException, IllegalAccessException, ExecutionException {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         CarrierDetails carrierDetails = CarrierDetails.builder()
@@ -4116,7 +4116,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportExcelUnlocationNotNull() throws IOException, IllegalAccessException {
+    void testExportExcelUnlocationNotNull() throws IOException, IllegalAccessException, ExecutionException {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         CarrierDetails carrierDetails = CarrierDetails.builder()
