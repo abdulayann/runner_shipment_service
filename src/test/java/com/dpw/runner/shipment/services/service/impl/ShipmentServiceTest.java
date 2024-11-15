@@ -4371,6 +4371,15 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void testFullShipmentExternalListWithNullRequest() {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        when(commonRequestModel.getData()).thenReturn(null);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
+    }
+
+
+    @Test
     void testFullShipmentExternalListWithNullIncludeColumn() {
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
