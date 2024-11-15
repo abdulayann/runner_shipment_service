@@ -891,7 +891,7 @@ public class ShipmentService implements IShipmentService {
             MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
 
-            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
+            boolean syncConsole = beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid);
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -1335,7 +1335,6 @@ public class ShipmentService implements IShipmentService {
         if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
             for (EventsRequest req : eventsRequestList) {
                     req.setShipmentNumber(shipmentDetails.getShipmentId());
-                    req.setConsolidationId(consolidationId);
                 }
             }
         return eventsRequestList;
@@ -1770,7 +1769,7 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException(ErrorConstants.VALIDATE_JOB_TYPE_CHANGE);
             }
             mid = System.currentTimeMillis();
-            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached);
+            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
             log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
@@ -1871,7 +1870,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached) throws RunnerException{
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean isImportFile) throws RunnerException{
         CarrierDetails oldCarrierDetails = null;
         if(!isCreate) {
             oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
@@ -2077,7 +2076,7 @@ public class ShipmentService implements IShipmentService {
 
         var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
         // If TransportModeConfig flag is ON, this block will check for the valid transport mode
-        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig())) {
+        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && Boolean.FALSE.equals(isImportFile)) {
             // If oldEntity is null (Create) OR transport mode is getting updated (Update)
             if ((isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
                     && Boolean.FALSE.equals(commonUtils.isTransportModeValid(shipmentDetails.getTransportMode(), Constants.SHIPMENT_DETAILS, tenantSettings))) {
@@ -2615,6 +2614,16 @@ public class ShipmentService implements IShipmentService {
         }else{
             createTrackingEvents(newUpdatedEvents, shipmentDetails);
         }
+
+        // update events with consolidation id with condition
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        if(ObjectUtils.isNotEmpty(consolidationList)) {
+            Long consolidationId = consolidationList.get(0).getId();
+            newUpdatedEvents.stream()
+                    .filter(event -> eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                    .forEach(event -> event.setConsolidationId(consolidationId));
+        }
+
         return newUpdatedEvents;
     }
 
@@ -3144,7 +3153,7 @@ public class ShipmentService implements IShipmentService {
                 itemRow.createCell(headerMap.get("Activity Type")).setCellValue(Objects.isNull(shipment.getAdditionalDetails()) ? "" : shipment.getAdditionalDetails().getActivityType());
                 itemRow.createCell(headerMap.get("Shipment Type")).setCellValue(shipment.getDirection());
                 itemRow.createCell(headerMap.get("Carrier")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getShippingLine());
-                itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails() != null ? masterDataUtils.getVesselName(shipment.getCarrierDetails().getVessel()) : "");
+                itemRow.createCell(headerMap.get("Vessel Name/Flight")).setCellValue(shipment.getCarrierDetails() != null &&  shipment.getCarrierDetails().getVesselsMasterData()!= null? shipment.getCarrierDetails().getVesselsMasterData().get("vessel") : "");
                 itemRow.createCell(headerMap.get("Flight Number")).setCellValue(Optional.ofNullable(shipment.getCarrierDetails()).map(c -> c.getFlightNumber()).orElse(""));
                 itemRow.createCell(headerMap.get("Voyage/Flight No.")).setCellValue(Objects.isNull(shipment.getCarrierDetails()) ? "" : shipment.getCarrierDetails().getVoyage());
                 itemRow.createCell(headerMap.get("Paid Place Name")).setCellValue(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getUnlocationData() != null ? String.valueOf(shipment.getAdditionalDetails().getUnlocationData().get("paidPlace")) : "");

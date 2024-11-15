@@ -45,7 +45,6 @@ import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -4777,6 +4776,7 @@ ShipmentServiceTest extends CommonMocks {
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
         when(commonUtils.convertToEntityList(any(), any(), any())).thenReturn(Arrays.asList(Containers.builder().build()));
+        when(commonUtils.convertToEntityList(any(), eq(Events.class), any())).thenReturn(Arrays.asList(Events.builder().build()));
 
         when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), eq(false))).thenReturn(Arrays.asList(Containers.builder().build()));
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());

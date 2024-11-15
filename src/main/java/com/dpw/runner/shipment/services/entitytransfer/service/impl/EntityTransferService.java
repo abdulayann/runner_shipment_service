@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
@@ -72,6 +73,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -376,7 +378,8 @@ public class EntityTransferService implements IEntityTransferService {
         String shipmentId = shipmentDetailsResponse.getShipmentId();
 
         // Call Document Service api for copy docs
-        this.sendCopyDocumentRequest(copyDocumentsRequest);
+        String authToken = RequestAuthContext.getAuthToken();
+        sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
         // Update task status approved
         if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
@@ -492,7 +495,8 @@ public class EntityTransferService implements IEntityTransferService {
             this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), Consolidations, consolidationDetailsResponse.getTenantId(), entityTransferConsolidationDetails.getAdditionalDocs());
 
             // Call document service api for copy docs
-            this.sendCopyDocumentRequest(copyDocumentsRequest);
+            String authToken = RequestAuthContext.getAuthToken();
+            sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
             // Syncing Imported Shipment & Console to V1
             this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
@@ -572,11 +576,13 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private void sendCopyDocumentRequest(CopyDocumentsRequest copyDocumentsRequest) {
+
+    private void sendCopyDocumentRequest(CopyDocumentsRequest copyDocumentsRequest, String authToken) {
+
         if(!copyDocumentsRequest.getDocuments().isEmpty()){
             copyDocumentsRequest.setDeleteExistingDocuments(true);
             try {
-                documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest));
+                documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), authToken);
             } catch (Exception ex) {
                 log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
             }
