@@ -3,11 +3,8 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.mapper.AdditionalDetailsListResponseMapper;
-import com.dpw.runner.shipment.services.mapper.PickupDeliveryDetailsListResponseMapper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +21,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.transaction.annotation.Transactional;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -116,9 +112,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
     }
 
     @Override
-    @Transactional
-    public List<PickupDeliveryDetailsListResponse> findByIdIn(List<Long> ids) {
-        List<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsRepository.findByIdIn(ids);
-        return pickupDeliveryDetails.stream().map(PickupDeliveryDetailsListResponseMapper.INSTANCE::toPickupDeliveryDetailsListResponse).toList();
+    public List<PickupDeliveryDetails> findByIdIn(List<Long> ids) {
+        return pickupDeliveryDetailsRepository.findByIdIn(ids);
     }
 }

@@ -1368,7 +1368,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }  catch (Exception e) {
-            throw new BillingException("An unexpected error occurred during dues validation. " + e.getMessage(), e);
+            throw new BillingException(e.getMessage(), e);
         }
     }
 

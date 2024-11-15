@@ -160,5 +160,4 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "remarks")
     public String remarks;
-
 }
