@@ -76,6 +76,7 @@ public class DpsEventService implements IDpsEventService {
 
                 // Construct a DpsEventLog object with relevant information for the audit log
                 DpsEventLog eventLog = DpsEventLog.builder()
+                        .executionId(dpsEvent.getExecutionId().toString())
                         .usernameList(String.join(",", dpsEvent.getUsernameList()))
                         .dpsWorkflowState(dpsEvent.getState())
                         .eventTimeStamp(dpsEvent.getEventTimestamp())
@@ -141,6 +142,8 @@ public class DpsEventService implements IDpsEventService {
                     .setText(dpsDto.getText())
                     .setImplicationList(dpsDto.getImplications())
                     .setConditionMessageList(dpsDto.getConditionMessage())
+                    .setUsernameList(dpsDto.getUsernameList())
+                    .setEventTimestamp(dpsDto.getEventTimestamp())
                     .setDpsFieldData(createDpsFieldDataList(
                             dpsDto.getFieldsDetected(), dpsDto.getFieldsDetectedValues()));
 
