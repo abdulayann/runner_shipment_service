@@ -1828,6 +1828,9 @@ public class CommonUtils {
 
         // Create or retrieve existing TypeMap
         TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap = customModelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
+        if(typeMap == null) {
+            typeMap = customModelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
+        }
         customModelMapper.getConfiguration().setImplicitMappingEnabled(true);
         // Dynamically add mappings based on includeColumns
         for (String field : includeColumns) {
