@@ -82,14 +82,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -166,6 +159,8 @@ public class ReportService implements IReportService {
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
+
+    Set<String> printTermsAndConditionsForParties = Set.of("1", "2", "5");
 
     @Override
     @Transactional
@@ -1601,14 +1596,15 @@ public class ReportService implements IReportService {
             if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             else{
                 if(lastPage == null) lastPage = CommonUtils.getLastPage(mainDocPage);
-                mainDocPage = CommonUtils.removeLastPage(mainDocPage);
+                if (!printTermsAndConditionsForParties.contains(party)) {
+                    mainDocPage = CommonUtils.removeLastPage(mainDocPage);
+                    mainDocPage = CommonUtils.addBlankPage(mainDocPage);
+                }
             }
             if(reportRequest.isPrintBarcode())
                 mainDocPage = addBarCodeInReport(mainDocPage, number, 140, -50, ReportConstants.MAWB, false);
             pdf_Bytes.add(mainDocPage);
         }
-        if(lastPage != null)
-            pdf_Bytes.add(lastPage);
         return CommonUtils.concatAndAddContent(pdf_Bytes);
     }
 
