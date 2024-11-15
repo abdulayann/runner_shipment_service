@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
@@ -180,6 +181,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.unlocation}")
     private String UNLOCATION_URL;
+
+    @Value("${v1service.url.base}${v1service.url.unlocation.new}")
+    private String newUnlocationUrl;
 
     @Value("${v1service.url.base}${v1service.url.stateBasedList}")
     private String stateBasedListUrl;
@@ -388,12 +392,16 @@ public class V1ServiceImpl implements IV1Service {
     @Autowired
     private CommonUtils commonUtils;
 
+    private final IApplicationConfigService applicationConfigService;
+
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
-            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility, CacheManager cacheManager) {
+            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility,
+        IApplicationConfigService applicationConfigService, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
         this.getUserServiceFactory = getUserServiceFactory;
         this.tokenUtility = tokenUtility;
+        this.applicationConfigService = applicationConfigService;
         this.cacheManager = cacheManager;
     }
 
@@ -1268,7 +1276,12 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
+            String enableUnlocationApi = applicationConfigService.getValue(Constants.ENABLE_UNLOCATION_NEW_API);
+            if (enableUnlocationApi != null && Boolean.valueOf(enableUnlocationApi)) {
+                locationResponse = this.restTemplate.postForEntity(this.newUnlocationUrl, entity, V1DataResponse.class);
+            } else {
+                locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class);
+            }
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {

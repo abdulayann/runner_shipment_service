@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -105,6 +106,9 @@ class V1ServiceImplTest {
 
     @MockBean
     private CacheManager cacheManager;
+
+    @MockBean
+    private IApplicationConfigService applicationConfigService;
 
     private V1UsersEmailRequest request;
     private UsersRoleListResponse userRole;

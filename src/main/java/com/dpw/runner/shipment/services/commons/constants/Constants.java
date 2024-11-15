@@ -580,6 +580,9 @@ public class Constants {
     public static final String CONSOLIDATIONS_PERMISSION_KEY = "Consolidations";
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
+    public static final String APP_CONFIG_ID_NOT_VALID = "Application config id is not valid";
+    public static final String APPLICATION_CONFIG_ID_EMPTY_ERROR_MESSAGE = "Application config id can not be empty";
+    public static final String ENABLE_UNLOCATION_NEW_API = "ENABLE_UNLOCATION_NEW_API";
     private Constants() {
     }
 
