@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -60,6 +61,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.PropertyMap;
+import org.modelmapper.TypeMap;
+import org.modelmapper.config.Configuration;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
 
@@ -84,8 +88,7 @@ import static com.dpw.runner.shipment.services.commons.constants.PermissionConst
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -164,6 +167,9 @@ class CommonUtilsTest {
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
 
+    @Mock
+    private Configuration configuration;
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
@@ -173,6 +179,7 @@ class CommonUtilsTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream originalOut;
     private byte[] pdfBytes;
+    private TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap;
 
     @AfterEach
     void tearDown() {
@@ -2965,5 +2972,39 @@ class CommonUtilsTest {
 
         String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
         assertNull(res);
+    }
+
+    @Test
+    void testGetShipmentDetailsResponse() {
+        List<String> includeColumns = List.of("carrierDetails", "eventsList");
+        when(modelMapper.getConfiguration()).thenReturn(configuration);
+        typeMap = mock(TypeMap.class);
+        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
+                .thenReturn(typeMap);
+        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testGetShipmentDetailsResponseWithEmptyString() {
+        List<String> includeColumns = List.of(StringUtility.getEmptyString());
+        when(modelMapper.getConfiguration()).thenReturn(configuration);
+        typeMap = mock(TypeMap.class);
+        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
+                .thenReturn(typeMap);
+        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testGetShipmentDetailsResponseWithNullTypeMap() {
+        List<String> includeColumns = List.of("carrierDetails", "eventsList");
+        when(modelMapper.getConfiguration()).thenReturn(configuration);
+        typeMap = mock(TypeMap.class);
+        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
+                .thenReturn(null);
+        when(modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class)).thenReturn(typeMap);
+        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
+        assertNotNull(response);
     }
 }
