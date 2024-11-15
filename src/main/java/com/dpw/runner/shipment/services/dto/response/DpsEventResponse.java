@@ -42,7 +42,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private Boolean isDeleted;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eventTimestamp;
-    private String username;
+    private List<String> usernameList;
 
     @Data
     @NoArgsConstructor

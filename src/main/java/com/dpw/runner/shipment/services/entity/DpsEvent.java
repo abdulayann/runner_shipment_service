@@ -118,8 +118,9 @@ public class DpsEvent {
     @Column(name = "event_timestamp")
     private LocalDateTime eventTimestamp;
 
-    @Column(name = "username")
-    private String username;
+    @Type(type = "jsonb")
+    @Column(name = "username_list", columnDefinition = "jsonb")
+    private List<String> usernameList;
 
     @PreUpdate
     void preUpdate() {
