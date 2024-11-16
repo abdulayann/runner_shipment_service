@@ -2,10 +2,10 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.dto.request.MatchingRulesRequest;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.dpw.runner.shipment.services.dto.request.MatchingRulesRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
 import org.junit.jupiter.api.Test;
@@ -51,8 +51,13 @@ class DpsEventServiceTest {
 
     @Test
     void getShipmentMatchingRulesByGuid_Success1() {
+    void getShipmentMatchingRulesByGuid_Success() {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
+        List<DpsEvent> dpsEvents = new ArrayList<>();
+        dpsEvents.add(dpsEvent);
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(dpsEvents);
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
 
         var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
@@ -76,10 +81,19 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
         var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    void getShipmentMatchingRulesByGuid_Success1() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
+
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void updateWarningRulesStatus_Success() {
+    void getShipmentMatchingRulesByGuid_Exception() {
         String guid = UUID.randomUUID().toString();
         List<String> ruleList = new ArrayList<>();
         ruleList.add("test");
@@ -123,6 +137,17 @@ class DpsEventServiceTest {
         String guid = UUID.randomUUID().toString();
         MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
+
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMatchingRulesByGuid_Exception1() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
 
         var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
 
@@ -141,5 +166,9 @@ class DpsEventServiceTest {
         var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        DpsException exception = assertThrows(DpsException.class, () -> {
+            dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        });
+        assertEquals("GUID is null for DpsEvent retrieve with Request Id null", exception.getMessage());
     }
 }
