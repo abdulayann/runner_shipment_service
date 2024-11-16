@@ -34,7 +34,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private String text;
     private List<String> implicationList;
     private List<String> conditionMessageList;
-    private List<DpsFieldDataResponse> dpsFieldData;
+    private transient List<DpsFieldDataResponse> dpsFieldData;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)

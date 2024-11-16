@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -85,6 +86,8 @@ public class ShipmentController {
     IConsolidationService consolidationService;
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
+    @Autowired
+    IDpsEventService dpsEventService;
 
     private static class HblCheckResponseClass extends RunnerResponse<HblCheckResponse> {}
 
@@ -793,15 +796,8 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.MATCHING_RULES_BY_GUID)
     public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid) {
-        String responseMsg;
-        try {
             CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
             log.info("Received get matching rules request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-            return shipmentService.getMatchingRulesByGuid(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage() : "";
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+            return dpsEventService.getShipmentMatchingRulesByGuid(CommonRequestModel.buildRequest(request));
     }
 }

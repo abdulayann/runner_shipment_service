@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -82,6 +83,8 @@ class ShipmentControllerTest {
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
     private IConsolidationService consolidationService;
+    @Mock
+    private IDpsEventService dpsEventService;
     @InjectMocks
     private ShipmentController shipmentController;
 
@@ -1358,7 +1361,7 @@ class ShipmentControllerTest {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         // Mock
-        when(shipmentService.getMatchingRulesByGuid(commonRequestModel)).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel)).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
         // Assert
@@ -1370,7 +1373,7 @@ class ShipmentControllerTest {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         // Mock
-        when(shipmentService.getMatchingRulesByGuid(commonRequestModel)).thenThrow(new RuntimeException());
+        when(dpsEventService.getShipmentMatchingRulesByGuid((commonRequestModel))).thenThrow(new RuntimeException());
         // Test
         var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
         // Assert
