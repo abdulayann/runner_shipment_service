@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.repository.Modifying;

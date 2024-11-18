@@ -126,5 +126,6 @@ public class ShipmentConstants {
     public static final String REQUIRED_PARAMETER_MISSING_ERROR = "Required parameter missing: {} for Request Id {} ";
     public static final String SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR = "Shipment Details is not present for Guid {} with Request Id {}";
     public static final String TENANT_DATA_RETRIEVAL = "Successful Tenant Data Retrieval";
+    public static final String SHIPMENT_RETRIEVE_NULL_REQUEST =  "Request Id is null for Shipment retrieve with Request Id {}";
 
 }

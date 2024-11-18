@@ -2923,7 +2923,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if(request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id can't be null.");
             }
             Long id = request.getId();
@@ -4830,7 +4830,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
@@ -4858,7 +4858,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new ValidationException("Request is null");
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("Id is null");
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());

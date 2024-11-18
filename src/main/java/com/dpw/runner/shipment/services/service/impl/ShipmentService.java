@@ -3937,7 +3937,7 @@ public class ShipmentService implements IShipmentService {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             double start = System.currentTimeMillis();
             if(request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Id can't be null!");
             }
             Long id = request.getId();
@@ -4756,7 +4756,7 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(id);
@@ -5671,7 +5671,7 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_RETRIEVE_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getId());
             if (!shipmentDetails.isPresent()) {

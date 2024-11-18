@@ -91,7 +91,7 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("entityType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("jobType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
-            Map.entry("branchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("branchId").isContainsText(true).build()),
+            Map.entry("sourceBranchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("sourceBranchId").isContainsText(true).build()),
             Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build())
     );
 
@@ -168,7 +168,6 @@ public class NetworkTransferService implements INetworkTransferService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            double _start = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null || (request.getId() == null && request.getGuid() == null)) {
                 log.error("Request Id and Guid are null for NetworkTransfer retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -187,12 +186,7 @@ public class NetworkTransferService implements INetworkTransferService {
                 log.debug(NetworkTransferConstants.NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            double current = System.currentTimeMillis();
-            log.info("NetworkTransfer details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            log.info("Time taken to fetch networkTransfer details from db: {} Request Id {}", current - _start, LoggerHelper.getRequestIdFromMDC());
             NetworkTransferResponse networkTransferResponse = jsonHelper.convertValue(networkTransfer.get(), NetworkTransferResponse.class);
-            double _next = System.currentTimeMillis();
-            log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
             addDependantServiceData(networkTransferResponse);
             return ResponseHelper.buildSuccessResponse(networkTransferResponse);
         } catch (Exception e) {
