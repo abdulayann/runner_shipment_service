@@ -1202,9 +1202,22 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds, String remarks) throws RunnerException {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
 
+        Map<Long, ShipmentDetails> shipmentIdDetailsMap = Optional.ofNullable(shipmentIds)
+            .filter(ObjectUtils::isNotEmpty)
+            .map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
+            .orElse(Collections.emptyList())
+            .stream()
+            .collect(Collectors.toMap(ShipmentDetails::getId, shipment -> shipment));
+
         List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
-                .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
-                .orElse(Collections.emptyList());
+            .filter(ObjectUtils::isNotEmpty)
+            .map(ids -> ids.stream()
+                .map(shipmentIdDetailsMap::get)
+                .filter(Objects::nonNull) // Exclude null values if the map doesn't contain some IDs
+                .collect(Collectors.toList())
+            )
+            .orElse(Collections.emptyList());
+
 
         validateShipmentDetachment(shipmentDetails);
 
@@ -1216,8 +1229,17 @@ public class ConsolidationService implements IConsolidationService {
         List<Packing> packingList = new ArrayList<>();
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
-            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(removedShipmentIds));
+            List<ShipmentDetails> shipmentDetailsList = Optional.ofNullable(removedShipmentIds)
+                .filter(ObjectUtils::isNotEmpty)
+                .map(ids -> ids.stream()
+                    .map(shipmentIdDetailsMap::get)
+                    .filter(Objects::nonNull) // Exclude null values if the map doesn't contain some IDs
+                    .collect(Collectors.toList())
+                )
+                .orElse(Collections.emptyList());
+
             Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
             for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
                 shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
@@ -1225,6 +1247,8 @@ public class ConsolidationService implements IConsolidationService {
                         (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails1.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails1.getOceanDGStatus())))
                     throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + " is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
             }
+
+
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
@@ -1316,6 +1340,10 @@ public class ConsolidationService implements IConsolidationService {
 
     private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
         validateOutstandingDuesForShipments(shipmentDetails);
+    }
+
+    private void processShipmentDetails(ShipmentDetails shipmentDetails){
+
     }
 
     private void validateOutstandingDuesForShipments(List<ShipmentDetails> shipmentDetails) {

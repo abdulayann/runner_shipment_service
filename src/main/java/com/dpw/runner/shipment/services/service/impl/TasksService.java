@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -94,9 +95,21 @@ public class TasksService implements ITasksService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateTask(CommonRequestModel commonRequestModel) {
+    @Async
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> updateTask(CommonRequestModel commonRequestModel) {
         var request = (TaskUpdateRequest) commonRequestModel.getData();
-        return ResponseHelper.buildSuccessResponse(iv1Service.updateTask(V1SaveRequest.builder().entity(request).entityId(request.getId()).build()));
+
+        // Process the task update asynchronously
+        return CompletableFuture.supplyAsync(() ->
+            ResponseHelper.buildSuccessResponse(
+                iv1Service.updateTask(
+                    V1SaveRequest.builder()
+                        .entity(request)
+                        .entityId(request.getId())
+                        .build()
+                )
+            )
+        );
     }
 
     @Override
