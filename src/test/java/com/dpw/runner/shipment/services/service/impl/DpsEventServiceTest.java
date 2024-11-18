@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.request.MatchingRulesRequest;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
@@ -22,7 +23,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -72,10 +74,72 @@ class DpsEventServiceTest {
     @Test
     void fetchMatchingRulesByGuid_Exception1() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
-        DpsException exception = assertThrows(DpsException.class, () -> {
-            dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
-        });
-        assertEquals("GUID is null for DpsEvent retrieve with Request Id null", exception.getMessage());
+    @Test
+    void updateWarningRulesStatus_Success() {
+        String guid = UUID.randomUUID().toString();
+        List<String> ruleList = new ArrayList<>();
+        ruleList.add("test");
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").ruleExecutionIds(ruleList).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+
+        doNothing().when(dpsEventRepository).updateRuleStatus(any(), any(), any());
+
+        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateWarningRulesStatus_Failure() {
+        List<String> ruleList = new ArrayList<>();
+        ruleList.add("test");
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().username("test").ruleExecutionIds(ruleList).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+
+        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateWarningRulesStatus_Failure2() {
+        String guid = UUID.randomUUID().toString();
+        List<String> ruleList = new ArrayList<>();
+        ruleList.add("test");
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).ruleExecutionIds(ruleList).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+
+        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateWarningRulesStatus_Failure3() {
+        String guid = UUID.randomUUID().toString();
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+
+        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateWarningRulesStatus_Failure4() {
+        String guid = UUID.randomUUID().toString();
+        List<String> ruleList = new ArrayList<>();
+        ruleList.add("test");
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").ruleExecutionIds(ruleList).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+        doThrow(RuntimeException.class).when(dpsEventRepository).updateRuleStatus(any(), any(), any());
+
+        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 }

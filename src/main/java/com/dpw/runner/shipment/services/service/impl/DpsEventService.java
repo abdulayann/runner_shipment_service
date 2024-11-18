@@ -1,22 +1,22 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.MatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
 import com.dpw.runner.shipment.services.entity.DpsEventLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
-import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -348,5 +349,69 @@ public class DpsEventService implements IDpsEventService {
         return dpsFieldDataList;
     }
 
+    /**
+     * Updates the status of warning rules for a shipment based on the provided request.
+     * This method is transactional, ensuring all database operations within it either succeed or fail as a unit.
+     * It validates the input request, updates the rule statuses in the database, and returns an appropriate response.
+     * If an exception occurs, it logs the error and returns a failure response.
+     *
+     * @param commonRequestModel the request model containing data for updating the warning rules status.
+     *                           This includes details like the shipment GUID, username, and rule execution IDs.
+     * @return a {@link ResponseEntity} containing an {@link IRunnerResponse}, indicating the success or failure
+     *         of the operation.
+     * @throws ValidationException if the input request is invalid (e.g., missing required fields).
+     * @throws DpsException        if there are issues specific to the domain logic of updating the rules.
+     */
+    @Transactional
+    public ResponseEntity<IRunnerResponse> updateWarningRulesStatus(CommonRequestModel commonRequestModel) {
+        try {
+            MatchingRulesRequest request = validateAndExtractRequest(commonRequestModel);
+            dpsEventRepository.updateRuleStatus(
+                    request.getUsername(),
+                    DpsExecutionStatus.COMPLETED,
+                    request.getRuleExecutionIds()
+            );
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    /**
+     * Validates and extracts the {@link MatchingRulesRequest} from the provided {@link CommonRequestModel}.
+     * This method ensures the following:
+     * - The request object is not null.
+     * - The shipment GUID is present and not empty.
+     * - The username is present and not empty.
+     * - The rule execution IDs are provided and not empty.
+     * If any of these validations fail, the method logs the error and throws a {@link ValidationException}.
+     * @param commonRequestModel the request model containing data to be validated and extracted.
+     * @return the validated {@link MatchingRulesRequest} object extracted from the input.
+     * @throws ValidationException if the input request fails any of the validations.
+     */
+    private MatchingRulesRequest validateAndExtractRequest(CommonRequestModel commonRequestModel) {
+        MatchingRulesRequest request = (MatchingRulesRequest) commonRequestModel.getData();
+        if (request == null) {
+            String errorMessage = ShipmentConstants.MATCHING_RULES_REQUEST_EMPTY_ERROR;
+            log.error(errorMessage, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(errorMessage);
+        }
+        if (Strings.isNullOrEmpty(request.getGuid())) {
+            log.error(ShipmentConstants.REQUIRED_PARAMETER_NULL_OR_EMPTY_ERROR, ShipmentConstants.SHIPMENT_GUID, LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Shipment Guid is required but is null or empty.");
+        }
+        if (Strings.isNullOrEmpty(request.getUsername())) {
+            log.error(ShipmentConstants.REQUIRED_PARAMETER_NULL_OR_EMPTY_ERROR, "Username", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Username is required but is null or empty.");
+        }
+        if (ObjectUtils.isEmpty(request.getRuleExecutionIds())) {
+            log.error(ShipmentConstants.REQUIRED_PARAMETER_NULL_OR_EMPTY_ERROR, "Rule Execution List", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Rule Execution List is required but is null or empty.");
+        }
+        return request;
+    }
 
 }

@@ -20,7 +20,9 @@ import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -1373,10 +1375,49 @@ class ShipmentControllerTest {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         // Mock
-        when(dpsEventService.getShipmentMatchingRulesByGuid((commonRequestModel))).thenThrow(new RuntimeException());
+        when(dpsEventService.getShipmentMatchingRulesByGuid((commonRequestModel))).thenThrow(new DpsException());
         // Test
-        var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
+        assertThrows(DpsException.class, () -> {
+            shipmentController.getMatchingRulesByGuid(guid);
+        });
+    }
+
+    @Test
+    void updateWarningRules() throws RunnerException {
+        String guid = UUID.randomUUID().toString();
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+        // Mock
+        when(dpsEventService.updateWarningRulesStatus(commonRequestModel)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.updateWarningRules(matchingRulesRequest);
         // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateWarningRules_Failure() throws RunnerException {
+        String guid = UUID.randomUUID().toString();
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+        // Mock
+        when(dpsEventService.updateWarningRulesStatus(commonRequestModel)).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> {
+            shipmentController.updateWarningRules(matchingRulesRequest);
+        });
+    }
+
+    @Test
+    void updateWarningRules_Failure2() throws RunnerException {
+        String guid = UUID.randomUUID().toString();
+        MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
+        // Mock
+        when(dpsEventService.updateWarningRulesStatus(commonRequestModel)).thenThrow(new ValidationException(""));
+        // Test
+        assertThrows(ValidationException.class, () -> {
+            shipmentController.updateWarningRules(matchingRulesRequest);
+        });
     }
 }

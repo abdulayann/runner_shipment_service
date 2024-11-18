@@ -800,4 +800,10 @@ public class ShipmentController {
             log.info("Received get matching rules request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
             return dpsEventService.getShipmentMatchingRulesByGuid(CommonRequestModel.buildRequest(request));
     }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.WARNING_RULE_UPDATED_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.UPDATE_WARNING_RULES)
+    public ResponseEntity<IRunnerResponse> updateWarningRules(@RequestBody @Valid MatchingRulesRequest request) throws RunnerException {
+        return dpsEventService.updateWarningRulesStatus(CommonRequestModel.buildRequest(request));
+    }
 }
