@@ -395,6 +395,40 @@ public class CommonUtils {
         return data;
     }
 
+    public static byte[] addBlankPage(byte[] originalPdfBytes) throws IOException, DocumentException {
+        // Prepare a ByteArrayOutputStream to hold the modified PDF
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        // Read the original PDF
+        PdfReader reader = new PdfReader(originalPdfBytes);
+        int numberOfPages = reader.getNumberOfPages();
+
+        // Create a new Document for the output
+        Document document = new Document();
+        PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+
+        // Open the new document for writing
+        document.open();
+
+        // Copy all pages from the original PDF into the new document
+        for (int i = 1; i <= numberOfPages; i++) {
+            document.newPage();
+            PdfImportedPage page = writer.getImportedPage(reader, i);
+            writer.getDirectContent().addTemplate(page, 0, 0);
+        }
+
+        // Add a blank page
+        document.newPage();
+        writer.setPageEmpty(false);
+
+        // Close the resources
+        document.close();
+        reader.close();
+
+        // Return the modified PDF as a byte array
+        return outputStream.toByteArray();
+    }
+
     public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect)
     {
         var gstate = new PdfGState();
