@@ -549,7 +549,7 @@ public class EventDao implements IEventDao {
                         EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
                         EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
                         EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS, EventConstants.ECCC,
-                        EventConstants.BLRS, EventConstants.COOD
+                        EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU
                 )
         );
 
