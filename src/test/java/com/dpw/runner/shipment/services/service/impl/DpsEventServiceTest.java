@@ -51,7 +51,6 @@ class DpsEventServiceTest {
 
     @Test
     void getShipmentMatchingRulesByGuid_Success1() {
-    void getShipmentMatchingRulesByGuid_Success() {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
@@ -81,19 +80,10 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
         var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    void getShipmentMatchingRulesByGuid_Success1() {
-        String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
-        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
-
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
-
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void updateWarningRulesStatus_Success() {
-    void getShipmentMatchingRulesByGuid_Exception() {
         String guid = UUID.randomUUID().toString();
         List<String> ruleList = new ArrayList<>();
         ruleList.add("test");
@@ -136,20 +126,10 @@ class DpsEventServiceTest {
     void updateWarningRulesStatus_Failure3() {
         String guid = UUID.randomUUID().toString();
         MatchingRulesRequest matchingRulesRequest = MatchingRulesRequest.builder().guid(guid).username("test").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(matchingRulesRequest);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
 
         var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
-
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void fetchMatchingRulesByGuid_Exception1() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
-
-        var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -166,9 +146,5 @@ class DpsEventServiceTest {
         var responseEntity = dpsEventService.updateWarningRulesStatus(commonRequestModel);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        DpsException exception = assertThrows(DpsException.class, () -> {
-            dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
-        });
-        assertEquals("GUID is null for DpsEvent retrieve with Request Id null", exception.getMessage());
     }
 }
