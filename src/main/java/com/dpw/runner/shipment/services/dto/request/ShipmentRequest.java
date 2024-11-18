@@ -180,4 +180,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private FileStatus fileStatus;
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
 }

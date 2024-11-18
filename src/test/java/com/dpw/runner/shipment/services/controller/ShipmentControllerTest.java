@@ -818,7 +818,7 @@ class ShipmentControllerTest {
      */
 
     @Test
-    void exportShipmentListTest() throws IOException, IllegalAccessException {
+    void exportShipmentListTest() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doNothing().when(shipmentService).exportExcel(any(), any());
@@ -829,7 +829,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentListTest2() throws IOException, IllegalAccessException {
+    void exportShipmentListTest2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any());
@@ -840,7 +840,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentListTest3() throws IOException, IllegalAccessException {
+    void exportShipmentListTest3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel(any(), any());
@@ -1361,6 +1361,28 @@ class ShipmentControllerTest {
         when(shipmentController.listBillChargesShipments(any(), null, null)).thenThrow(new RuntimeException());
         var responseEntity = shipmentController.listBillChargesShipments("guid", null, null );
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListExternal() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListExternal1() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
 
 }

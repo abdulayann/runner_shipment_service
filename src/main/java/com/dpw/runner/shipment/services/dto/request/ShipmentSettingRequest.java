@@ -180,6 +180,8 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean enablePartyCheckForConsolidation;
     private String csd;
     private Boolean hideManifest;
+    private LocalDateTime isEntityTransferPrerequisiteEnabledDate;
+    private Boolean isEntityTransferPrerequisiteEnabled;
     private LocalDateTime entityTransferEnabledDate;
     private Boolean entityTransfer;
     private Boolean isNetworkTransferEntityEnabled;

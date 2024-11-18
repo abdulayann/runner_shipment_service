@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerDataRes
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,8 +141,8 @@ class DocumentManagerRestClientTest {
     void testCopyDocuments() {
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().build();
         when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenReturn(new ResponseEntity<>(new Object(), HttpStatus.OK));
-        var response = documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest));
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        var response = documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), "authToken");
+        assertNotNull(response);
     }
 
     @Test
@@ -149,6 +150,10 @@ class DocumentManagerRestClientTest {
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(copyDocumentsRequest);
         when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenThrow(new RuntimeException());
-        assertThrows(RuntimeException.class, () -> documentManagerRestClient.copyDocuments(commonRequestModel));
+
+        // Expect a RuntimeException when calling join on the CompletableFuture
+        CompletableFuture<ResponseEntity<Object>> future = documentManagerRestClient.copyDocuments(commonRequestModel, "authToken");
+        assertThrows(RuntimeException.class, future::join);
     }
+
 }

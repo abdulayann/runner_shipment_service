@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
@@ -461,6 +459,72 @@ public class MasterDataUtils{
         }
 
         return keyMasterDataMap;
+    }
+
+    public Map<String, String> consolidationAddressCountryMasterData(ConsolidationDetails consolidationDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : consolidationDetails.getConsolidationAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return getCountriesMasterListData(alpha3CountriesList);
+    }
+
+    public Map<String, String> shipmentAddressCountryMasterData(ShipmentDetails shipmentDetails) {
+        List<String> alpha3CountriesList = new ArrayList<>();
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null,alpha3CountriesList);
+        alpha3CountriesList = addAlpha3Country(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null,alpha3CountriesList);
+        for (var orgRow : shipmentDetails.getShipmentAddresses())
+            if (orgRow.getType().equals(Constants.FAG))
+                alpha3CountriesList = addAlpha3Country(orgRow.getAddressData(), alpha3CountriesList);
+        return getCountriesMasterListData(alpha3CountriesList);
+    }
+
+    public List<String> addAlpha3Country(Map<String, Object> address, List<String> alpha3CountriesList) {
+        Set<String> alpha3CountriesSet = new HashSet<>(alpha3CountriesList);
+
+        if (address != null && address.containsKey(PartiesConstants.COUNTRY)) {
+            String country = StringUtility.convertToString(address.get(PartiesConstants.COUNTRY));
+            if (country != null && country.length() == 2)
+                country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
+            if (country != null && !country.isEmpty())
+                alpha3CountriesSet.add(country);
+        }
+        return new ArrayList<>(alpha3CountriesSet);
+    }
+
+    public Map<String, String> getCountriesMasterListData(List<String> alpha3Countries) {
+        Set<MasterListRequest> listRequests = alpha3Countries.stream()
+                .filter(country -> country != null && country.length() == 3)
+                .map(country -> MasterListRequest.builder()
+                        .ItemType(MasterDataType.COUNTRIES.getDescription())
+                        .ItemValue(country)
+                        .build())
+                .collect(Collectors.toSet());
+
+        if (listRequests.isEmpty()) {
+            return new HashMap<>();
+        }
+
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(new ArrayList<>(listRequests));
+        masterListRequestV2.setIncludeCols(List.of(
+                MasterDataConstants.ITEM_TYPE,
+                MasterDataConstants.ITEM_VALUE,
+                "ItemDescription",
+                "ValuenDesc",
+                "Cascade"
+        ));
+
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = fetchInBulkMasterList(masterListRequestV2);
+
+        return keyMasterDataMap.values().stream()
+                .filter(entity -> entity != null && entity.getIdentifier1() != null)
+                .collect(Collectors.toMap(
+                        EntityTransferMasterLists::getIdentifier1,
+                        EntityTransferMasterLists::getItemDescription
+                ));
     }
 
     public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE

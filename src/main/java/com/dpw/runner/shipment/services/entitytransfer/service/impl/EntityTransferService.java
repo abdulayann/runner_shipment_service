@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
@@ -71,6 +72,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -212,7 +214,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         List<String> tenantName = getTenantName(successTenantIds);
-        createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipId.toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, null);
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
         try {
@@ -316,15 +317,11 @@ public class EntityTransferService implements IEntityTransferService {
             successTenantIds.add(tenant);
         }
 
-        this.createAutoEvent(consolidationDetails.get().getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.CONSOLIDATION);
         List<String> tenantName = getTenantName(successTenantIds);
-        String consolDesc = createSendEvent(tenantName, consolidationDetails.get().getReceivingBranch(), consolidationDetails.get().getTriangulationPartner(), consolidationDetails.get().getDocumentationPartner(), consolidationDetails.get().getId().toString(), Constants.CONSOLIDATION_SENT, Constants.CONSOLIDATION, null);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
             // Set TenantId Context for inter branch shipment for Event creation
             if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
                 TenantContext.setCurrentTenant(shipment.getTenantId());
-            this.createAutoEvent(shipment.getId().toString(), Constants.PRE_ALERT_EVENT_CODE, Constants.SHIPMENT);
-            createSendEvent(tenantName, shipment.getReceivingBranch(), shipment.getTriangulationPartner(), shipment.getDocumentationPartner(), shipment.getId().toString(), Constants.SHIPMENT_SENT, Constants.SHIPMENT, consolDesc);
             TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
 
             if (Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
@@ -417,7 +414,8 @@ public class EntityTransferService implements IEntityTransferService {
         String shipmentId = shipmentDetailsResponse.getShipmentId();
 
         // Call Document Service api for copy docs
-        this.sendCopyDocumentRequest(copyDocumentsRequest);
+        String authToken = RequestAuthContext.getAuthToken();
+        sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
@@ -533,14 +531,12 @@ public class EntityTransferService implements IEntityTransferService {
             // Attach Shipment Packs to containers
             this.attachPackToContainers(shipmentIds, newVsOldPackingGuid, oldPackVsOldContGuidMap, oldGuidVsNewContainerId);
 
-            // Create console import event
-            this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), Constants.CONSOLIDATION_IMPORTED, Constants.CONSOLIDATION);
-
             // Prepare copy docs request for doc service
             this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), Consolidations, consolidationDetailsResponse.getTenantId(), entityTransferConsolidationDetails.getAdditionalDocs());
 
             // Call document service api for copy docs
-            this.sendCopyDocumentRequest(copyDocumentsRequest);
+            String authToken = RequestAuthContext.getAuthToken();
+            sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
             // Syncing Imported Shipment & Console to V1
             this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
@@ -620,11 +616,13 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private void sendCopyDocumentRequest(CopyDocumentsRequest copyDocumentsRequest) {
+
+    private void sendCopyDocumentRequest(CopyDocumentsRequest copyDocumentsRequest, String authToken) {
+
         if(!copyDocumentsRequest.getDocuments().isEmpty()){
             copyDocumentsRequest.setDeleteExistingDocuments(true);
             try {
-                documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest));
+                documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), authToken);
             } catch (Exception ex) {
                 log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
             }
@@ -679,9 +677,6 @@ public class EntityTransferService implements IEntityTransferService {
             shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
             oldShipmentDetailsList.get(0).setPackingList(jsonHelper.convertValueToList(shipmentDetailsResponse.getPackingList(), Packing.class));
         }
-
-        // Create shipment import event
-        this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), Constants.SHIPMENT_IMPORTED, Constants.SHIPMENT);
 
         // Prepare copy docs request for doc service
         this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(), Shipments, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
@@ -801,6 +796,9 @@ public class EntityTransferService implements IEntityTransferService {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_RAI)) {
+            throw new ValidationException("File transfer is not allowed for Rail Transport Mode");
+        }
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
 
@@ -890,7 +888,8 @@ public class EntityTransferService implements IEntityTransferService {
                         TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
                         // TODO Need to set that.tenant.IATAAgent = true condition for Air
                         if(shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) &&
-                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent){
+                                shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent &&
+                            Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                             List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
                             if(awbs.isEmpty())
                                 hblGenerationError = true;

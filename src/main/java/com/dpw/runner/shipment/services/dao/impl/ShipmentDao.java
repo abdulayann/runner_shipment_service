@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -200,14 +201,15 @@ public class ShipmentDao implements IShipmentDao {
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
             if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
                 throw new ValidationException("Please enter a valid MAWB number.");
-            if (shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
+            if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (oldShipment != null && oldShipment.getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
                 directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
         }
 
 
         validateIataCode(shipmentDetails);
-
+        long start = System.currentTimeMillis();
         shipmentDetails = shipmentRepository.save(shipmentDetails);
+        log.info("{} | Time taken to update shipment query: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
                 setMawbStock(shipmentDetails);
@@ -280,6 +282,13 @@ public class ShipmentDao implements IShipmentDao {
     public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
+        if(Boolean.TRUE.equals(request.getContainsHazardous()) &&
+                Constants.TRANSPORT_MODE_SEA.equals(request.getTransportMode()) &&
+                Constants.SHIPMENT_TYPE_LCL.equals(request.getShipmentType()) &&
+                !Constants.CONSOLIDATION_TYPE_AGT.equals(request.getJobType()) &&
+                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType()) ) {
+            errors.add("For Ocean DG shipments LCL Cargo Type, we can have only AGT and Co Load Master");
+        }
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }

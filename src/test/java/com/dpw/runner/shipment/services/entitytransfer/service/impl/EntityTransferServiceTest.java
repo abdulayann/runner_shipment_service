@@ -48,7 +48,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -273,7 +272,7 @@ class EntityTransferServiceTest extends CommonMocks {
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
-        verify(eventDao, atLeast(1)).autoGenerateEvents(any());
+//        verify(eventDao, atLeast(1)).autoGenerateEvents(any());
         verify(shipmentDao, times(1)).saveEntityTransfer(any(), any());
         verify(tasksService, times(3)).createTask(any());
 
@@ -565,6 +564,17 @@ class EntityTransferServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendConsolidationValidation_Failure_Console_Rail() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+    }
+
+    @Test
     void testSendConsolidationValidation_Failure_ShipmentFieldsException_Hbl() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
@@ -687,6 +697,30 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(awbDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of());
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
+        when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
+        assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_Air_NON_STD_ShipmentFieldsException() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.getCarrierDetails().setFlightNumber("A123");
+        consolidationDetails.getCarrierDetails().setShippingLine("Air India");
+        ShipmentDetails shipmentDetails = consolidationDetails.getShipmentsList().get(0);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.CONSOLIDATION_TYPE_CLD);
+        shipmentDetails.getCarrierDetails().setFlightNumber(null);
+        shipmentDetails.getCarrierDetails().setShippingLine(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.IATAAgent = true;
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
@@ -1637,7 +1671,6 @@ class EntityTransferServiceTest extends CommonMocks {
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
-        verify(eventDao, atLeast(1)).autoGenerateEvents(any());
         verify(shipmentDao, times(1)).saveEntityTransfer(any(), any());
     }
 

@@ -731,4 +731,17 @@ class MasterDataImplTest {
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void listBranchesByDefaultOrgAndAddress() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        V1DataResponse v1DataResponse = V1DataResponse.builder()
+                .skip(4)
+                .totalCount(10)
+                .take(50)
+                .build();
+        Mockito.when(v1Service.listBranchesByDefaultOrgAndAddress(Mockito.any())).thenReturn(v1DataResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listBranchesByDefaultOrgAndAddress(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 }

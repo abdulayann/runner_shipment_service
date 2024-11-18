@@ -28,6 +28,8 @@ import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -768,6 +770,267 @@ class ShipmentDaoTest extends CommonMocks {
         assertNotNull(response);
     }
 
+    @ParameterizedTest
+    @CsvSource({
+            "DRT, null",
+            "DRT, STD",
+            "STD, DRT",
+            "DRT, DRT",
+            "DRT, null",
+            "null, DRT"
+    })
+    void updateMawbChecks(String jobType1, String jobType2) {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build()
+        );
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType1)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType2)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        MawbStocks mawbStocks = MawbStocks.builder().build();
+        mawbStocks.setId(1L);
+        when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
+        when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateMawbChecks1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(null)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("STD")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateMawbChecks2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("STD")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("STD")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateMawbChecks3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("STD")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(null)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
     @Test
     void updateEtaEtdTest() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
@@ -1222,6 +1485,198 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         assertEquals(shipmentDetailsPage, shipmentDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.CARGO_TYPE_FCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.CONSOLIDATION_TYPE_AGT)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment4() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.CONSOLIDATION_TYPE_CLD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(Arrays.asList(containers, containers))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.airDG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test

@@ -334,7 +334,6 @@ public class ReportService implements IReportService {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
-            createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
@@ -713,10 +712,16 @@ public class ReportService implements IReportService {
             }
             if (pdfByteContent != null)
             {
+                String documentType = ReportConstants.SHIPMENT_HOUSE_BILL;
+                if(reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                    documentType = ReportConstants.ORIGINAL_HOUSE_BILL;
+                } else if(reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                    documentType = ReportConstants.DRAFT_HOUSE_BILL;
+                }
                 DocUploadRequest docUploadRequest = new DocUploadRequest();
                 docUploadRequest.setEntityType(Constants.Shipments);
                 docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
-                docUploadRequest.setType(ReportConstants.SHIPMENT_HOUSE_BILL);
+                docUploadRequest.setType(documentType);
                 docUploadRequest.setReportId(reportRequest.getReportId());
                 try {
                     AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType(), StringUtility.convertToString(shipmentDetails.getGuid()));
@@ -728,11 +733,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, tenantSettingsRow);
-            }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name()))
-            {
-                createAutoEvent(reportRequest.getReportId(),  EventConstants.HBL_SURRENDERED_OR_NOT, tenantSettingsRow);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
@@ -768,13 +769,6 @@ public class ReportService implements IReportService {
                 // TODO Abhimanyu doc upload failing
 //                throw new ValidationException("Unable to upload doc");
             }
-            createAutoEvent(reportRequest.getReportId(), EventConstants.MASTER_SEAWAY_BILL_OR_NOT, tenantSettingsRow);
-        }
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_INSTRUCTION) && pdfByteContent != null)
-        {
-            if (ReportConstants.SEA.equalsIgnoreCase(dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString()) && ReportConstants.EXP.equalsIgnoreCase(dataRetrived.get(ReportConstants.SHIPMENT_TYPE).toString())) {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.SHIPPING_ADVISE_SENT_OR_NOT, tenantSettingsRow);
-            }
         }
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPPING_REQUEST )&& pdfByteContent != null)
         {
@@ -793,6 +787,7 @@ public class ReportService implements IReportService {
             reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER)) {
             Map<String, String> eventCodeMapping = new HashMap<>();
             eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), EventConstants.CANG);
+            //todo: check for event: PICORDCNF
             eventCodeMapping.put(ReportConstants.PICKUP_ORDER.toUpperCase(), ReportConstants.PICKUP_ORDER_GEN);
             eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), EventConstants.DOGE);
             if(eventCodeMapping.containsKey(reportRequest.getReportInfo().toUpperCase())){
@@ -1497,12 +1492,6 @@ public class ReportService implements IReportService {
             shipmentDetails = shipmentsRow.get();
         }
 
-        if (shipmentDetails != null &&
-                shipmentDetails.getAdditionalDetails() != null &&
-                shipmentDetails.getAdditionalDetails().getOriginal() != null &&
-                shipmentDetails.getAdditionalDetails().getOriginal() >= 1) {
-            createAutoEvent(uploadRequest.getReportId(), EventConstants.GENERATE_BL_EVENT_EXCLUSIVE_OF_DRAFT, shipmentSettingsDetails);
-        }
     }
 
     private void updateInReleaseMappingTable(Hbl hbl, String releaseType, ShipmentSettingsDetails shipmentSettings) {

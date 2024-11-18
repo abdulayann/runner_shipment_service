@@ -405,6 +405,8 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(HS_CODE1, 123456);
+        packingValueMap.put(SLAC_CODE, 654321);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -661,6 +663,8 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(HS_CODE1, 123456);
+        packingValueMap.put(SLAC_CODE, 654321);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -920,6 +924,8 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(HS_CODE1, 123456);
+        packingValueMap.put(SLAC_CODE, 654321);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -1180,6 +1186,8 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(HS_CODE1, 123456);
+        packingValueMap.put(SLAC_CODE, 654321);
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));

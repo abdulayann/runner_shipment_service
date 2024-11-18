@@ -251,10 +251,9 @@ public class AwbUtility {
                         postCode = address.getZipPostCode();
                     }
                 }
-
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(!Strings.isNullOrEmpty(awb.getAwbShipmentInfo().getIssuingAgentCountry()) ? CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2() : null)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
@@ -355,7 +354,7 @@ public class AwbUtility {
     private AwbAirMessagingResponse.UnlocDetails populateUnlocFields(UnlocationsResponse unloc) {
         return AwbAirMessagingResponse.UnlocDetails.builder()
                 .name(unloc.getName())
-                .countyCode(StringUtility.isNotEmpty(unloc.getCountry()) ? CountryListHelper.ISO3166.fromAlpha3(unloc.getCountry().toUpperCase()).getAlpha2() : null)
+                .countyCode(CountryListHelper.ISO3166.getAlpha2IfAlpha3(unloc.getCountry()))
                 .iataCode(unloc.getIataCode())
                 .locCode(unloc.getLocCode())
                 .build();
@@ -367,7 +366,7 @@ public class AwbUtility {
                 .number(shipmentSettingsDetails.getRaNumber())
                 .expiry(shipmentSettingsDetails.getRaExpiry())
                 .city(tenantModel.city)
-                .country(StringUtility.isNotEmpty(tenantModel.country) ? CountryListHelper.ISO3166.fromAlpha3(tenantModel.country.toUpperCase()).getAlpha2() : null)
+                .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(tenantModel.country))
                 .state(tenantModel.state)
                 .branchCode(tenantModel.code)
                 .branchName(tenantModel.tenantName)
@@ -375,9 +374,10 @@ public class AwbUtility {
     }
 
     private AwbAirMessagingResponse.OrgDetails populateOrgsFields(Map<String, Object> org, Map<String, Object> address, String country, String city, String zipCode) {
+
         return AwbAirMessagingResponse.OrgDetails.builder()
                         .city(city)
-                        .country(!Strings.isNullOrEmpty(country) ? CountryListHelper.ISO3166.fromAlpha3(country.toUpperCase()).getAlpha2() : null)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(country))
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
@@ -432,10 +432,9 @@ public class AwbUtility {
                         postCode = address.getZipPostCode();
                     }
                 }
-
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(!Strings.isNullOrEmpty(awb.getAwbShipmentInfo().getIssuingAgentCountry()) ? CountryListHelper.ISO3166.fromAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry().toUpperCase()).getAlpha2() : null)
+                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
                         .currency(orgs.get(0).getCurrencyCode())
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
@@ -529,8 +528,10 @@ public class AwbUtility {
             awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
         }
-        if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode()))
-            awbResponse.getMeta().setCustomOriginCode(CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2());
+        if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
+            String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
+            awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
+        }
         return awbResponse;
     }
 
