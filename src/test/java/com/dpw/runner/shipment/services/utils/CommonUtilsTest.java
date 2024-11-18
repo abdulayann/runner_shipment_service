@@ -549,6 +549,35 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testAddBlankPage() throws IOException, DocumentException {
+        int originalDocumentPageCount = 2;
+        byte[] originalPdf = createSamplePdf(originalDocumentPageCount);
+        byte[] updatedPdf = CommonUtils.addBlankPage(originalPdf);
+
+        PdfReader pdfReader = new PdfReader(updatedPdf);
+        int pageCount = pdfReader.getNumberOfPages();
+        pdfReader.close();
+
+        // Assert that the updated PDF now has 3 pages
+        assertEquals(3, pageCount, "The PDF should have 3 pages after adding a blank page.");
+    }
+
+    private byte[] createSamplePdf(int pageCount) throws DocumentException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, byteArrayOutputStream);
+
+        document.open();
+        for (int i = 0; i < pageCount; i++) {
+            document.newPage();
+            document.add(new com.itextpdf.text.Paragraph("Page " + (i + 1)));
+        }
+        document.close();
+
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    @Test
     void testGetErrorResponseMessage_WithTransactionSystemException() {
         Throwable rootCause = mock(Throwable.class);
         when(rootCause.getMessage()).thenReturn("Root cause message");
