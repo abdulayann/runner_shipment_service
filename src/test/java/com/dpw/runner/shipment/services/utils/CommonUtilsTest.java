@@ -167,8 +167,6 @@ class CommonUtilsTest {
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
 
-    @Mock
-    private Configuration configuration;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -179,7 +177,6 @@ class CommonUtilsTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream originalOut;
     private byte[] pdfBytes;
-    private TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap;
 
     @AfterEach
     void tearDown() {
