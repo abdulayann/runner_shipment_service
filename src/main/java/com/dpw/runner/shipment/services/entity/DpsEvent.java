@@ -122,6 +122,9 @@ public class DpsEvent {
     @Column(name = "username_list", columnDefinition = "jsonb")
     private List<String> usernameList;
 
+    @Column(name = "warnings_approver")
+    private String warningsApprover;
+
     @PreUpdate
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();

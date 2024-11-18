@@ -6,11 +6,11 @@ import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import org.springframework.http.ResponseEntity;
 
-import java.util.List;
-
 public interface IDpsEventService {
 
     DpsEvent saveDpsEvent(DpsDto dpsDto);
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> updateWarningRulesStatus(CommonRequestModel commonRequestModel);
 }
