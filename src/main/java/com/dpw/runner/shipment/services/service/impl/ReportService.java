@@ -160,8 +160,6 @@ public class ReportService implements IReportService {
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
-    Set<String> printTermsAndConditionsForParties = Set.of("1", "2", "5");
-
     @Override
     @Transactional
     public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
@@ -1591,12 +1589,13 @@ public class ReportService implements IReportService {
             printingForParties = reportRequest.getPrintingFor_str().split(",");
         }
         for(String party : printingForParties){
-            dataRetrived.put(ReportConstants.PRINTING_FOR , MawbPrintFor.getById(Integer.parseInt(party)).getDesc());
+            MawbPrintFor printForParty = MawbPrintFor.getById(Integer.parseInt(party));
+            dataRetrived.put(ReportConstants.PRINTING_FOR , printForParty.getDesc());
             byte[] mainDocPage = GetFromDocumentService(dataRetrived, pages.getMainPageId());
             if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             else{
                 if(lastPage == null) lastPage = CommonUtils.getLastPage(mainDocPage);
-                if (!printTermsAndConditionsForParties.contains(party)) {
+                if (Boolean.TRUE.equals(printForParty.getPrintTermsAndCondition())) {
                     mainDocPage = CommonUtils.removeLastPage(mainDocPage);
                     mainDocPage = CommonUtils.addBlankPage(mainDocPage);
                 }
