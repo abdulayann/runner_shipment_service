@@ -357,8 +357,7 @@ public class DpsEventService implements IDpsEventService {
      *
      * @param commonRequestModel the request model containing data for updating the warning rules status.
      *                           This includes details like the shipment GUID, username, and rule execution IDs.
-     * @return a {@link ResponseEntity} containing an {@link IRunnerResponse}, indicating the success or failure
-     *         of the operation.
+     * @return a {@link ResponseEntity} containing an {@link IRunnerResponse}, indicating the success or failure of the operation.
      * @throws ValidationException if the input request is invalid (e.g., missing required fields).
      * @throws DpsException        if there are issues specific to the domain logic of updating the rules.
      */
