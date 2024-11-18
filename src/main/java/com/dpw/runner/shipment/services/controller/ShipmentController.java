@@ -155,7 +155,8 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST_EXTERNAL)
-    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody ListCommonRequest listCommonRequest) {
         log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
             return shipmentService.fullShipmentsExternalList(CommonRequestModel.buildRequest(listCommonRequest));

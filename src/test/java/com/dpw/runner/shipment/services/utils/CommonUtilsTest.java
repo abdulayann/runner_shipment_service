@@ -2977,10 +2977,6 @@ class CommonUtilsTest {
     @Test
     void testGetShipmentDetailsResponse() {
         List<String> includeColumns = List.of("carrierDetails", "eventsList");
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(typeMap);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }
@@ -2988,22 +2984,6 @@ class CommonUtilsTest {
     @Test
     void testGetShipmentDetailsResponseWithEmptyString() {
         List<String> includeColumns = List.of(StringUtility.getEmptyString());
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(typeMap);
-        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testGetShipmentDetailsResponseWithNullTypeMap() {
-        List<String> includeColumns = List.of("carrierDetails", "eventsList");
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(null);
-        when(modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class)).thenReturn(typeMap);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }

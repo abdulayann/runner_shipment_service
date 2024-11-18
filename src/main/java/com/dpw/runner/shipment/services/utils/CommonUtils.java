@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -64,7 +63,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -80,6 +78,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1818,51 +1817,28 @@ public class CommonUtils {
     }
 
     public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
-        return mapWithModelMapper(shipmentDetails, includeColumns);
+        return setIncludedFields(shipmentDetails, includeColumns);
     }
 
-    private ShipmentDetailsLazyResponse mapWithModelMapper(ShipmentDetails shipmentDetail, List<String> includeColumns) {
-        ModelMapper customModelMapper = this.modelMapper;
-        customModelMapper.getConfiguration().setImplicitMappingEnabled(false);
+    private ShipmentDetailsLazyResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
         ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
 
-        // Create or retrieve existing TypeMap
-        TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap = customModelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
-        if(typeMap == null) {
-            typeMap = customModelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class);
-        }
-        customModelMapper.getConfiguration().setImplicitMappingEnabled(true);
-        // Dynamically add mappings based on includeColumns
-        for (String field : includeColumns) {
+        includeColumns.forEach(field -> {
             try {
-                // Reflectively obtain the getter and setter methods for the specified field
-                Method getter = ShipmentDetails.class.getMethod("get" + capitalize(field));
-                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalize(field), getter.getReturnType());
+                // Capitalize the field name once for reuse
+                String capitalizedField = capitalize(field);
 
-                // Add mappings to the TypeMap for the specified fields only
-                typeMap.addMappings(mapper -> mapper.map(src -> {
-                    try {
-                        return getter.invoke(src);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }, (dest, value) -> {
-                    try {
-                        setter.invoke(dest, value);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }));
+                // Reflectively obtain the getter and setter methods once
+                Method getter = ShipmentDetails.class.getMethod("get" + capitalizedField);
+                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalizedField, getter.getReturnType());
 
-            } catch (NoSuchMethodException e) {
-                // Handle the case where the method does not exist for the specified field
+                Object value = getter.invoke(shipmentDetail);
+                setter.invoke(shipmentDetailsLazyResponse, value);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // Handle non-existent methods gracefully
                 log.error("No such field: {}", field);
             }
-        }
-
-        // Perform mapping from source to destination
-        typeMap.map(shipmentDetail, shipmentDetailsLazyResponse);
-
+        });
         return shipmentDetailsLazyResponse;
     }
 
