@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -107,6 +108,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String trackingServiceNewFlowEndpoint;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
@@ -731,6 +734,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
                 trackingEvents.addAll(eventsRows.stream().toList());
             }
+            commonUtils.updateEventWithMasterDataDescription(trackingEvents);
         } finally {
             customThreadPool.shutdown();
         }

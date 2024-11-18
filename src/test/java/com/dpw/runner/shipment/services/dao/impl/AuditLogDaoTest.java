@@ -1,7 +1,11 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.entity.AuditLog;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IAuditLogRepository;
+import java.time.LocalDateTime;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +36,12 @@ class AuditLogDaoTest {
     @InjectMocks
     private AuditLogDao auditLogDao;
 
+    @Mock
+    private EntityManager entityManager;
+
+    @Mock
+    private JsonHelper jsonHelper;
+
     private AuditLog auditLog;
 
     @BeforeEach
@@ -42,10 +52,15 @@ class AuditLogDaoTest {
 
     @Test
     void testSave() {
-        when(auditLogRepository.save(auditLog)).thenReturn(auditLog);
-        AuditLog savedAuditLog = auditLogDao.save(auditLog);
-        assertEquals(auditLog, savedAuditLog);
-        verify(auditLogRepository, times(1)).save(auditLog);
+        Query queryMock = mock(Query.class);
+        when(entityManager.createNativeQuery(anyString())).thenReturn(queryMock);
+        when(queryMock.setParameter(anyInt(), any())).thenReturn(queryMock);
+
+        auditLog.setUpdatedAt(LocalDateTime.now());
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLogDao.save(auditLog);
+
+        verify(entityManager, times(1)).createNativeQuery(anyString());
     }
 
     @Test

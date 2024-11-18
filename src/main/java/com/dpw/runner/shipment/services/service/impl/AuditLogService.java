@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -76,7 +75,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -106,7 +107,6 @@ public class AuditLogService implements IAuditLogService {
         COLUMN_HEADERS_TO_FIELD_NAME.put("Changed Date", Constants.CREATED_AT);
     }
 
-    public ExecutorService executorService = Executors.newFixedThreadPool(10);
     @Autowired
     private IAuditLogDao auditLogDao;
 
@@ -157,6 +157,8 @@ public class AuditLogService implements IAuditLogService {
         return result;
     }
 
+    @Async
+    @Transactional
     public void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException {
         String skipAuditLog = MDC.get("skip-audit-log");
         if(skipAuditLog != null && skipAuditLog.equals("true"))
@@ -166,6 +168,11 @@ public class AuditLogService implements IAuditLogService {
         auditLog.setOperation(auditLogMetaData.getOperation());
         auditLog.setParentType(auditLogMetaData.getParent());
         auditLog.setParentId(auditLogMetaData.getParentId());
+        auditLog.setTenantId(auditLogMetaData.getTenantId());
+        auditLog.setCreatedBy(auditLogMetaData.getUserName());
+        auditLog.setUpdatedBy(auditLogMetaData.getUserName());
+        auditLog.setCreatedAt(LocalDateTime.now());
+        auditLog.setUpdatedAt(LocalDateTime.now());
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
@@ -188,7 +195,7 @@ public class AuditLogService implements IAuditLogService {
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
         if (auditLogChangesMap.size() > 0) {
-            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
+            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         }
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getEntityType());
@@ -198,7 +205,7 @@ public class AuditLogService implements IAuditLogService {
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
         if(auditLogChangesMap.size() > 0)
-            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null);
+            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null, auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
         auditLog.setEntityId(getEntityId(auditLogMetaData.getPrevData()));
@@ -208,7 +215,7 @@ public class AuditLogService implements IAuditLogService {
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
         if(auditLogChangesMap.size() > 0)
-            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData());
+            addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
         auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
@@ -218,26 +225,26 @@ public class AuditLogService implements IAuditLogService {
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
         if(auditLogChangesMap.size() > 0)
-            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData());
+            addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
         auditLog.setEntityId(getEntityId(auditLogMetaData.getNewData()));
     }
 
-    public void addBaseEntityFields(Map<String, AuditLogChanges> auditLogChangesMap, BaseEntity oldEntity, BaseEntity newEntity)
+    public void addBaseEntityFields(Map<String, AuditLogChanges> auditLogChangesMap, BaseEntity oldEntity, BaseEntity newEntity, String userName)
     {
         if(newEntity == null)
             return;
         if(oldEntity == null)
         {
             auditLogChangesMap.put(Constants.CREATED_AT, createAuditLogChangesObject(Constants.CREATED_AT, LocalDateTime.now().toString(), null));
-            auditLogChangesMap.put(Constants.CREATED_BY, createAuditLogChangesObject(Constants.CREATED_BY, UserContext.getUser().Username, null));
+            auditLogChangesMap.put(Constants.CREATED_BY, createAuditLogChangesObject(Constants.CREATED_BY, userName, null));
         }
         else
         {
             auditLogChangesMap.put("updatedAt", createAuditLogChangesObject("updatedAt", LocalDateTime.now().toString(), oldEntity.getUpdatedAt() != null ? oldEntity.getUpdatedAt().toString() : null));
-            if(!Objects.equals(UserContext.getUser().Username, oldEntity.getUpdatedBy()))
-                auditLogChangesMap.put("updatedBy", createAuditLogChangesObject("updatedBy", UserContext.getUser().Username, oldEntity.getUpdatedBy()));
+            if(!Objects.equals(userName, oldEntity.getUpdatedBy()))
+                auditLogChangesMap.put("updatedBy", createAuditLogChangesObject("updatedBy", userName, oldEntity.getUpdatedBy()));
         }
     }
 

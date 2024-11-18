@@ -35,6 +35,7 @@ public class ApiConstants {
     public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
+    public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
     public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
@@ -132,5 +133,6 @@ public class ApiConstants {
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 
     public static final String CANCEL = "/cancel";
+    public static final String LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS = "/listBranchesByDefaultOrgAndAddress";
 
 }

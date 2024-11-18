@@ -9,8 +9,11 @@ import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +26,8 @@ public class TrackingConsumer {
     private final IEventService eventService;
     private ServiceBusProcessorClient processorClient;
     private final IV1Service v1Service;
+    @Value("${thread.sleep.time.ms}")
+    private long TIMEOUT_MS;
 
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
@@ -55,8 +60,10 @@ public class TrackingConsumer {
      * Otherwise we don't explicitly modify any message metadata, and this should be available to this consumer to be
      * reprocessed next time unless the delivery count exceeds 10 and forces it to be dead lettered.
      */
+    @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
+        Thread.sleep(TIMEOUT_MS);
         log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);

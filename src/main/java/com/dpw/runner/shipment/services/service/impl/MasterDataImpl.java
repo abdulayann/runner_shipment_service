@@ -384,4 +384,11 @@ public class MasterDataImpl implements IMasterDataService {
         keyMasterDataMap.forEach((key, value) -> masterDataUtils.setKeyValueForMasterLists(response, key, value));
         return ResponseHelper.buildSuccessResponse(response);
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.listBranchesByDefaultOrgAndAddress(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
 }

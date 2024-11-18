@@ -140,4 +140,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveryDate;
     private Integer ordersCount;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
 }

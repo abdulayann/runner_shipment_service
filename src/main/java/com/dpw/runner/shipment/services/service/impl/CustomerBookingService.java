@@ -261,6 +261,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(customerBooking)
                             .prevData(null)
                             .parent(CustomerBooking.class.getSimpleName())
@@ -404,6 +405,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(customerBooking)
                             .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
                             .parent(CustomerBooking.class.getSimpleName())

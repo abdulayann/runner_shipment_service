@@ -302,6 +302,14 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinColumn(name = "departure_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails departureDetails;
 
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "sending_agent_country")
+    private String sendingAgentCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "receiving_agent_country")
+    private String receivingAgentCountry;
+
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
     @OrganizationData
@@ -458,4 +466,11 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=32, message = "max size is 32 for department")
     @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
     private String department;
+
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
+
 }
