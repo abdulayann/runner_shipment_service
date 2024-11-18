@@ -95,8 +95,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.*;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
@@ -703,6 +702,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(consolidationDetails)
                             .prevData(null)
                             .parent(ConsolidationDetails.class.getSimpleName())
@@ -1021,7 +1021,9 @@ public class ConsolidationService implements IConsolidationService {
                     if(shipmentDetails.getEventsList() != null) {
                         List<Events> eventsList = shipmentDetails.getEventsList();
                         for(Events event : eventsList) {
-                            event.setConsolidationId(consolidationId);
+                            if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                                event.setConsolidationId(consolidationId);
+                            }
                         }
                         eventDao.saveAll(eventsList);
                     }
@@ -1372,7 +1374,7 @@ public class ConsolidationService implements IConsolidationService {
                 }
             }
         }  catch (Exception e) {
-            throw new BillingException("An unexpected error occurred during dues validation. " + e.getMessage(), e);
+            throw new BillingException(e.getMessage(), e);
         }
     }
 
@@ -1598,6 +1600,7 @@ public class ConsolidationService implements IConsolidationService {
                 // audit logs
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(entity)
                                 .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                                 .parent(ConsolidationDetails.class.getSimpleName())
@@ -2898,6 +2901,7 @@ public class ConsolidationService implements IConsolidationService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
                             .parent(ConsolidationDetails.class.getSimpleName())
@@ -2922,39 +2926,44 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {
-            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null && request.getGuid() == null) {
-                log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
-            }
-            Long id = request.getId();
-            Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
-            if(id != null ){
-                consolidationDetails = consolidationDetailsDao.findById(id);
-            } else {
-                UUID guid = UUID.fromString(request.getGuid());
-                consolidationDetails = consolidationDetailsDao.findByGuid(guid);
-            }
-            if (!consolidationDetails.isPresent()) {
-                log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
-                consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
-            }
-            ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-            var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-            response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
-            createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
-            return ResponseHelper.buildSuccessResponse(response);
+            return ResponseHelper.buildSuccessResponse(retrieveConsolidationData(commonRequestModel, getMasterData));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    public ConsolidationDetailsResponse retrieveConsolidationData(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        if(request.getId() == null && request.getGuid() == null) {
+            log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException("Id and GUID can't be null. Please provide any one !");
+        }
+        Long id = request.getId();
+        Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+        if(id != null ){
+            consolidationDetails = consolidationDetailsDao.findById(id);
+        } else {
+            UUID guid = UUID.fromString(request.getGuid());
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
+            consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
+        }
+        ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
+        createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
+
+        return response;
     }
 
     @Async
@@ -4302,6 +4311,10 @@ public class ConsolidationService implements IConsolidationService {
                 //.isLinked(true)
                 .build();
 
+        consol.setDepartment(commonUtils.getAutoPopulateDepartment(
+                consol.getTransportMode(), consol.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+        ));
+
         if(additionalDetails != null) {
             PartiesResponse parties;
             if(additionalDetails.getImportBroker() != null) {
@@ -4686,6 +4699,12 @@ public class ConsolidationService implements IConsolidationService {
             response.setCreatedBy(UserContext.getUser().getUsername());
             response.setCreatedAt(LocalDateTime.now());
             response.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
+
+            // Populate default department
+            response.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+            ));
+
             try {
                 log.info("Fetching Tenant Model");
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);

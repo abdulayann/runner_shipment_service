@@ -31,6 +31,7 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private Integer addressId;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String country;
+    private String countryName;
     @MasterData(type = MasterDataType.COUNTRY_STATES, cascade = Constants.AWB_COUNTRY)
     private String state;
     private String city;

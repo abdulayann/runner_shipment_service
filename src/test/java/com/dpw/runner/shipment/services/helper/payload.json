@@ -525,7 +525,10 @@
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -757,7 +760,7 @@
     "referenceNumber": "CONS000231188",
     "override": false,
     "shipmentType": "EXP",
-    "bol": "231161",
+    "bol": "986-55667780",
     "isCargoOnly": false,
     "isLocked": false,
     "docsClosingTime": "2024-03-20T00:00:00",
@@ -1478,7 +1481,10 @@
       "originAirport": "brussel",
       "destinationAirport": "bagani",
       "firstCarrier": "Air Transat",
-      "agentCASSCode": "123"
+      "agentCASSCode": "123",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "awbNotifyPartyInfo": [
       {
@@ -1575,7 +1581,10 @@
       "awbNumber": "986-55667780",
       "originAirport": "brussel",
       "destinationAirport": "bagani",
-      "firstCarrier": "Air Transat"
+      "firstCarrier": "Air Transat",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {

@@ -16,12 +16,14 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
@@ -135,20 +137,23 @@ public class DocumentManagerRestClient {
         return responseEntity.getBody();
     }
 
-    public ResponseEntity<Object> copyDocuments(CommonRequestModel commonRequestModel) {
+    @Async
+    public CompletableFuture<ResponseEntity<Object>> copyDocuments(CommonRequestModel commonRequestModel, String authToken) {
         try {
             var request = (CopyDocumentsRequest) commonRequestModel.getData();
             log.info("Copy Document Request {}", jsonHelper.convertToJson(request));
 
-            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpHeaders headers = getHttpHeaders(authToken);
             HttpEntity<Object> httpEntity = new HttpEntity<>(request, headers);
 
             var response = restTemplate.postForEntity(baseUrl + copyFileUrl, httpEntity, Object.class);
             log.info("Copy Document Response {}", jsonHelper.convertToJson(response));
-            return response;
+
+            return CompletableFuture.completedFuture(response);
         } catch (Exception ex) {
             log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
-            throw ex;
+            // It's good practice to handle exceptions in async methods
+            return CompletableFuture.failedFuture(ex);
         }
     }
 }

@@ -1,14 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
@@ -18,7 +16,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -28,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -80,6 +78,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -152,6 +152,9 @@ public class CommonUtils {
 
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    IMDMServiceAdapter mdmServiceAdapter;
 
 
 
@@ -1720,7 +1723,10 @@ public class CommonUtils {
         if(CollectionUtils.isEmpty(eventsList))
             return;
 
-        var eventCodeDescriptionMap = getEventDescription(eventsList.stream().map(Events::getEventCode).toList());
+        var eventCodeDescriptionMap = getEventDescription(eventsList.stream()
+                .filter(i -> Objects.isNull(i.getId()))
+                .map(Events::getEventCode)
+                .filter(Objects::nonNull).toList());
         // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
         // or missing entry in the master-data
         eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
@@ -1734,6 +1740,8 @@ public class CommonUtils {
     private Map<String, String> getEventDescription(List<String> eventCodes) {
         Map<String, String> eventCodeDescriptionMap = new HashMap<>();
         log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+        if (CollectionUtils.isEmpty(eventCodes))
+            return eventCodeDescriptionMap;
         try {
             List<Object> masterDataListCriteria = Arrays.asList(
                     List.of(
@@ -1794,6 +1802,50 @@ public class CommonUtils {
                 }
             });
         }
+    }
+
+    public String getAutoPopulateDepartment(String transportMode, String direction, String module) {
+        String department = null;
+        List<Map<String, Object>> departmentList = mdmServiceAdapter.getDepartmentList(transportMode, direction, module);
+        if(!CollectionUtils.isEmpty(departmentList)) {
+            List<String> uniqueDepartments = departmentList.stream()
+                    .map(i -> StringUtility.convertToString(i.get(MdmConstants.DEPARTMENT)))
+                    .distinct().toList();
+            department = uniqueDepartments.size() == 1 ? StringUtility.convertToString(uniqueDepartments.get(0)) : null;
+        }
+        return department;
+    }
+
+    public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
+        return setIncludedFields(shipmentDetails, includeColumns);
+    }
+
+    private ShipmentDetailsLazyResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+        ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
+
+        includeColumns.forEach(field -> {
+            try {
+                // Capitalize the field name once for reuse
+                String capitalizedField = capitalize(field);
+
+                // Reflectively obtain the getter and setter methods once
+                Method getter = ShipmentDetails.class.getMethod("get" + capitalizedField);
+                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalizedField, getter.getReturnType());
+
+                Object value = getter.invoke(shipmentDetail);
+                setter.invoke(shipmentDetailsLazyResponse, value);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // Handle non-existent methods gracefully
+                log.error("No such field: {}", field);
+            }
+        });
+        return shipmentDetailsLazyResponse;
+    }
+
+
+    private String capitalize(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
 }
