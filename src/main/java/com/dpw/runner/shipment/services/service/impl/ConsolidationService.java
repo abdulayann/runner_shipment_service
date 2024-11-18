@@ -40,7 +40,16 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -87,8 +96,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
-import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.*;
 import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
 import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
@@ -411,7 +419,6 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
-
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -4856,13 +4863,10 @@ public class ConsolidationService implements IConsolidationService {
     // Create Auto event
 
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
-        Events response = null;
-//        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
-
         if (consolidationDetails.getEventsList() == null) {
             consolidationDetails.setEventsList(new ArrayList<>());
         }
-        consolidationDetails.getEventsList().add(response);
+        consolidationDetails.getEventsList().add(createAutomatedEvents(consolidationDetails, EventConstants.COCR));
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
