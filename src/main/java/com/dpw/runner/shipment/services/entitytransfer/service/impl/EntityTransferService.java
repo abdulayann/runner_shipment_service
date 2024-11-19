@@ -237,7 +237,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<Integer> successTenantIds = new ArrayList<>();
 
         Set<Integer> uniqueDestinationTenants = new HashSet<>(sendShipmentRequest.getSendToBranch());
-        validationsBeforeSendTask(uniqueDestinationTenants);
+        approvalRoleTenantValidation(uniqueDestinationTenants);
         var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
         List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
@@ -315,7 +315,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         // Validation for importer role in receiving branch only for consolidation
         Set<Integer> tenantIds = new HashSet<>(sendConsolidationRequest.getSendToBranch());
-        validationsBeforeSendTask(tenantIds);
+        approvalRoleTenantValidation(tenantIds);
 
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
         if (!consolidationDetails.isPresent()) {
@@ -434,7 +434,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private void validationsBeforeSendTask(Set<Integer> sendBranches) {
+    private void approvalRoleTenantValidation(Set<Integer> sendBranches) {
         List<Integer> nonApprovalTenants = new ArrayList<>();
         for (Integer tenantId: sendBranches) {
             Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
@@ -452,6 +452,10 @@ public class EntityTransferService implements IEntityTransferService {
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
+            approvalRoleTenantValidation(tenantIds);
+        }
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
 
         // Update task status rejected
@@ -493,6 +497,10 @@ public class EntityTransferService implements IEntityTransferService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException {
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
+            approvalRoleTenantValidation(tenantIds);
+        }
         ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
 
         // Update task status rejected
@@ -1584,6 +1592,11 @@ public class EntityTransferService implements IEntityTransferService {
 
         // No CC emails are used
         List<String> ccEmails = new ArrayList<>();
+        // Current user (the sender) in CC for NTE
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            UsersDto user = UserContext.getUser();
+            ccEmails.add(user.Email);
+        }
         // Fetching role ids corresponding to console destination branches
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
         if(shipmentGuidSendToBranch == null)
@@ -1607,6 +1620,11 @@ public class EntityTransferService implements IEntityTransferService {
 
         // No CC emails are used
         List<String> ccEmails = new ArrayList<>();
+        // Current user (the sender) in CC for NTE
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            UsersDto user = UserContext.getUser();
+            ccEmails.add(user.Email);
+        }
 
         // Fetching role ids corresponding to shipment destination branches
         var shipmentSettingsList = shipmentSettingsDao.getSettingsByTenantIds(destinationBranches);
