@@ -58,7 +58,16 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -160,10 +169,10 @@ import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -919,6 +928,7 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
+        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), LocalDateTime.now());
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
@@ -2918,6 +2928,52 @@ public class ShipmentService implements IShipmentService {
                         LocalDateTime.now(), LocalDateTime.now()));
             }
         }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
+                isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted(),
+                        oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted())) {
+
+            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.ECCC))) {
+                List<Events> dbEvents = dbeventMap.get(EventConstants.ECCC);
+                for (Events event : dbEvents) {
+                    handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
+                }
+            } else {
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
+                        LocalDateTime.now(), LocalDateTime.now()));
+            }
+        }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
+                isEventChanged(shipmentDetails.getAdditionalDetails().getBlInstructionReceived(),
+                        oldEntity.getAdditionalDetails().getBlInstructionReceived())) {
+
+            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BLRS))) {
+                List<Events> dbEvents = dbeventMap.get(EventConstants.BLRS);
+                for (Events event : dbEvents) {
+                    handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
+                }
+            } else {
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
+                        LocalDateTime.now(), LocalDateTime.now()));
+            }
+        }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
+                isEventChanged(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(),
+                        oldEntity.getAdditionalDetails().getCargoOutForDelivery())) {
+
+            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.COOD))) {
+                List<Events> dbEvents = dbeventMap.get(EventConstants.COOD);
+                for (Events event : dbEvents) {
+                    handleEventDateTimeUpdate(event, LocalDateTime.now(), event.getActual());
+                }
+            } else {
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
+                        LocalDateTime.now(), LocalDateTime.now()));
+            }
+        }
+
     }
 
     private boolean isEventChanged(Object newValue, Object oldValue) {
@@ -3002,6 +3058,20 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
             events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
+        }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted())) {
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC, LocalDateTime.now(), LocalDateTime.now()));
+        }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getBlInstructionReceived() != null) {
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
+                    shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
+        }
+
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCargoOutForDelivery() != null) {
+            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
+                    shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
         }
 
     }
@@ -7568,6 +7638,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
+            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), LocalDateTime.now());
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {

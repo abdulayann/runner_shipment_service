@@ -332,8 +332,17 @@ public class ReportService implements IReportService {
             dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
-        } else if (report instanceof HblReport vHblReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
-            dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
+        } else if (report instanceof HblReport vHblReport) {
+            if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+                dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+                dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+            }
+        } else if (report instanceof PreAlertReport vPreAlertReport) {
+            dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createAutoEvent(reportRequest.getReportId(), EventConstants.PRST, tenantSettingsRow);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
