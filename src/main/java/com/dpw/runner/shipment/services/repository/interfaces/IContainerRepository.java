@@ -6,6 +6,9 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,4 +25,9 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
     }
     List<Containers> findByConsolidationId(Long consolidationId);
     void deleteById(Long id);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update containers set pra_status = ?3, where guid = ?1 and consolidation_id = ?2", nativeQuery = true)
+    void savePraStatus(String praStatus, UUID guid, Long consolidationId);
 }
