@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.entity.DpsEvent;
+import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
 import org.junit.jupiter.api.Test;
@@ -11,8 +14,10 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,34 +34,45 @@ class DpsEventServiceTest {
     private IDpsEventRepository dpsEventRepository;
 
     @Test
-    void getMatchingRulesByGuid() {
+    void getShipmentMatchingRulesByGuid_Success() {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
-        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(new ArrayList<>());
+        DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
+        List<DpsEvent> dpsEvents = new ArrayList<>();
+        dpsEvents.add(dpsEvent);
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(dpsEvents);
 
-        var response = dpsEventService.getMatchingRulesByGuid(commonRequestModel);
-        assertNotNull(response);
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void getMatchingRulesByGuid_Exception1() {
+    void getShipmentMatchingRulesByGuid_Success1() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
+
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getShipmentMatchingRulesByGuid_Exception() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
+
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMatchingRulesByGuid_Exception1() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
-
-        DpsException exception = assertThrows(DpsException.class, () -> {
-            dpsEventService.getMatchingRulesByGuid(commonRequestModel);
-        });
-        assertEquals("Error in fetching object of DpsEvent: GUID can't be null. Please provide guid!", exception.getMessage());
-    }
-
-    @Test
-    void getMatchingRulesByGuid_Exception2() {
-        String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
-        when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException("null"));
-
-        DpsException exception = assertThrows(DpsException.class, () -> {
-            dpsEventService.getMatchingRulesByGuid(commonRequestModel);
-        });
-        assertEquals("Error in fetching object of DpsEvent: null", exception.getMessage());
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 }

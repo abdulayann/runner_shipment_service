@@ -133,6 +133,6 @@ public class ApiConstants {
 
     public static final String CANCEL = "/cancel";
     public static final String LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS = "/listBranchesByDefaultOrgAndAddress";
-    public static final String MATCHING_RULES_BY_GUID = "/getMatchingRulesByGuid";
+    public static final String MATCHING_RULES_BY_GUID = "/get-matching-rules/guid";
 
 }
