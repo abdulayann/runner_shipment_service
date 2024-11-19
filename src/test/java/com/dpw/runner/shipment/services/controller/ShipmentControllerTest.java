@@ -623,17 +623,6 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void retrieveForNTE() {
-        // Mock
-        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L));
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
     void testCompleteRetrieveById() throws ExecutionException, InterruptedException {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));

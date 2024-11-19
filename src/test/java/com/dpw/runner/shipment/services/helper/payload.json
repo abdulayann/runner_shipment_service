@@ -9476,26 +9476,6 @@
       "value": "Default"
     }
   },
-  "NETWORK_TRANSFER_RESPONSE": {
-    "id": 21,
-    "guid": "f2fbf3e9-3f37-439b-a45e-d4f7d08885c9",
-    "entityType": "SHIPMENT",
-    "entityNumber": "SHP000117811",
-    "entityId": 12146,
-    "transportMode": "AIR",
-    "sourceBranchId": 728,
-    "status": "REASSIGNED",
-    "tenantId": 938,
-    "createdAt": "2024-11-07T19:09:15.657434",
-    "tenantMasterData": {
-      "tenantId": "ALEXANDRIA TEST QA",
-      "tenantId_code": "ALEX TEST"
-    },
-    "masterData": {
-      "transportMode": "AIR (Air Freight)",
-      "jobType": "IMP (Import)"
-    }
-  },
   "CUSTOMER_BOOKING_REQUEST": {
     "id": 202861,
     "guid": "1451980b-bab4-45e3-b6ba-3c178fcd0b22",

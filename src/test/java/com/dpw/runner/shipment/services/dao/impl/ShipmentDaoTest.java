@@ -1678,13 +1678,4 @@ class ShipmentDaoTest extends CommonMocks {
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
     }
-
-    @Test
-    void findShipmentByIdWithQuery() {
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setId(1L);
-        when(shipmentRepository.findShipmentByIdWithQuery(anyLong())).thenReturn(Optional.of(shipmentDetails));
-        Optional<ShipmentDetails> responseEntity = shipmentDao.findShipmentByIdWithQuery(shipmentDetails.getId());
-        assertEquals(Optional.of(shipmentDetails), responseEntity);
-    }
 }

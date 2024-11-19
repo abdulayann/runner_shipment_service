@@ -661,12 +661,6 @@ public class ShipmentDao implements IShipmentDao {
 
     @Override
     @Transactional
-    public Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id) {
-        return shipmentRepository.findShipmentByIdWithQuery(id);
-    }
-
-    @Override
-    @Transactional
     public void entityDetach(List<ShipmentDetails> shipmentDetails) {
         for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
             entityManager.detach(shipmentDetails1);

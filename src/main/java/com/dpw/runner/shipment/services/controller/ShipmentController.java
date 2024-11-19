@@ -177,15 +177,6 @@ public class ShipmentController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
-    @GetMapping(ShipmentConstants.API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN)
-    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id) {
-        CommonGetRequest request = CommonGetRequest.builder().build();
-        id.ifPresent(request::setId);
-        log.info("Received Shipment NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(request));
-    }
-
-    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_COMPLETE_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> completeRetrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) throws ExecutionException, InterruptedException {
         CommonGetRequest request = CommonGetRequest.builder().includeColumns(includeColumns).build();
