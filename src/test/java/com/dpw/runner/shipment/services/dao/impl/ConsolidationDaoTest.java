@@ -644,4 +644,12 @@ class ConsolidationDaoTest extends CommonMocks {
         assertEquals(consolIdPage, response);
     }
 
+    @Test
+    void findConsolidationByIdWithQuery() {
+        ConsolidationDetails consolidationDetails = testConsol;
+        when(consolidationRepository.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        Optional<ConsolidationDetails> responseEntity = consolidationsDao.findConsolidationByIdWithQuery(consolidationDetails.getId());
+        assertEquals(Optional.of(consolidationDetails), responseEntity);
+    }
+
 }

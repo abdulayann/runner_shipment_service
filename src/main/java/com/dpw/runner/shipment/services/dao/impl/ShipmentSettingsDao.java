@@ -77,7 +77,7 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     }
 
     @Override
-    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
+//    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
     public Optional<ShipmentSettingsDetails> getSettingsByTenantIdWithCache(Integer tenantId) {
         return shipmentSettingsRepository.findByTenantId(tenantId);
     }

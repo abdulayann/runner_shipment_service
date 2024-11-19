@@ -97,4 +97,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
 }
