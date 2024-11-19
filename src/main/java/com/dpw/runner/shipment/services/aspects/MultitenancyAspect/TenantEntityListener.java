@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.http.auth.AuthenticationException;
 
@@ -21,7 +22,7 @@ public class TenantEntityListener {
 
     @PrePersist
     public void prePersist(Object object) {
-        if (object instanceof MultiTenancy multiTenancy) {
+        if (object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
@@ -43,7 +44,7 @@ public class TenantEntityListener {
 
     @PreUpdate
     public void preUpdate(Object object) throws AuthenticationException {
-        if(object instanceof MultiTenancy multiTenancy) {
+        if(object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
@@ -70,7 +71,7 @@ public class TenantEntityListener {
 
     @PreRemove
     public void preRemove(Object object) throws AuthenticationException {
-        if(object instanceof MultiTenancy multiTenancy) {
+        if(object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
@@ -94,6 +95,12 @@ public class TenantEntityListener {
 
     private boolean isValidTenantId(Integer tenantId) {
         return (!Objects.isNull(tenantId) && tenantId > 0);
+    }
+
+    public Boolean byPassMultiTenancyFilter(Object object){
+        if(object instanceof NetworkTransfer)
+            return Boolean.TRUE;
+        return Boolean.FALSE;
     }
 }
 

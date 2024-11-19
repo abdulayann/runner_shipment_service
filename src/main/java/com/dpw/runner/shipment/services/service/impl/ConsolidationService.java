@@ -40,15 +40,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -204,6 +196,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -258,6 +251,7 @@ import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -418,7 +412,11 @@ public class ConsolidationService implements IConsolidationService {
     private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Autowired
+    private INetworkTransferService networkTransferService;
+
+    @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -1654,7 +1652,7 @@ public class ConsolidationService implements IConsolidationService {
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
                         !Objects.equals(console.getCarrierDetails().getShippingLine(),oldEntity.getCarrierDetails().getShippingLine()) ||
-                        !Objects.equals(console.getCarrierDetails().getAircraftType(), oldEntity.getCarrierDetails().getAircraftType()) ||
+                        !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
                         !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of()))
@@ -2921,6 +2919,36 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+            if(request.getId() == null) {
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id can't be null.");
+            }
+            Long id = request.getId();
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
+            if (!consolidationDetails.isPresent()) {
+                log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(!Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue()) &&
+                    !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+            }
+            log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
+            ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+            createConsolidationPayload(consolidationDetails.get(), response, true);
+            return ResponseHelper.buildSuccessResponse(response);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return retrieveById(commonRequestModel, false);
     }
@@ -4133,6 +4161,46 @@ public class ConsolidationService implements IConsolidationService {
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
         }
+
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
+    }
+
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
+        try{
+            networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
+                    consolidationDetails, jobType, null);
+        } catch (Exception ex) {
+            log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+        }
+
+    }
+
+    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        try{
+            if (consolidationDetails.getTransportMode()!=null &&
+                    !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
+                    && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+                processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
+                        oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
+                        reverseDirection(consolidationDetails.getShipmentType()));
+                processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
+                        oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS);
+            }
+        } catch (Exception ex) {
+            log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
+        }
+
+    }
+
+    private String reverseDirection(String direction) {
+        String res = direction;
+        if(Constants.DIRECTION_EXP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_IMP;
+        }
+        else if(Constants.DIRECTION_IMP.equalsIgnoreCase(direction)) {
+            res = Constants.DIRECTION_EXP;
+        }
+        return res;
     }
 
     public void syncMainLegRoute(ConsolidationDetailsRequest consolidationDetailsRequest, ConsolidationDetails oldEntity) {
@@ -4765,7 +4833,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error(CONSOLIDATION_RETRIEVE_EMPTY_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
             if (!consolidationDetails.isPresent()) {
@@ -4793,7 +4861,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new ValidationException("Request is null");
             }
             if (request.getId() == null) {
-                log.error("Request Id is null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                log.error(ConsolidationConstants.CONSOLIDATION_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("Id is null");
             }
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
@@ -4866,13 +4934,10 @@ public class ConsolidationService implements IConsolidationService {
     // Create Auto event
 
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
-        Events response = null;
-//        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
-
         if (consolidationDetails.getEventsList() == null) {
             consolidationDetails.setEventsList(new ArrayList<>());
         }
-        consolidationDetails.getEventsList().add(response);
+        consolidationDetails.getEventsList().add(createAutomatedEvents(consolidationDetails, EventConstants.COCR));
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
