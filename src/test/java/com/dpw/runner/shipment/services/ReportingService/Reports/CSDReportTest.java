@@ -283,6 +283,21 @@ class CSDReportTest {
     }
 
     @Test
+    void test_populateDictionary_whenConsolidationWithScreeningStatus() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(true);
+        doNothing().when(spyReport).populateConsolidationFields(any(), any());
+        doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        CSDModel csdModel = getSampleCSDModel();
+        csdModel.getConsolidationModel().setScreeningStatus(List.of("AOM", "SCC"));
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+    }
+
+    @Test
     void test_populateDictionary_whenShipment() {
         var spyReport = Mockito.spy(this.csdReport);
         doNothing().when(spyReport).populateUserFields(any(), any());

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -68,6 +69,8 @@ public class CSDReport extends IReport{
                         csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
                 ));
             }
+            if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
+                dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
         }
         else {
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);
@@ -84,6 +87,10 @@ public class CSDReport extends IReport{
                         csdModel.getShipmentModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
                 ));
             }
+            AdditionalDetailModel additionalDetailModel = Optional.ofNullable(csdModel.getShipmentModel().getAdditionalDetails()).orElse(new AdditionalDetailModel());
+            dictionary.put(ReportConstants.REGULATORY_ENTITY_CATEGORY, additionalDetailModel.getRegulatedEntityCategory());
+            if(!CollectionUtils.isEmpty(additionalDetailModel.getScreeningStatus()))
+                dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(additionalDetailModel.getScreeningStatus()));
         }
 
         var securityStatus = dictionary.get(ReportConstants.CONSIGNMENT_STATUS);
