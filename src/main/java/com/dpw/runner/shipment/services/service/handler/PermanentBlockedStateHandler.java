@@ -6,7 +6,7 @@ import java.util.Set;
 
 public class PermanentBlockedStateHandler implements IDpsWorkflowStateHandler {
 
-    private static final Set<DpsWorkflowState> VALID_NEXT_STATES = Set.of();
+    private static final Set<DpsWorkflowState> VALID_NEXT_STATES = Set.of(DpsWorkflowState.PER_BLOCKED);
 
     /**
      * Validates the transition between the current and new DPS workflow states.

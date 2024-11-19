@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
+import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
 import com.dpw.runner.shipment.services.service.handler.DpsWorkflowStateHandlerFactory;
 import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler;
@@ -23,12 +24,13 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -86,8 +88,8 @@ public class DpsEventService implements IDpsEventService {
             }
 
             // Fetch ShipmentDetails once
-            ShipmentDetails shipmentDetails = shipmentDao.findByGuid(UUID.fromString(shipmentGuid))
-                    .orElseThrow(() -> new DpsException("No Shipment found with GUID: " + shipmentGuid));
+            ShipmentDetails shipmentDetails = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(shipmentGuid)))
+                    .stream().findFirst().orElseThrow(() -> new DpsException("No Shipment found with GUID: " + shipmentGuid));
 
             // Handle DPS events
             handleDpsEvents(dpsEvent, shipmentDetails);
@@ -117,12 +119,13 @@ public class DpsEventService implements IDpsEventService {
                     dpsEvent.getEntityId(), currentState, newState);
 
             // Validate state transition
-            IDpsWorkflowStateHandler handler = dpsWorkflowStateHandlerFactory.getHandler(currentState);
-            handler.validateTransition(currentState, newState);
+            if(currentState != null) {
+                IDpsWorkflowStateHandler stateHandler = dpsWorkflowStateHandlerFactory.getHandler(currentState);
+                stateHandler.validateTransition(currentState, newState);
+            }
 
             // Update the state if validation succeeds
-            shipmentDetails.setDpsState(newState);
-            shipmentDao.save(shipmentDetails, false);
+            shipmentDao.saveDpsState(shipmentDetails.getId(), newState.name());
         } catch (Exception e) {
             throw new DpsException(e.getMessage(), e);
         }
@@ -143,6 +146,7 @@ public class DpsEventService implements IDpsEventService {
         try {
             DpsEventLog eventLog = DpsEventLog.builder()
                     .executionId(dpsEvent.getExecutionId().toString())
+                    .transactionId(dpsEvent.getTransactionId())
                     .usernameList(String.join(",", dpsEvent.getUsernameList()))
                     .dpsWorkflowState(dpsEvent.getState())
                     .eventTimeStamp(dpsEvent.getEventTimestamp())
@@ -204,47 +208,59 @@ public class DpsEventService implements IDpsEventService {
     private DpsEvent constructDpsEvent(DpsDto dpsDto) {
         try {
             // Attempt to find an existing DpsEvent by execution ID, or create a new one if not found
-            DpsEvent dpsEvent = Optional.ofNullable(dpsEventRepository.findByExecutionId(dpsDto.getExecutionId()))
+            DpsDataDto dtoData = dpsDto.getData();
+            DpsEvent dpsEvent = Optional.ofNullable(dpsEventRepository.findByExecutionId(dtoData.getRuleExecutionId()))
                     .orElseGet(DpsEvent::new);
 
             // Update fields conditionally only if non-null
-            if (dpsDto.getExecutionId() != null) {
-                dpsEvent.setExecutionId(dpsDto.getExecutionId());
+            if (dtoData.getRuleExecutionId() != null) {
+                dpsEvent.setExecutionId(dtoData.getRuleExecutionId());
             }
-            if (dpsDto.getEntityId() != null) {
-                dpsEvent.setEntityId(dpsDto.getEntityId());
+            if (dtoData.getEntityId() != null) {
+                dpsEvent.setEntityId(dtoData.getEntityId());
             }
-            if (dpsDto.getWorkflowType() != null) {
-                dpsEvent.setWorkflowType(DpsWorkflowType.valueOf(dpsDto.getWorkflowType()));
+            if (dtoData.getWorkflowType() != null) {
+                dpsEvent.setWorkflowType(DpsWorkflowType.valueOf(dtoData.getWorkflowType()));
             }
-            if (dpsDto.getState() != null) {
-                dpsEvent.setState(DpsWorkflowState.valueOf(dpsDto.getState()));
+            if (dtoData.getState() != null) {
+                dpsEvent.setState(DpsWorkflowState.valueOf(dtoData.getState()));
             }
-            if (dpsDto.getStatus() != null) {
-                dpsEvent.setStatus(DpsExecutionStatus.valueOf(dpsDto.getStatus()));
+            if (dtoData.getRuleStatus() != null) {
+                dpsEvent.setStatus(DpsExecutionStatus.valueOf(dtoData.getRuleStatus()));
             }
-            if (dpsDto.getEntityType() != null) {
-                dpsEvent.setEntityType(DpsEntityType.valueOf(dpsDto.getEntityType()));
+            if (dtoData.getEntityType() != null) {
+                dpsEvent.setEntityType(DpsEntityType.valueOf(dtoData.getEntityType()));
             }
-            if (dpsDto.getText() != null) {
-                dpsEvent.setText(dpsDto.getText());
+            if (dtoData.getText() != null) {
+                dpsEvent.setText(dtoData.getText());
             }
-            if (dpsDto.getImplications() != null) {
-                dpsEvent.setImplicationList(dpsDto.getImplications());
+            if (ObjectUtils.isNotEmpty(dtoData.getImplications())) {
+                dpsEvent.setImplicationList(dtoData.getImplications());
             }
-            if (dpsDto.getConditionMessage() != null) {
-                dpsEvent.setConditionMessageList(dpsDto.getConditionMessage());
+            if (ObjectUtils.isNotEmpty(dtoData.getConditionMessage())) {
+                dpsEvent.setConditionMessageList(dtoData.getConditionMessage());
             }
-            if (dpsDto.getUsernameList() != null) {
-                dpsEvent.setUsernameList(dpsDto.getUsernameList());
+            if (ObjectUtils.isNotEmpty(dtoData.getRuleMatchedFieldList())) {
+                dpsEvent.setRuleMatchedFieldList(dtoData.getRuleMatchedFieldList());
             }
-            if (dpsDto.getEventTimestamp() != null) {
-                dpsEvent.setEventTimestamp(dpsDto.getEventTimestamp());
+            if (ObjectUtils.isNotEmpty(dtoData.getUsernameList())) {
+                dpsEvent.setUsernameList(dtoData.getUsernameList());
             }
-            if (dpsDto.getFieldsDetected() != null || dpsDto.getFieldsDetectedValues() != null) {
-                List<String> fieldsDetected = Optional.ofNullable(dpsDto.getFieldsDetected()).orElse(Collections.emptyList());
-                List<String> fieldsDetectedValues = Optional.ofNullable(dpsDto.getFieldsDetectedValues()).orElse(Collections.emptyList());
-                dpsEvent.setDpsFieldData(createDpsFieldDataList(fieldsDetected, fieldsDetectedValues));
+            if (dtoData.getEventTimestamp() != null) {
+                dpsEvent.setEventTimestamp(dtoData.getEventTimestamp());
+            }
+            if (dpsDto.getTransactionId() != null) {
+                dpsEvent.setTransactionId(dpsDto.getTransactionId());
+            }
+            if (ObjectUtils.isNotEmpty(dtoData.getFieldsDetectedValues())) {
+
+                dpsEvent.setDpsFieldData(ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>()));
+                dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
+                        dpsEvent.getDpsFieldData().add(DpsFieldData.builder()
+                                .key(fieldDataDto.getKey())
+                                .value(fieldDataDto.getValue()).build()
+                        )
+                );
             }
 
             return dpsEvent;
@@ -252,24 +268,6 @@ public class DpsEventService implements IDpsEventService {
         } catch (Exception e) {
             throw new DpsException("Error in creating or updating object of DpsEvent: " + e.getMessage(), e);
         }
-    }
-
-    /**
-     * Creates a list of {@link DpsFieldData} objects by mapping the provided keys to their corresponding values.
-     *
-     * @param keys the list of field keys.
-     * @param values the list of field values corresponding to the keys.
-     * @return a list of {@link DpsFieldData} objects constructed from the provided keys and values.
-     * @throws IndexOutOfBoundsException if the size of the keys and values lists do not match.
-     */
-    private List<DpsFieldData> createDpsFieldDataList(List<String> keys, List<String> values) {
-        List<DpsFieldData> dpsFieldDataList = new ArrayList<>();
-
-        for (int i = 0; i < keys.size(); i++) {
-            dpsFieldDataList.add(new DpsFieldData(keys.get(i), values.get(i)));
-        }
-
-        return dpsFieldDataList;
     }
 
 

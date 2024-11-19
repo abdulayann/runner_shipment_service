@@ -34,6 +34,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private String text;
     private List<String> implicationList;
     private List<String> conditionMessageList;
+    private List<String> ruleMatchedFieldList;
     private List<DpsFieldDataResponse> dpsFieldData;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
@@ -42,6 +43,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private Boolean isDeleted;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime eventTimestamp;
+    private String transactionId;
     private List<String> usernameList;
 
     @Data

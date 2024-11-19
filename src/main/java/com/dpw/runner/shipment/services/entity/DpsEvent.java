@@ -24,6 +24,7 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 import javax.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -87,16 +88,22 @@ public class DpsEvent {
     private String text;
 
     @Column(name = "implication_list")
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "dps_event_implication", joinColumns = @JoinColumn(name = "dps_event_id"))
     @BatchSize(size = 50)
     private List<String> implicationList;
 
     @Column(name = "condition_message_list")
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "dps_event_condition_message", joinColumns = @JoinColumn(name = "dps_event_id"))
     @BatchSize(size = 50)
     private List<String> conditionMessageList;
+
+    @Column(name = "rule_matched_field_list")
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "dps_event_rule_matched_field", joinColumns = @JoinColumn(name = "dps_event_id"))
+    @BatchSize(size = 50)
+    private List<String> ruleMatchedFieldList;
 
     @Type(type = "jsonb")
     @Column(name = "dpsFieldData", columnDefinition = "jsonb")
@@ -118,6 +125,9 @@ public class DpsEvent {
     @Column(name = "event_timestamp")
     private LocalDateTime eventTimestamp;
 
+    @Column(name = "transaction_id", nullable = false)
+    private String transactionId;
+
     @Type(type = "jsonb")
     @Column(name = "username_list", columnDefinition = "jsonb")
     private List<String> usernameList;
@@ -128,6 +138,7 @@ public class DpsEvent {
         if (Boolean.TRUE.equals(this.isDeleted)) {
             this.implicationList.clear();
             this.conditionMessageList.clear();
+            this.ruleMatchedFieldList.clear();
         }
     }
 
@@ -143,6 +154,7 @@ public class DpsEvent {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     @Embeddable
     public static class DpsFieldData {
         private String key;

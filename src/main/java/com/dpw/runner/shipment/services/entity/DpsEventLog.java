@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 @Setter
 public class DpsEventLog extends BaseEntity {
     private String executionId;
+    private String transactionId;
     private String usernameList;
     private DpsWorkflowState dpsWorkflowState;
     private LocalDateTime eventTimeStamp;

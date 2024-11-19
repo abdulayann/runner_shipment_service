@@ -7594,9 +7594,11 @@ public class ShipmentService implements IShipmentService {
                     .text(dpsEvent.getText())
                     .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
                     .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
+                    .ruleMatchedFieldList(dpsEvent.getRuleMatchedFieldList() != null ? new ArrayList<>(dpsEvent.getRuleMatchedFieldList()) : new ArrayList<>())
                     .dpsFieldData(dpsFieldDataResponseList)
                     .usernameList(dpsEvent.getUsernameList())
                     .eventTimestamp(dpsEvent.getEventTimestamp())
+                    .transactionId(dpsEvent.getTransactionId())
                     .build();
         } catch (Exception e) {
             throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);

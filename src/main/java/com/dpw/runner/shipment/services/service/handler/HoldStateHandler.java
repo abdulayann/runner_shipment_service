@@ -7,6 +7,7 @@ import java.util.Set;
 public class HoldStateHandler implements IDpsWorkflowStateHandler {
 
     private static final Set<DpsWorkflowState> VALID_NEXT_STATES = Set.of(
+            DpsWorkflowState.HOLD,
             DpsWorkflowState.UN_HOLD,
             DpsWorkflowState.TEMP_BLOCKED,
             DpsWorkflowState.PER_BLOCKED,
