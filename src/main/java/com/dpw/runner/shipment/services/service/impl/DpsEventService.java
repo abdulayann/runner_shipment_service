@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
 import com.dpw.runner.shipment.services.entity.DpsEventLog;
@@ -15,6 +17,8 @@ import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
@@ -23,15 +27,13 @@ import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -180,8 +182,7 @@ public class DpsEventService implements IDpsEventService {
      * @return a list of active {@link DpsEvent} entries matching the given GUID
      * @throws DpsException if the GUID is null or empty, or if an error occurs during data retrieval
      */
-    @Override
-    public List<DpsEvent> getMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
+    private List<DpsEvent> fetchMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
 
         try {
             CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
@@ -193,6 +194,76 @@ public class DpsEventService implements IDpsEventService {
             return dpsEventRepository.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE);
         } catch (Exception e) {
             throw new DpsException("Error in fetching object of DpsEvent: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Retrieves matching rules based on a unique identifier provided in the {@code CommonRequestModel}.
+     * The method filters and organizes rules into categories by workflow type (HOLD or WARNING),
+     * constructing an appropriate response for each.
+     *
+     * @param commonRequestModel the model containing the unique identifier and necessary request details
+     * @return {@code ResponseEntity<IRunnerResponse>} containing the mapped matching rules if successful;
+     *         otherwise, an error response entity
+     */
+    @Override
+    public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
+        try {
+            List<DpsEvent> dpsEvents = Optional.ofNullable(fetchMatchingRulesByGuid(commonRequestModel)).orElseGet(ArrayList::new);
+            Map<DpsWorkflowType, List<DpsEventResponse>> responseMap = new HashMap<>();
+            responseMap.put(DpsWorkflowType.HOLD, new ArrayList<>());
+            responseMap.put(DpsWorkflowType.WARNING, new ArrayList<>());
+            for (DpsEvent dpsEvent : dpsEvents) {
+                if (dpsEvent == null) continue;
+                DpsWorkflowType workflowType = dpsEvent.getWorkflowType();
+                if (dpsEvent.getEntityType() == DpsEntityType.SHIPMENT && (workflowType == DpsWorkflowType.HOLD || workflowType == DpsWorkflowType.WARNING)) {
+                    responseMap.computeIfAbsent(workflowType, k -> new ArrayList<>()).add(constructDpsEventResponse(dpsEvent));
+                }
+            }
+            return ResponseHelper.buildSuccessResponse(responseMap);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    /**
+     * Constructs a {@link DpsEventResponse} object from a {@link DpsEvent} instance. This method
+     * maps the fields in the input {@code DpsEvent} to a new {@code DpsEventResponse} object,
+     * including transformation of field data if present.
+     *
+     * @param dpsEvent the {@code DpsEvent} object containing data to be transformed into a response
+     * @return a {@code DpsEventResponse} containing the mapped fields from the input {@code DpsEvent}
+     * @throws DpsException if an error occurs during response construction
+     */
+    private DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent) {
+        try {
+            List<DpsEventResponse.DpsFieldDataResponse> dpsFieldDataResponseList =
+                    dpsEvent.getDpsFieldData() != null
+                            ? dpsEvent.getDpsFieldData().stream()
+                            .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue()))
+                            .collect(Collectors.toList())
+                            : Collections.emptyList();
+            return  DpsEventResponse.builder()
+                    .id(dpsEvent.getId())
+                    .guid(dpsEvent.getGuid())
+                    .executionId(dpsEvent.getExecutionId())
+                    .entityId(dpsEvent.getEntityId())
+                    .entityType(dpsEvent.getEntityType())
+                    .workflowType(dpsEvent.getWorkflowType())
+                    .state(dpsEvent.getState())
+                    .status(dpsEvent.getStatus())
+                    .text(dpsEvent.getText())
+                    .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
+                    .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
+                    .dpsFieldData(dpsFieldDataResponseList)
+                    .usernameList(dpsEvent.getUsernameList())
+                    .eventTimestamp(dpsEvent.getEventTimestamp())
+                    .build();
+        } catch (Exception e) {
+            throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
         }
     }
 

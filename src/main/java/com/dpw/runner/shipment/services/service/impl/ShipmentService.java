@@ -161,7 +161,6 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
-import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
@@ -208,7 +207,6 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -231,8 +229,6 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -243,7 +239,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -266,7 +261,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
@@ -551,9 +545,6 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
-
-    @Autowired
-    private IDpsEventService dpsEventService;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -7546,62 +7537,5 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
 
         return ResponseHelper.buildSuccessResponse();
-    }
-
-    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
-        try {
-            List<DpsEvent> dpsEvents = Optional.ofNullable(dpsEventService.getMatchingRulesByGuid(commonRequestModel)).orElseGet(ArrayList::new);
-
-            Map<DpsWorkflowType, List<DpsEventResponse>> responseMap = new HashMap<>();
-            responseMap.put(DpsWorkflowType.HOLD, new ArrayList<>());
-            responseMap.put(DpsWorkflowType.WARNING, new ArrayList<>());
-
-            for (DpsEvent dpsEvent : dpsEvents) {
-                if (dpsEvent == null) continue;
-
-                DpsWorkflowType workflowType = dpsEvent.getWorkflowType();
-                if (dpsEvent.getEntityType() == DpsEntityType.SHIPMENT && (workflowType == DpsWorkflowType.HOLD || workflowType == DpsWorkflowType.WARNING)) {
-                    responseMap.computeIfAbsent(workflowType, k -> new ArrayList<>()).add(constructDpsEventResponse(dpsEvent));
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(responseMap);
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
-    }
-
-    private DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent) {
-        try {
-            List<DpsEventResponse.DpsFieldDataResponse> dpsFieldDataResponseList =
-                    dpsEvent.getDpsFieldData() != null
-                            ? dpsEvent.getDpsFieldData().stream()
-                            .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue()))
-                            .collect(Collectors.toList())
-                            : Collections.emptyList();
-
-            return  DpsEventResponse.builder()
-                    .id(dpsEvent.getId())
-                    .guid(dpsEvent.getGuid())
-                    .executionId(dpsEvent.getExecutionId())
-                    .entityId(dpsEvent.getEntityId())
-                    .entityType(dpsEvent.getEntityType())
-                    .workflowType(dpsEvent.getWorkflowType())
-                    .state(dpsEvent.getState())
-                    .status(dpsEvent.getStatus())
-                    .text(dpsEvent.getText())
-                    .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
-                    .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
-                    .ruleMatchedFieldList(dpsEvent.getRuleMatchedFieldList() != null ? new ArrayList<>(dpsEvent.getRuleMatchedFieldList()) : new ArrayList<>())
-                    .dpsFieldData(dpsFieldDataResponseList)
-                    .usernameList(dpsEvent.getUsernameList())
-                    .eventTimestamp(dpsEvent.getEventTimestamp())
-                    .transactionId(dpsEvent.getTransactionId())
-                    .build();
-        } catch (Exception e) {
-            throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
-        }
     }
 }
