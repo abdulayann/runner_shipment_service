@@ -678,8 +678,15 @@ public class HawbReport extends IReport{
                 locCodes = new HashSet<>();
                 locCodes.add(otherInfoRows.getExecutedAt());
                 locCodeMap = getLocationData(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                String executedAtName = null;
+                if (locCodeMap.get(otherInfoRows.getExecutedAt()) != null) {
+                    // Get the name from v1 and convert it to uppercase if not null
+                    executedAtName = Optional.ofNullable(locCodeMap.get(otherInfoRows.getExecutedAt()).getName())
+                            .map(String::toUpperCase)
+                            .orElse(null);
+                }
                 dictionary.put(ReportConstants.EXECUTED_AT, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ?  locCodeMap.get(otherInfoRows.getExecutedAt()).getIataCode() : null);
-                dictionary.put(ReportConstants.EXECUTED_AT_NAME, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ? locCodeMap.get(otherInfoRows.getExecutedAt()).getName() : null);
+                dictionary.put(ReportConstants.EXECUTED_AT_NAME, executedAtName);
                 dictionary.put(ReportConstants.EXECUTED_ON, ConvertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
                 dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());
                 dictionary.put(ReportConstants.SIGN_OF_ISSUING_CARRIER, StringUtility.toUpperCase(otherInfoRows.getCarrier()));
