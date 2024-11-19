@@ -1165,8 +1165,8 @@ public class EventService implements IEventService {
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         log.info("Saving shipment entity: {}", shipmentDetails.getShipmentId());
         shipmentDao.saveWithoutValidation(shipmentDetails);
-        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
-        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
+//        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
+//        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
     @Override
