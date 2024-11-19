@@ -32,6 +32,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private DpsWorkflowState state;
     private DpsExecutionStatus status;
     private String text;
+    private String matchingCondition;
     private List<String> implicationList;
     private List<String> conditionMessageList;
     private List<String> ruleMatchedFieldList;

@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
@@ -16,9 +14,7 @@ import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
@@ -27,7 +23,12 @@ import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +101,6 @@ public class DpsEventService implements IDpsEventService {
             createAuditLog(dpsEvent, shipmentDetails);
         }
     }
-
     /**
      * Handles DPS event transitions for a given {@link DpsEvent} and {@link ShipmentDetails}. This method validates the state transition according to the current state and the new
      * state from the DPS event. If the transition is valid, it updates the state of the shipment and persists the changes. If an error occurs during processing, a
@@ -132,7 +132,6 @@ public class DpsEventService implements IDpsEventService {
             throw new DpsException(e.getMessage(), e);
         }
     }
-
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,
      * and persists the audit information for tracking and future reference.
@@ -173,60 +172,23 @@ public class DpsEventService implements IDpsEventService {
         }
     }
 
-    /**
-     * Retrieves a list of active DPS events that match a given GUID from the specified request model.
-     * The method extracts the GUID from the {@code commonRequestModel}, validates it,
-     * and fetches active {@link DpsEvent} entries associated with the GUID.
-     *
-     * @param commonRequestModel the request model containing the GUID used to filter DPS events
-     * @return a list of active {@link DpsEvent} entries matching the given GUID
-     * @throws DpsException if the GUID is null or empty, or if an error occurs during data retrieval
-     */
-    private List<DpsEvent> fetchMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
-
-        try {
-            CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
-            String guid = commonGetRequest.getGuid();
-            if (Strings.isNullOrEmpty(guid)) {
-                log.error("GUID is null for DpsEvent retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new DpsException("GUID can't be null. Please provide guid!");
-            }
-            return dpsEventRepository.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE);
-        } catch (Exception e) {
-            throw new DpsException("Error in fetching object of DpsEvent: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Retrieves matching rules based on a unique identifier provided in the {@code CommonRequestModel}.
-     * The method filters and organizes rules into categories by workflow type (HOLD or WARNING),
-     * constructing an appropriate response for each.
-     *
-     * @param commonRequestModel the model containing the unique identifier and necessary request details
-     * @return {@code ResponseEntity<IRunnerResponse>} containing the mapped matching rules if successful;
-     *         otherwise, an error response entity
-     */
     @Override
-    public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(CommonRequestModel commonRequestModel) {
-        try {
-            List<DpsEvent> dpsEvents = Optional.ofNullable(fetchMatchingRulesByGuid(commonRequestModel)).orElseGet(ArrayList::new);
-            Map<DpsWorkflowType, List<DpsEventResponse>> responseMap = new HashMap<>();
-            responseMap.put(DpsWorkflowType.HOLD, new ArrayList<>());
-            responseMap.put(DpsWorkflowType.WARNING, new ArrayList<>());
-            for (DpsEvent dpsEvent : dpsEvents) {
-                if (dpsEvent == null) continue;
-                DpsWorkflowType workflowType = dpsEvent.getWorkflowType();
-                if (dpsEvent.getEntityType() == DpsEntityType.SHIPMENT && (workflowType == DpsWorkflowType.HOLD || workflowType == DpsWorkflowType.WARNING)) {
-                    responseMap.computeIfAbsent(workflowType, k -> new ArrayList<>()).add(constructDpsEventResponse(dpsEvent));
-                }
-            }
-            return ResponseHelper.buildSuccessResponse(responseMap);
-        } catch (Exception e) {
-            String responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
+    public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(String shipmentGuid) {
+
+        if (Strings.isNullOrEmpty(shipmentGuid)) {
+            throw new DpsException("GUID can't be null. Please provide guid!");
         }
+        List<DpsEvent> dpsEventList = dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
+
+        if(ObjectUtils.isEmpty(dpsEventList)) {
+            throw new DpsException("No DPS Event found with provided entity id "+ shipmentGuid);
+        }
+
+        List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
+                .map(this::constructDpsEventResponse)
+                .collect(Collectors.toList());
+
+        return ResponseHelper.buildSuccessResponse(dpsEventResponses);
     }
 
     /**
@@ -256,6 +218,7 @@ public class DpsEventService implements IDpsEventService {
                     .state(dpsEvent.getState())
                     .status(dpsEvent.getStatus())
                     .text(dpsEvent.getText())
+                    .matchingCondition(dpsEvent.getMatchingCondition())
                     .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
                     .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
                     .dpsFieldData(dpsFieldDataResponseList)
@@ -304,6 +267,9 @@ public class DpsEventService implements IDpsEventService {
             }
             if (dtoData.getText() != null) {
                 dpsEvent.setText(dtoData.getText());
+            }
+            if (dtoData.getMatchingCondition() != null) {
+                dpsEvent.setMatchingCondition(dtoData.getMatchingCondition());
             }
             if (ObjectUtils.isNotEmpty(dtoData.getImplications())) {
                 dpsEvent.setImplicationList(dtoData.getImplications());

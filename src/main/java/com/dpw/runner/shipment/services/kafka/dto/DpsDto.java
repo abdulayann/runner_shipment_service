@@ -28,6 +28,7 @@ public class DpsDto {
         @JsonProperty("fieldsDetected")
         private List<String> ruleMatchedFieldList;
         private String text;
+        private String matchingCondition;
         private List<String> implications;
         @JsonProperty("username")
         private List<String> usernameList;

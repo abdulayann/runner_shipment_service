@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
@@ -7,6 +11,9 @@ import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -15,14 +22,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -42,7 +41,7 @@ class DpsEventServiceTest {
         dpsEvents.add(dpsEvent);
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(dpsEvents);
 
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(guid);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -53,7 +52,7 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
 
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(guid);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -64,7 +63,7 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
 
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(guid);
 
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -72,7 +71,7 @@ class DpsEventServiceTest {
     @Test
     void fetchMatchingRulesByGuid_Exception1() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(commonRequestModel);
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(null);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 }
