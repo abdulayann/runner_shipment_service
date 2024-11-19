@@ -12,8 +12,8 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CustomerContainerDto {
-    private com.dpw.runner.shipment.services.kafka.dto.CustomerContainerDto.Container payload;
+public class CustomContainerDto {
+    private CustomContainerDto.Container payload;
 
     @Data
     @NoArgsConstructor

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.kafka.dto.CustomerContainerDto;
+import com.dpw.runner.shipment.services.kafka.dto.CustomContainerDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -16,7 +16,7 @@ import java.util.Objects;
 @Service
 @Slf4j
 @Generated
-public class CustomerContainerPraStatusConsumer {
+public class CustomContainerPraStatusConsumer {
 
     private final IConsolidationRepository consolidationRepository;
 
@@ -24,8 +24,8 @@ public class CustomerContainerPraStatusConsumer {
 
     private final ObjectMapper objectMapper;
 
-    public CustomerContainerPraStatusConsumer(IConsolidationRepository consolidationRepository,
-                                              IContainerRepository containerRepository, ObjectMapper objectMapper) {
+    public CustomContainerPraStatusConsumer(IConsolidationRepository consolidationRepository,
+                                            IContainerRepository containerRepository, ObjectMapper objectMapper) {
         this.consolidationRepository = consolidationRepository;
         this.containerRepository = containerRepository;
         this.objectMapper = objectMapper;
@@ -36,10 +36,10 @@ public class CustomerContainerPraStatusConsumer {
     {
         try {
             log.info("{} | Custom event message: {}", LoggerEvent.CUSTOM_SERVICE_EVENT, message);
-            CustomerContainerDto obj = objectMapper.readValue(message, CustomerContainerDto.class);
+            CustomContainerDto obj = objectMapper.readValue(message, CustomContainerDto.class);
             if(!Objects.isNull(obj) && !Objects.isNull(obj.getPayload()))
             {
-                CustomerContainerDto.Container payload = obj.getPayload();
+                CustomContainerDto.Container payload = obj.getPayload();
                 Long consolidationId = consolidationRepository.findIdByGuid(payload.getConsolidationGuid());
                 if(ObjectUtils.isNotEmpty(consolidationId)){
                     containerRepository.savePraStatus(payload.getPraStatus().toString(), payload.getContainerGuid(), consolidationId);
