@@ -24,7 +24,7 @@ public class AwbOtherInfo implements Serializable {
     private String executedAt;
     private LocalDateTime executedOn;
     private String carrierName;
-    private String CarrierHqAddress;
+    private String carrierHqAddress;
     private String legalCompanyName;
     private String address1;
     private String address2;
