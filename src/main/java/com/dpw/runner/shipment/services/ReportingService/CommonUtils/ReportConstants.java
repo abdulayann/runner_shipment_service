@@ -641,6 +641,7 @@ public class ReportConstants {
     public static final String CHARGEABLE_WT = "ChargeableWt";
     public static final String GROSS_WT = "GrossWt";
     public static final String GROSS_WT_UNIT = "GrossWtUnit";
+    public static final String RCP = "Rcp";
     public static final String RATE_CLASS = "RateClass";
     public static final String NATURE_QLTY_OF_GOODS = "NatureQltyOfGoods";
     public static final String PACKING_LIST = "PackingList";
@@ -1218,6 +1219,11 @@ public class ReportConstants {
     public static final String CARRIER_HQ = "CarrierHQ";
     public static final String CON = "CarrierContractNumber";
 
+    public static final String TARGET_CURRENCY_CODE = "TARGET_CURRENCY_CODE";
+    public static final String CONVERSION_RATE = "CONVERSION_RATE";
+    public static final String CC_CHARGE_IN_DEST_CURRENCY = "CC_CHARGE_IN_DEST_CURRENCY";
+    public static final String CHARGES_AT_DESTINATION = "CHARGES_AT_DESTINATION";
+
     public static final String CSD_INFO = "CSDInfo";
     public static final String ORIGINAL_PRINT_DATE = "OriginalPrintDate";
     public static final String AIRLINE_NAME = "ConsolAirline";
@@ -1276,4 +1282,16 @@ public class ReportConstants {
     public static final String ETD_FOR_PRINT = "ETDForPrint";
     public static final String ETA_FOR_PRINT = "ETAForPrint";
 
+
+    public static final String CM_SENDING_AGENT_NAME = "CM_SendingAgentName";
+    public static final String CM_SENDING_AGENT_ADDRESS = "CM_SendingAgentAddress";
+    public static final String CM_RECEIVING_AGENT_NAME = "CM_ReceivingAgentName";
+    public static final String CM_RECEIVING_AGENT_ADDRESS = "CM_ReceivingAgentAddress";
+    public static final String CM_CONSIGNER = "CM_Consigner";
+    public static final String CM_CONSIGNEE = "CM_Consignee";
+    public static final String CM_ORIGIN_AGENT_NAME = "CM_OriginAgentName";
+    public static final String CM_ORIGIN_AGENT_ADDRESS = "CM_OriginAgentAddress";
+    public static final String CM_DESTINATION_AGENT_NAME = "CM_DestinationAgentName";
+    public static final String CM_DESTINATION_AGENT_ADDRESS = "CM_DestinationAgentAddress";
+    public static final String CM_TOTAL_PACKS_AND_UNITS = "CM_TotalPacksAndUnit";
 }

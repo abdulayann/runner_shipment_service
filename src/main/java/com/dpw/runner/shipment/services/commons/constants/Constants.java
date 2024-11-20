@@ -60,6 +60,7 @@ public class Constants {
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
     public static final String MPK = "MPK";
+    public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
     public static final String PACKAGES = "Packages";

@@ -719,6 +719,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNEE,consignee);
             dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
             dictionary.put(ReportConstants.CLIENT, client);
+            populateShipmentCargoManifestParty(shipment, dictionary);
 
             PartiesModel notifyParty1 = null;
             List<PartiesModel> shipmentAddresses = shipment.getShipmentAddresses();
@@ -928,6 +929,29 @@ public abstract class IReport {
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+    private void populateShipmentCargoManifestParty(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        // Consigner
+        var shipmentConsigner = shipmentModel.getConsigner();
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentConsigner, CM_CONSIGNER);
+
+        // Consignee
+        var shipmentConsignee = shipmentModel.getConsignee();
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentConsignee, CM_CONSIGNEE);
+
+        AdditionalDetailModel additionalDetailModel = Optional.ofNullable(shipmentModel.getAdditionalDetails()).orElse(new AdditionalDetailModel());
+
+        // Origin Agent
+        var shipmentOriginAgent = additionalDetailModel.getExportBroker();
+        dictionary.put(CM_ORIGIN_AGENT_NAME, dictionary.get(ORIGIN_AGENT_NAME));
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentOriginAgent, CM_ORIGIN_AGENT_ADDRESS);
+
+        // Destination Agent
+        var shipmentDestinationAgent = additionalDetailModel.getImportBroker();
+        dictionary.put(CM_DESTINATION_AGENT_NAME, dictionary.get(DESTINATION_AGENT_NAME));
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentDestinationAgent, CM_DESTINATION_AGENT_ADDRESS);
+
     }
 
     public void populateShipmentOrders(ShipmentModel shipment, Map<String, Object> dictionary) {
