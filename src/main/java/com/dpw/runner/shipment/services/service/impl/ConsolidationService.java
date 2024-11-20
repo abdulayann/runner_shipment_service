@@ -1714,9 +1714,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
-        if(CollectionUtils.isEmpty(consolidationRoutings))
+        if(CollectionUtils.isEmpty(consolidationRoutings) || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
             return;
-
         List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
         List<Routings> shipmentRoutingList = Optional.ofNullable(shipmentDetails.getRoutingsList()).orElse(new ArrayList<>());
         shipmentDetails.setRoutingsList(shipmentRoutingList);
