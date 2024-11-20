@@ -254,6 +254,7 @@ class HawbReportTest extends CommonMocks {
         hawbModel.setShipmentDetails(shipmentModel);
         String csdInfo = "some info";
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
+        hawb.getAwbCargoInfo().setOtherInfoCode("test");
         hawb.setOriginalPrintedAt(LocalDateTime.now());
         hawbModel.setAwb(hawb);
         UsersDto usersDto = new UsersDto();

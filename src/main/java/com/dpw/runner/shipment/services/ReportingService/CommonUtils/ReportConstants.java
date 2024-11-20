@@ -1276,4 +1276,6 @@ public class ReportConstants {
     public static final String ETD_FOR_PRINT = "ETDForPrint";
     public static final String ETA_FOR_PRINT = "ETAForPrint";
 
+    public static final String OTHER_INFO_CODE = "OtherInfoCode";
+
 }
