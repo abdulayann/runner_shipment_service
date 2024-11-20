@@ -711,7 +711,7 @@ public class HawbReport extends IReport{
             dictionary.put(CC_CHARGE_IN_DEST_CURRENCY, airMessagingAdditionalFields.getCCChargesInDestinationCurrency());
             dictionary.put(CHARGES_AT_DESTINATION, airMessagingAdditionalFields.getChargesAtDestination());
         }
-        
+
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
             populateRaKcData(dictionary, hawbModel.shipmentDetails);
             populateShipmentOrders(hawbModel.shipmentDetails, dictionary);
