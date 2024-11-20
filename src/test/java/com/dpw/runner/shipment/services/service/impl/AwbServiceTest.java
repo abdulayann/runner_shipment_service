@@ -131,6 +131,7 @@ class AwbServiceTest extends CommonMocks {
     private static Awb testHawb;
     private static Awb testDmawb;
     private static Awb testMawb;
+    private static List<EntityTransferOrganizations> mockEntityTransferOrganizationList;
 
     @BeforeAll
     static void init() throws IOException {
@@ -146,6 +147,7 @@ class AwbServiceTest extends CommonMocks {
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+
 
         testShipment = jsonTestUtility.getTestShipment();
         testConsol = jsonTestUtility.getJson("MAWB_CONSOLIDATION", ConsolidationDetails.class);
@@ -223,8 +225,8 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
@@ -238,15 +240,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
@@ -310,15 +303,6 @@ class AwbServiceTest extends CommonMocks {
                     Object arg = invocation.getArgument(0);
                     return objectMapper.convertValue(arg, AwbResponse.class);
                 });
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
@@ -378,16 +362,9 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
         when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
@@ -877,15 +854,6 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         when(awbDao.save(any())).thenReturn(testMawb);
 
@@ -965,15 +933,6 @@ class AwbServiceTest extends CommonMocks {
                     Object arg = invocation.getArgument(0);
                     return objectMapper.convertValue(arg, AwbResponse.class);
                 });
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         mockShipmentSettings();
         mockTenantSettings();
@@ -1031,15 +990,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         mockShipmentSettings();
         mockTenantSettings();
@@ -1231,16 +1181,14 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
         when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        EntityTransferOrganizations entityTransferOrganization1 = new EntityTransferOrganizations();
+        entityTransferOrganization1.setOrganizationCode("RTY4552");
+        entityTransferOrganization1.setTaxRegistrationNumber("TRP12343");
+        EntityTransferOrganizations entityTransferOrganization2 = new EntityTransferOrganizations();
+        entityTransferOrganization1.setOrganizationCode("RTY4558");
+        entityTransferOrganization1.setTaxRegistrationNumber("TRP130839");
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(List.of(entityTransferOrganization1, entityTransferOrganization2));
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
@@ -1297,15 +1245,8 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1317,7 +1258,6 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
-
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
@@ -1413,15 +1353,6 @@ class AwbServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         when(masterDataUtils.consolidationAddressCountryMasterData(any())).thenReturn(Map.of("IN", "India", "EG", "Egypt"));
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
@@ -1489,15 +1420,6 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1660,15 +1582,6 @@ class AwbServiceTest extends CommonMocks {
 
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
@@ -1687,7 +1600,8 @@ class AwbServiceTest extends CommonMocks {
 
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
-
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -1965,11 +1879,8 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
-        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-        when(awbDao.save(mockAwb)).thenReturn(mockAwb);
 //        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
-        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
 
         // Reset Mocking
@@ -1992,15 +1903,6 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         when(awbDao.save(any())).thenReturn(testMawb);
 
@@ -2705,7 +2607,8 @@ class AwbServiceTest extends CommonMocks {
         Parties shipmentAddress = Parties.builder().type(Constants.FAG).build();
         shipmentAddress.setOrgData(Map.ofEntries(
                 Map.entry(ReportConstants.COUNTRY, "test"),
-                Map.entry(ReportConstants.CITY, "test_city")
+                Map.entry(ReportConstants.CITY, "test_city"),
+                Map.entry("OrgCode", "223532_5")
         ));
 
         Routings routing = new Routings();
@@ -2723,14 +2626,18 @@ class AwbServiceTest extends CommonMocks {
                 Map.entry("Type", "Notify Part 1")
         ));
         consolidationAddress1.setGuid(UUID.fromString(guids.get(0)));
+        consolidationAddress1.setOrgCode("223532_4");
         Parties consolidationAddress2 = Parties.builder().type("Notify Part 2").build();
         consolidationAddress2.setOrgData(Map.ofEntries(Map.entry("Id", 2)));
         consolidationAddress2.setGuid(UUID.fromString(guids.get(1)));
+        consolidationAddress2.setOrgCode("223532_5");
         Parties consolidationAddress3 = Parties.builder().type("Notify Part 3").build();
         consolidationAddress3.setOrgData(Map.ofEntries(Map.entry("Id", 3)));
         consolidationAddress3.setGuid(UUID.fromString(guids.get(2)));
+        consolidationAddress3.setOrgCode("223532_6");
         Parties consolidationAddress4 = Parties.builder().type(Constants.FAG).build();
         consolidationAddress4.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test-country")));
+        consolidationAddress4.setOrgCode("LL_QR_25300");
 
 
         consolidationDetails.setConsolidationAddresses(List.of(
@@ -3194,15 +3101,6 @@ class AwbServiceTest extends CommonMocks {
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
-        List<Map<String, Object>> responseMap = new ArrayList<>();
-        Map<String, Object> map = new HashMap<>();
-        map.put("TaxRegistrationNumber", "TRN212123");
-        map.put("OrganizationCode", "FRGJ123");
-        map.put("id","1234");
-        map.put("OrgId","1234");
-        responseMap.add(map);
-        responseMap.add(map);
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
@@ -3366,6 +3264,165 @@ class AwbServiceTest extends CommonMocks {
             fail(e);
         }
 
+    }
+
+    @Test
+    void createMawb_successWithTaxRegistrationNumber() throws RunnerException {
+        EntityTransferOrganizations entityTransferOrganization1 = new EntityTransferOrganizations();
+        entityTransferOrganization1.setOrganizationCode("LL_QR_25300");
+        entityTransferOrganization1.setId(1L);
+        entityTransferOrganization1.setTaxRegistrationNumber("TRP12343");
+        EntityTransferOrganizations entityTransferOrganization2 = new EntityTransferOrganizations();
+        entityTransferOrganization2.setOrganizationCode("22481_1");
+        entityTransferOrganization2.setId(2L);
+        entityTransferOrganization2.setTaxRegistrationNumber("TRP130839");
+        EntityTransferOrganizations entityTransferOrganization3 = new EntityTransferOrganizations();
+        entityTransferOrganization3.setOrganizationCode("223532_4");
+        entityTransferOrganization3.setId(3L);
+        entityTransferOrganization3.setTaxRegistrationNumber("TRP130840");
+        EntityTransferOrganizations entityTransferOrganization4 = new EntityTransferOrganizations();
+        entityTransferOrganization4.setOrganizationCode("1");
+        entityTransferOrganization4.setId(4L);
+        entityTransferOrganization4.setTaxRegistrationNumber("TRP123678");
+        EntityTransferOrganizations entityTransferOrganization5 = new EntityTransferOrganizations();
+        entityTransferOrganization5.setOrganizationCode("223532_5");
+        entityTransferOrganization5.setId(5L);
+        EntityTransferOrganizations entityTransferOrganization6 = new EntityTransferOrganizations();
+        entityTransferOrganization6.setOrganizationCode("223532_6");
+        entityTransferOrganization6.setId(6L);
+        entityTransferOrganization6.setTaxRegistrationNumber("TRP130840");
+        List<EntityTransferOrganizations> mockEntityTransferOrganizationList = List.of(entityTransferOrganization1, entityTransferOrganization2, entityTransferOrganization3,entityTransferOrganization4, entityTransferOrganization5, entityTransferOrganization6);
+
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ConsolidationId(1L).AwbType(Constants.MAWB).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+        Long shipmentId = 1L;
+        addConsolDataForMawbGeneration(testConsol);
+        testShipment.setId(shipmentId);
+        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setSecurityStatus(Constants.SCO);
+        testConsol.setInterBranchConsole(true);
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
+
+        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
+
+        Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockEntityTransferOrganizationList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        when(awbDao.save(any())).thenReturn(testMawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void createAwb_successWithTaxRegistrationNumber() throws RunnerException {
+        EntityTransferOrganizations entityTransferOrganization1 = new EntityTransferOrganizations();
+        entityTransferOrganization1.setOrganizationCode("LL_QR_25300");
+        entityTransferOrganization1.setId(1L);
+        entityTransferOrganization1.setTaxRegistrationNumber("TRP12343");
+        EntityTransferOrganizations entityTransferOrganization2 = new EntityTransferOrganizations();
+        entityTransferOrganization2.setOrganizationCode("22481_1");
+        entityTransferOrganization2.setId(2L);
+        entityTransferOrganization2.setTaxRegistrationNumber("TRP130839");
+        EntityTransferOrganizations entityTransferOrganization3 = new EntityTransferOrganizations();
+        entityTransferOrganization3.setOrganizationCode("223532_4");
+        entityTransferOrganization3.setId(3L);
+        entityTransferOrganization3.setTaxRegistrationNumber("TRP130840");
+        EntityTransferOrganizations entityTransferOrganization4 = new EntityTransferOrganizations();
+        entityTransferOrganization4.setOrganizationCode("1");
+        entityTransferOrganization4.setId(4L);
+        entityTransferOrganization4.setTaxRegistrationNumber("TRP123678");
+        EntityTransferOrganizations entityTransferOrganization5 = new EntityTransferOrganizations();
+        entityTransferOrganization5.setOrganizationCode("223532_5");
+        entityTransferOrganization5.setId(5L);
+        EntityTransferOrganizations entityTransferOrganization6 = new EntityTransferOrganizations();
+        entityTransferOrganization6.setOrganizationCode("223532_6");
+        entityTransferOrganization6.setId(6L);
+        entityTransferOrganization6.setTaxRegistrationNumber("TRP130840");
+        List<EntityTransferOrganizations> mockEntityTransferOrganizationList = List.of(entityTransferOrganization1, entityTransferOrganization2, entityTransferOrganization3,entityTransferOrganization4, entityTransferOrganization5, entityTransferOrganization6);
+
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setSecurityStatus(Constants.SHR);
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
+//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
+
+//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockEntityTransferOrganizationList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+
+        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
 }

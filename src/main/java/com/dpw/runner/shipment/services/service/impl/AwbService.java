@@ -918,10 +918,12 @@ public class AwbService implements IAwbService {
         orgcodeList.addAll(List.of(consolidationDetails.getSendingAgent().getOrgCode(), consolidationDetails.getReceivingAgent().getOrgCode()));
         CommonV1ListRequest orgRequest = createCriteriaToFetchOrganizationList(orgcodeList);
         V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
-        if(responseMap.size()==2) {
-            awbShipmentInfo.setShipperTaxRegistrationNumber(responseMap.get(0).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(0).get("TaxRegistrationNumber"))) : null);
-            awbShipmentInfo.setConsigneeTaxRegistrationNumber(responseMap.get(1).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(1).get("TaxRegistrationNumber"))) : null);
+        List<EntityTransferOrganizations> entityTransferOrganizationsList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+        Map<String, EntityTransferOrganizations> orgCodeToEntityOrgMap = entityTransferOrganizationsList.stream()
+                .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
+        if(orgCodeToEntityOrgMap.size()>=2) {
+            awbShipmentInfo.setShipperTaxRegistrationNumber(orgCodeToEntityOrgMap.get(consolidationDetails.getSendingAgent().getOrgCode()).getTaxRegistrationNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(orgCodeToEntityOrgMap.get(consolidationDetails.getSendingAgent().getOrgCode()).getTaxRegistrationNumber())) : null);
+            awbShipmentInfo.setConsigneeTaxRegistrationNumber(orgCodeToEntityOrgMap.get(consolidationDetails.getReceivingAgent().getOrgCode()).getTaxRegistrationNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(orgCodeToEntityOrgMap.get(consolidationDetails.getReceivingAgent().getOrgCode()).getTaxRegistrationNumber())) : null);
         }
 
          for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
@@ -935,12 +937,16 @@ public class AwbService implements IAwbService {
                 issuingAgentOrgCode.add(orgRow.getOrgCode());
                 CommonV1ListRequest issuingAgentOrgRequest = createCriteriaToFetchOrganizationList(issuingAgentOrgCode);
                 V1DataResponse issuingAgentOrgResponse = v1Service.fetchOrganization(orgRequest);
-                List<Map<String, Object>> issuingAgentOrgresponseMap = jsonHelper.convertValue(issuingAgentOrgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+                List<EntityTransferOrganizations> issuingAgentEntityOrgList = jsonHelper.convertValueToList(issuingAgentOrgResponse.entities, EntityTransferOrganizations.class);
+                Map<String, EntityTransferOrganizations> issuingAgentOrgCodeToEntityMap = issuingAgentEntityOrgList.stream()
+                        .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
                 String country = orgRow.getOrgData() != null ?
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
                     awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-                awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(responseMap.get(0).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(0).get("TaxRegistrationNumber"))) : null);
+                if(issuingAgentOrgCodeToEntityMap.containsKey(orgRow.getOrgCode())){
+                    awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentOrgCodeToEntityMap.get(orgRow.getOrgCode()).getTaxRegistrationNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentOrgCodeToEntityMap.get(orgRow.getOrgCode()).getTaxRegistrationNumber())) : null);
+                }
                 awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
                         ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
                         : awbShipmentInfo.getIataCode());
@@ -1079,6 +1085,7 @@ public class AwbService implements IAwbService {
                     var orgId = party.getOrgData() != null ?  (Integer) party.getOrgData().get("Id") : null;
                     var addressId = party.getAddressData() != null ?  (Integer) party.getAddressData().get("Id") : null;
                     notifyPartyInfo.setOrgId(orgId);
+                    notifyPartyInfo.setOrgCode(party.getOrgCode());
                     notifyPartyInfo.setAddressId(addressId);
                     notifyPartyInfo.setNotifyOrgId(Long.valueOf(orgId));
                     notifyPartyList.add(notifyPartyInfo);
@@ -1087,12 +1094,15 @@ public class AwbService implements IAwbService {
             }
             CommonV1ListRequest orgRequest = createCriteriaToFetchOrganizationList(notifyOrgCodeList);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-            List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
-            for (int i = 0; i < responseMap.size(); i++) {
-                Map<String, Object> responseItem = responseMap.get(i);
+            List<EntityTransferOrganizations> notifyPartyEntityOrgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+            Map<String, EntityTransferOrganizations> notifyPartyOrgCodeToEntityOrgMap = notifyPartyEntityOrgList.stream()
+                    .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
+            for (int i = 0; i < notifyPartyList.size(); i++) {
                 AwbNotifyPartyInfo notifyParty = notifyPartyList.get(i);
-                if (responseItem.containsKey("TaxRegistrationNumber")) {
-                    notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(responseItem.get("TaxRegistrationNumber"))));
+                if(notifyPartyOrgCodeToEntityOrgMap.containsKey(notifyParty.getOrgCode())) {
+                    if (notifyPartyOrgCodeToEntityOrgMap.get(notifyParty.getOrgCode()).getTaxRegistrationNumber()!=null) {
+                        notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyOrgCodeToEntityOrgMap.get(notifyParty.getOrgCode()).getTaxRegistrationNumber())));
+                    }
                 }
             }
             return notifyPartyList;
@@ -1373,10 +1383,16 @@ public class AwbService implements IAwbService {
         orgcodeList.addAll(List.of(shipmentDetails.getConsigner().getOrgCode(), shipmentDetails.getConsignee().getOrgCode()));
         CommonV1ListRequest orgRequest = createCriteriaToFetchOrganizationList(orgcodeList);
         V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
-        if(responseMap.size()==2) {
-            awbShipmentInfo.setShipperTaxRegistrationNumber(responseMap.get(0).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(0).get("TaxRegistrationNumber"))) : null);
-            awbShipmentInfo.setConsigneeTaxRegistrationNumber(responseMap.get(1).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(1).get("TaxRegistrationNumber"))) : null);
+        List<EntityTransferOrganizations> entityTransferOrganizationsList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+        Map<String, EntityTransferOrganizations> orgCodeToEntityOrgMap = entityTransferOrganizationsList.stream()
+                .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
+        if(orgCodeToEntityOrgMap.size()>=2) {
+            if(orgCodeToEntityOrgMap.containsKey(shipmentDetails.getConsigner().getOrgCode())){
+                awbShipmentInfo.setShipperTaxRegistrationNumber(orgCodeToEntityOrgMap.get(shipmentDetails.getConsigner().getOrgCode()).getTaxRegistrationNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(orgCodeToEntityOrgMap.get(shipmentDetails.getConsigner().getOrgCode()).getTaxRegistrationNumber())) : null);
+            }
+            if(orgCodeToEntityOrgMap.containsKey(shipmentDetails.getConsignee().getOrgCode())){
+                awbShipmentInfo.setConsigneeTaxRegistrationNumber(orgCodeToEntityOrgMap.get(shipmentDetails.getConsignee().getOrgCode()).getTaxRegistrationNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(orgCodeToEntityOrgMap.get(shipmentDetails.getConsignee().getOrgCode()).getTaxRegistrationNumber())) : null);
+            }
         }
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FAG)) {
@@ -1389,12 +1405,16 @@ public class AwbService implements IAwbService {
                 issuingAgentOrgCode.add(orgRow.getOrgCode());
                 CommonV1ListRequest issuingAgentOrgRequest = createCriteriaToFetchOrganizationList(issuingAgentOrgCode);
                 V1DataResponse issuingAgentOrgResponse = v1Service.fetchOrganization(orgRequest);
-                List<Map<String, Object>> issuingAgentOrgresponseMap = jsonHelper.convertValue(issuingAgentOrgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+                List<EntityTransferOrganizations> issuingAgentEntityOrgList = jsonHelper.convertValueToList(issuingAgentOrgResponse.entities, EntityTransferOrganizations.class);
+                Map<String, EntityTransferOrganizations> issuingAgentOrgCodeToEntityMap = issuingAgentEntityOrgList.stream()
+                        .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
                 String country = orgRow.getOrgData() != null ?
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
                     awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-                awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(responseMap.get(0).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(0).get("TaxRegistrationNumber"))) : null);
+                if(issuingAgentOrgCodeToEntityMap.containsKey(orgRow.getOrgCode())){
+                    awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentOrgCodeToEntityMap.get(orgRow.getOrgCode()).getTaxRegistrationNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentOrgCodeToEntityMap.get(orgRow.getOrgCode()).getTaxRegistrationNumber())) : null);
+                }
                 awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
                         ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
                         : awbShipmentInfo.getIataCode());
@@ -1446,7 +1466,9 @@ public class AwbService implements IAwbService {
             notifyPartyOrgCode.add(shipmentNotifyParty.getOrgCode());
             CommonV1ListRequest orgRequest = createCriteriaToFetchOrganizationList(notifyPartyOrgCode);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-            List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+            List<EntityTransferOrganizations> notifyPartyEntityOrgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+            Map<String, EntityTransferOrganizations> notifyPartyOrgCodeToEntityOrgMap = notifyPartyEntityOrgList.stream()
+                    .collect(Collectors.toMap(EntityTransferOrganizations::getOrganizationCode, entity -> entity));
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
             notifyPartyInfo.setIsShipmentCreated(true);
             var name = StringUtility.convertToString(shipmentNotifyParty.getOrgData().get(PartiesConstants.FULLNAME));
@@ -1454,7 +1476,12 @@ public class AwbService implements IAwbService {
             notifyPartyInfo.setAddress(AwbUtility.constructAddressForAwb(shipmentNotifyParty.getAddressData()).toUpperCase());
             notifyPartyInfo.setEntityId(shipmentDetails.getId());
             notifyPartyInfo.setEntityType(request.getAwbType());
-            notifyPartyInfo.setTaxRegistrationNumber(responseMap.get(0).containsKey("TaxRegistrationNumber") ? StringUtility.toUpperCase(StringUtility.convertToString(responseMap.get(0).get("TaxRegistrationNumber"))) : null);
+            if(notifyPartyOrgCodeToEntityOrgMap.containsKey(shipmentNotifyParty.getOrgCode())){
+                if (notifyPartyOrgCodeToEntityOrgMap.get(shipmentNotifyParty.getOrgCode()).getTaxRegistrationNumber()!=null) {
+                    notifyPartyInfo.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyOrgCodeToEntityOrgMap.get(shipmentNotifyParty.getOrgCode()).getTaxRegistrationNumber())));
+                }
+            }
+            notifyPartyInfo.setTaxRegistrationNumber(notifyPartyEntityOrgList.get(0).getTaxRegistrationNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyEntityOrgList.get(0).getTaxRegistrationNumber())) : null);
             constructNotifyPartyAddress(notifyPartyInfo, shipmentNotifyParty.getAddressData(), alpha2DigitToCountry);
             // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
             notifyPartyInfo.setNotifyOrgId(shipmentNotifyParty.getId());
@@ -3448,6 +3475,8 @@ public class AwbService implements IAwbService {
                 orgRequest.setCriteriaRequests(orgCriteria);
                 V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
                 List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+                Map<Long, EntityTransferOrganizations> issuingAgentOrgCodeToEntityMap = orgList.stream()
+                        .collect(Collectors.toMap(EntityTransferOrganizations::getId, entity -> entity));
                 if(orgList.size() > 0) {
 
                     // fetch all address for default org
@@ -3459,7 +3488,9 @@ public class AwbService implements IAwbService {
                     List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
 
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
-                    awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(StringUtility.toUpperCase(orgList.get(0).getTaxRegistrationNumber()));
+                    if(issuingAgentOrgCodeToEntityMap.containsKey(tenantModel.getDefaultOrgId())) {
+                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentOrgCodeToEntityMap.get(tenantModel.getDefaultOrgId()).getTaxRegistrationNumber()!=null ? StringUtility.toUpperCase(issuingAgentOrgCodeToEntityMap.get(tenantModel.getDefaultOrgId()).getTaxRegistrationNumber()):null);
+                    }
                     awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                     awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
                             orgList.get(0).getAgentCASSCode() : awbShipmentInfo.getAgentCASSCode());
