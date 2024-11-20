@@ -40,7 +40,6 @@ import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.Perm
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -2030,7 +2029,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
                 .enableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
-        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+//        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -2063,7 +2062,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
                 .enableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
-        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+//        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -2098,7 +2097,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
                 .enableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
-        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+//        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
 
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setId(2L);
@@ -2142,7 +2141,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
                 .enableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
-        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+//        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -2220,7 +2219,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
                 .enableConsolSplitBillCharge(true).build());
         mockTenantSettings();
 
-        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+//        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);

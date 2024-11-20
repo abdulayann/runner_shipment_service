@@ -40,7 +40,15 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -129,6 +137,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
@@ -415,6 +424,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
+
+    @Value("${billing.enableNewShipmentDetachLogic}")
+    private Boolean enableNewShipmentDetachLogic;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -1308,7 +1320,47 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
-        validateOutstandingDuesForShipments(shipmentDetails);
+        if(Boolean.TRUE.equals(enableNewShipmentDetachLogic)) {
+            validateOutstandingDuesForShipments(shipmentDetails);
+        } else {
+            validateActiveCharges(shipmentDetails);
+        }
+    }
+
+    /**
+     * Validates shipment detachment by checking if there are any active charges or invoices.
+     *
+     * @param shipmentDetails A list of {@link ShipmentDetails} objects to be validated.
+     * @throws BillingException if any active charges or invoices are present.
+     */
+    private void validateActiveCharges(List<ShipmentDetails> shipmentDetails) {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+
+        if (ObjectUtils.isEmpty(shipmentDetails) || !Boolean.TRUE.equals(tenantSettings.getEnableConsolSplitBillCharge())) {
+            return;
+        }
+
+        // Filter shipment details that are not empty
+        List<ShipmentDetails> filteredShipments = shipmentDetails.stream().filter(ObjectUtils::isNotEmpty)
+                // Keep only those with transport mode "AIR"
+                .filter(shp -> Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shp.getTransportMode()))
+                // Further filter to include only those with direction "EXP" or "IMP"
+                .filter(shp -> Constants.DIRECTION_EXP.equalsIgnoreCase(shp.getDirection()) ||
+                        Constants.DIRECTION_IMP.equalsIgnoreCase(shp.getDirection())).toList();
+
+        if (filteredShipments.isEmpty()) {
+            return;
+        }
+
+        BillingBulkSummaryBranchWiseRequest branchWiseRequest = createBillingBulkSummaryBranchWiseRequest(filteredShipments);
+
+        List<BillingSummary> billingSummaries = billingServiceAdapter.fetchBillingBulkSummaryBranchWise(branchWiseRequest);
+
+        boolean hasAnyActiveCharges = billingSummaries.stream().anyMatch(billingServiceAdapter::checkActiveCharges);
+
+        if (hasAnyActiveCharges) {
+            throw new BillingException("Shipment has active charges/invoices present. Please remove the charges or cancel the invoices to proceed.");
+        }
     }
 
     private void validateOutstandingDuesForShipments(List<ShipmentDetails> shipmentDetails) {
