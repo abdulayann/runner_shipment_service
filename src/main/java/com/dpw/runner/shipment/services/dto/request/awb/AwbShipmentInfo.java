@@ -31,6 +31,8 @@ public class AwbShipmentInfo implements Serializable {
     private String shipperZipCode;
     private String shipperPhone;
     private String shipperReferenceNumber;
+    private String shipperContactName;
+    private String shipperTaxRegistrationNumber;
     private String consigneeName;
     private String consigneeAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
@@ -42,6 +44,8 @@ public class AwbShipmentInfo implements Serializable {
     private String consigneeZipCode;
     private String consigneePhone;
     private String consigneeReferenceNumber;
+    private String consigneeContactName;
+    private String consigneeTaxRegistrationNumber;
     private String issuingAgentName;
     private String issuingAgentAddress;
     @MasterData(type = MasterDataType.COUNTRIES)
@@ -52,6 +56,8 @@ public class AwbShipmentInfo implements Serializable {
     private String issuingAgentCity;
     private String issuingAgentZipCode;
     private String issuingAgentPhone;
+    private String issuingAgentContactName;
+    private String issuingAgentTaxRegistrationNumber;
     private String iataCode;
     private String noOfCopies;
     private String status;

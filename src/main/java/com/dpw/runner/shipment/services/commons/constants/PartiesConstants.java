@@ -30,6 +30,7 @@ public class PartiesConstants {
     public static final String PIN_CODE = "PinCode";
     public static final String CONTACT_NUMBER = "ContactNumber";
     public static final String CONTACT_PHONE = "ContactPhone";
+    public static final String CONTACT_NAME = "ContactName";
     public static final String EMAIL = "Email";
     public static final String MOBILE = "Mobile";
     public static final String PHONE = "Phone";
