@@ -1187,6 +1187,7 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
+
         String firstCarrier = consolidationDetails.getCarrierDetails().getShippingLine();
         awbOtherInfo.setCarrierName(firstCarrier != null ? firstCarrier : "");
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
