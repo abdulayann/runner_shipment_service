@@ -123,8 +123,12 @@ public class HawbReport extends IReport{
 
 
         if(shipmentInfo != null){
+            List<String> awbShipper = getAwbFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperState(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperContactName(), shipmentInfo.getShipperPhone(), shipmentInfo.getShipperTaxRegistrationNumber());
+            List<String> awbConsignee = getAwbFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeContactName(), shipmentInfo.getConsigneePhone(), shipmentInfo.getConsigneeTaxRegistrationNumber());
             List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
             List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
+            dictionary.put(ReportConstants.AWB_SHIPPER_ADDRESS, awbShipper);
+            dictionary.put(ReportConstants.AWB_CONSIGNEE_ADDRESS, awbConsignee);
             dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
             dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
             dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, StringUtility.toUpperCase(shipmentInfo.getIssuingAgentName()));
@@ -253,7 +257,7 @@ public class HawbReport extends IReport{
             }
             var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
             dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
-
+            dictionary.put(AWB_ISSUING_AGENT_ADDRESS, getAwbFormattedDetails(shipInfo.getIssuingAgentName(),shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentContactName(), shipInfo.getIssuingAgentPhone(), shipInfo.getIssuingAgentTaxRegistrationNumber()));
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
             EntityTransferMasterLists paymentCodeDetails = null;
@@ -724,6 +728,7 @@ public class HawbReport extends IReport{
 
         if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
             var party = hawbModel.getAwb().getAwbNotifyPartyInfo().get(0);
+            dictionary.put(NOTIFY_PARTY, getAwbFormattedDetails(party.getName(), party.getAddress(), party.getCity(), party.getState(), party.getZipCode(), party.getCountry(), party.getContactName(), party.getPhone(), party.getTaxRegistrationNumber()));
             dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
             dictionary.put(AWB_NOTIFY_PARTY_NAME, (party.getName() != null && !party.getName().isEmpty()) ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }

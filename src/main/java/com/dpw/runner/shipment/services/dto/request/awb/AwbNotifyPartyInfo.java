@@ -39,4 +39,6 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private String phone;
     private Boolean isShipmentCreated;
     private UUID guid;
+    private String contactName;
+    private String taxRegistrationNumber;
 }

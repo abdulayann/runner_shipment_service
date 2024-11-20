@@ -1959,6 +1959,45 @@ public abstract class IReport {
         return details;
     }
 
+    public static List<String> getAwbFormattedDetails(String name, String address, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    {
+        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
+            return null;
+        }
+        List<String> details = new ArrayList<>();
+        details.add(name);
+        if(StringUtility.isNotEmpty(address)) {
+            String[] addressList = address.split("\r\n");
+            addressList = Arrays.stream(addressList)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(Predicate.isEqual("").negate())
+                    .toArray(String[]::new);
+            details.addAll(Arrays.asList(addressList));
+        }
+        StringBuilder tempAddress = new StringBuilder();
+        if (!Strings.isNullOrEmpty(city)){
+            tempAddress.append(city);
+        }
+        if (!Strings.isNullOrEmpty(state)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(state);
+        }
+        if (!Strings.isNullOrEmpty(zipCode)) details.add(zipCode);
+        if (!Strings.isNullOrEmpty(country)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(country);
+        }
+        if(!tempAddress.isEmpty())
+            details.add(tempAddress.toString());
+        if (!Strings.isNullOrEmpty(contactName)) details.add(contactName);
+        if (!Strings.isNullOrEmpty(phone)) details.add(phone);
+        if (!Strings.isNullOrEmpty(taxRegistrationNumber)) details.add(taxRegistrationNumber);
+        return details;
+    }
+
     public static String addCommas(BigDecimal amount)
     {
         if (amount == null) return null;

@@ -540,7 +540,9 @@ public class ReportConstants {
     public static final String AGENT = "Agent";
     public static final String AGENT_REFERENCE = "AgentReference";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
+    public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
+    public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
     public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String ISSUING_CARRIER_AGENT_NAME = "IssuingCarrierAgentName";
     public static final String ISSUiNG_CARRIER_CITY = "IssuingCarrierCity";
@@ -1166,6 +1168,7 @@ public class ReportConstants {
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
     public static final String  ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
+    public static final String  AWB_ISSUING_AGENT_ADDRESS = "AWB_IssuingAgentAddress";
     public static final String IS_DIRECT_SHIPMENT = "IsDirect";
     public static final String IS_NON_DIRECT_SHIPMENT = "IsNonDirect";
     public static final String IS_CONSOLIDATION = "IsConsolidation";
