@@ -1983,6 +1983,9 @@ public abstract class IReport {
         return details;
     }
 
+    /**
+     Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
+     */
     public static List<String> getAwbFormattedDetails(String name, String address, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
     {
         if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
