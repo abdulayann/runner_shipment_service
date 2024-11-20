@@ -4857,11 +4857,13 @@ public class ConsolidationService implements IConsolidationService {
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
         Events response = null;
 //        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
+        return;
+        // TODO - As response is null return from here Aditya please check
 
-        if (consolidationDetails.getEventsList() == null) {
-            consolidationDetails.setEventsList(new ArrayList<>());
-        }
-        consolidationDetails.getEventsList().add(response);
+//        if (consolidationDetails.getEventsList() == null) {
+//            consolidationDetails.setEventsList(new ArrayList<>());
+//        }
+//        consolidationDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
