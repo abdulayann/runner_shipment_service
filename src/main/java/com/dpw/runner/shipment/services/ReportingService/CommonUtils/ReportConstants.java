@@ -1276,4 +1276,16 @@ public class ReportConstants {
     public static final String ETD_FOR_PRINT = "ETDForPrint";
     public static final String ETA_FOR_PRINT = "ETAForPrint";
 
+
+    public static final String CM_SENDING_AGENT_NAME = "CM_SendingAgentName";
+    public static final String CM_SENDING_AGENT_ADDRESS = "CM_SendingAgentAddress";
+    public static final String CM_RECEIVING_AGENT_NAME = "CM_ReceivingAgentName";
+    public static final String CM_RECEIVING_AGENT_ADDRESS = "CM_ReceivingAgentAddress";
+    public static final String CM_CONSIGNER = "CM_Consigner";
+    public static final String CM_CONSIGNEE = "CM_Consignee";
+    public static final String CM_ORIGIN_AGENT_NAME = "CM_OriginAgentName";
+    public static final String CM_ORIGIN_AGENT_ADDRESS = "CM_OriginAgentAddress";
+    public static final String CM_DESTINATION_AGENT_NAME = "CM_DestinationAgentName";
+    public static final String CM_DESTINATION_AGENT_ADDRESS = "CM_DestinationAgentAddress";
+    public static final String CM_TOTAL_PACKS_AND_UNITS = "CM_TotalPacksAndUnit";
 }
