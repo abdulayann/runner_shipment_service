@@ -23,6 +23,7 @@ public class AwbCargoInfo implements Serializable {
     @NotBlank(message = "handlingInfo is mandatory")
     private String handlingInfo;
     private String otherInfo;
+    private String otherInfoCode;
     private String ntrQtyGoods;
     private String referenceNumber;
     private String shippingInformation;
