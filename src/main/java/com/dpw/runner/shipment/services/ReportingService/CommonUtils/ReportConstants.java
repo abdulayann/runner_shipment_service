@@ -641,6 +641,7 @@ public class ReportConstants {
     public static final String CHARGEABLE_WT = "ChargeableWt";
     public static final String GROSS_WT = "GrossWt";
     public static final String GROSS_WT_UNIT = "GrossWtUnit";
+    public static final String RCP = "Rcp";
     public static final String RATE_CLASS = "RateClass";
     public static final String NATURE_QLTY_OF_GOODS = "NatureQltyOfGoods";
     public static final String PACKING_LIST = "PackingList";
@@ -1217,6 +1218,11 @@ public class ReportConstants {
 
     public static final String CARRIER_HQ = "CarrierHQ";
     public static final String CON = "CarrierContractNumber";
+
+    public static final String TARGET_CURRENCY_CODE = "TARGET_CURRENCY_CODE";
+    public static final String CONVERSION_RATE = "CONVERSION_RATE";
+    public static final String CC_CHARGE_IN_DEST_CURRENCY = "CC_CHARGE_IN_DEST_CURRENCY";
+    public static final String CHARGES_AT_DESTINATION = "CHARGES_AT_DESTINATION";
 
     public static final String CSD_INFO = "CSDInfo";
     public static final String ORIGINAL_PRINT_DATE = "OriginalPrintDate";
