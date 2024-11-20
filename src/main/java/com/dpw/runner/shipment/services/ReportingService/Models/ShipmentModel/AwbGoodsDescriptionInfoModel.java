@@ -37,6 +37,8 @@ public class AwbGoodsDescriptionInfoModel implements IDocumentModel {
     private Integer slaCCode;
     @JsonProperty("HsCode")
     private String hsCode;
+    @JsonProperty("Rcp")
+    private String rcp;
     private UUID guid;
     private List<AwbPackingInfo> awbPackingInfo;
     private Boolean isShipmentCreated;

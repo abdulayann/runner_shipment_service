@@ -49,6 +49,10 @@ public class Awb extends MultiTenancy {
     private AwbCargoInfo awbCargoInfo;
 
     @Type(type = "jsonb")
+    @Column(name = "air_messaging_additional_fields", columnDefinition = "jsonb")
+    private AirMessagingAdditionalFields airMessagingAdditionalFields;
+
+    @Type(type = "jsonb")
     @Column(name = "awb_payment_info", columnDefinition = "jsonb")
     private AwbPaymentInfo awbPaymentInfo;
 
