@@ -35,7 +35,7 @@ public class DpsDto {
         private List<DpsFieldDataDto> fieldsDetectedValues;
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
         private LocalDateTime eventTimestamp;
-
+        private List<Object> tasks;
         private String entityType;
         private List<String> conditionMessage;
 

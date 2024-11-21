@@ -224,7 +224,7 @@ public class DpsEventService implements IDpsEventService {
                     .dpsFieldData(dpsFieldDataResponseList)
                     .usernameList(dpsEvent.getUsernameList())
                     .eventTimestamp(dpsEvent.getEventTimestamp())
-                    .build();
+                    .tasks(dpsEvent.getTasks()).build();
         } catch (Exception e) {
             throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
         }
@@ -282,6 +282,9 @@ public class DpsEventService implements IDpsEventService {
             }
             if (ObjectUtils.isNotEmpty(dtoData.getUsernameList())) {
                 dpsEvent.setUsernameList(dtoData.getUsernameList());
+            }
+            if (ObjectUtils.isNotEmpty(dtoData.getTasks())) {
+                dpsEvent.setTasks(dtoData.getTasks());
             }
             if (dtoData.getEventTimestamp() != null) {
                 dpsEvent.setEventTimestamp(dtoData.getEventTimestamp());

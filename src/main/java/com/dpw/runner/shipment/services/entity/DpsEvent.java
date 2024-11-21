@@ -135,6 +135,10 @@ public class DpsEvent {
     @Column(name = "username_list", columnDefinition = "jsonb")
     private List<String> usernameList;
 
+    @Type(type = "jsonb")
+    @Column(name = "tasks", columnDefinition = "jsonb")
+    private List<Object> tasks;
+
     @PreUpdate
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();
