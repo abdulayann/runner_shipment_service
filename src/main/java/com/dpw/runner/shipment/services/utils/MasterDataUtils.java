@@ -1420,7 +1420,7 @@ public class MasterDataUtils{
                 responseMap.put(locCode, (EntityTransferUnLocations) value.get());
         }
         if(!locCodesFetchFromV1.isEmpty()) {
-            Map<String, EntityTransferUnLocations> unLocationsMap = getLocationData(locCodesFetchFromV1).entrySet().stream()
+            Map<String, EntityTransferUnLocations> unLocationsMap = fetchInBulkUnlocations(locCodesFetchFromV1, EntityTransferConstants.LOCATION_SERVICE_GUID).entrySet().stream()
                     .collect(Collectors.toMap(Map.Entry::getKey, entry -> jsonHelper.convertValue(entry.getValue(), EntityTransferUnLocations.class)));
             responseMap.putAll(unLocationsMap);
             pushToCache(unLocationsMap, CacheConstants.UNLOCATIONS, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
