@@ -405,6 +405,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 
@@ -665,6 +669,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -924,6 +932,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 
@@ -1186,6 +1198,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 

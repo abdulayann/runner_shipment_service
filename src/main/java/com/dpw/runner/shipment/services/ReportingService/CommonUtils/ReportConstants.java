@@ -657,6 +657,10 @@ public class ReportConstants {
     public static final String AIRLINE = "Airline";
     public static final String SCI = "SCI";
     public static final String NATURE_OF_GOODS = "NatureOfGoods";
+    public static final String DIMENSIONS = "Dimensions";
+    public static final String NTR_QTY_GOODS = "NtrQtyGoods";
+    public static final String AWB_GROSS_VOLUME_AND_UNIT = "AWB_GrossVolumeandUnit";
+    public static final String AWB_DIMS = "AWB_Dims";
     public static final String HANDLING_INFORMATION = "HandlingInformation";
     public static final String ACCOUNTING_INFORMATION = "AccountingInformation";
     public static final String CURRENCY = "Currency";

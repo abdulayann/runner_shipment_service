@@ -299,7 +299,7 @@ public class Constants {
     public static final String M = "M";
     public static final String EQ = "=";
     public static final String CROSS = "X";
-    public static final String DEFAULT_DIMN_TEXT = "DIMS: In ";
+    public static final String DEFAULT_DIMN_TEXT = "DIMS ";
     public static final String KGS = "KGS";
     public static final String CMS = "CMS";
     public static final String FEET = "Feet";

@@ -28,6 +28,9 @@ public class AwbGoodsDescriptionInfo implements Serializable {
     private BigDecimal grossWt;
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWtUnit;
+    private BigDecimal grossVolume;
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
+    private String grossVolumeUnit;
     private Integer rateClass;
     private Integer commodityItemNo;
     private BigDecimal chargeableWt;
@@ -41,6 +44,8 @@ public class AwbGoodsDescriptionInfo implements Serializable {
     private Boolean disableFetchRates;
     private Boolean disableRates;
     private Boolean enableFetchRatesWarning;
+    private String ntrQtyGoods;
+    private String dimensions;
     @UnlocationData
     private String rcp;
 
