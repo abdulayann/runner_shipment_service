@@ -1534,6 +1534,9 @@ public class AwbService implements IAwbService {
                     );
                 }
 
+                if (!StringUtility.isEmpty(Optional.ofNullable(shipment.getAdditionalDetails()).map(AdditionalDetails::getRegulatedEntityCategory).orElse(null))) {
+                    raNumber = shipment.getAdditionalDetails().getRegulatedEntityCategory();
+                }
                 csdInfo = formatCSDInfo(raNumber, securityStatus, screeningStatus);
             }
         }
