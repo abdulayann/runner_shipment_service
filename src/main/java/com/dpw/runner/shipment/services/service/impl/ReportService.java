@@ -1595,7 +1595,7 @@ public class ReportService implements IReportService {
             if(mainDocPage == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             else{
                 if(lastPage == null) lastPage = CommonUtils.getLastPage(mainDocPage);
-                if (Boolean.TRUE.equals(printForParty.getPrintTermsAndCondition())) {
+                if (Boolean.FALSE.equals(printForParty.getPrintTermsAndCondition())) {
                     mainDocPage = CommonUtils.removeLastPage(mainDocPage);
                     mainDocPage = CommonUtils.addBlankPage(mainDocPage);
                 }

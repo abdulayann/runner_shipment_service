@@ -3229,6 +3229,23 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void testPopulateCsdInfoShouldTakeRegulateEntityCategoryIfPresentForRaNumber() {
+        String expectedCsdInfo = "TEST_RA_NUMBER/SPX/EDD+ETD+XRY/";
+
+        AdditionalDetails mockAdditionalDetails = testShipment.getAdditionalDetails();
+        mockAdditionalDetails.setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        mockAdditionalDetails.setRegulatedEntityCategory("TEST_RA_NUMBER");
+        testShipment.setAdditionalDetails(mockAdditionalDetails);
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
+        testShipment.setSecurityStatus("SPX");
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
+
+        String csdInfo = awbService.populateCsdInfo(testShipment);
+        assertEquals(expectedCsdInfo, csdInfo);
+    }
+
+    @Test
     void testPopulateCsdInfo_WithoutScreeningStatus() {
         String expectedCsdInfo = "123/SPX/";
 
