@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.enums.PartyType;
+import com.dpw.runner.shipment.services.entity.enums.OtherPartyType;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -17,7 +17,7 @@ import lombok.ToString;
 @AllArgsConstructor
 public class OtherPartyInfo implements IRunnerResponse {
 
-  private PartyType party;
+  private OtherPartyType party;
 
   @Size(max = 35, message = "Additional ID must be up to 35 characters.")
   private String additionalId;
