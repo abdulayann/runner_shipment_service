@@ -76,6 +76,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -1219,6 +1220,27 @@ public class AwbService implements IAwbService {
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
+    private String getTenantBranch() {
+        String branch = UserContext.getUser().getTenantDisplayName();
+        return branch != null ? branch : "";
+    }
+
+    private String getLegalCompanyName() {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+        return tenantSettings != null && tenantSettings.getLegalEntityCode() != null
+                ? tenantSettings.getLegalEntityCode()
+                : "";
+    }
+
+    private CompanyDto fetchCompanyDetails() {
+        Integer companyId = UserContext.getUser().getCompanyId();
+        List<Object> criteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
+        CommonV1ListRequest request = CommonV1ListRequest.builder().criteriaRequests(criteria).build();
+        V1DataResponse response = v1Service.getCompaniesDetails(request);
+        List<CompanyDto> companyList = response != null ? jsonHelper.convertValueToList(response.getEntities(), CompanyDto.class) : null;
+        return companyList != null && !companyList.isEmpty() ? companyList.get(0) : null;
+    }
+
     private AwbOtherInfo generateMawbOtherInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
         AwbOtherInfo awbOtherInfo = new AwbOtherInfo();
         awbOtherInfo.setEntityId(consolidationDetails.getId());
@@ -1229,18 +1251,26 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
 
-        String firstCarrier = consolidationDetails.getCarrierDetails().getShippingLine();
-        awbOtherInfo.setCarrierName(firstCarrier != null ? firstCarrier : "");
-        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
-        if (carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getShippingLine())) {
-            awbOtherInfo.setCarrierName(carrierDetails.getShippingLine());
-            var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(carrierDetails.getShippingLine()));
-            if (!Objects.isNull(masterData) && masterData.containsKey(carrierDetails.getShippingLine())) {
-                String hqAddress = masterData.get(carrierDetails.getShippingLine()).getHeadQuartersDetails();
-                awbOtherInfo.setCarrierHqAddress(hqAddress != null ? hqAddress : "");
+        String firstCarrier = consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getShippingLine() : null;
+        populateCarrierDetails(firstCarrier, awbOtherInfo, (awb, name) -> awb.setCarrierName(name), (awb, address) -> awb.setCarrierHqAddress(address));
+        return awbOtherInfo;
+    }
+
+    private <T> void populateCarrierDetails(String carrier, T awbObject, BiConsumer<T, String> setCarrierName, BiConsumer<T, String> setCarrierHqAddress) {
+
+        if (carrier != null) {
+            setCarrierName.accept(awbObject, carrier);
+        } else {
+            setCarrierName.accept(awbObject, "");
+        }
+
+        if (!Strings.isNullOrEmpty(carrier)) {
+            var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(carrier));
+            if (!Objects.isNull(masterData) && masterData.containsKey(carrier)) {
+                String hqAddress = masterData.get(carrier).getHeadQuartersDetails();
+                setCarrierHqAddress.accept(awbObject, hqAddress != null ? hqAddress : "");
             }
         }
-        return awbOtherInfo;
     }
 
     private void linkHawbMawb(Awb mawb, List<Awb> awbList, Boolean isInterBranchConsole) throws RunnerException {
@@ -1692,21 +1722,13 @@ public class AwbService implements IAwbService {
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
         try {
             if (Strings.isNullOrEmpty(awbOtherInfo.getBranch())) {
-                String branch = UserContext.getUser().getTenantDisplayName();
-                awbOtherInfo.setBranch(branch != null ? branch : "");
+                awbOtherInfo.setBranch(getTenantBranch());
             }
             if (Strings.isNullOrEmpty(awbOtherInfo.getLegalCompanyName())) {
-                V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-                if (v1TenantSettingsResponse != null)
-                    awbOtherInfo.setLegalCompanyName(v1TenantSettingsResponse.getLegalEntityCode());
+                    awbOtherInfo.setLegalCompanyName(getLegalCompanyName());
 
-                Integer companyId = UserContext.getUser().getCompanyId();
-                List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
-                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
-                V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
-                List<CompanyDto> companyDetailsList = v1Response != null ? jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class) : null;
-                if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
-                    CompanyDto companyDetails = companyDetailsList.get(0);
+                CompanyDto companyDetails = fetchCompanyDetails();
+                if (companyDetails != null) {
                     awbOtherInfo.setAddress1(companyDetails.getAddress1() != null ? companyDetails.getAddress1() : "");
                     awbOtherInfo.setAddress2(companyDetails.getAddress2() != null ? companyDetails.getAddress2() : "");
                     awbOtherInfo.setState(companyDetails.getState() != null ? companyDetails.getState() : "");
@@ -3422,21 +3444,12 @@ public class AwbService implements IAwbService {
         try {
             if (awbResponse.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB)) {
                 if (Strings.isNullOrEmpty(awbOtherInfoResponse.getBranch())) {
-                    String branch = UserContext.getUser().getTenantDisplayName();
-                    awbOtherInfoResponse.setBranch(branch != null ? branch : "");
+                    awbOtherInfoResponse.setBranch(getTenantBranch());
                 }
                 if (Strings.isNullOrEmpty(awbOtherInfoResponse.getLegalCompanyName())) {
-                    V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-                    if (v1TenantSettingsResponse != null)
-                        awbOtherInfoResponse.setLegalCompanyName(v1TenantSettingsResponse.getLegalEntityCode() != null ? v1TenantSettingsResponse.getLegalEntityCode() : "");
-
-                    Integer companyId = UserContext.getUser().getCompanyId();
-                    List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
-                    CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
-                    V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
-                    List<CompanyDto> companyDetailsList = v1Response != null ? jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class) : null;
-                    if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
-                        CompanyDto companyDetails = companyDetailsList.get(0);
+                    awbOtherInfoResponse.setLegalCompanyName(getLegalCompanyName());
+                    CompanyDto companyDetails = fetchCompanyDetails();
+                    if (companyDetails != null) {
                         awbOtherInfoResponse.setAddress1(companyDetails.getAddress1() != null ? companyDetails.getAddress1() : "");
                         awbOtherInfoResponse.setAddress2(companyDetails.getAddress2() != null ? companyDetails.getAddress2() : "");
                         awbOtherInfoResponse.setState(companyDetails.getState() != null ? companyDetails.getState() : "");
@@ -3459,16 +3472,7 @@ public class AwbService implements IAwbService {
                 }
             } else {
                 String firstCarrier = awbResponse.getAwbShipmentInfo().getFirstCarrier();
-                if (Strings.isNullOrEmpty(awbOtherInfoResponse.getCarrierName())) {
-                    awbOtherInfoResponse.setCarrierName(firstCarrier != null ? firstCarrier : "");
-                }
-                if (!Strings.isNullOrEmpty(firstCarrier) && Strings.isNullOrEmpty(awbOtherInfoResponse.getCarrierHqAddress())) {
-                    var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(firstCarrier));
-                    if (!Objects.isNull(masterData) && masterData.containsKey(firstCarrier)) {
-                        String headQuartersDetails = masterData.get(firstCarrier).getHeadQuartersDetails();
-                        awbOtherInfoResponse.setCarrierHqAddress(headQuartersDetails != null ? headQuartersDetails : "");
-                    }
-                }
+                populateCarrierDetails(firstCarrier, awbOtherInfoResponse, (awb, name) -> awb.setCarrierName(name), (awb, address) -> awb.setCarrierHqAddress(address));
             }
         } catch (Exception e) {
             throw new RunnerException(String.format("Error while populating default awb other info %s", e.getMessage()));
