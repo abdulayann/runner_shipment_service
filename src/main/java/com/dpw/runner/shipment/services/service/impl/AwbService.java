@@ -2511,11 +2511,11 @@ public class AwbService implements IAwbService {
 
             if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeLock()) ||
                     (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeLock())) {
-                awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getVolume());
+                awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume());
             }
             if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeUnitLock()) ||
                     (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeUnitLock()))
-                awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getVolumeUnit());
+                awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
             if(awb.getAwbPackingInfo() != null) {
                 for (var awbPacking: awb.getAwbPackingInfo() ) {
                     if(Objects.equals(awbPacking.getAwbGoodsDescriptionInfoGuid(), awbGoodsDescriptionInfo.getGuid()))
