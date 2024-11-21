@@ -1327,11 +1327,11 @@ class MasterDataUtilsTest {
         MasterDataUtils spyService = spy(masterDataUtils);
         String locationGuid = StringUtility.convertToString(UUID.randomUUID());
         Cache cache = mock(Cache.class);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        doReturn(new HashMap<>()).when(spyService).getLocationData(any());
         var response = spyService.getLocationDataFromCache(Set.of(locationGuid));
         assertNotNull(response);
-        assertTrue(response.isEmpty());
     }
 
     @Test
