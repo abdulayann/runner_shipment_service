@@ -2700,7 +2700,7 @@ class AwbServiceTest extends CommonMocks {
         consolidationAddress3.setOrgCode("223532_6");
         Parties consolidationAddress4 = Parties.builder().type(Constants.FAG).build();
         consolidationAddress4.setOrgData(Map.ofEntries(Map.entry(ReportConstants.COUNTRY, "test-country")));
-        consolidationAddress4.setOrgCode("LL_QR_25300");
+        consolidationAddress4.setOrgCode("2235367");
 
 
         consolidationDetails.setConsolidationAddresses(List.of(

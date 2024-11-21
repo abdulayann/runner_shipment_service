@@ -952,8 +952,10 @@ public class AwbService implements IAwbService {
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
                     awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-                if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
-                    awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
+                if(orgRow.getAddressId()!=null && !orgRow.getAddressId().isEmpty()){
+                    if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
+                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
+                    }
                 }
                 awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
                         ? StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
@@ -1096,7 +1098,9 @@ public class AwbService implements IAwbService {
                     var orgId = party.getOrgData() != null ?  (Integer) party.getOrgData().get("Id") : null;
                     var addressId = party.getAddressData() != null ?  (Integer) party.getAddressData().get("Id") : null;
                     notifyPartyInfo.setOrgId(orgId);
-                    notifyPartyInfo.setAddressId(party.getAddressId());
+                    if(party.getAddressId()!=null && !party.getAddressData().isEmpty()){
+                        notifyPartyInfo.setAddressId(Integer.valueOf(party.getAddressId()));
+                    }
                     notifyPartyInfo.setAddressId(addressId);
                     notifyPartyInfo.setNotifyOrgId(Long.valueOf(orgId));
                     notifyPartyList.add(notifyPartyInfo);
@@ -1110,9 +1114,11 @@ public class AwbService implements IAwbService {
                     .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
             for (int i = 0; i < notifyPartyList.size(); i++) {
                 AwbNotifyPartyInfo notifyParty = notifyPartyList.get(i);
-                if(notifyPartyAddressIdToEntityOrgMap.containsKey(Long.valueOf(notifyParty.getAddressId()))) {
-                    if (notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber()!=null) {
-                        notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber())));
+                if(notifyParty.getAddressId()!=null){
+                    if(notifyPartyAddressIdToEntityOrgMap.containsKey(Long.valueOf(notifyParty.getAddressId()))) {
+                        if (notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber()!=null) {
+                            notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber())));
+                        }
                     }
                 }
             }
@@ -1468,8 +1474,10 @@ public class AwbService implements IAwbService {
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
                     awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-                if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
-                    awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
+                if(orgRow.getAddressId()!=null&& !orgRow.getAddressId().isEmpty()){
+                    if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
+                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
+                    }
                 }
                 awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
                         ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
@@ -1533,9 +1541,11 @@ public class AwbService implements IAwbService {
             notifyPartyInfo.setAddress2(shipmentNotifyParty.getAddressData().get(PartiesConstants.ADDRESS2)!=null?shipmentNotifyParty.getAddressData().get(PartiesConstants.ADDRESS2).toString().toUpperCase():"");
             notifyPartyInfo.setEntityId(shipmentDetails.getId());
             notifyPartyInfo.setEntityType(request.getAwbType());
-            if(notifyPartyAddressIdToEntityMap.containsKey(Long.valueOf(shipmentNotifyParty.getAddressId()))){
-                if (notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber()!=null) {
-                    notifyPartyInfo.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber())));
+            if(shipmentNotifyParty.getAddressId()!=null && !shipmentNotifyParty.getAddressId().isEmpty()){
+                if(notifyPartyAddressIdToEntityMap.containsKey(Long.valueOf(shipmentNotifyParty.getAddressId()))){
+                    if (notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber()!=null) {
+                        notifyPartyInfo.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber())));
+                    }
                 }
             }
             constructNotifyPartyAddress(notifyPartyInfo, shipmentNotifyParty.getAddressData(), alpha2DigitToCountry);
