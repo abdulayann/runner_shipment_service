@@ -1125,6 +1125,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setByCarrier(route.getCarrier());
                     awbRoutingInfo.setFlightNumber(route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
+                    awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(consolidationDetails.getId());
                     awbRoutingInfo.setEntityType(request.getAwbType());
                     awbRoutingInfo.setLeg(leg++);
@@ -1140,6 +1141,7 @@ public class AwbService implements IAwbService {
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
             routingInfo.setFlightDate(consolidationDetails.getCarrierDetails().getEtd());
+            routingInfo.setEta(consolidationDetails.getCarrierDetails().getEta());
             routingInfo.setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
             routingInfo.setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
             routingInfo.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
@@ -1505,6 +1507,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setByCarrier(route.getCarrier());
                     awbRoutingInfo.setFlightNumber(route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
+                    awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(shipmentDetails.getId());
                     awbRoutingInfo.setEntityType(request.getAwbType());
                     awbRoutingInfo.setLeg(leg++);
@@ -1519,6 +1522,7 @@ public class AwbService implements IAwbService {
                 shipmentDetails.getCarrierDetails().getDestinationPort() != null
         ) {
             var flightDate = shipmentDetails.getCarrierDetails().getEtd();
+            var eta = shipmentDetails.getCarrierDetails().getEta();
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
             routingInfo.setLeg(1L);
@@ -1529,6 +1533,7 @@ public class AwbService implements IAwbService {
             routingInfo.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
             routingInfo.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
             routingInfo.setFlightDate(flightDate);
+            routingInfo.setEta(eta);
             routingInfo.setEntityId(shipmentDetails.getId());
             routingInfo.setEntityType(request.getAwbType());
             return Arrays.asList(routingInfo);
@@ -2340,7 +2345,9 @@ public class AwbService implements IAwbService {
                         if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getFlightDateLock()) ||
                                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getFlightDateLock())) {
                             var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+                            var eta = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEta() : null;
                             awbRoute.setFlightDate(flightDate);
+                            awbRoute.setEta(eta);
                         }
                     } else {
                         deleteParty = awbRoute;
@@ -2355,6 +2362,7 @@ public class AwbService implements IAwbService {
                 shipmentDetails.getCarrierDetails().getDestinationPort() != null && createRouting
         ) {
             var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+            var eta = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEta() : null;
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
             routingInfo.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
@@ -2362,6 +2370,7 @@ public class AwbService implements IAwbService {
             routingInfo.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
             routingInfo.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
             routingInfo.setFlightDate(flightDate);
+            routingInfo.setEta(eta);
             routingInfo.setEntityId(shipmentDetails.getId());
             routingInfo.setEntityType(request.getAwbType());
             if(awb.getAwbRoutingInfo() == null){
