@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
@@ -44,6 +45,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToDPWDateFormatWithTime;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("rawtypes")
@@ -197,6 +199,7 @@ public class AwbUtility {
 
     public AwbAirMessagingResponse createAirMessagingRequestForConsole(Awb awb, ConsolidationDetails consolidationDetails) {
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
@@ -341,6 +344,10 @@ public class AwbUtility {
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
 
+        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
+            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+        }
+
         if(awbResponse.getMeta() != null) {
             var user = UserContext.getUser();
             awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
@@ -434,6 +441,7 @@ public class AwbUtility {
         if (Objects.isNull(tenantModel))
             tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
         var shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(shipmentDetails.getTenantId())).stream().findFirst().orElse(new ShipmentSettingsDetails());
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
@@ -591,6 +599,9 @@ public class AwbUtility {
             awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
             awbResponse.getMeta().setEntityNumber(shipmentDetails.getShipmentId());
+        }
+        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
+            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
         }
 
         // Add MasterAwb details for FZB
