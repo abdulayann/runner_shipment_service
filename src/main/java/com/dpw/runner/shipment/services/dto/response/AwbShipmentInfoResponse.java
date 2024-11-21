@@ -10,7 +10,8 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String shipperName;
-    private String shipperAddress;
+    private String shipperAddress1;
+    private String shipperAddress2;
     private String shipperCountry;
     private String shipperCountryName;
     private String shipperState;
@@ -21,7 +22,8 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String shipperContactName;
     private String shipperTaxRegistrationNumber;
     private String consigneeName;
-    private String consigneeAddress;
+    private String consigneeAddress1;
+    private String consigneeAddress2;
     private String consigneeCountry;
     private String consigneeCountryName;
     private String consigneeState;
@@ -32,7 +34,8 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String consigneeContactName;
     private String consigneeTaxRegistrationNumber;
     private String issuingAgentName;
-    private String issuingAgentAddress;
+    private String issuingAgentAddress1;
+    private String issuingAgentAddres2;
     private String issuingAgentCountry;
     private String issuingAgentCountryName;
     private String issuingAgentState;

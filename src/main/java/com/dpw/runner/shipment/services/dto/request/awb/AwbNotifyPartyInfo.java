@@ -28,7 +28,8 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private Integer orgId;
     private Long notifyOrgId;
     private String name;
-    private String address;
+    private String address1;
+    private String address2;
     private Integer addressId;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String country;

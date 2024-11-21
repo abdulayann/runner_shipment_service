@@ -260,7 +260,7 @@ class HawbReportTest extends CommonMocks {
         usersDto.setUsername("UserName");
         usersDto.setCompanyId(1);
         hawbModel.setUsersDto(usersDto);
-        hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
+        hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address1("test address").build()));
         hawbModel.getAwb().getAwbShipmentInfo().setAccountNumber("123");
         hawbModel.getAwb().getAwbShipmentInfo().setShipperAccountNumber("456");
         hawbModel.getAwb().getAwbShipmentInfo().setConsigneeAccountNumber("789");
@@ -527,7 +527,7 @@ class HawbReportTest extends CommonMocks {
         usersDto.setUsername("UserName");
         usersDto.setCompanyId(1);
         hawbModel.setUsersDto(usersDto);
-        hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address("test address").build()));
+        hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name("Hello").address1("test address").build()));
         hawbModel.getAwb().getAwbShipmentInfo().setAccountNumber("123");
         hawbModel.getAwb().getAwbShipmentInfo().setShipperAccountNumber("456");
         hawbModel.getAwb().getAwbShipmentInfo().setConsigneeAccountNumber("789");

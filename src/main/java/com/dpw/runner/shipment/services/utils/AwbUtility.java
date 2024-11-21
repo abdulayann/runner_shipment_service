@@ -99,22 +99,6 @@ public class AwbUtility {
         return forMattedAddress;
     }
 
-    public static String constructAddressForAwb(Map<String, Object> addressData) {
-        StringBuilder sb = new StringBuilder();
-        String newLine = "\r\n";
-
-        if(addressData != null) {
-            if (addressData.containsKey(PartiesConstants.ADDRESS1))
-                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
-            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
-                if(!sb.isEmpty()) sb.append(newLine);
-                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2)));
-            }
-        }
-
-        return sb.toString();
-    }
-
     public static String constructAddress(Map<String, Object> addressData) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";

@@ -163,52 +163,6 @@ class AwbUtilityTest extends CommonMocks {
         assertEquals(expectedAddress, formattedAddress);
     }
 
-
-    @Test
-    void testConstructAddressForAwbBasic() {
-        Map<String, Object> addressData = new HashMap<>();
-        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
-        addressData.put(PartiesConstants.CITY, "City");
-        addressData.put(PartiesConstants.COUNTRY, "Country");
-
-        String expectedAddress = "123 Main St";
-        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
-
-        assertEquals(expectedAddress, constructedAddress);
-    }
-
-    @Test
-    void testConstructAddressForAwbEmpty() {
-        Map<String, Object> addressData = new HashMap<>();
-        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
-
-        assertEquals("", constructedAddress);
-    }
-
-    @Test
-    void testConstructAddressForAwbNull() {
-        String constructedAddress = awbUtility.constructAddressForAwb(null);
-
-        assertEquals("", constructedAddress);
-    }
-
-    @Test
-    void testConstructAddressForAwbComplete() {
-        Map<String, Object> addressData = new HashMap<>();
-        addressData.put(PartiesConstants.ADDRESS1, "123 Main St");
-        addressData.put(PartiesConstants.ADDRESS2, "Apt 101");
-        addressData.put(PartiesConstants.CITY, "City");
-        addressData.put(PartiesConstants.STATE, "State");
-        addressData.put(PartiesConstants.COUNTRY, "Country");
-        addressData.put(PartiesConstants.ZIP_POST_CODE, "12345");
-        addressData.put(PartiesConstants.CONTACT_PHONE, "123-456-7890");
-
-        String expectedAddress = "123 Main St\r\nApt 101";
-        String constructedAddress = awbUtility.constructAddressForAwb(addressData);
-
-        assertEquals(expectedAddress, constructedAddress);
-    }
-
     @Test
     void testRoundOffAirShipment_NoChange() {
         double charge = 13.00;
