@@ -302,7 +302,7 @@ public class HawbReport extends IReport{
                 }
                 dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
-                dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getChargeCode());
+                dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
             List<AwbPackingInfo> awbPackingInfo = hawbModel.awb.getAwbPackingInfo();
