@@ -8,7 +8,6 @@ public class Constants {
     public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String WRK = "WRK";
     public static final String ORGANIZATION_CODE = "OrganizationCode";
-    public static final String ORG_ORGANIZATION_CODE = "OrgOrganizationCode";
     public static final String OrgId = "OrgId";
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LocalReferenceNumber = "LocalReferenceNumber";
