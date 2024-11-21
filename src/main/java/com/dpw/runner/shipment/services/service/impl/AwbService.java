@@ -1096,7 +1096,7 @@ public class AwbService implements IAwbService {
                     constructNotifyPartyAddress(notifyPartyInfo, party.getAddressData(), alpha2DigitToCountry);
                     // org and address data
                     var orgId = party.getOrgData() != null ?  (Integer) party.getOrgData().get("Id") : null;
-                    var addressId = party.getAddressData() != null ?  (Integer) party.getAddressData().get("Id") : null;
+                    var addressId = party.getAddressData() != null ?  Integer.valueOf((String) party.getAddressData().get("Id")) : null;
                     notifyPartyInfo.setOrgId(orgId);
                     if(party.getAddressId()!=null && !party.getAddressData().isEmpty()){
                         notifyPartyInfo.setAddressId(Integer.valueOf(party.getAddressId()));
