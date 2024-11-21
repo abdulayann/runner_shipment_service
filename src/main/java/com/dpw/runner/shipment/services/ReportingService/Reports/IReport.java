@@ -1946,22 +1946,14 @@ public abstract class IReport {
         return null;
     }
 
-    public static List<String> getFormattedDetails(String name, String address, String country, String state, String city, String zipCode, String phone)
+    public static List<String> getFormattedDetails(String name, String address1,String address2, String country, String state, String city, String zipCode, String phone)
     {
-        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
+        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
             return null;
         }
         List<String> details = new ArrayList<>();
         details.add(name);
-        if(StringUtility.isNotEmpty(address)) {
-            String[] addressList = address.split("\r\n");
-            addressList = Arrays.stream(addressList)
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(Predicate.isEqual("").negate())
-                    .toArray(String[]::new);
-            details.addAll(Arrays.asList(addressList));
-        }
+        details.addAll(Arrays.asList(address1,address2));
         StringBuilder tempAddress = new StringBuilder();
         if (!Strings.isNullOrEmpty(state)){
             tempAddress.append(state);
@@ -1986,21 +1978,18 @@ public abstract class IReport {
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
      */
-    public static List<String> getAwbFormattedDetails(String name, String address, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
     {
-        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
+        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
             return null;
         }
         List<String> details = new ArrayList<>();
         details.add(name);
-        if(StringUtility.isNotEmpty(address)) {
-            String[] addressList = address.split("\r\n");
-            addressList = Arrays.stream(addressList)
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(Predicate.isEqual("").negate())
-                    .toArray(String[]::new);
-            details.addAll(Arrays.asList(addressList));
+        if(address1!=null){
+            details.add(address1);
+        }
+        if(address2!=null){
+            details.add(address2);
         }
         StringBuilder tempAddress = new StringBuilder();
         if (!Strings.isNullOrEmpty(city)){
@@ -2011,7 +2000,11 @@ public abstract class IReport {
                 tempAddress.append(", ");
             tempAddress.append(state);
         }
-        if (!Strings.isNullOrEmpty(zipCode)) details.add(zipCode);
+        if (!Strings.isNullOrEmpty(zipCode)) {
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(zipCode);
+        }
         if (!Strings.isNullOrEmpty(country)){
             if(!tempAddress.isEmpty())
                 tempAddress.append(", ");
@@ -2019,8 +2012,18 @@ public abstract class IReport {
         }
         if(!tempAddress.isEmpty())
             details.add(tempAddress.toString());
-        if (!Strings.isNullOrEmpty(contactName)) details.add(contactName);
-        if (!Strings.isNullOrEmpty(phone)) details.add(phone);
+        StringBuilder contactAndPhoneDetails = new StringBuilder();
+        if (!Strings.isNullOrEmpty(contactName)) {
+            contactAndPhoneDetails.append(contactName);
+        }
+        if (!Strings.isNullOrEmpty(contactName)) {
+            if(!contactAndPhoneDetails.isEmpty())
+                contactAndPhoneDetails.append(", ");
+            contactAndPhoneDetails.append(phone);
+        }
+        if (!contactAndPhoneDetails.isEmpty()) {
+            details.add(contactAndPhoneDetails.toString());
+        }
         if (!Strings.isNullOrEmpty(taxRegistrationNumber)) details.add(taxRegistrationNumber);
         return details;
     }
