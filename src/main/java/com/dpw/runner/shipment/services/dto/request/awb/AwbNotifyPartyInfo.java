@@ -45,4 +45,6 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private String taxRegistrationNumber;
     @UnlocationData
     private String specifiedAddressLocation;
+    private String specifiedAddressLocationIATACode;
+    private String specifiedAddressLocationName;
 }
