@@ -719,6 +719,7 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNEE,consignee);
             dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
             dictionary.put(ReportConstants.CLIENT, client);
+            populateShipmentCargoManifestParty(shipment, dictionary);
 
             PartiesModel notifyParty1 = null;
             List<PartiesModel> shipmentAddresses = shipment.getShipmentAddresses();
@@ -928,6 +929,29 @@ public abstract class IReport {
             dictionary.put(DGEmergencyContact, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
         }
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+    private void populateShipmentCargoManifestParty(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        // Consigner
+        var shipmentConsigner = shipmentModel.getConsigner();
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentConsigner, CM_CONSIGNER);
+
+        // Consignee
+        var shipmentConsignee = shipmentModel.getConsignee();
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentConsignee, CM_CONSIGNEE);
+
+        AdditionalDetailModel additionalDetailModel = Optional.ofNullable(shipmentModel.getAdditionalDetails()).orElse(new AdditionalDetailModel());
+
+        // Origin Agent
+        var shipmentOriginAgent = additionalDetailModel.getExportBroker();
+        dictionary.put(CM_ORIGIN_AGENT_NAME, dictionary.get(ORIGIN_AGENT_NAME));
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentOriginAgent, CM_ORIGIN_AGENT_ADDRESS);
+
+        // Destination Agent
+        var shipmentDestinationAgent = additionalDetailModel.getImportBroker();
+        dictionary.put(CM_DESTINATION_AGENT_NAME, dictionary.get(DESTINATION_AGENT_NAME));
+        ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentDestinationAgent, CM_DESTINATION_AGENT_ADDRESS);
+
     }
 
     public void populateShipmentOrders(ShipmentModel shipment, Map<String, Object> dictionary) {
@@ -1956,6 +1980,48 @@ public abstract class IReport {
             details.add(tempAddress.toString());
         if (!Strings.isNullOrEmpty(zipCode)) details.add(zipCode);
         if (!Strings.isNullOrEmpty(phone)) details.add(phone);
+        return details;
+    }
+
+    /**
+     Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
+     */
+    public static List<String> getAwbFormattedDetails(String name, String address, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    {
+        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address)) {
+            return null;
+        }
+        List<String> details = new ArrayList<>();
+        details.add(name);
+        if(StringUtility.isNotEmpty(address)) {
+            String[] addressList = address.split("\r\n");
+            addressList = Arrays.stream(addressList)
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(Predicate.isEqual("").negate())
+                    .toArray(String[]::new);
+            details.addAll(Arrays.asList(addressList));
+        }
+        StringBuilder tempAddress = new StringBuilder();
+        if (!Strings.isNullOrEmpty(city)){
+            tempAddress.append(city);
+        }
+        if (!Strings.isNullOrEmpty(state)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(state);
+        }
+        if (!Strings.isNullOrEmpty(zipCode)) details.add(zipCode);
+        if (!Strings.isNullOrEmpty(country)){
+            if(!tempAddress.isEmpty())
+                tempAddress.append(", ");
+            tempAddress.append(country);
+        }
+        if(!tempAddress.isEmpty())
+            details.add(tempAddress.toString());
+        if (!Strings.isNullOrEmpty(contactName)) details.add(contactName);
+        if (!Strings.isNullOrEmpty(phone)) details.add(phone);
+        if (!Strings.isNullOrEmpty(taxRegistrationNumber)) details.add(taxRegistrationNumber);
         return details;
     }
 

@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
@@ -22,6 +23,8 @@ public class AwbCargoInfo implements Serializable {
     private String accountingInfo;
     @NotBlank(message = "handlingInfo is mandatory")
     private String handlingInfo;
+    @Size(max = 5, message = "maximum size is 5 for handling information code")
+    private String handlingInfoCode;
     private String otherInfo;
     private String ntrQtyGoods;
     private String referenceNumber;
@@ -36,5 +39,7 @@ public class AwbCargoInfo implements Serializable {
     private BigDecimal insuranceAmount;
     private String customOriginCode;
     private String csdInfo;
+    private String csdInfoDate;
+    private String userInitials;
     private Integer slac;
 }

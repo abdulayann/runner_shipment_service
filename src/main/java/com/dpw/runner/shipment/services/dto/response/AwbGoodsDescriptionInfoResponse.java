@@ -29,6 +29,17 @@ public class AwbGoodsDescriptionInfoResponse implements IRunnerResponse {
     private Boolean disableFetchRates;
     private Boolean disableRates;
     private Boolean enableFetchRatesWarning;
+    private String rcp;
+    private String uldSerialNumber;
+    private String uldTareWeight;
+    private String uldTareWeightUnit;
+    private String uldType;
+    private String uldCode;
+    private String uldRateTypeCode;
+    private String basisCode;
+    private String appliedPercent;
+    private String referenceId;
+    private String referenceTypeCode;
 
     //Master Data
     private Map<String, String> masterData;
