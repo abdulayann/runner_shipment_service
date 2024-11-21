@@ -289,8 +289,6 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.ACCOUNTING_INFORMATION,  StringUtility.toUpperCase(cargoInfoRows.getAccountingInfo()));
                 dictionary.put(ReportConstants.HANDLING_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getHandlingInfo()));
                 dictionary.put(ReportConstants.HANDLING_INFORMATION_CODE, cargoInfoRows.getHandlingInfoCode());
-                NtrQtyGoods = cargoInfoRows.getNtrQtyGoods();
-                dictionary.put(ReportConstants.NATURE_OF_GOODS, NtrQtyGoods);
                 dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
                 if(StringUtility.isNotEmpty(cargoInfoRows.getChargeCode()))
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
@@ -389,6 +387,9 @@ public class HawbReport extends IReport{
                 List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
                 List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(values, new TypeReference<>(){});
                 values.forEach(value -> {
+                    value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
+                    value.put(AWB_GROSS_VOLUME_AND_UNIT, value.get(GROSS_VOLUME).toString() + " "+value.get(GROSS_VOLUME_UNIT).toString());
+                    value.put(AWB_DIMS, value.get(DIMENSIONS));
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){
                         value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
