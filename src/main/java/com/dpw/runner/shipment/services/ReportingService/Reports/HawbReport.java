@@ -290,6 +290,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.CHARGE_CODE, cargoInfoRows.getChargeCode());
                 dictionary.put(ReportConstants.ACCOUNTING_INFORMATION,  StringUtility.toUpperCase(cargoInfoRows.getAccountingInfo()));
                 dictionary.put(ReportConstants.HANDLING_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getHandlingInfo()));
+                dictionary.put(ReportConstants.HANDLING_INFORMATION_CODE, cargoInfoRows.getHandlingInfoCode());
                 NtrQtyGoods = cargoInfoRows.getNtrQtyGoods();
                 dictionary.put(ReportConstants.NATURE_OF_GOODS, NtrQtyGoods);
                 dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
@@ -297,8 +298,11 @@ public class HawbReport extends IReport{
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                dictionary.put(CSD_INFO_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
+                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()) && StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate())) {
                     dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+                }
+                dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
 
             }
