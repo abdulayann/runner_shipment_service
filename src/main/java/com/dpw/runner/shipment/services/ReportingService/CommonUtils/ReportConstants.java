@@ -662,6 +662,7 @@ public class ReportConstants {
     public static final String AWB_GROSS_VOLUME_AND_UNIT = "AWB_GrossVolumeandUnit";
     public static final String AWB_DIMS = "AWB_Dims";
     public static final String HANDLING_INFORMATION = "HandlingInformation";
+    public static final String HANDLING_INFORMATION_CODE = "HandlingCode";
     public static final String ACCOUNTING_INFORMATION = "AccountingInformation";
     public static final String CURRENCY = "Currency";
     public static final String CHARGE_CODE = "ChargeCode";
@@ -1301,4 +1302,8 @@ public class ReportConstants {
     public static final String CM_DESTINATION_AGENT_NAME = "CM_DestinationAgentName";
     public static final String CM_DESTINATION_AGENT_ADDRESS = "CM_DestinationAgentAddress";
     public static final String CM_TOTAL_PACKS_AND_UNITS = "CM_TotalPacksAndUnit";
+    public static final String CSD_INFO_DATE = "CsdInfoDate";
+    public static final String USER_INITIALS = "UserInitials";
+
+    public static final String OTHER_INFO_CODE = "OtherInfoCode";
 }
