@@ -1301,4 +1301,6 @@ public class ReportConstants {
     public static final String CSD_INFO_DATE = "CsdInfoDate";
     public static final String USER_INITIALS = "UserInitials";
 
+
+    public static final String OTHER_INFO_CODE = "OtherInfoCode";
 }
