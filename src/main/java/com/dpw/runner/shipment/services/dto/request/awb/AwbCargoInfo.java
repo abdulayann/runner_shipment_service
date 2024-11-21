@@ -26,6 +26,7 @@ public class AwbCargoInfo implements Serializable {
     @Size(max = 5, message = "maximum size is 5 for handling information code")
     private String handlingInfoCode;
     private String otherInfo;
+    private String otherInfoCode;
     private String ntrQtyGoods;
     private String referenceNumber;
     private String shippingInformation;
