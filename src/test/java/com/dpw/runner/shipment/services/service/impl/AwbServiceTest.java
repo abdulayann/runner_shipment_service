@@ -329,7 +329,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
-        assertEquals("SHIPMENTDESCRIPTION\r\nVOL 1230.450 M3", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbCargoInfo().getNtrQtyGoods());
+        assertEquals("SHIPMENTDESCRIPTION", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbGoodsDescriptionInfo().get(0).getNtrQtyGoods());
     }
 
     @Test
@@ -969,7 +969,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.createMawb(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
-        assertEquals("CONSOLIDATION AS PER ATTACHED LIST\r\nVOL 1000.567 M3", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbCargoInfo().getNtrQtyGoods());
+        assertEquals("CONSOLIDATION AS PER ATTACHED LIST", objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getAwbGoodsDescriptionInfo().get(0).getNtrQtyGoods());
     }
 
     @Test
@@ -1473,6 +1473,12 @@ class AwbServiceTest extends CommonMocks {
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(List.of(testShipment));
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setPacksVolumeUnit("M3");
+        packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
+        packSummaryResponse.setTotalPacksWeight("21.454");
+        packSummaryResponse.setWeightUnit("KG");
+        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
@@ -2260,7 +2266,9 @@ class AwbServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
         assertEquals(
-                "DIMS: In CMS\r\n" + "5=400X300X2,1=100X200X10\r\n",
+                "DIMS \r\n" +
+                        "400X300X2 CMSX5,\r\n" +
+                        "100X200X10 CMSX1",
                 runnerResponse.getData());
       }
 
