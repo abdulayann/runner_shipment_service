@@ -316,6 +316,14 @@ class AwbServiceTest extends CommonMocks {
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
+        V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
+        CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
+        List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = awbService.createAwb(commonRequestModel);
@@ -387,6 +395,12 @@ class AwbServiceTest extends CommonMocks {
 
         OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+        V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
+        CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
+        List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
 
         mockShipmentSettings();
         mockTenantSettings();
@@ -949,7 +963,7 @@ class AwbServiceTest extends CommonMocks {
                     Object arg = invocation.getArgument(0);
                     return objectMapper.convertValue(arg, AwbResponse.class);
                 });
-
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = awbService.createMawb(commonRequestModel);
@@ -1007,6 +1021,7 @@ class AwbServiceTest extends CommonMocks {
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
@@ -3363,7 +3378,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
-
+        when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);

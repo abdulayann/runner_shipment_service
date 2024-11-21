@@ -1252,7 +1252,7 @@ public class AwbService implements IAwbService {
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
 
         String firstCarrier = consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getShippingLine() : null;
-        populateCarrierDetails(firstCarrier, awbOtherInfo, (awb, name) -> awb.setCarrierName(name), (awb, address) -> awb.setCarrierHqAddress(address));
+        populateCarrierDetails(firstCarrier, awbOtherInfo, AwbOtherInfo::setCarrierName, AwbOtherInfo::setCarrierHqAddress);
         return awbOtherInfo;
     }
 
@@ -3472,7 +3472,7 @@ public class AwbService implements IAwbService {
                 }
             } else {
                 String firstCarrier = awbResponse.getAwbShipmentInfo().getFirstCarrier();
-                populateCarrierDetails(firstCarrier, awbOtherInfoResponse, (awb, name) -> awb.setCarrierName(name), (awb, address) -> awb.setCarrierHqAddress(address));
+                populateCarrierDetails(firstCarrier, awbOtherInfoResponse, AwbOtherInfoResponse::setCarrierName, AwbOtherInfoResponse::setCarrierHqAddress);
             }
         } catch (Exception e) {
             throw new RunnerException(String.format("Error while populating default awb other info %s", e.getMessage()));
