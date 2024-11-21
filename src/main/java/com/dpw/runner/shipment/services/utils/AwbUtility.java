@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -19,12 +21,14 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.google.common.base.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.modelmapper.ModelMapper;
@@ -35,10 +39,14 @@ import org.springframework.stereotype.Component;
 import javax.mail.MessagingException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToDPWDateFormatWithTime;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("rawtypes")
 @Component
@@ -191,10 +199,13 @@ public class AwbUtility {
 
     public AwbAirMessagingResponse createAirMessagingRequestForConsole(Awb awb, ConsolidationDetails consolidationDetails) {
         TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        // Populate Special handling codes master data
+        this.populateMasterDataMap(awbResponse, awb);
 
         List<Parties> orgLists = new ArrayList<>();
         Parties issuingAgent = null;
@@ -268,8 +279,19 @@ public class AwbUtility {
 
         }
 
-        List<String> unlocoRequests = new ArrayList<>();
         Set<String> carrierRequests = new HashSet<>();
+
+        Set<String> rcpList = new HashSet<>();
+        awb.getAwbGoodsDescriptionInfo().forEach(good -> {
+            if(good.getRcp() != null)
+                rcpList.add(good.getRcp());
+        });
+
+        List<String> unlocoRequests = new ArrayList<>(rcpList);
+        awb.getAwbNotifyPartyInfo().forEach(party -> {
+            if(party.getSpecifiedAddressLocation() != null)
+                unlocoRequests.add(party.getSpecifiedAddressLocation());
+        });
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -285,6 +307,9 @@ public class AwbUtility {
 
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+
+        if(!rcpList.isEmpty())
+            this.buildRcpIATAMapAndNotifyParty(awbResponse, rcpList, unlocationsMap);
 
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
@@ -319,13 +344,55 @@ public class AwbUtility {
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
 
+        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
+            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+        }
+
         if(awbResponse.getMeta() != null) {
             var user = UserContext.getUser();
             awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(consolidationDetails.getBol());
+            awbResponse.getMeta().setEntityNumber(consolidationDetails.getConsolidationNumber());
         }
 
+        // Rounding off Currencies fields
+        this.roundOffCurrencyFields(awbResponse);
+        // Rounding off Weight fields
+        this.roundOffWeightFields(awbResponse);
+
         return awbResponse;
+    }
+    private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Set<String> rcpList, Map<String, UnlocationsResponse> unlocationsMap) {
+        Map<String, String> rcpIataMap = new HashMap<>();
+        rcpList.forEach(rep -> {
+            if (unlocationsMap.containsKey(rep)) {
+                rcpIataMap.put(rep, unlocationsMap.get(rep).getIataCode());
+            }
+        });
+        awbResponse.getMeta().setRcpIATACodes(rcpIataMap);
+        if (awbResponse.getAwbNotifyPartyInfo() != null) {
+            awbResponse.getAwbNotifyPartyInfo().forEach(party -> {
+                if (party.getSpecifiedAddressLocation() != null && unlocationsMap.containsKey(party.getSpecifiedAddressLocation())) {
+                    party.setSpecifiedAddressLocationName(unlocationsMap.get(party.getSpecifiedAddressLocation()).getName());
+                    party.setSpecifiedAddressLocationIATACode(unlocationsMap.get(party.getSpecifiedAddressLocation()).getIataCode());
+                }
+            });
+        }
+    }
+
+    private void populateMasterDataMap(AwbAirMessagingResponse awbResponse, Awb awb) {
+        MasterListRequestV2 requests = new MasterListRequestV2();
+        List<MasterListRequest> masterListRequests = new ArrayList<>();
+        awb.getAwbSpecialHandlingCodesMappings().forEach(x -> masterListRequests.add(MasterListRequest.builder().ItemValue(x.getShcId()).ItemType(MasterDataType.SPECIAL_HANDLING_CODES.getDescription()).build()));
+
+        if (!masterListRequests.isEmpty()) {
+            requests.setMasterListRequests(masterListRequests);
+            requests.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+            List<EntityTransferMasterLists> masterDataList = masterDataUtils.fetchMultipleMasterData(requests);
+            Map<String, String> sphCodeMap = new HashMap<>();
+            masterDataList.forEach(x -> sphCodeMap.put(x.ItemValue, x.ItemDescription));
+            awbResponse.getMeta().setSchCodes(sphCodeMap);
+        }
     }
     private void populateEnums(AwbAirMessagingResponse awbResponse) {
         Map<String, String> chargeDue = Arrays.stream(ChargesDue.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), ChargesDue::getDescription));
@@ -354,6 +421,7 @@ public class AwbUtility {
                 .state(tenantModel.state)
                 .branchCode(tenantModel.code)
                 .branchName(tenantModel.tenantName)
+                .legalEntityName(commonUtils.getCurrentTenantSettings().getLegalEntityCode())
                 .build();
     }
 
@@ -369,13 +437,16 @@ public class AwbUtility {
                 .build();
     }
 
-    public AwbAirMessagingResponse createAirMessagingRequestForShipment(Awb awb, ShipmentDetails shipmentDetails, TenantModel tenantModel) {
+    public AwbAirMessagingResponse createAirMessagingRequestForShipment(Awb awb, ShipmentDetails shipmentDetails, TenantModel tenantModel, Awb masterAwb) throws RunnerException {
         if (Objects.isNull(tenantModel))
             tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
         var shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(shipmentDetails.getTenantId())).stream().findFirst().orElse(new ShipmentSettingsDetails());
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        // Populate Special handling codes master data
+        this.populateMasterDataMap(awbResponse, awb);
 
         List<Parties> orgLists = new ArrayList<>();
         Parties issuingAgent = null;
@@ -449,8 +520,21 @@ public class AwbUtility {
 
         }
 
-        List<String> unlocoRequests = new ArrayList<>();
         Set<String> carrierRequests = new HashSet<>();
+
+        Set<String> rcpList = new HashSet<>();
+        awb.getAwbGoodsDescriptionInfo().forEach(good -> {
+            if(good.getRcp() != null)
+                rcpList.add(good.getRcp());
+        });
+
+        List<String> unlocoRequests = new ArrayList<>(rcpList);
+        if(awb.getAwbNotifyPartyInfo() != null) {
+            awb.getAwbNotifyPartyInfo().forEach(party -> {
+                if (party.getSpecifiedAddressLocation() != null)
+                    unlocoRequests.add(party.getSpecifiedAddressLocation());
+            });
+        }
 
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
@@ -466,6 +550,9 @@ public class AwbUtility {
 
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+
+        if(!rcpList.isEmpty())
+            this.buildRcpIATAMapAndNotifyParty(awbResponse, rcpList, unlocationsMap);
 
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());
@@ -511,7 +598,20 @@ public class AwbUtility {
 
             awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
             awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
+            awbResponse.getMeta().setEntityNumber(shipmentDetails.getShipmentId());
         }
+        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
+            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+        }
+
+        // Add MasterAwb details for FZB
+        if(masterAwb != null) {
+            this.populateMasterAwbData(awbResponse, masterAwb);
+        }
+        // Rounding off Currencies fields
+        this.roundOffCurrencyFields(awbResponse);
+        // Rounding off Weight fields
+        this.roundOffWeightFields(awbResponse);
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
             String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
             awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
@@ -522,8 +622,72 @@ public class AwbUtility {
     private AwbAirMessagingResponse.UserInfo populateUserInfoFields(UsersDto user) {
         return AwbAirMessagingResponse.UserInfo.builder()
                 .userName(user.getUsername())
+                .userDisplayName(user.getDisplayName())
                 .build();
     }
+
+    private void populateMasterAwbData(AwbAirMessagingResponse awbResponse, Awb masterAwb) throws RunnerException {
+        BigDecimal masterGrossWeightSum = BigDecimal.ZERO;
+        String masterGrossWeightSumUnit = Constants.WEIGHT_UNIT_KG;
+        Integer masterPackCount = 0;
+
+        if(masterAwb.getAwbGoodsDescriptionInfo() != null) {
+            for(var good : masterAwb.getAwbGoodsDescriptionInfo()){
+                if(!Objects.equals(good.getGrossWtUnit(), Constants.WEIGHT_UNIT_KG))
+                    masterGrossWeightSum = masterGrossWeightSum.add(new BigDecimal(convertUnit(Constants.MASS, good.getGrossWt(), good.getGrossWtUnit(), Constants.WEIGHT_UNIT_KG).toString()));
+                else
+                    masterGrossWeightSum = masterGrossWeightSum.add(good.getGrossWt());
+                masterPackCount += good.getPiecesNo();
+            }
+        }
+
+        awbResponse.getMeta().setMasterGrossWeightSum(masterGrossWeightSum);
+        awbResponse.getMeta().setMasterGrossWeightSumUnit(masterGrossWeightSumUnit);
+        awbResponse.getMeta().setMasterPackCount(masterPackCount);
+
+    }
+
+    private void roundOffCurrencyFields(AwbAirMessagingResponse awbResponse) {
+        int decimalPlaces = Optional.ofNullable(commonUtils.getCurrentTenantSettings().getCurrencyDecimalPlace()).orElse(0);
+
+        if(awbResponse.getAwbPaymentInfo() != null) {
+            if (awbResponse.getAwbPaymentInfo().getWeightCharges() != null) {
+                awbResponse.getAwbPaymentInfo().setWeightCharges(awbResponse.getAwbPaymentInfo().getWeightCharges().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if (awbResponse.getAwbPaymentInfo().getDueAgentCharges() != null) {
+                awbResponse.getAwbPaymentInfo().setDueAgentCharges(awbResponse.getAwbPaymentInfo().getDueAgentCharges().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if (awbResponse.getAwbPaymentInfo().getDueCarrierCharges() != null) {
+                awbResponse.getAwbPaymentInfo().setDueCarrierCharges(awbResponse.getAwbPaymentInfo().getDueCarrierCharges().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+        }
+        if(awbResponse.getAwbOtherChargesInfo() != null) {
+            awbResponse.getAwbOtherChargesInfo().forEach(charge -> {
+                if (charge.getAmount() != null) {
+                    charge.setAmount(charge.getAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+        if(awbResponse.getMeta().getTotalAmount() != null) {
+            awbResponse.getMeta().setTotalAmount(awbResponse.getMeta().getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+        }
+    }
+
+    private void roundOffWeightFields(AwbAirMessagingResponse awbResponse) {
+        int decimalPlaces = Optional.ofNullable(commonUtils.getCurrentTenantSettings().getWeightDecimalPlace()).orElse(0);
+
+        if(awbResponse.getAwbPackingInfo() != null) {
+            awbResponse.getAwbPackingInfo().forEach(pack -> {
+                if (pack.getWeight() != null) {
+                    pack.setWeight(pack.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+        if(awbResponse.getMeta().getMasterGrossWeightSum() != null) {
+            awbResponse.getMeta().setMasterGrossWeightSum(awbResponse.getMeta().getMasterGrossWeightSum().setScale(decimalPlaces, RoundingMode.HALF_UP));
+        }
+    }
+
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
