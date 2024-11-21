@@ -10,7 +10,6 @@ import lombok.*;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
-import org.springframework.format.annotation.DateTimeFormat;
 
 @Data
 @Builder

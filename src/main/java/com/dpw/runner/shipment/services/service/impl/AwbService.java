@@ -2425,7 +2425,7 @@ public class AwbService implements IAwbService {
                         if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getFlightDateLock()) ||
                                 (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getFlightDateLock())) {
                             var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
-                            var eta = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEta() : null;
+                            var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
                             awbRoute.setFlightDate(flightDate);
                             awbRoute.setEta(eta);
                         }
@@ -2442,7 +2442,7 @@ public class AwbService implements IAwbService {
                 shipmentDetails.getCarrierDetails().getDestinationPort() != null && createRouting
         ) {
             var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
-            var eta = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEta() : null;
+            var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
             AwbRoutingInfo routingInfo = new AwbRoutingInfo();
             routingInfo.setIsShipmentCreated(true);
             routingInfo.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
