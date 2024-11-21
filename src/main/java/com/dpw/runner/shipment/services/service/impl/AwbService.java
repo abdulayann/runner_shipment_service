@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
+import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
@@ -761,6 +762,11 @@ public class AwbService implements IAwbService {
                 } catch (Exception ignored) {}
             }
             generateDefaultAwbInformation(awbShipmentInfo, res);
+            try {
+                generateDefaultAwbOtherInfo(res);
+            } catch (Exception e) {
+                throw new ValidationException(e.getMessage(), e);
+            }
             String error = null;
             if(res.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB) || res.getAwbShipmentInfo().getEntityType().equals(Constants.DMAWB)){
                 ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1222,6 +1228,18 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
+
+        String firstCarrier = consolidationDetails.getCarrierDetails().getShippingLine();
+        awbOtherInfo.setCarrierName(firstCarrier != null ? firstCarrier : "");
+        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+        if (carrierDetails != null && StringUtility.isNotEmpty(carrierDetails.getShippingLine())) {
+            awbOtherInfo.setCarrierName(carrierDetails.getShippingLine());
+            var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(carrierDetails.getShippingLine()));
+            if (!Objects.isNull(masterData) && masterData.containsKey(carrierDetails.getShippingLine())) {
+                String hqAddress = masterData.get(carrierDetails.getShippingLine()).getHeadQuartersDetails();
+                awbOtherInfo.setCarrierHqAddress(hqAddress != null ? hqAddress : "");
+            }
+        }
         return awbOtherInfo;
     }
 
@@ -1663,7 +1681,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbOtherInfo generateAwbOtherInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
+    private AwbOtherInfo generateAwbOtherInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) throws RunnerException {
         AwbOtherInfo awbOtherInfo = new AwbOtherInfo();
         awbOtherInfo.setEntityId(shipmentDetails.getId());
         awbOtherInfo.setEntityType(request.getAwbType());
@@ -1672,6 +1690,46 @@ public class AwbService implements IAwbService {
         awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
         awbOtherInfo.setExecutedAt(executedAt);
         getAwbOtherInfoMasterData(awbOtherInfo, request.getAwbType());
+        try {
+            if (Strings.isNullOrEmpty(awbOtherInfo.getBranch())) {
+                String branch = UserContext.getUser().getTenantDisplayName();
+                awbOtherInfo.setBranch(branch != null ? branch : "");
+            }
+            if (Strings.isNullOrEmpty(awbOtherInfo.getLegalCompanyName())) {
+                V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+                if (v1TenantSettingsResponse != null)
+                    awbOtherInfo.setLegalCompanyName(v1TenantSettingsResponse.getLegalEntityCode());
+
+                Integer companyId = UserContext.getUser().getCompanyId();
+                List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
+                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
+                V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
+                List<CompanyDto> companyDetailsList = v1Response != null ? jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class) : null;
+                if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
+                    CompanyDto companyDetails = companyDetailsList.get(0);
+                    awbOtherInfo.setAddress1(companyDetails.getAddress1() != null ? companyDetails.getAddress1() : "");
+                    awbOtherInfo.setAddress2(companyDetails.getAddress2() != null ? companyDetails.getAddress2() : "");
+                    awbOtherInfo.setState(companyDetails.getState() != null ? companyDetails.getState() : "");
+                    awbOtherInfo.setCity(companyDetails.getCity() != null ? companyDetails.getCity() : "");
+                    awbOtherInfo.setPincode(companyDetails.getZipPostCode() != null ? companyDetails.getZipPostCode() : "");
+                    String country = companyDetails.getCountry();
+                    List<String> alpha3CountriesList = new ArrayList<>();
+                    if (country != null) {
+                        if (country.length() == 2)
+                            country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
+                        if (country.length() == 3)
+                            alpha3CountriesList.add(country);
+                    }
+                    Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+                    if (country != null && country.length() == 3)
+                        country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(country);
+                    awbOtherInfo.setCountryCode(country != null ? country : "");
+                    awbOtherInfo.setCountryName(alpha2DigitToCountry != null ? alpha2DigitToCountry.get(country) : "");
+                }
+            }
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Error while populating default awb other info %s", e.getMessage()));
+        }
         return awbOtherInfo;
     }
 
@@ -3357,6 +3415,64 @@ public class AwbService implements IAwbService {
         if(number == null)
             return 0.0;
         return number.doubleValue();
+    }
+
+    private void generateDefaultAwbOtherInfo(AwbResponse awbResponse) throws RunnerException {
+        AwbOtherInfoResponse awbOtherInfoResponse = awbResponse.getAwbOtherInfo();
+        try {
+            if (awbResponse.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB)) {
+                if (Strings.isNullOrEmpty(awbOtherInfoResponse.getBranch())) {
+                    String branch = UserContext.getUser().getTenantDisplayName();
+                    awbOtherInfoResponse.setBranch(branch != null ? branch : "");
+                }
+                if (Strings.isNullOrEmpty(awbOtherInfoResponse.getLegalCompanyName())) {
+                    V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+                    if (v1TenantSettingsResponse != null)
+                        awbOtherInfoResponse.setLegalCompanyName(v1TenantSettingsResponse.getLegalEntityCode() != null ? v1TenantSettingsResponse.getLegalEntityCode() : "");
+
+                    Integer companyId = UserContext.getUser().getCompanyId();
+                    List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
+                    CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
+                    V1DataResponse v1Response = v1Service.getCompaniesDetails(commonV1ListRequest);
+                    List<CompanyDto> companyDetailsList = v1Response != null ? jsonHelper.convertValueToList(v1Response.getEntities(), CompanyDto.class) : null;
+                    if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
+                        CompanyDto companyDetails = companyDetailsList.get(0);
+                        awbOtherInfoResponse.setAddress1(companyDetails.getAddress1() != null ? companyDetails.getAddress1() : "");
+                        awbOtherInfoResponse.setAddress2(companyDetails.getAddress2() != null ? companyDetails.getAddress2() : "");
+                        awbOtherInfoResponse.setState(companyDetails.getState() != null ? companyDetails.getState() : "");
+                        awbOtherInfoResponse.setCity(companyDetails.getCity() != null ? companyDetails.getCity() : "");
+                        awbOtherInfoResponse.setPincode(companyDetails.getZipPostCode() != null ? companyDetails.getZipPostCode() : "");
+                        String country = companyDetails.getCountry();
+                        List<String> alpha3CountriesList = new ArrayList<>();
+                        if (country != null) {
+                            if (country.length() == 2)
+                                country = CountryListHelper.ISO3166.getAlpha3FromAlpha2(country);
+                            if (country.length() == 3)
+                                alpha3CountriesList.add(country);
+                        }
+                        Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
+                        if (country != null && country.length() == 3)
+                            country = CountryListHelper.ISO3166.getAlpha2FromAlpha3(country);
+                        awbOtherInfoResponse.setCountryCode(country != null ? country : "");
+                        awbOtherInfoResponse.setCountryName(alpha2DigitToCountry != null ? alpha2DigitToCountry.get(country) : "");
+                    }
+                }
+            } else {
+                String firstCarrier = awbResponse.getAwbShipmentInfo().getFirstCarrier();
+                if (Strings.isNullOrEmpty(awbOtherInfoResponse.getCarrierName())) {
+                    awbOtherInfoResponse.setCarrierName(firstCarrier != null ? firstCarrier : "");
+                }
+                if (!Strings.isNullOrEmpty(firstCarrier) && Strings.isNullOrEmpty(awbOtherInfoResponse.getCarrierHqAddress())) {
+                    var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(firstCarrier));
+                    if (!Objects.isNull(masterData) && masterData.containsKey(firstCarrier)) {
+                        String headQuartersDetails = masterData.get(firstCarrier).getHeadQuartersDetails();
+                        awbOtherInfoResponse.setCarrierHqAddress(headQuartersDetails != null ? headQuartersDetails : "");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Error while populating default awb other info %s", e.getMessage()));
+        }
     }
 
     private AwbShipmentInfoResponse generateDefaultAwbInformation(Awb awb, AwbResponse awbResponse) {
