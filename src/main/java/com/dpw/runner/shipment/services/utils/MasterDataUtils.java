@@ -949,6 +949,7 @@ public class MasterDataUtils{
         if (Objects.isNull(v1Data))
             return;
         for (var key : v1Data.keySet()) {
+            log.info("Pushing: {} - with key {} , value {}", type, key, jsonHelper.convertToJson(v1Data.get(key)));
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), v1Data.get(key));
             if(!Objects.isNull(cacheMap))
                 cacheMap.put(key, v1Data.get(key));
@@ -956,6 +957,7 @@ public class MasterDataUtils{
         if(!Objects.equals(v1Data.size(), keys.size())) {
             for(String key : keys) {
                 if (!v1Data.containsKey(key)) {
+                    log.info("Pushing: {} - with key {} , value {}", type, key, jsonHelper.convertToJson(v1Data.get(key)));
                     cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).put(keyGenerator.customCacheKeyForMasterData(type, key), object);
                     if (!Objects.isNull(cacheMap))
                         cacheMap.put(key, object);
