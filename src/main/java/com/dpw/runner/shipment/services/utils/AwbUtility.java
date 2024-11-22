@@ -506,13 +506,7 @@ public class AwbUtility {
 
         Set<String> carrierRequests = new HashSet<>();
 
-        Set<String> rcpList = new HashSet<>();
-        awb.getAwbGoodsDescriptionInfo().forEach(good -> {
-            if(good.getRcp() != null)
-                rcpList.add(good.getRcp());
-        });
-
-        List<String> unlocoRequests = new ArrayList<>(rcpList);
+        List<String> unlocoRequests = new ArrayList<>();
         if(awb.getAwbNotifyPartyInfo() != null) {
             awb.getAwbNotifyPartyInfo().forEach(party -> {
                 if (party.getSpecifiedAddressLocation() != null)
@@ -535,8 +529,6 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
-        if(!rcpList.isEmpty())
-            this.buildRcpIATAMapAndNotifyParty(awbResponse, rcpList, unlocationsMap);
 
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());
