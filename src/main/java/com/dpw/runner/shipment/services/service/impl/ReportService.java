@@ -85,6 +85,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -148,7 +149,7 @@ public class ReportService implements IReportService {
     @Autowired
     private MasterDataUtils masterDataUtils;
     @Autowired
-    private ExecutorService executorService;
+    ExecutorService executorService;
     @Autowired
     private IAwbDao awbDao;
     @Autowired
@@ -162,7 +163,8 @@ public class ReportService implements IReportService {
 
     @Override
     @Transactional
-    public byte[] getDocumentData(CommonRequestModel request) throws DocumentException, IOException, RunnerException {
+    public byte[] getDocumentData(CommonRequestModel request)
+        throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
         // Generate combined shipment report via consolidation
@@ -503,14 +505,35 @@ public class ReportService implements IReportService {
 
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(),false);
             byte[] pdfByte_Content = null;
-            byte[] mainDoc_hawb;
+            byte[] mainDoc_hawb = null;
+            Map<String, Object> dataRetrived1 = dataRetrived;
+            CompletableFuture<byte[]> mainDocFuture = null;
+            boolean asyncFlag = Boolean.FALSE;
             if(reportRequest.isPrintForParties()){
                 mainDoc_hawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, Pages);
             }else{
-                mainDoc_hawb = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
+                asyncFlag = Boolean.TRUE;
+                mainDocFuture = CompletableFuture.supplyAsync(
+                    () -> GetFromDocumentService(dataRetrived1, Pages.getMainPageId()),
+                    executorService);
             }
-            byte[] firstpage_hawb = GetFromDocumentService(dataRetrived, Pages.getFirstPageId());
-            byte[] backprint_hawb = GetFromDocumentService(dataRetrived, Pages.getBackPrintId());
+           var firstPageHawbFuture =  CompletableFuture.supplyAsync(
+                () -> GetFromDocumentService(dataRetrived1, Pages.getFirstPageId()),
+                executorService);
+            var backPageHawbFuture =  CompletableFuture.supplyAsync(
+                () -> GetFromDocumentService(dataRetrived1, Pages.getBackPrintId()),
+                executorService);
+            if (asyncFlag) {
+                CompletableFuture.allOf(mainDocFuture, firstPageHawbFuture, backPageHawbFuture)
+                    .join();
+                mainDoc_hawb = mainDocFuture.get();
+            } else {
+                CompletableFuture.allOf(firstPageHawbFuture, backPageHawbFuture)
+                    .join();
+            }
+
+            byte[] firstpage_hawb = firstPageHawbFuture.get();
+            byte[] backprint_hawb = backPageHawbFuture.get();
             if (mainDoc_hawb == null)
             {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
@@ -589,10 +612,15 @@ public class ReportService implements IReportService {
         {
             return null;
         }
+        Map<String, Object> retrived = dataRetrived;
+        var mainDocFuture = CompletableFuture.supplyAsync(() -> GetFromDocumentService(retrived, pages.getMainPageId()), executorService);
+        var firstPageFuture = CompletableFuture.supplyAsync(() -> GetFromDocumentService(retrived, pages.getFirstPageId()), executorService);
+        var backPrintFuture = CompletableFuture.supplyAsync(() -> GetFromDocumentService(retrived, pages.getBackPrintId()), executorService);
+        CompletableFuture.allOf(mainDocFuture, firstPageFuture, backPrintFuture).join();
 
-        byte[] mainDoc = GetFromDocumentService(dataRetrived, pages.getMainPageId());
-        byte[] firstpage = GetFromDocumentService(dataRetrived, pages.getFirstPageId());
-        byte[] backprint = GetFromDocumentService(dataRetrived, pages.getBackPrintId());
+        byte[] mainDoc = mainDocFuture.get();
+        byte[] firstpage = firstPageFuture.get();
+        byte[] backprint = backPrintFuture.get();
         byte[] pdfByteContent;
         if (mainDoc == null)
         {
@@ -1478,12 +1506,6 @@ public class ReportService implements IReportService {
         String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
 
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
-
-        Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(uploadRequest.getId());
-        ShipmentDetails shipmentDetails = null;
-        if (shipmentsRow.isPresent()) {
-            shipmentDetails = shipmentsRow.get();
-        }
 
     }
 
