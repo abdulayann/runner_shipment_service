@@ -2283,8 +2283,8 @@ class AwbServiceTest extends CommonMocks {
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
         assertEquals(
                 "DIMS \r\n" +
-                        "400X300X2 CMSX5,\r\n" +
-                        "100X200X10 CMSX1",
+                        "400X300X2 CM X 5,\r\n" +
+                        "100X200X10 CM X 1",
                 runnerResponse.getData());
       }
 
