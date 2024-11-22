@@ -3644,12 +3644,8 @@ public class AwbService implements IAwbService {
                             var addressMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(address));
                             alpha3CountriesList = masterDataUtils.addAlpha3Country(addressMap, alpha3CountriesList);
                             Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
-                            if(addressMap.get(PartiesConstants.ADDRESS1)!=null){
-                                awbShipmentInfo.setIssuingAgentAddress1(addressMap.get(PartiesConstants.ADDRESS1).toString().toUpperCase());
-                            }
-                            if(addressMap.get(PartiesConstants.ADDRESS2)!=null){
-                                awbShipmentInfo.setIssuingAgentAddress2(addressMap.get(PartiesConstants.ADDRESS2).toString().toUpperCase());
-                            }
+                            awbShipmentInfo.setIssuingAgentAddress1(addressMap.get(PartiesConstants.ADDRESS1)!=null?addressMap.get(PartiesConstants.ADDRESS1).toString().toUpperCase():"");
+                            awbShipmentInfo.setIssuingAgentAddress2(addressMap.get(PartiesConstants.ADDRESS2)!=null?addressMap.get(PartiesConstants.ADDRESS2).toString().toUpperCase():"");
                             constructIssuingAgentAddress(awbShipmentInfo, addressMap, alpha2DigitToCountry);
                         }
                     }
