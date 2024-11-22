@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestAir
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -84,6 +85,8 @@ public class CargoManifestAirShipmentReport extends IReport{
         if(cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getNotifyParty()));
         }
+        dictionary.put(CM_NO_OF_PACKAGES, cargoManifestAirShipmentModel.getShipmentDetails().getNoOfPacks());
+        dictionary.put(CM_PACKS_UNIT, Constants.PIECES);
         return dictionary;
     }
 }
