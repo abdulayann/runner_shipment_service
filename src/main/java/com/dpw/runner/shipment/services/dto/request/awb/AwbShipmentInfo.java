@@ -21,7 +21,7 @@ public class AwbShipmentInfo implements Serializable {
     private Long entityId;
     private String entityType;
     private String shipperName;
-    private String shipperAddress1;
+    private String shipperAddress;
     private String shipperAddress2;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String shipperCountry;
@@ -35,7 +35,7 @@ public class AwbShipmentInfo implements Serializable {
     private String shipperContactName;
     private String shipperTaxRegistrationNumber;
     private String consigneeName;
-    private String consigneeAddress1;
+    private String consigneeAddress;
     private String consigneeAddress2;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String consigneeCountry;
@@ -49,7 +49,7 @@ public class AwbShipmentInfo implements Serializable {
     private String consigneeContactName;
     private String consigneeTaxRegistrationNumber;
     private String issuingAgentName;
-    private String issuingAgentAddress1;
+    private String issuingAgentAddress;
     private String issuingAgentAddress2;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String issuingAgentCountry;
