@@ -35,7 +35,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String consigneeTaxRegistrationNumber;
     private String issuingAgentName;
     private String issuingAgentAddress1;
-    private String issuingAgentAddres2;
+    private String issuingAgentAddress2;
     private String issuingAgentCountry;
     private String issuingAgentCountryName;
     private String issuingAgentState;

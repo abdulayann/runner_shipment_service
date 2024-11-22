@@ -3382,20 +3382,7 @@ public class AwbService implements IAwbService {
                     height = packings.getHeight().toString();
                 }
 
-                String dimensionUnit = "";
-                if (packings.getLengthUnit() != null) {
-                    if (packings.getLengthUnit().equalsIgnoreCase(Constants.CM)) {
-                        dimensionUnit = Constants.CMS;
-                    } else if (packings.getLengthUnit().equalsIgnoreCase(Constants.IN)) {
-                        dimensionUnit = Constants.INCH;
-                    } else if (packings.getLengthUnit().equalsIgnoreCase(Constants.M)) {
-                        dimensionUnit = Constants.MTR;
-                    } else if (packings.getLengthUnit().equalsIgnoreCase(Constants.FT)) {
-                        dimensionUnit = Constants.FEET;
-                    }
-                }
-
-                packsDescriptionValue += len + width + height + " "+ dimensionUnit + cross + pcs;
+                packsDescriptionValue += len + width + height + " " + packings.getLengthUnit() + " " + cross + " " +pcs;
                 if (counter < request.getAwbPackingInfo().size()-1) {
                     packsDescriptionValue += ","+ newLine;
                 }
