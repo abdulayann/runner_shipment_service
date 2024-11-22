@@ -1981,13 +1981,13 @@ public abstract class IReport {
     public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
     {
         List<String> details = new ArrayList<>();
-        if(name!=null){
+        if(!Strings.isNullOrEmpty(name)){
             details.add(name);
         }
-        if(address1!=null){
+        if(!Strings.isNullOrEmpty(address1)){
             details.add(address1);
         }
-        if(address2!=null){
+        if(!Strings.isNullOrEmpty(address2)){
             details.add(address2);
         }
         StringBuilder tempAddress = new StringBuilder();
@@ -2015,7 +2015,7 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(contactName)) {
             contactAndPhoneDetails.append(contactName);
         }
-        if (!Strings.isNullOrEmpty(contactName)) {
+        if (!Strings.isNullOrEmpty(phone)) {
             if(!contactAndPhoneDetails.isEmpty())
                 contactAndPhoneDetails.append(", ");
             contactAndPhoneDetails.append(phone);
