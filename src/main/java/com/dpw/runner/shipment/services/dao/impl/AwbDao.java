@@ -235,7 +235,7 @@ public class AwbDao implements IAwbDao {
                     if (awb.getConsolidationId() != null) {
                         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
                         if (consolidationDetails.isPresent()) {
-                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false);
+                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
@@ -244,7 +244,7 @@ public class AwbDao implements IAwbDao {
                             var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
                             for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
                                 Awb shipAwb = getHawb(ship.getId());
-                                this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()));
+                                this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()), awb);
                                 // AirMessageSent flag set to SENT
                                 this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                                 this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
@@ -257,7 +257,7 @@ public class AwbDao implements IAwbDao {
                     if (awb.getShipmentId() != null) {
                         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
                         if (shipmentDetails.isPresent()) {
-                            this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false);
+                            this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false, null);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
@@ -279,12 +279,12 @@ public class AwbDao implements IAwbDao {
                 tenantId, null, LocalDateTime.now(), LocalDateTime.now());
     }
 
-    public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, TenantModel tenantModel, boolean overrideData) {
+    public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, TenantModel tenantModel, boolean overrideData, Awb masterAwb) throws RunnerException {
         if(awb.getTenantId() == null)
             awb.setTenantId(TenantContext.getCurrentTenant());
         AwbAirMessagingResponse awbResponse;
         if(shipmentDetails != null) {
-            awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails, tenantModel);
+            awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails, tenantModel, masterAwb);
             awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails, AwbShipConsoleDto.class));
         } else if (consolidationDetails != null) {
             awbResponse = awbUtility.createAirMessagingRequestForConsole(awb, consolidationDetails);

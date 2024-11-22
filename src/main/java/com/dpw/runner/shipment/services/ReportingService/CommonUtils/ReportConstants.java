@@ -1302,6 +1302,8 @@ public class ReportConstants {
     public static final String CM_DESTINATION_AGENT_NAME = "CM_DestinationAgentName";
     public static final String CM_DESTINATION_AGENT_ADDRESS = "CM_DestinationAgentAddress";
     public static final String CM_TOTAL_PACKS_AND_UNITS = "CM_TotalPacksAndUnit";
+    public static final String CM_NO_OF_PACKAGES = "CM_NoofPackages";
+    public static final String CM_PACKS_UNIT = "CM_PacksUnit";
     public static final String CSD_INFO_DATE = "CsdInfoDate";
     public static final String USER_INITIALS = "UserInitials";
 
