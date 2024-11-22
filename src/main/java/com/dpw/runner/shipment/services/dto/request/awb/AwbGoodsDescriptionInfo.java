@@ -46,7 +46,6 @@ public class AwbGoodsDescriptionInfo implements Serializable {
     private Boolean enableFetchRatesWarning;
     private String ntrQtyGoods;
     private String dimensions;
-    @UnlocationData
     private String rcp;
 
     @Size(max = 5, message = "ULD Serial Number must be up to 5 alphanumeric characters.")
