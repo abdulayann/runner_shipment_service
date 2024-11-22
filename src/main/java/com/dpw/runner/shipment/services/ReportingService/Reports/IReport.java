@@ -1980,11 +1980,10 @@ public abstract class IReport {
      */
     public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
     {
-        if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
-            return null;
-        }
         List<String> details = new ArrayList<>();
-        details.add(name);
+        if(name!=null){
+            details.add(name);
+        }
         if(address1!=null){
             details.add(address1);
         }
