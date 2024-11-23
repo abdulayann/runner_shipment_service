@@ -729,7 +729,7 @@ public class HawbReport extends IReport{
         if(airMessagingAdditionalFields != null){
             dictionary.put(TARGET_CURRENCY_CODE, airMessagingAdditionalFields.getTargetCurrencyCode());
             dictionary.put(CONVERSION_RATE, airMessagingAdditionalFields.getConversionRate());
-            dictionary.put(CC_CHARGE_IN_DEST_CURRENCY, airMessagingAdditionalFields.getCCChargesInDestinationCurrency());
+            dictionary.put(CC_CHARGE_IN_DEST_CURRENCY, airMessagingAdditionalFields.getCcchargesInDestinationCurrency());
             dictionary.put(CHARGES_AT_DESTINATION, airMessagingAdditionalFields.getChargesAtDestination());
         }
         

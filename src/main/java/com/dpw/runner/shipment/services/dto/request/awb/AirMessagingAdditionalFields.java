@@ -32,7 +32,7 @@ public class AirMessagingAdditionalFields implements IRunnerResponse {
   private String conversionRate;
   private String conversionId;
 
-  private String CCChargesInDestinationCurrency;
+  private String ccchargesInDestinationCurrency;
 
   private Double chargesAtDestination;
 
