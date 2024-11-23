@@ -3031,7 +3031,10 @@ public class AwbService implements IAwbService {
                 awbResponse.getAwbPackingInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbPackingInfo.class, fieldNameKeyMap, AwbPackingInfo.class.getSimpleName() + (count.incrementAndGet()), cacheMap)));
             if(!Objects.isNull(awbResponse.getAwbGoodsDescriptionInfo()))
                 awbResponse.getAwbGoodsDescriptionInfo().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, AwbGoodsDescriptionInfo.class, fieldNameKeyMap, AwbGoodsDescriptionInfo.class.getSimpleName() + (count.incrementAndGet()), cacheMap)));
-
+            if(!Objects.isNull(awbResponse.getAwbNotifyPartyInfo()))
+                awbResponse.getAwbNotifyPartyInfo().forEach(n -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(n, AwbNotifyPartyInfo.class, fieldNameKeyMap, AwbNotifyPartyInfo.class.getSimpleName() + (count.incrementAndGet()), cacheMap)));
+            if(!Objects.isNull(awbResponse.getDefaultAwbNotifyPartyInfo()))
+                awbResponse.getDefaultAwbNotifyPartyInfo().forEach(n -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(n, AwbNotifyPartyInfo.class, fieldNameKeyMap, AwbNotifyPartyInfo.class.getSimpleName() + (count.incrementAndGet()), cacheMap)));
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
