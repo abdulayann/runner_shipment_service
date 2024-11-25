@@ -1273,6 +1273,7 @@ public class ReportConstants {
     public static final String SECURITY_STATUS_RECEIVED_FROM = "ReceivedFrom";
     public static final String AOM_FREE_TEXT = "AnyOtherMeans";
     public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
+    public static final String REGULATORY_ENTITY_CATEGORY = "RegulatoryEntityCategory";
 
     public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
     public static final String INSERT_DATE = "InsertDate";
@@ -1302,6 +1303,8 @@ public class ReportConstants {
     public static final String CM_DESTINATION_AGENT_NAME = "CM_DestinationAgentName";
     public static final String CM_DESTINATION_AGENT_ADDRESS = "CM_DestinationAgentAddress";
     public static final String CM_TOTAL_PACKS_AND_UNITS = "CM_TotalPacksAndUnit";
+    public static final String CM_NO_OF_PACKAGES = "CM_NoofPackages";
+    public static final String CM_PACKS_UNIT = "CM_PacksUnit";
     public static final String CSD_INFO_DATE = "CsdInfoDate";
     public static final String USER_INITIALS = "UserInitials";
 

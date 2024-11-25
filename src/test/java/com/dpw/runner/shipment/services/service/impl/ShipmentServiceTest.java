@@ -1853,7 +1853,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
+        //when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1888,7 +1888,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
+        //when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -1922,7 +1922,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
+        //when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         SpringContext.setApplicationContext(applicationContext);
@@ -5389,7 +5389,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
         when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(new PartiesResponse());
-        when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
+        //when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(new RoutingsResponse());
         mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getShipmentFromConsol(consolidationId, bookingNumber);
@@ -6247,6 +6247,7 @@ ShipmentServiceTest extends CommonMocks {
         routings.setTenantId(1);
         routings.setMode(Constants.TRANSPORT_MODE_SEA);
         routings.setLeg(1L);
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)

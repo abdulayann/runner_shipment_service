@@ -25,7 +25,6 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private Map<String, String> chargeBasis;
         private Map<String, String> rateClass;
         private Map<String, String> schCodes;
-        private Map<String, String> rcpIATACodes;
         private OrgDetails shipper;
         private OrgDetails consignee;
         private OrgDetails issueingAgent;
