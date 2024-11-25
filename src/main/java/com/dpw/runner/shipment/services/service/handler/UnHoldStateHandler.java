@@ -2,8 +2,12 @@ package com.dpw.runner.shipment.services.service.handler;
 
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
+import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.Set;
+import org.springframework.stereotype.Component;
 
+@Component
+@Generated
 public class UnHoldStateHandler implements IDpsWorkflowStateHandler {
 
     private static final Set<DpsWorkflowState> VALID_NEXT_STATES = Set.of(

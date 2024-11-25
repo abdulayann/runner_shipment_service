@@ -231,7 +231,8 @@ public class DpsEventService implements IDpsEventService {
      * @return a {@code DpsEventResponse} containing the mapped fields from the input {@code DpsEvent}
      * @throws DpsException if an error occurs during response construction
      */
-    private DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent) {
+    @Override
+    public DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent) {
         try {
             List<DpsEventResponse.DpsFieldDataResponse> dpsFieldDataResponseList =
                     dpsEvent.getDpsFieldData() != null
@@ -270,7 +271,8 @@ public class DpsEventService implements IDpsEventService {
      * @return a fully constructed or updated {@link DpsEvent} object.
      * @throws DpsException if an error occurs during the creation or update process.
      */
-    private DpsEvent constructDpsEvent(DpsDto dpsDto) {
+    @Override
+    public DpsEvent constructDpsEvent(DpsDto dpsDto) {
         try {
             // Attempt to find an existing DpsEvent by execution ID, or create a new one if not found
             DpsDataDto dtoData = dpsDto.getData();
