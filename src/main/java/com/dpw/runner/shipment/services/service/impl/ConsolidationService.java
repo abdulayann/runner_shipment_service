@@ -40,7 +40,16 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -4190,18 +4199,23 @@ public class ConsolidationService implements IConsolidationService {
                 List<Long> currentPartners = consolidationDetails.getTriangulationPartnerList();
                 List<Long> oldPartners = oldEntity != null ? oldEntity.getTriangulationPartnerList() : Collections.emptyList();
 
-                // Process for both current and old partners
-                for (Long currentPartner : currentPartners) {
-                    if (oldPartners.isEmpty()) {
-                        // If no old partners, process current partner with null
-                        processNetworkTransferEntity(currentPartner, null, consolidationDetails, Constants.DIRECTION_CTS);
-                    } else {
-                        // Process current partner with each old partner
-                        for (Long oldPartner : oldPartners) {
-                            processNetworkTransferEntity(currentPartner, oldPartner, consolidationDetails, Constants.DIRECTION_CTS);
-                        }
-                    }
-                }
+                // Determine new tenant IDs by removing old partners from the current partners
+                Set<Long> newTenantIds = new HashSet<>(currentPartners);
+                newTenantIds.removeAll(oldPartners);
+
+                // Determine old tenant IDs by removing current partners from the old partners
+                Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                oldTenantIds.removeAll(currentPartners);
+
+                // Process new tenant IDs for network transfer
+                newTenantIds.forEach(newTenantId -> {
+                    processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS);
+                });
+
+                // Process old tenant IDs for removal from network transfer
+                oldTenantIds.forEach(oldTenantId -> {
+                    processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS);
+                });
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());

@@ -2677,33 +2677,43 @@ public class ShipmentService implements IShipmentService {
 
     private void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         try{
+            // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransfer(shipmentDetails)) {
 
+                // Process the receiving branch for network transfer
                 processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
                         reverseDirection(shipmentDetails.getDirection()));
 
+                // Retrieve current and old triangulation partners
                 List<Long> currentPartners = shipmentDetails.getTriangulationPartnerList();
                 List<Long> oldPartners = oldEntity != null ? oldEntity.getTriangulationPartnerList() : Collections.emptyList();
 
-                // Iterate through the current and old triangulation partners
-                for (Long currentPartner : currentPartners) {
-                    if (oldPartners.isEmpty()) {
-                        // Process current partner with no corresponding old partner
-                        processNetworkTransferEntity(currentPartner, null, shipmentDetails, Constants.DIRECTION_CTS);
-                    } else {
-                        // Process current partner with each old partner
-                        for (Long oldPartner : oldPartners) {
-                            processNetworkTransferEntity(currentPartner, oldPartner, shipmentDetails, Constants.DIRECTION_CTS);
-                        }
-                    }
-                }
+                // Determine new tenant IDs by removing old partners from the current partners
+                Set<Long> newTenantIds = new HashSet<>(currentPartners);
+                newTenantIds.removeAll(oldPartners);
 
-            } else{
+                // Determine old tenant IDs by removing current partners from the old partners
+                Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                oldTenantIds.removeAll(currentPartners);
+
+                // Process new tenant IDs for network transfer
+                newTenantIds.forEach(newTenantId -> {
+                    processNetworkTransferEntity(newTenantId, null, shipmentDetails, Constants.DIRECTION_CTS);
+                });
+
+                // Process old tenant IDs for removal from network transfer
+                oldTenantIds.forEach(oldTenantId -> {
+                    processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
+                });
+
+            } else {
+                // If not eligible for network transfer, handle deletion of old network transfer entities
                 if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
                     networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getReceivingBranch(),
                             oldEntity.getId(), Constants.SHIPMENT);
 
+                // Delete network transfer entries for old triangulation partners
                 if (oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getTriangulationPartnerList())) {
                     for (Long triangularPartner : oldEntity.getTriangulationPartnerList()) {
                         networkTransferService.deleteValidNetworkTransferEntity(triangularPartner,
