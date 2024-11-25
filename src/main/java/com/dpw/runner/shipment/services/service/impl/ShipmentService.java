@@ -299,9 +299,7 @@ import com.nimbusds.jose.util.Pair;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.SecureRandom;
@@ -343,10 +341,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
-import org.modelmapper.TypeMap;
-import org.modelmapper.config.Configuration;
-import org.modelmapper.convention.MatchingStrategies;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -3448,6 +3442,7 @@ public class ShipmentService implements IShipmentService {
             shipmentFieldNameValueMap.put(Constants.CONSIGNEE_ADDRESS_CODE, shipmentDetails.getConsignee().getAddressCode());
         }
         addCriteriaToFilter(request, shipmentFieldNameValueMap);
+        addLikeCriteriaToFilter(request, request.getEntityId());
         addCriteriaToExclude(defaultRequest, shipmentDetails);
 
         return defaultRequest;
@@ -3458,6 +3453,12 @@ public class ShipmentService implements IShipmentService {
             if (!Objects.isNull(entry.getValue())) {
                 CommonUtils.andCriteria(entry.getKey(), entry.getValue(), "=", request);
             }
+        }
+    }
+
+    private void addLikeCriteriaToFilter(ListCommonRequest request, String shipmentId){
+        if(shipmentId != null) {
+            CommonUtils.andCriteria(Constants.SHIPMENT_ID, shipmentId, "LIKE", request);
         }
     }
 
