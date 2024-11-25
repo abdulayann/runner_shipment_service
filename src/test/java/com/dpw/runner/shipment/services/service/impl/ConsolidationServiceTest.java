@@ -5542,7 +5542,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testRetrieveForNTE() {
-        testConsol.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -5567,7 +5567,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails3 = testConsol;
         testConsol.setReceivingBranch(1L);
-        testConsol.setTriangulationPartner(12L);
+        testConsol.setTriangulationPartnerList(List.of(12L));
 
         ConsolidationDetails consolidationDetails2 = testConsol;
 
