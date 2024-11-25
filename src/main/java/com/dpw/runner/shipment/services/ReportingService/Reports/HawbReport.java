@@ -699,8 +699,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.SIGN_OF_ISSUING_CARRIER, StringUtility.toUpperCase(otherInfoRows.getCarrier()));
                 dictionary.put(ReportConstants.BRANCH_NAME, StringUtility.toUpperCase(otherInfoRows.getBranch()));
                 dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
-                List<String> companyAddress = ReportHelper.getOrgAddress(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
-                companyAddress.add(otherInfoRows.getCountryName());
+                List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
                 companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
                 dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
