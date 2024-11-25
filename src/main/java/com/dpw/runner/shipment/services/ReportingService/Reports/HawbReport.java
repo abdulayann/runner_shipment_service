@@ -711,7 +711,7 @@ public class HawbReport extends IReport{
                 List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
                 companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
 
-                dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().map(StringUtility::toUpperCase).toList());
+                dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
                 dictionary.put(ISSUED_BY_NAME_IN_CAPS, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
                 dictionary.put(CARRIER_HQ, StringUtility.toUpperCase(otherInfoRows.getCarrierHqAddress()));
