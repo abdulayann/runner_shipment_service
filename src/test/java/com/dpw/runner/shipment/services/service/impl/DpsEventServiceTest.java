@@ -283,7 +283,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testConstructDpsEventResponse_SuccessfulTransformationWithEnums() {
+    void testConstructDpsEventResponse_SuccessfulTransformationWithEnums() {
         // Arrange
         DpsEvent dpsEvent = new DpsEvent();
         dpsEvent.setId(1L);
@@ -319,7 +319,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testConstructDpsEventResponse_TransformationWithNullFields() {
+     void testConstructDpsEventResponse_TransformationWithNullFields() {
         DpsEvent dpsEvent = new DpsEvent();
         dpsEvent.setId(null);
         dpsEvent.setGuid(null);
@@ -361,7 +361,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testConstructDpsEventResponse_TransformationWithEmptyLists() {
+     void testConstructDpsEventResponse_TransformationWithEmptyLists() {
         // Arrange
         DpsEvent dpsEvent = new DpsEvent();
         dpsEvent.setId(1L);
@@ -400,7 +400,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testConstructDpsEventResponse_TransformationWithEmptyFieldDataList() {
+     void testConstructDpsEventResponse_TransformationWithEmptyFieldDataList() {
         // Arrange
         DpsEvent dpsEvent = new DpsEvent();
         dpsEvent.setId(1L);
@@ -436,7 +436,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testConstructDpsEventResponse_ExceptionHandling() {
+     void testConstructDpsEventResponse_ExceptionHandling() {
         // Arrange
         DpsEvent dpsEvent = mock(DpsEvent.class);
         when(dpsEvent.getDpsFieldData()).thenThrow(new RuntimeException("Database connection error"));
@@ -446,7 +446,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testCreateAuditLog_SuccessfulAuditLogCreation() throws RunnerException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException, JsonProcessingException {
+     void testCreateAuditLog_SuccessfulAuditLogCreation() throws RunnerException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException, JsonProcessingException {
         // Arrange
         DpsEvent dpsEvent = new DpsEvent();
         dpsEvent.setExecutionId(UUID.randomUUID());
@@ -491,7 +491,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testCreateAuditLog_ExceptionHandling()
+     void testCreateAuditLog_ExceptionHandling()
             throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         DpsEvent dpsEvent = new DpsEvent();
@@ -518,7 +518,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testGetImplicationsForShipment_NullOrEmptyShipmentGuid() {
+     void testGetImplicationsForShipment_NullOrEmptyShipmentGuid() {
         DpsException exception = assertThrows(DpsException.class, () ->
                 dpsEventService.getImplicationsForShipment(null)
         );
@@ -531,7 +531,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testGetImplicationsForShipment_NoImplicationsFound() {
+     void testGetImplicationsForShipment_NoImplicationsFound() {
         // Arrange
         String shipmentGuid = "shipment-123";
         when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
@@ -555,7 +555,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testGetImplicationsForShipment_ValidImplicationsFound() {
+     void testGetImplicationsForShipment_ValidImplicationsFound() {
         // Arrange
         String shipmentGuid = "shipment-123";
         List<String> mockImplications = List.of("implication1", "implication2");
@@ -581,7 +581,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testGetImplicationsForShipment_RepositoryException() {
+     void testGetImplicationsForShipment_RepositoryException() {
         // Arrange
         String shipmentGuid = "shipment-123";
 
@@ -605,7 +605,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testSaveDpsEvent_Successful()
+     void testSaveDpsEvent_Successful()
             throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         DpsDto dpsDto = new DpsDto();
@@ -644,7 +644,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testSaveDpsEvent_ShipmentGuidNullOrEmpty() {
+     void testSaveDpsEvent_ShipmentGuidNullOrEmpty() {
         // Arrange
         DpsDto dpsDto = new DpsDto();
         DpsEvent constructedEvent = new DpsEvent();
@@ -659,7 +659,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testSaveDpsEvent_ShipmentNotFound() {
+     void testSaveDpsEvent_ShipmentNotFound() {
         // Arrange
         DpsDto dpsDto = new DpsDto();
         DpsEvent constructedEvent = new DpsEvent();
@@ -674,7 +674,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testSaveDpsEvent_StateTransitionValidationFails() {
+     void testSaveDpsEvent_StateTransitionValidationFails() {
         // Arrange
         DpsDto dpsDto = new DpsDto();
         DpsEvent constructedEvent = new DpsEvent();
@@ -703,7 +703,7 @@ class DpsEventServiceTest {
     }
 
     @Test
-    public void testSaveDpsEvent_RepositorySaveFails() {
+    void testSaveDpsEvent_RepositorySaveFails() {
         assertThrows(DpsException.class, () ->
                 dpsEventService.saveDpsEvent(new DpsDto())
         );
