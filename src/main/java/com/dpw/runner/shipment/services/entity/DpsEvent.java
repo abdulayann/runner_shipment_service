@@ -90,19 +90,19 @@ public class DpsEvent {
     @Column(name = "matching_condition")
     private String matchingCondition;
 
-    @Column(name = "implication_list")
+    @Column(name = "implication")
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "dps_event_implication", joinColumns = @JoinColumn(name = "dps_event_id"))
     @BatchSize(size = 50)
     private List<String> implicationList;
 
-    @Column(name = "condition_message_list")
+    @Column(name = "condition_message")
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "dps_event_condition_message", joinColumns = @JoinColumn(name = "dps_event_id"))
     @BatchSize(size = 50)
     private List<String> conditionMessageList;
 
-    @Column(name = "rule_matched_field_list")
+    @Column(name = "rule_matched_field")
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "dps_event_rule_matched_field", joinColumns = @JoinColumn(name = "dps_event_id"))
     @BatchSize(size = 50)

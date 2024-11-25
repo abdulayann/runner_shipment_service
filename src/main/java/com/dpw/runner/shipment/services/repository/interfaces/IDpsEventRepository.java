@@ -16,7 +16,7 @@ public interface IDpsEventRepository extends JpaRepository<DpsEvent, Long> {
     DpsEvent findByExecutionId(UUID executionId);
 
     @Query(value = """
-    SELECT dei.implication_list 
+    SELECT dei.implication
     FROM dps_event de
     JOIN dps_event_implication dei ON de.id = dei.dps_event_id
     WHERE de.entity_id = ?1
