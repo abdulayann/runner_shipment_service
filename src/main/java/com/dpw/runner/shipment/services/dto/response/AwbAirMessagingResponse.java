@@ -40,6 +40,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private BigDecimal masterGrossWeightSum;
         private String masterGrossWeightSumUnit;
         private Integer masterPackCount;
+        private String executedAtCity;
     }
 
     @Data

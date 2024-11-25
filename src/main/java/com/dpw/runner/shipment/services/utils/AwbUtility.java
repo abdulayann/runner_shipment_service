@@ -302,6 +302,10 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
+        if(awb.getAwbOtherInfo() != null) {
+            if(awb.getAwbOtherInfo().getExecutedAt() != null)
+                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -318,6 +322,10 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
+        if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
+            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
+            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        }
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
@@ -529,6 +537,9 @@ public class AwbUtility {
                     unlocoRequests.add(party.getSpecifiedAddressLocation());
             });
         }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null) {
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
 
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
@@ -545,7 +556,10 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
-
+        if(awb.getAwbOtherInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
+            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
+            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        }
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
