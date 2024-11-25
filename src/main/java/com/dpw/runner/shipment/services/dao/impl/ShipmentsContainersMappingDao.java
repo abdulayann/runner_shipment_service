@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,8 +29,15 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
+    private final IContainersSync containersSync;
+
+    private final ExecutorService executorService;
+
     @Autowired
-    IContainersSync containersSync;
+    public ShipmentsContainersMappingDao(IContainersSync containersSync, ExecutorService executorService) {
+        this.containersSync = containersSync;
+        this.executorService = executorService;
+    }
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
@@ -60,7 +71,9 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
         shipmentsContainersMappingRepository.delete(shipmentsContainersMapping);
     }
-
+    private void deleteList(List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+        shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappings);
+    }
     @Override
     public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
@@ -141,6 +154,47 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 log.error("Error syncing containers");
             }
         }
+    }
+    public void detachListShipments(List<Long> containerIds, List<Long> shipIds, boolean fromV1) {
+        List<ShipmentsContainersMapping> mappings = findByContainerIdIn(containerIds);
+        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
+        List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
+        if (mappings != null && !mappings.isEmpty()) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
+                    deleteMappings.add(shipmentsContainersMappings);
+                }
+            }
+        }
+        if (!deleteMappings.isEmpty()) {
+            deleteList(deleteMappings);
+        }
+        if(!fromV1) {
+            try {
+                log.info("Call sync containers from detachShipments with ids: " + containerIds.toString());
+                CompletableFuture.runAsync(withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
+            }
+            catch (Exception e) {
+                log.error("Error syncing containers");
+            }
+        }
+    }
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        return () -> {
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                runnable.run();
+            } finally {
+                MDC.clear();
+                RequestAuthContext.removeToken();
+            }
+        };
+    }
+    private List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
+        return shipmentsContainersMappingRepository.findByContainerIdIn(containerIds);
     }
 
     @Override

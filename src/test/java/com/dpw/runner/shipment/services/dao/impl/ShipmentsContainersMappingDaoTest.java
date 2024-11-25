@@ -137,7 +137,6 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByShipmentId(shipmentsContainersMapping.getShipmentId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId()), UUID.randomUUID().toString()));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
@@ -166,7 +165,6 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), List.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId()), false));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
@@ -193,7 +191,6 @@ class ShipmentsContainersMappingDaoTest {
 
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping, shipmentsContainersMapping1)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.detachShipments(shipmentsContainersMapping.getContainerId(), List.of(shipmentsContainersMapping.getShipmentId()), false));
         verify(shipmentsContainersMappingRepository, times(1)).delete(any(ShipmentsContainersMapping.class));
     }
