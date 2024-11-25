@@ -174,7 +174,8 @@ public class DpsEventService implements IDpsEventService {
      * @param shipmentDetails the {@link ShipmentDetails} associated with the shipment being audited
      * @throws DpsException if there is an error while creating the audit log or saving it
      */
-    private void createAuditLog(DpsEvent dpsEvent, ShipmentDetails shipmentDetails) {
+    @Override
+    public void createAuditLog(DpsEvent dpsEvent, ShipmentDetails shipmentDetails) {
         try {
             DpsEventLog eventLog = DpsEventLog.builder()
                     .executionId(dpsEvent.getExecutionId().toString())
@@ -254,9 +255,9 @@ public class DpsEventService implements IDpsEventService {
                     .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
                     .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
                     .dpsFieldData(dpsFieldDataResponseList)
-                    .usernameList(dpsEvent.getUsernameList())
+                    .usernameList(dpsEvent.getUsernameList() != null ? new ArrayList<>(dpsEvent.getUsernameList()) : new ArrayList<>())
                     .eventTimestamp(dpsEvent.getEventTimestamp())
-                    .tasks(dpsEvent.getTasks()).build();
+                    .tasks(dpsEvent.getTasks() != null ? new ArrayList<>(dpsEvent.getTasks()) : new ArrayList<>()).build();
         } catch (Exception e) {
             throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
         }

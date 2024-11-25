@@ -4,12 +4,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
+import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
 import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
@@ -21,6 +25,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsFieldDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -250,6 +255,167 @@ class DpsEventServiceTest {
         assertEquals("value2", dpsEvent.getDpsFieldData().get(1).getValue());
     }
 
+    @Test
+    public void testConstructDpsEventResponse_SuccessfulTransformationWithEnums() {
+        // Arrange
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setId(1L);
+        dpsEvent.setGuid(UUID.randomUUID());
+        dpsEvent.setExecutionId(UUID.randomUUID());
+        dpsEvent.setEntityId(UUID.randomUUID().toString());
+        dpsEvent.setEntityType(DpsEntityType.SHIPMENT);
+        dpsEvent.setWorkflowType(DpsWorkflowType.HOLD);  // Assuming WorkflowType is an enum
+        dpsEvent.setState(DpsWorkflowState.PER_BLOCKED);  // Assuming State is an enum
+        dpsEvent.setStatus(DpsExecutionStatus.ACTIVE);  // Assuming Status is an enum
+        dpsEvent.setText("text");
+        dpsEvent.setMatchingCondition("matchingCondition");
+        dpsEvent.setImplicationList(List.of("implication1", "implication2"));
+        dpsEvent.setConditionMessageList(List.of("message1", "message2"));
+        dpsEvent.setDpsFieldData(List.of(new DpsFieldData("key1", "value1")));
+        dpsEvent.setUsernameList(List.of("user1", "user2"));
+        dpsEvent.setEventTimestamp(LocalDateTime.now());
+        dpsEvent.setTasks(List.of("task1", "task2"));
 
+        // Act
+        DpsEventResponse response = dpsEventService.constructDpsEventResponse(dpsEvent);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(dpsEvent.getId(), response.getId());
+        assertEquals(dpsEvent.getGuid(), response.getGuid());
+        assertEquals(dpsEvent.getWorkflowType(), response.getWorkflowType());
+        assertEquals(dpsEvent.getState(), response.getState());
+        assertEquals(dpsEvent.getStatus(), response.getStatus());
+        assertEquals(dpsEvent.getDpsFieldData().size(), response.getDpsFieldData().size());
+        assertEquals(dpsEvent.getImplicationList().size(), response.getImplicationList().size());
+        assertEquals(dpsEvent.getConditionMessageList().size(), response.getConditionMessageList().size());
+    }
+
+    @Test
+    public void testConstructDpsEventResponse_TransformationWithNullFields() {
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setId(null);
+        dpsEvent.setGuid(null);
+        dpsEvent.setExecutionId(null);
+        dpsEvent.setEntityId(null);
+        dpsEvent.setEntityType(null);
+        dpsEvent.setWorkflowType(null);
+        dpsEvent.setState(null);
+        dpsEvent.setStatus(null);
+        dpsEvent.setText(null);
+        dpsEvent.setMatchingCondition(null);
+        dpsEvent.setImplicationList(null);
+        dpsEvent.setConditionMessageList(null);
+        dpsEvent.setDpsFieldData(null);
+        dpsEvent.setUsernameList(null);
+        dpsEvent.setEventTimestamp(null);
+        dpsEvent.setTasks(null);
+
+        // Act
+        DpsEventResponse response = dpsEventService.constructDpsEventResponse(dpsEvent);
+
+        // Assert
+        assertNotNull(response);
+        assertNull(response.getId());
+        assertNull(response.getGuid());
+        assertNull(response.getExecutionId());
+        assertNull(response.getEntityId());
+        assertNull(response.getEntityType());
+        assertNull(response.getWorkflowType());
+        assertNull(response.getState());
+        assertNull(response.getStatus());
+        assertNull(response.getText());
+        assertTrue(response.getImplicationList().isEmpty());
+        assertTrue(response.getConditionMessageList().isEmpty());
+        assertTrue(response.getDpsFieldData().isEmpty());
+        assertTrue(response.getUsernameList().isEmpty());
+        assertNull(response.getEventTimestamp());
+        assertTrue(response.getTasks().isEmpty());
+    }
+
+    @Test
+    public void testConstructDpsEventResponse_TransformationWithEmptyLists() {
+        // Arrange
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setId(1L);
+        dpsEvent.setGuid(UUID.randomUUID());
+        dpsEvent.setExecutionId(UUID.randomUUID());
+        dpsEvent.setEntityId(UUID.randomUUID().toString());
+        dpsEvent.setEntityType(DpsEntityType.SHIPMENT);
+        dpsEvent.setWorkflowType(DpsWorkflowType.HOLD);
+        dpsEvent.setState(DpsWorkflowState.PER_BLOCKED);
+        dpsEvent.setStatus(DpsExecutionStatus.ACTIVE);
+        dpsEvent.setText("text");
+        dpsEvent.setMatchingCondition("matchingCondition");
+        dpsEvent.setImplicationList(Collections.emptyList());  // Empty list
+        dpsEvent.setConditionMessageList(Collections.emptyList());  // Empty list
+        dpsEvent.setDpsFieldData(Collections.emptyList());  // Empty list
+        dpsEvent.setUsernameList(Collections.emptyList());  // Empty list
+        dpsEvent.setEventTimestamp(LocalDateTime.now());
+        dpsEvent.setTasks(Collections.emptyList());  // Empty list
+
+        // Act
+        DpsEventResponse response = dpsEventService.constructDpsEventResponse(dpsEvent);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(dpsEvent.getId(), response.getId());
+        assertEquals(dpsEvent.getGuid(), response.getGuid());
+        assertEquals(dpsEvent.getWorkflowType(), response.getWorkflowType());
+        assertEquals(dpsEvent.getState(), response.getState());
+        assertEquals(dpsEvent.getStatus(), response.getStatus());
+        assertEquals(0, response.getImplicationList().size());
+        assertEquals(0, response.getConditionMessageList().size());
+        assertEquals(0, response.getDpsFieldData().size());
+        assertEquals(0, response.getUsernameList().size());
+        assertEquals(dpsEvent.getEventTimestamp(), response.getEventTimestamp());
+        assertEquals(0, response.getTasks().size());
+    }
+
+    @Test
+    public void testConstructDpsEventResponse_TransformationWithEmptyFieldDataList() {
+        // Arrange
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setId(1L);
+        dpsEvent.setGuid(UUID.randomUUID());
+        dpsEvent.setExecutionId(UUID.randomUUID());
+        dpsEvent.setEntityId(UUID.randomUUID().toString());
+        dpsEvent.setEntityType(DpsEntityType.SHIPMENT);
+        dpsEvent.setWorkflowType(DpsWorkflowType.HOLD);
+        dpsEvent.setState(DpsWorkflowState.PER_BLOCKED);
+        dpsEvent.setStatus(DpsExecutionStatus.ACTIVE);
+        dpsEvent.setText("text");
+        dpsEvent.setMatchingCondition("matchingCondition");
+        dpsEvent.setImplicationList(List.of("implication1", "implication2"));
+        dpsEvent.setConditionMessageList(List.of("message1", "message2"));
+        dpsEvent.setDpsFieldData(Collections.emptyList());  // Empty list
+        dpsEvent.setUsernameList(List.of("user1", "user2"));
+        dpsEvent.setEventTimestamp(LocalDateTime.now());
+        dpsEvent.setTasks(List.of("task1", "task2"));
+
+        // Act
+        DpsEventResponse response = dpsEventService.constructDpsEventResponse(dpsEvent);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(dpsEvent.getId(), response.getId());
+        assertEquals(dpsEvent.getGuid(), response.getGuid());
+        assertEquals(dpsEvent.getWorkflowType(), response.getWorkflowType());
+        assertEquals(dpsEvent.getState(), response.getState());
+        assertEquals(dpsEvent.getStatus(), response.getStatus());
+        assertEquals(0, response.getDpsFieldData().size());
+        assertEquals(dpsEvent.getImplicationList().size(), response.getImplicationList().size());
+        assertEquals(dpsEvent.getConditionMessageList().size(), response.getConditionMessageList().size());
+    }
+
+    @Test
+    public void testConstructDpsEventResponse_ExceptionHandling() {
+        // Arrange
+        DpsEvent dpsEvent = mock(DpsEvent.class);
+        when(dpsEvent.getDpsFieldData()).thenThrow(new RuntimeException("Database connection error"));
+
+        // Act & Assert
+        assertThrows(DpsException.class, () -> dpsEventService.constructDpsEventResponse(dpsEvent));
+    }
 
 }
