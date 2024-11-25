@@ -374,6 +374,7 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  FreightAmountText);
             dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, OtherAmountText);
             Set<String> hsCodesSet = new HashSet<>();
+            Set<String> dgHsCodesSet = new HashSet<>();
             Set<String> slacCodeSet = new HashSet<>();
             if (awbPackingInfo != null && !awbPackingInfo.isEmpty()) {
                 awbPackingInfo.forEach(packInfo -> {
@@ -388,7 +389,7 @@ public class HawbReport extends IReport{
                 List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(values, new TypeReference<>(){});
                 values.forEach(value -> {
                     value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
-                    value.put(AWB_GROSS_VOLUME_AND_UNIT, value.get(GROSS_VOLUME).toString() + " "+value.get(GROSS_VOLUME_UNIT).toString());
+                    value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
                     value.put(AWB_DIMS, value.get(DIMENSIONS));
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){
@@ -420,8 +421,10 @@ public class HawbReport extends IReport{
                         value.put(PIECES_NO, GetDPWWeightVolumeFormat(new BigDecimal(value.get(PIECES_NO).toString()), 0, v1TenantSettingsResponse));
                     if (value.get(HS_CODE1) != null) {
                         String hsCode = value.get(HS_CODE1).toString();
-                        if (!hsCode.isEmpty())
+                        if (!hsCode.isEmpty()) {
+                            dgHsCodesSet.add(hsCode);
                             hsCodesSet.add(hsCode);
+                        }
                     }
                     if (value.get(SLAC_CODE) != null) {
                         String slacCode = value.get(SLAC_CODE).toString();
@@ -464,6 +467,12 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, AmountNumberFormatter.Format(SumOfTotalAmount[0], cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT_FAT, FreightAmountText);
                 dictionary.put(ReportConstants.SUM_OF_CHARGEABLE_WT, ConvertToWeightNumberFormat(SumOfChargeableWt[0], v1TenantSettingsResponse));
+            }
+
+            if (!hsCodesSet.isEmpty()) {
+                String commaHsCode = HSCODE + ": ";
+                commaHsCode += String.join(", ", dgHsCodesSet);
+                dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
             }
 
             if (!hsCodesSet.isEmpty()) {
@@ -701,7 +710,8 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
                 List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
                 companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
-                dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+
+                dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().map(StringUtility::toUpperCase).toList());
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
                 dictionary.put(ISSUED_BY_NAME_IN_CAPS, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
                 dictionary.put(CARRIER_HQ, StringUtility.toUpperCase(otherInfoRows.getCarrierHqAddress()));
