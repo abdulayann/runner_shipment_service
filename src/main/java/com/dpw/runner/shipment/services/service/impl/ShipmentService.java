@@ -172,6 +172,7 @@ import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -1105,9 +1106,10 @@ public class ShipmentService implements IShipmentService {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
             // Generate default routes based on O-D pairs
-            var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
-            consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
-
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
+                consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
+            }
 
             ResponseEntity<?> consolidationDetailsResponse = consolidationService.createFromBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
             if(consolidationDetailsResponse != null)
@@ -1260,7 +1262,7 @@ public class ShipmentService implements IShipmentService {
     @Override
     public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode) {
 
-        if(ObjectUtils.isEmpty(carrierDetailRequest)) {
+        if(ObjectUtils.isEmpty(carrierDetailRequest) || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
             return new ArrayList<>();
         }
 
@@ -3136,9 +3138,17 @@ public class ShipmentService implements IShipmentService {
             var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
             List<Routings> createRoutes = new ArrayList<>();
             // Generate default Routes if Route Master is enabled
-            createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
-            consolidationDetails.setRoutingsList(createRoutes);
-
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
+                consolidationDetails.setRoutingsList(createRoutes);
+            }
+            else {
+                if(routeRequest.isPresent()) {
+                    createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
+                    createRoutes = createConsoleRoutePayload(createRoutes);
+                    consolidationDetails.setRoutingsList(createRoutes);
+                }
+            }
             consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
             if(createRoutes != null && !createRoutes.isEmpty()) {
                 routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
@@ -3159,7 +3169,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         String responseMsg;
 
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -3369,6 +3379,40 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> fullShipmentsExternalList(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+            }
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
+                throw new ValidationException("Include Columns field is mandatory");
+            }
+            List<IRunnerResponse>filteredList=new ArrayList<>();
+
+            for( var curr:shipmentDetailsPage.getContent()){
+                ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
+                RunnerPartialListResponse res=new RunnerPartialListResponse();
+                res.setData(shipmentDetailsLazyResponse);
+                filteredList.add( res);
+            }
+            return ResponseHelper.buildListSuccessResponse(
+                    filteredList,
+                    shipmentDetailsPage.getTotalPages(),
+                    shipmentDetailsPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
 
     private ListCommonRequest setCriteriaToFetchSimilarShipment(ListCommonRequest request, ShipmentDetails shipmentDetails) {
         if (request.getFilterCriteria() != null && request.getFilterCriteria().isEmpty()) {
@@ -3401,6 +3445,7 @@ public class ShipmentService implements IShipmentService {
             shipmentFieldNameValueMap.put(Constants.CONSIGNEE_ADDRESS_CODE, shipmentDetails.getConsignee().getAddressCode());
         }
         addCriteriaToFilter(request, shipmentFieldNameValueMap);
+        addLikeCriteriaToFilter(request, request.getEntityId());
         addCriteriaToExclude(defaultRequest, shipmentDetails);
 
         return defaultRequest;
@@ -3411,6 +3456,12 @@ public class ShipmentService implements IShipmentService {
             if (!Objects.isNull(entry.getValue())) {
                 CommonUtils.andCriteria(entry.getKey(), entry.getValue(), "=", request);
             }
+        }
+    }
+
+    private void addLikeCriteriaToFilter(ListCommonRequest request, String shipmentId){
+        if(shipmentId != null) {
+            CommonUtils.andCriteria(Constants.SHIPMENT_ID, shipmentId, "LIKE", request);
         }
     }
 
@@ -4900,7 +4951,7 @@ public class ShipmentService implements IShipmentService {
             });
         }
 
-        if(consolidation.getRoutingsList() != null && !consolidation.getRoutingsList().isEmpty()) {
+        if(consolidation.getRoutingsList() != null && !consolidation.getRoutingsList().isEmpty() && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
             List<RoutingsResponse> routingsResponse = consolidation.getRoutingsList().stream().
                     map(item -> {
                         RoutingsResponse newItem = modelMapper.map(item, RoutingsResponse.class);
