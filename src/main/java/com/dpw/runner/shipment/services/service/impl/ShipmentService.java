@@ -261,6 +261,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
@@ -545,6 +546,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
+
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -3892,6 +3896,10 @@ public class ShipmentService implements IShipmentService {
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
+
+        // set dps implications
+        response.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetails.get().getGuid().toString()));
+
         if(measurmentBasis) {
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
         } else {

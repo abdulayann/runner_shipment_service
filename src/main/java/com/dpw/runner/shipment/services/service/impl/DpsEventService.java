@@ -36,6 +36,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 @Slf4j
@@ -131,6 +132,36 @@ public class DpsEventService implements IDpsEventService {
         } catch (Exception e) {
             throw new DpsException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Retrieves the list of implications associated with a given entity ID
+     * for the entity type "SHIPMENT" and status "ACTIVE".
+     *
+     * @param shipmentGuid the GUID of the entity for which implications are to be fetched.
+     *                 Must not be null or empty.
+     * @return a list of implications corresponding to the provided entity ID.
+     * @throws DpsException if the entity ID is null, empty, or no implications are found
+     *                      for the specified entity ID.
+     */
+    @Override
+    public List<String> getImplicationsForShipment(String shipmentGuid) {
+        if (Strings.isNullOrEmpty(shipmentGuid)) {
+            throw new DpsException("Shipment guid cannot be null or empty!");
+        }
+
+        List<String> implications = dpsEventRepository.findImplicationsByEntityIdAndEntityType(
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
+        );
+
+        if (CollectionUtils.isEmpty(implications)) {
+            log.warn("No implications found for the provided entity ID: {}" , shipmentGuid);
+            return Collections.emptyList();
+        }
+
+        return implications;
     }
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,

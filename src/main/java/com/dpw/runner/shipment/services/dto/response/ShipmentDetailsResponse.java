@@ -198,6 +198,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
+    private List<String> implicationList;
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;

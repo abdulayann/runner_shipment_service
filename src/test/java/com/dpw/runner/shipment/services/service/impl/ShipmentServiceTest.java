@@ -175,7 +175,6 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -195,13 +194,10 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -3820,6 +3816,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
@@ -3828,7 +3825,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel, true);
-        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).implicationList(Collections.emptyList()).build()), httpResponse);
     }
 
     @Test
@@ -9029,6 +9026,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(1).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
@@ -9045,6 +9043,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(Integer.MAX_VALUE).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -52,9 +53,7 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
 
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(guid);
-
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(guid));
     }
 
     @Test
@@ -63,15 +62,12 @@ class DpsEventServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
 
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(guid);
-
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(guid));
     }
 
     @Test
     void fetchMatchingRulesByGuid_Exception1() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
-        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuid(null);
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(null));
     }
 }
