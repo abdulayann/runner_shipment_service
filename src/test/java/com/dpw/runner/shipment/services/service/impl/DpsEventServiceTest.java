@@ -6,23 +6,35 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
+import com.dpw.runner.shipment.services.entity.DpsEventLog;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsFieldDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -45,6 +58,8 @@ class DpsEventServiceTest {
     private DpsEventService dpsEventService;
     @Mock
     private IDpsEventRepository dpsEventRepository;
+    @Mock
+    private IAuditLogService auditLogService;
 
     @Test
     void getShipmentMatchingRulesByGuid_Success() {
@@ -417,5 +432,78 @@ class DpsEventServiceTest {
         // Act & Assert
         assertThrows(DpsException.class, () -> dpsEventService.constructDpsEventResponse(dpsEvent));
     }
+
+    @Test
+    public void testCreateAuditLog_SuccessfulAuditLogCreation() throws RunnerException, IllegalAccessException, NoSuchFieldException, NoSuchMethodException, InvocationTargetException, JsonProcessingException {
+        // Arrange
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setExecutionId(UUID.randomUUID());
+        dpsEvent.setTransactionId("transaction-123");
+        dpsEvent.setUsernameList(List.of("user1", "user2"));
+        dpsEvent.setState(DpsWorkflowState.PER_BLOCKED); // Assuming this is an enum
+        dpsEvent.setEventTimestamp(LocalDateTime.now());
+        dpsEvent.setEntityId(UUID.randomUUID().toString());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentId("shipment-123");
+        shipmentDetails.setTenantId(456); // Tenant ID as Long
+        shipmentDetails.setId(1L);
+
+        // Mocking the method to do nothing successfully
+        doAnswer(invocation -> null).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+
+        // Act
+        dpsEventService.createAuditLog(dpsEvent, shipmentDetails);
+
+        // Assert
+        ArgumentCaptor<AuditLogMetaData> captor = ArgumentCaptor.forClass(AuditLogMetaData.class);
+        verify(auditLogService, times(1)).addAuditLog(captor.capture());
+
+        AuditLogMetaData capturedLog = captor.getValue();
+        assertNotNull(capturedLog);
+        assertEquals(shipmentDetails.getTenantId(), capturedLog.getTenantId());
+        assertEquals(ShipmentDetails.class.getSimpleName(), capturedLog.getParent());
+        assertEquals(shipmentDetails.getId(), capturedLog.getParentId());
+        assertEquals(DpsEventLog.class.getSimpleName(), capturedLog.getEntityType());
+        assertEquals(DBOperationType.LOG.name(), capturedLog.getOperation());
+
+        DpsEventLog capturedEventLog = (DpsEventLog) capturedLog.getNewData();
+        assertNotNull(capturedEventLog);
+        assertEquals(dpsEvent.getExecutionId().toString(), capturedEventLog.getExecutionId());
+        assertEquals(dpsEvent.getTransactionId(), capturedEventLog.getTransactionId());
+        assertEquals(String.join(",", dpsEvent.getUsernameList()), capturedEventLog.getUsernameList());
+        assertEquals(dpsEvent.getState(), capturedEventLog.getDpsWorkflowState());
+        assertEquals(dpsEvent.getEventTimestamp(), capturedEventLog.getEventTimeStamp());
+        assertEquals(shipmentDetails.getShipmentId(), capturedEventLog.getShipmentId());
+        assertEquals(shipmentDetails.getTenantId(), capturedEventLog.getTenantId());
+    }
+
+    @Test
+    public void testCreateAuditLog_ExceptionHandling()
+            throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        DpsEvent dpsEvent = new DpsEvent();
+        dpsEvent.setExecutionId(UUID.randomUUID());
+        dpsEvent.setTransactionId("transaction-123");
+        dpsEvent.setUsernameList(List.of("user1", "user2"));
+        dpsEvent.setState(DpsWorkflowState.PER_BLOCKED); // Assuming this is an enum
+        dpsEvent.setEventTimestamp(LocalDateTime.now());
+        dpsEvent.setEntityId(UUID.randomUUID().toString());
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentId("shipment-123");
+        shipmentDetails.setTenantId(456); // Tenant ID as Long
+        shipmentDetails.setId(1L);
+
+        // Mock the behavior to throw an exception
+        doThrow(new RuntimeException("Mocked Exception"))
+                .when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+
+        // Act & Assert
+        assertThrows(DpsException.class, () -> {
+            dpsEventService.createAuditLog(dpsEvent, shipmentDetails);
+        });
+    }
+
 
 }
