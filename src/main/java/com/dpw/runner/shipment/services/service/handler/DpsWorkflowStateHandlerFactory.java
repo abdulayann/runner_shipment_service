@@ -3,8 +3,7 @@ package com.dpw.runner.shipment.services.service.handler;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.utils.Generated;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.EnumMap;
 import java.util.Optional;
 import javax.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
@@ -13,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Generated
 public class DpsWorkflowStateHandlerFactory {
 
-    private final Map<DpsWorkflowState, IDpsWorkflowStateHandler> stateHandlers = new HashMap<>();
+    private final EnumMap<DpsWorkflowState, IDpsWorkflowStateHandler> stateHandlers = new EnumMap<>(DpsWorkflowState.class);
 
     @PostConstruct
     public void init() {

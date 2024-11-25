@@ -217,8 +217,7 @@ public class DpsEventService implements IDpsEventService {
         }
 
         List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
-                .map(this::constructDpsEventResponse)
-                .collect(Collectors.toList());
+                .map(this::constructDpsEventResponse).toList();
 
         return ResponseHelper.buildSuccessResponse(dpsEventResponses);
     }

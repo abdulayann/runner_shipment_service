@@ -46,7 +46,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private LocalDateTime eventTimestamp;
     private String transactionId;
     private List<String> usernameList;
-    private List<Object> tasks;
+    private transient List<Object> tasks;
 
     @Data
     @NoArgsConstructor
