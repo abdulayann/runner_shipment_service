@@ -180,7 +180,20 @@ public class ReportHelper {
         if(address2 != null)
             list.add(address2);
 
-        list.add(StringUtility.convertToString(city) + " " + StringUtility.convertToString(state) + " " + StringUtility.convertToString(pincode) + " " + StringUtility.convertToString(state_country));
+        StringBuilder sb = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city))
+            sb.append(city).append(" ");
+        if (StringUtility.isNotEmpty(state))
+            sb.append(state).append(" ");
+        if (StringUtility.isNotEmpty(pincode))
+            sb.append(pincode).append(" ");
+        if (StringUtility.isNotEmpty(state_country))
+            sb.append(state_country).append(" ");
+
+        if (StringUtility.isNotEmpty(sb.toString()))
+            list.add(sb.toString());
+
         return list;
 
     }
