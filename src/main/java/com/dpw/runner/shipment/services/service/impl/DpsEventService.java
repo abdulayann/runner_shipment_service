@@ -180,7 +180,7 @@ public class DpsEventService implements IDpsEventService {
             DpsEventLog eventLog = DpsEventLog.builder()
                     .executionId(dpsEvent.getExecutionId().toString())
                     .transactionId(dpsEvent.getTransactionId())
-                    .usernameList(String.join(",", dpsEvent.getUsernameList()))
+                    .usernameList(ObjectUtils.isNotEmpty(dpsEvent.getUsernameList()) ? String.join(",", dpsEvent.getUsernameList()) : null)
                     .dpsWorkflowState(dpsEvent.getState())
                     .eventTimeStamp(dpsEvent.getEventTimestamp())
                     .shipmentId(shipmentDetails.getShipmentId())

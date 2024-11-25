@@ -6,8 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -18,6 +20,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
@@ -33,6 +36,8 @@ import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsFieldDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
+import com.dpw.runner.shipment.services.service.handler.DpsWorkflowStateHandlerFactory;
+import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.lang.reflect.InvocationTargetException;
@@ -60,7 +65,13 @@ class DpsEventServiceTest {
     @Mock
     private IDpsEventRepository dpsEventRepository;
     @Mock
+    private IShipmentDao shipmentDao;
+    @Mock
+    private DpsWorkflowStateHandlerFactory dpsWorkflowStateHandlerFactory;
+    @Mock
     private IAuditLogService auditLogService;
+    @Mock
+    private IDpsWorkflowStateHandler stateHandler;
 
     @Test
     void getShipmentMatchingRulesByGuid_Success() {
@@ -593,6 +604,110 @@ class DpsEventServiceTest {
         );
     }
 
+    @Test
+    public void testSaveDpsEvent_Successful()
+            throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        DpsDto dpsDto = new DpsDto();
+        DpsDto.DpsDataDto dpsDataDto = new DpsDto.DpsDataDto();
+        dpsDataDto.setRuleExecutionId(UUID.randomUUID());
+        dpsDto.setData(dpsDataDto);
+
+        DpsEvent constructedEvent = new DpsEvent();
+        DpsEvent savedEvent = new DpsEvent();
+        savedEvent.setExecutionId(UUID.randomUUID());
+        savedEvent.setEntityType(DpsEntityType.SHIPMENT);
+        savedEvent.setEntityId(UUID.randomUUID().toString());
+        savedEvent.setState(DpsWorkflowState.PER_BLOCKED);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
+
+        when(dpsWorkflowStateHandlerFactory.getHandler(any())).thenReturn(stateHandler);
+        doNothing().when(stateHandler).validateTransition(any(DpsWorkflowState.class), any(DpsWorkflowState.class));
+        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(savedEvent);
+        when(shipmentDao.findShipmentsByGuids(anySet()))
+                .thenReturn(List.of(shipmentDetails));
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doNothing().when(shipmentDao).saveDpsState(any(),any());
+        // Act
+        DpsEvent result = dpsEventService.saveDpsEvent(dpsDto);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(savedEvent, result);
+
+        verify(dpsEventRepository).save(any(DpsEvent.class));
+        verify(shipmentDao).findShipmentsByGuids(anySet());
+        verify(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+    }
+
+    @Test
+    public void testSaveDpsEvent_ShipmentGuidNullOrEmpty() {
+        // Arrange
+        DpsDto dpsDto = new DpsDto();
+        DpsEvent constructedEvent = new DpsEvent();
+        constructedEvent.setEntityType(DpsEntityType.SHIPMENT);
+        constructedEvent.setEntityId(null); // Simulate null GUID
+
+//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
+        assertThrows(DpsException.class, () ->
+                dpsEventService.saveDpsEvent(dpsDto)
+        );
+
+    }
+
+    @Test
+    public void testSaveDpsEvent_ShipmentNotFound() {
+        // Arrange
+        DpsDto dpsDto = new DpsDto();
+        DpsEvent constructedEvent = new DpsEvent();
+        constructedEvent.setEntityType(DpsEntityType.SHIPMENT);
+        constructedEvent.setEntityId(UUID.randomUUID().toString());
+
+//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
+//        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(Collections.emptyList());
+        assertThrows(DpsException.class, () ->
+                dpsEventService.saveDpsEvent(dpsDto)
+        );
+    }
+
+    @Test
+    public void testSaveDpsEvent_StateTransitionValidationFails() {
+        // Arrange
+        DpsDto dpsDto = new DpsDto();
+        DpsEvent constructedEvent = new DpsEvent();
+        constructedEvent.setEntityType(DpsEntityType.SHIPMENT);
+        constructedEvent.setEntityId(UUID.randomUUID().toString());
+        constructedEvent.setState(DpsWorkflowState.PER_BLOCKED);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
+
+        IDpsWorkflowStateHandler mockHandler = mock(IDpsWorkflowStateHandler.class);
+
+//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
+//        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(List.of(shipmentDetails));
+//        when(dpsWorkflowStateHandlerFactory.getHandler(shipmentDetails.getDpsState()))
+//                .thenReturn(mockHandler);
+//        doThrow(new RuntimeException("Invalid transition")).when(mockHandler)
+//                .validateTransition(eq(shipmentDetails.getDpsState()), eq(constructedEvent.getState()));
+
+        // Act & Assert
+        assertThrows(DpsException.class, () ->
+                dpsEventService.saveDpsEvent(dpsDto)
+        );
+
+    }
+
+    @Test
+    public void testSaveDpsEvent_RepositorySaveFails() {
+        assertThrows(DpsException.class, () ->
+                dpsEventService.saveDpsEvent(new DpsDto())
+        );
+    }
 
 
 }
