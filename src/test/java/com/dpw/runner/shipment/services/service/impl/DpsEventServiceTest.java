@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -504,6 +505,94 @@ class DpsEventServiceTest {
             dpsEventService.createAuditLog(dpsEvent, shipmentDetails);
         });
     }
+
+    @Test
+    public void testGetImplicationsForShipment_NullOrEmptyShipmentGuid() {
+        DpsException exception = assertThrows(DpsException.class, () ->
+                dpsEventService.getImplicationsForShipment(null)
+        );
+
+        String emptyGuid = "";
+
+        assertThrows(DpsException.class, () ->
+                dpsEventService.getImplicationsForShipment(emptyGuid)
+        );
+    }
+
+    @Test
+    public void testGetImplicationsForShipment_NoImplicationsFound() {
+        // Arrange
+        String shipmentGuid = "shipment-123";
+        when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
+                eq(shipmentGuid),
+                eq(DpsEntityType.SHIPMENT.name()),
+                eq(DpsExecutionStatus.ACTIVE.name())
+        )).thenReturn(Collections.emptyList());
+
+        // Act
+        List<String> result = dpsEventService.getImplicationsForShipment(shipmentGuid);
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(dpsEventRepository).findImplicationsByEntityIdAndEntityType(
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
+        );
+        // You can verify logs using logging frameworks or mocks (if configured).
+    }
+
+    @Test
+    public void testGetImplicationsForShipment_ValidImplicationsFound() {
+        // Arrange
+        String shipmentGuid = "shipment-123";
+        List<String> mockImplications = List.of("implication1", "implication2");
+
+        when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
+                eq(shipmentGuid),
+                eq(DpsEntityType.SHIPMENT.name()),
+                eq(DpsExecutionStatus.ACTIVE.name())
+        )).thenReturn(mockImplications);
+
+        // Act
+        List<String> result = dpsEventService.getImplicationsForShipment(shipmentGuid);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(mockImplications.size(), result.size());
+        assertEquals(mockImplications, result);
+        verify(dpsEventRepository).findImplicationsByEntityIdAndEntityType(
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
+        );
+    }
+
+    @Test
+    public void testGetImplicationsForShipment_RepositoryException() {
+        // Arrange
+        String shipmentGuid = "shipment-123";
+
+        when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
+                eq(shipmentGuid),
+                eq(DpsEntityType.SHIPMENT.name()),
+                eq(DpsExecutionStatus.ACTIVE.name())
+        )).thenThrow(new RuntimeException("Database error"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                dpsEventService.getImplicationsForShipment(shipmentGuid)
+        );
+
+        assertEquals("Database error", exception.getMessage());
+        verify(dpsEventRepository).findImplicationsByEntityIdAndEntityType(
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
+        );
+    }
+
 
 
 }
