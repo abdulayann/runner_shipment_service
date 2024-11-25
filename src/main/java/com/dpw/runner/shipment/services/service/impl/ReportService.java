@@ -505,12 +505,12 @@ public class ReportService implements IReportService {
 
             DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(),false);
             byte[] pdfByte_Content = null;
-            byte[] mainDoc_hawb = null;
+            byte[] mainDocHawb = null;
             Map<String, Object> dataRetrived1 = dataRetrived;
             CompletableFuture<byte[]> mainDocFuture = null;
             boolean asyncFlag = Boolean.FALSE;
             if(reportRequest.isPrintForParties()){
-                mainDoc_hawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, Pages);
+                mainDocHawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, Pages);
             }else{
                 asyncFlag = Boolean.TRUE;
                 mainDocFuture = CompletableFuture.supplyAsync(
@@ -526,20 +526,20 @@ public class ReportService implements IReportService {
             if (asyncFlag) {
                 CompletableFuture.allOf(mainDocFuture, firstPageHawbFuture, backPageHawbFuture)
                     .join();
-                mainDoc_hawb = mainDocFuture.get();
+                mainDocHawb = mainDocFuture.get();
             } else {
                 CompletableFuture.allOf(firstPageHawbFuture, backPageHawbFuture)
                     .join();
             }
 
-            byte[] firstpage_hawb = firstPageHawbFuture.get();
-            byte[] backprint_hawb = backPageHawbFuture.get();
-            if (mainDoc_hawb == null)
+            byte[] firstPageHawb = firstPageHawbFuture.get();
+            byte[] backPrintHawb = backPageHawbFuture.get();
+            if (mainDocHawb == null)
             {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
-            List<byte[]> pdfBytes_hawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDoc_hawb, firstpage_hawb, backprint_hawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
-            pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytes_hawb);
+            List<byte[]> pdfBytesHawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDocHawb, firstPageHawb, backPrintHawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
+            pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytesHawb);
             if (pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
             Boolean addWaterMarkForEaw = false;
