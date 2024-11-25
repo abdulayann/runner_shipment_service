@@ -19,6 +19,7 @@ public class ListCommonRequest implements IRunnerRequest{
     private Integer pageSize = Integer.MAX_VALUE;
     private List<String> includeTbls;
     private String containsText;
+    private String entityId;
     private List<String> includeColumns;
     private Boolean notificationFlag;
 }

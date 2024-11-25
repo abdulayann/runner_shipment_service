@@ -107,6 +107,22 @@ public class AwbUtility {
         return forMattedAddress;
     }
 
+    public static String constructAddressForAwb(Map<String, Object> addressData) {
+        StringBuilder sb = new StringBuilder();
+        String newLine = "\r\n";
+
+        if(addressData != null) {
+            if (addressData.containsKey(PartiesConstants.ADDRESS1))
+                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS1)));
+            if (addressData.containsKey(PartiesConstants.ADDRESS2)) {
+                if(!sb.isEmpty()) sb.append(newLine);
+                sb.append(StringUtility.convertToString(addressData.get(PartiesConstants.ADDRESS2)));
+            }
+        }
+
+        return sb.toString();
+    }
+
     public static String constructAddress(Map<String, Object> addressData) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
@@ -281,13 +297,7 @@ public class AwbUtility {
 
         Set<String> carrierRequests = new HashSet<>();
 
-        Set<String> rcpList = new HashSet<>();
-        awb.getAwbGoodsDescriptionInfo().forEach(good -> {
-            if(good.getRcp() != null)
-                rcpList.add(good.getRcp());
-        });
-
-        List<String> unlocoRequests = new ArrayList<>(rcpList);
+        List<String> unlocoRequests = new ArrayList<>();
         awb.getAwbNotifyPartyInfo().forEach(party -> {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
@@ -307,9 +317,6 @@ public class AwbUtility {
 
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
-
-        if(!rcpList.isEmpty())
-            this.buildRcpIATAMapAndNotifyParty(awbResponse, rcpList, unlocationsMap);
 
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
@@ -363,13 +370,6 @@ public class AwbUtility {
         return awbResponse;
     }
     private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Set<String> rcpList, Map<String, UnlocationsResponse> unlocationsMap) {
-        Map<String, String> rcpIataMap = new HashMap<>();
-        rcpList.forEach(rep -> {
-            if (unlocationsMap.containsKey(rep)) {
-                rcpIataMap.put(rep, unlocationsMap.get(rep).getIataCode());
-            }
-        });
-        awbResponse.getMeta().setRcpIATACodes(rcpIataMap);
         if (awbResponse.getAwbNotifyPartyInfo() != null) {
             awbResponse.getAwbNotifyPartyInfo().forEach(party -> {
                 if (party.getSpecifiedAddressLocation() != null && unlocationsMap.containsKey(party.getSpecifiedAddressLocation())) {
@@ -522,13 +522,7 @@ public class AwbUtility {
 
         Set<String> carrierRequests = new HashSet<>();
 
-        Set<String> rcpList = new HashSet<>();
-        awb.getAwbGoodsDescriptionInfo().forEach(good -> {
-            if(good.getRcp() != null)
-                rcpList.add(good.getRcp());
-        });
-
-        List<String> unlocoRequests = new ArrayList<>(rcpList);
+        List<String> unlocoRequests = new ArrayList<>();
         if(awb.getAwbNotifyPartyInfo() != null) {
             awb.getAwbNotifyPartyInfo().forEach(party -> {
                 if (party.getSpecifiedAddressLocation() != null)
@@ -551,8 +545,6 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
-        if(!rcpList.isEmpty())
-            this.buildRcpIATAMapAndNotifyParty(awbResponse, rcpList, unlocationsMap);
 
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());

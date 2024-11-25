@@ -1714,9 +1714,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
-        if(CollectionUtils.isEmpty(consolidationRoutings))
+        if(CollectionUtils.isEmpty(consolidationRoutings) || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
             return;
-
         List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
         List<Routings> shipmentRoutingList = Optional.ofNullable(shipmentDetails.getRoutingsList()).orElse(new ArrayList<>());
         shipmentDetails.setRoutingsList(shipmentRoutingList);
@@ -4859,11 +4858,13 @@ public class ConsolidationService implements IConsolidationService {
     public void autoGenerateEvents(ConsolidationDetails consolidationDetails) {
         Events response = null;
 //        response = createAutomatedEvents(consolidationDetails, EventConstants.CONCRTD);
+        return;
+        // TODO - As response is null return from here Aditya please check
 
-        if (consolidationDetails.getEventsList() == null) {
-            consolidationDetails.setEventsList(new ArrayList<>());
-        }
-        consolidationDetails.getEventsList().add(response);
+//        if (consolidationDetails.getEventsList() == null) {
+//            consolidationDetails.setEventsList(new ArrayList<>());
+//        }
+//        consolidationDetails.getEventsList().add(response);
     }
 
     private Events createAutomatedEvents(ConsolidationDetails consolidationDetails, String eventCode) {
