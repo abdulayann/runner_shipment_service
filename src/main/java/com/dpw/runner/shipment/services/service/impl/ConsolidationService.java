@@ -635,11 +635,11 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
 
         ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
-        ConsolidationDetailsResponse response = this.createConsolidation(request, false);
+        ConsolidationDetailsResponse response = this.createConsolidation(request, false, false);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsRequest request, boolean includeGuid) {
+    private ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsRequest request, boolean includeGuid, boolean isFromET) {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
@@ -653,7 +653,7 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid, isFromET);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -664,7 +664,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     public ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationDetailsRequest request) {
-        return this.createConsolidation(request, true);
+        return this.createConsolidation(request, true, true);
     }
 
     @Transactional
@@ -686,7 +686,7 @@ public class ConsolidationService implements IConsolidationService {
 
             getConsolidation(consolidationDetails, false);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false, false);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -1579,12 +1579,12 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
 
-        ConsolidationDetailsResponse response = this.completeUpdateConsolidation(consolidationDetailsRequest);
+        ConsolidationDetailsResponse response = this.completeUpdateConsolidation(consolidationDetailsRequest, false);
 
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private ConsolidationDetailsResponse completeUpdateConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
+    private ConsolidationDetailsResponse completeUpdateConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest, boolean isFromET) throws RunnerException {
         Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(consolidationDetailsRequest);
         if (!oldEntity.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
@@ -1620,7 +1620,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
+            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false, isFromET);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
             ConsolidationDetails finalEntity = entity;
@@ -1635,7 +1635,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     public ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
-        return this.completeUpdateConsolidation(consolidationDetailsRequest);
+        return this.completeUpdateConsolidation(consolidationDetailsRequest, true);
     }
 
     /**
@@ -4102,7 +4102,7 @@ public class ConsolidationService implements IConsolidationService {
                 || !Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid) throws RunnerException{
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid, boolean isFromET) throws RunnerException{
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
@@ -4160,7 +4160,8 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
+        if(!isFromET)
+            pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
         try {
             if (!isFromBooking)
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);

@@ -23,6 +23,10 @@ public class AwbGoodsDescriptionInfoModel implements IDocumentModel {
     private BigDecimal grossWt;
     @JsonProperty("GrossWtUnit")
     private String grossWtUnit;
+    @JsonProperty("GrossVolume")
+    private BigDecimal grossVolume;
+    @JsonProperty("GrossVolumeUnit")
+    private String grossVolumeUnit;
     @JsonProperty("RateClass")
     private Integer rateClass;
     @JsonProperty("CommodityItemNo")
@@ -37,8 +41,13 @@ public class AwbGoodsDescriptionInfoModel implements IDocumentModel {
     private Integer slaCCode;
     @JsonProperty("HsCode")
     private String hsCode;
+    @JsonProperty("Rcp")
+    private String rcp;
     private UUID guid;
     private List<AwbPackingInfo> awbPackingInfo;
     private Boolean isShipmentCreated;
-
+    @JsonProperty("NtrQtyGoods")
+    private String ntrQtyGoods;
+    @JsonProperty("Dimensions")
+    private String dimensions;
 }

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -27,7 +28,8 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private Integer orgId;
     private Long notifyOrgId;
     private String name;
-    private String address;
+    private String address1;
+    private String address2;
     private Integer addressId;
     @MasterData(type = MasterDataType.COUNTRIES)
     private String country;
@@ -39,4 +41,10 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private String phone;
     private Boolean isShipmentCreated;
     private UUID guid;
+    private String contactName;
+    private String taxRegistrationNumber;
+    @UnlocationData
+    private String specifiedAddressLocation;
+    private String specifiedAddressLocationIATACode;
+    private String specifiedAddressLocationName;
 }

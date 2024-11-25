@@ -98,9 +98,7 @@ public class HawbReport extends IReport{
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        dictionary.put(ReportConstants.BRANCH_NAME, tenantName);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, v1TenantSettingsResponse.getLegalEntityCode());
         Integer companyId = ((HawbModel) documentModel).usersDto.getCompanyId();
         List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
@@ -121,10 +119,13 @@ public class HawbReport extends IReport{
         // Get the shipmentInforRow
         AwbShipmentInfo shipmentInfo = hawbModel.awb.getAwbShipmentInfo();
 
-
         if(shipmentInfo != null){
-            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
-            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
+            List<String> awbShipper = getAwbFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress1(),shipmentInfo.getShipperAddress2(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperState(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperContactName(), shipmentInfo.getShipperPhone(), shipmentInfo.getShipperTaxRegistrationNumber());
+            List<String> awbConsignee = getAwbFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress1(),shipmentInfo.getConsigneeAddress2(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeContactName(), shipmentInfo.getConsigneePhone(), shipmentInfo.getConsigneeTaxRegistrationNumber());
+            List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress1(),shipmentInfo.getShipperAddress2(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
+            List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress1(),shipmentInfo.getConsigneeAddress2(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
+            dictionary.put(ReportConstants.AWB_SHIPPER_ADDRESS, awbShipper);
+            dictionary.put(ReportConstants.AWB_CONSIGNEE_ADDRESS, awbConsignee);
             dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
             dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
             dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, StringUtility.toUpperCase(shipmentInfo.getIssuingAgentName()));
@@ -252,8 +253,8 @@ public class HawbReport extends IReport{
                 if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
             }
             var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
-            dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
-
+            dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress1(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
+            dictionary.put(AWB_ISSUING_AGENT_ADDRESS, getAwbFormattedDetails(shipInfo.getIssuingAgentName(),shipInfo.getIssuingAgentAddress1(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentContactName(), shipInfo.getIssuingAgentPhone(), shipInfo.getIssuingAgentTaxRegistrationNumber()));
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
             EntityTransferMasterLists paymentCodeDetails = null;
@@ -287,17 +288,19 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.CHARGE_CODE, cargoInfoRows.getChargeCode());
                 dictionary.put(ReportConstants.ACCOUNTING_INFORMATION,  StringUtility.toUpperCase(cargoInfoRows.getAccountingInfo()));
                 dictionary.put(ReportConstants.HANDLING_INFORMATION, StringUtility.toUpperCase(cargoInfoRows.getHandlingInfo()));
-                NtrQtyGoods = cargoInfoRows.getNtrQtyGoods();
-                dictionary.put(ReportConstants.NATURE_OF_GOODS, NtrQtyGoods);
+                dictionary.put(ReportConstants.HANDLING_INFORMATION_CODE, cargoInfoRows.getHandlingInfoCode());
                 dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
                 if(StringUtility.isNotEmpty(cargoInfoRows.getChargeCode()))
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
                 dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
+                dictionary.put(CSD_INFO_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
+                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()) && StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate())) {
                     dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+                }
+                dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
-
+                dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
             }
             List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo = hawbModel.awb.getAwbGoodsDescriptionInfo();
             List<AwbPackingInfo> awbPackingInfo = hawbModel.awb.getAwbPackingInfo();
@@ -384,12 +387,18 @@ public class HawbReport extends IReport{
                 List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
                 List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(values, new TypeReference<>(){});
                 values.forEach(value -> {
+                    value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
+                    value.put(AWB_GROSS_VOLUME_AND_UNIT, value.get(GROSS_VOLUME).toString() + " "+value.get(GROSS_VOLUME_UNIT).toString());
+                    value.put(AWB_DIMS, value.get(DIMENSIONS));
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
                     if(value.get(ReportConstants.RATE_CLASS) != null){
                         value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                     }
                     if(value.get(GROSS_WT_UNIT) != null){
                         value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                    }
+                    if(value.get(RCP) != null){
+                        value.put(RCP, value.get(RCP).toString());
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
@@ -509,8 +518,6 @@ public class HawbReport extends IReport{
                 if (!carrierRow.isEmpty() && carrier != null && carrierRow.containsKey(carrier))
                 {
                     dictionary.put(ReportConstants.BY_FIRST, carrierRow.get(carrier).IATACode);
-                    dictionary.put(ReportConstants.ISSUED_BY_NAME, carrierRow.get(carrier).ItemDescription);
-                    dictionary.put(ISSUED_BY_NAME_IN_CAPS, (carrierRow.get(carrier).ItemDescription).toUpperCase());
                 }
                 else
                 {
@@ -678,11 +685,27 @@ public class HawbReport extends IReport{
                 locCodes = new HashSet<>();
                 locCodes.add(otherInfoRows.getExecutedAt());
                 locCodeMap = getLocationData(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                String executedAtName = null;
+                if (locCodeMap.get(otherInfoRows.getExecutedAt()) != null) {
+                    // Get the name from v1 and convert it to uppercase if not null
+                    executedAtName = Optional.ofNullable(locCodeMap.get(otherInfoRows.getExecutedAt()).getName())
+                            .map(String::toUpperCase)
+                            .orElse(null);
+                }
                 dictionary.put(ReportConstants.EXECUTED_AT, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ?  locCodeMap.get(otherInfoRows.getExecutedAt()).getIataCode() : null);
-                dictionary.put(ReportConstants.EXECUTED_AT_NAME, locCodeMap.get(otherInfoRows.getExecutedAt()) != null ? locCodeMap.get(otherInfoRows.getExecutedAt()).getName() : null);
+                dictionary.put(ReportConstants.EXECUTED_AT_NAME, executedAtName);
                 dictionary.put(ReportConstants.EXECUTED_ON, ConvertToDPWDateFormat(otherInfoRows.getExecutedOn(), tsDateTimeFormat, true));
                 dictionary.put(ReportConstants.SIGN_OF_SHIPPER, otherInfoRows.getShipper());
                 dictionary.put(ReportConstants.SIGN_OF_ISSUING_CARRIER, StringUtility.toUpperCase(otherInfoRows.getCarrier()));
+                dictionary.put(ReportConstants.BRANCH_NAME, StringUtility.toUpperCase(otherInfoRows.getBranch()));
+                dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
+                List<String> companyAddress = ReportHelper.getOrgAddress(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
+                companyAddress.add(otherInfoRows.getCountryName());
+                companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
+                dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+                dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
+                dictionary.put(ISSUED_BY_NAME_IN_CAPS, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
+                dictionary.put(CARRIER_HQ, StringUtility.toUpperCase(otherInfoRows.getCarrierHqAddress()));
             }
 
             List<AwbOtherChargesInfo> otherChargesInfoRows = hawbModel.awb.getAwbOtherChargesInfo();
@@ -701,11 +724,13 @@ public class HawbReport extends IReport{
             }
         }
 
-        if (StringUtility.isNotEmpty(carrierDetailModel.getShippingLine())) {
-            var masterData = masterDataUtils.fetchInBulkCarriers(Set.of(carrierDetailModel.getShippingLine()));
-            if (!Objects.isNull(masterData) && masterData.containsKey(carrierDetailModel.getShippingLine())) {
-                dictionary.put(CARRIER_HQ, masterData.get(carrierDetailModel.getShippingLine()).getHeadQuartersDetails());
-            }
+        AirMessagingAdditionalFields airMessagingAdditionalFields = hawbModel.awb.getAirMessagingAdditionalFields();
+
+        if(airMessagingAdditionalFields != null){
+            dictionary.put(TARGET_CURRENCY_CODE, airMessagingAdditionalFields.getTargetCurrencyCode());
+            dictionary.put(CONVERSION_RATE, airMessagingAdditionalFields.getConversionRate());
+            dictionary.put(CC_CHARGE_IN_DEST_CURRENCY, airMessagingAdditionalFields.getCCChargesInDestinationCurrency());
+            dictionary.put(CHARGES_AT_DESTINATION, airMessagingAdditionalFields.getChargesAtDestination());
         }
         
         if(!Objects.equals(hawbModel.shipmentDetails, null)) {
@@ -717,18 +742,22 @@ public class HawbReport extends IReport{
 
         if(!CommonUtils.listIsNullOrEmpty(awbNotifParty)) {
             var party = hawbModel.getAwb().getAwbNotifyPartyInfo().get(0);
-            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
+            dictionary.put(NOTIFY_PARTY, getAwbFormattedDetails(party.getName(), party.getAddress1(), party.getAddress2(), party.getCity(), party.getState(), party.getZipCode(), party.getCountry(), party.getContactName(), party.getPhone(), party.getTaxRegistrationNumber()));
+            dictionary.put(AWB_NOTIFYPARTY, getFormattedDetails(party.getName(), party.getAddress1(), party.getAddress2(), party.getCountry(), party.getState(), party.getCity(), party.getZipCode(), party.getPhone()));
             dictionary.put(AWB_NOTIFY_PARTY_NAME, (party.getName() != null && !party.getName().isEmpty()) ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }
 
         return dictionary;
     }
 
-    public static String constructAddressForAwb(String address, String country, String state, String city, String zipCode, String phone) {
+    public static String constructAddressForAwb(String address1, String address2, String country, String state, String city, String zipCode, String phone) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
-        if(address != null) {
-            sb.append(address);
+        if(address1 != null) {
+            sb.append(address1);
+        }
+        if(address2 != null) {
+            sb.append(address2);
         }
 
         StringBuilder tempAddress = new StringBuilder();
