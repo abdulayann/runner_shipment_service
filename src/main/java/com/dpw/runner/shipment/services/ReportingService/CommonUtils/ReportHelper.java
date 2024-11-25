@@ -12,10 +12,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.STATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 public class ReportHelper {
@@ -194,6 +191,24 @@ public class ReportHelper {
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         return list;
+    }
+
+    /**
+     * @param dictionary : source dictionary
+     * @param partiesModel : party model for populating address
+     * @param addressReportKey : cargo manifest report key for address
+     * Puts party address with email and contact phone as null
+     */
+    public static void populateCargoManifestPartyAddress(Map<String, Object> dictionary, PartiesModel partiesModel, String addressReportKey) {
+        if (partiesModel != null && partiesModel.getAddressData() != null) {
+            Map<String, Object> consignerAddress = partiesModel.getAddressData();
+            var consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME),
+                    getValueFromMap(consignerAddress, ADDRESS1), getValueFromMap(consignerAddress, ADDRESS2),
+                    ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                    null, null, getValueFromMap(consignerAddress, ZIP_POST_CODE));
+
+            dictionary.put(addressReportKey, consigner);
+        }
     }
 
     public static List<String> getAddressList(String address)

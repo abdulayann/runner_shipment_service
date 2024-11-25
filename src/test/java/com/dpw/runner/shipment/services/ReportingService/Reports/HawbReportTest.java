@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherInfo;
 import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -255,6 +256,19 @@ class HawbReportTest extends CommonMocks {
         String csdInfo = "some info";
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
         hawb.setOriginalPrintedAt(LocalDateTime.now());
+        hawb.getAwbCargoInfo().setOtherInfoCode("test");
+        AwbOtherInfo otherInfo = hawb.getAwbOtherInfo();
+        otherInfo.setCarrierName("carrierName");
+        otherInfo.setCarrierHqAddress("hqAddress");
+        otherInfo.setLegalCompanyName("legal");
+        otherInfo.setAddress1("address1");
+        otherInfo.setAddress2("address2");
+        otherInfo.setState("state");
+        otherInfo.setCity("city");
+        otherInfo.setCountryCode("IN");
+        otherInfo.setCountryName("India");
+        otherInfo.setBranch("branch");
+        hawb.setAwbOtherInfo(otherInfo);
         hawbModel.setAwb(hawb);
         UsersDto usersDto = new UsersDto();
         usersDto.setUsername("UserName");
@@ -405,6 +419,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 
@@ -522,6 +540,19 @@ class HawbReportTest extends CommonMocks {
         String csdInfo = "some info";
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
         hawb.setOriginalPrintedAt(LocalDateTime.now());
+        hawb.getAwbCargoInfo().setOtherInfoCode("test");
+        AwbOtherInfo otherInfo = hawb.getAwbOtherInfo();
+        otherInfo.setCarrierName("carrierName");
+        otherInfo.setCarrierHqAddress("hqAddress");
+        otherInfo.setLegalCompanyName("legal");
+        otherInfo.setAddress1("address1");
+        otherInfo.setAddress2("address2");
+        otherInfo.setState("state");
+        otherInfo.setCity("city");
+        otherInfo.setCountryCode("IN");
+        otherInfo.setCountryName("India");
+        otherInfo.setBranch("branch");
+        hawb.setAwbOtherInfo(otherInfo);
         hawbModel.setAwb(hawb);
         UsersDto usersDto = new UsersDto();
         usersDto.setUsername("UserName");
@@ -665,6 +696,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
 
         List<Map<String,Object>> dataMap = Arrays.asList(new HashMap<>(packingValueMap));
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
@@ -777,6 +812,19 @@ class HawbReportTest extends CommonMocks {
         String csdInfo = "some info";
         hawb.getAwbCargoInfo().setCsdInfo(csdInfo);
         hawb.setOriginalPrintedAt(LocalDateTime.now());
+        hawb.getAwbCargoInfo().setOtherInfoCode("test");
+        AwbOtherInfo otherInfo = hawb.getAwbOtherInfo();
+        otherInfo.setCarrierName("carrierName");
+        otherInfo.setCarrierHqAddress("hqAddress");
+        otherInfo.setLegalCompanyName("legal");
+        otherInfo.setAddress1("address1");
+        otherInfo.setAddress2("address2");
+        otherInfo.setState("state");
+        otherInfo.setCity("city");
+        otherInfo.setCountryCode("IN");
+        otherInfo.setCountryName("India");
+        otherInfo.setBranch("branch");
+        hawb.setAwbOtherInfo(otherInfo);
         hawbModel.setAwb(hawb);
         hawbModel.getAwb().setAwbNotifyPartyInfo(List.of(AwbNotifyPartyInfo.builder().name(null).build()));
         UsersDto usersDto = new UsersDto();
@@ -924,6 +972,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 
@@ -1186,6 +1238,10 @@ class HawbReportTest extends CommonMocks {
         packingValueMap.put(ReportConstants.RATE_CHARGE, 0);
         packingValueMap.put(ReportConstants.TOTAL_AMOUNT, 0);
         packingValueMap.put(ReportConstants.PIECES_NO, 0);
+        packingValueMap.put(ReportConstants.GROSS_VOLUME, 0);
+        packingValueMap.put(GROSS_VOLUME_UNIT, "M3");
+        packingValueMap.put(DIMENSIONS, "DIMS");
+        packingValueMap.put(NATURE_OF_GOODS, "NatureOfGoods");
         packingValueMap.put(HS_CODE1, 123456);
         packingValueMap.put(SLAC_CODE, 654321);
 
