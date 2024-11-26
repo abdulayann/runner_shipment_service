@@ -1310,4 +1310,5 @@ public class ReportConstants {
     public static final String USER_INITIALS = "UserInitials";
 
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
+    public static final String  ISSUING_AGENT_CITY = "IssuingAgentCity";
 }
