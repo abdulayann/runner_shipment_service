@@ -57,7 +57,7 @@ public class CustomContainerPraStatusConsumer {
                 if (ObjectUtils.isNotEmpty(obj) && ObjectUtils.isNotEmpty(obj.getPayload())) {
                     Long consolidationId = consolidationRepository.findIdByGuid(obj.getPayload().getConsolidationGuid());
                     if (ObjectUtils.isNotEmpty(consolidationId)) {
-                        containerRepository.savePraStatus(obj.getPayload().getPraStatus().toString(), obj.getPayload().getContainerGuid(), consolidationId);
+                        containerRepository.savePraStatus(obj.getPayload().getCustomsStatus().toString(), obj.getPayload().getContainerGuid(), consolidationId);
                         log.info("Passed");
                     } else {
                         log.info("Consolidation Data is not present for event: {} for message: {}", LoggerEvent.CUSTOM_SERVICE_EVENT, message);

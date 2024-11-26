@@ -21,6 +21,6 @@ public class CustomContainerDto {
     public static class Container {
         private UUID consolidationGuid;
         private UUID containerGuid;
-        private ContainerPraStatus praStatus;
+        private ContainerPraStatus customsStatus;
     }
 }
