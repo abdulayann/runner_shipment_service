@@ -2222,7 +2222,7 @@
     },
     "consigner": {
       "id": 1,
-      "orgCode": "000043",
+      "orgCode": "22481_1",
       "addressCode": "VALID",
       "orgData": {
         "Id": 58,
@@ -2261,7 +2261,7 @@
     },
     "consignee": {
       "id": 1,
-      "orgCode": "00001",
+      "orgCode": "223532_4",
       "addressCode": "Default1",
       "orgData": {
         "Id": 64,

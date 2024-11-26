@@ -135,6 +135,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -465,16 +466,20 @@ public class EntityTransferService implements IEntityTransferService {
         }
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
+        MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
         // Import shipment implementation
-        ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails, copyDocumentsRequest);
+        ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails, copyDocumentsRequest, isCreateShip);
         log.info("Shipment got created successfully with RequestId: {}" , LoggerHelper.getRequestIdFromMDC());
         String shipmentId = shipmentDetailsResponse.getShipmentId();
 
         // Call Document Service api for copy docs
         String authToken = RequestAuthContext.getAuthToken();
         sendCopyDocumentRequest(copyDocumentsRequest, authToken);
+
+        // Push data to dependant service
+        pushImportShipmentDataToDependantService(shipmentDetailsResponse.getId(), isCreateShip.isTrue());
 
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
@@ -488,6 +493,15 @@ public class EntityTransferService implements IEntityTransferService {
                 .message("Shipment Imported Successfully with Shipment Number: " + shipmentId)
                 .build();
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void pushImportShipmentDataToDependantService(Long shipmentId, boolean isCreateShip) {
+        try {
+            Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
+            shipment.ifPresent(shipmentDetails -> shipmentService.pushShipmentDataToDependentService(shipmentDetails, isCreateShip, false, shipmentDetails.getContainersList()));
+        } catch (Exception ex) {
+            log.error("Error occurred while pushing import shipment data to dependent service : {}", ex.getMessage());
+        }
     }
 
     @Override
@@ -538,6 +552,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<Long> shipmentIds = new ArrayList<>();
         List<UUID> shipmentGuids = new ArrayList<>();
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
+        MutableBoolean isCreateConsole = new MutableBoolean(false);
+        Map<Long, Boolean> isCreateShipMap = new HashMap<>();
 
         List<Long> interBranchShipment = new ArrayList<>();
 
@@ -549,7 +565,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         // Create shipments
-        this.createOrUpdateShipment(entityTransferConsolidationDetails, newVsOldPackingGuid, oldVsNewShipIds, shipmentGuids, shipmentIds, interBranchShipment, copyDocumentsRequest);
+        this.createOrUpdateShipment(entityTransferConsolidationDetails, newVsOldPackingGuid, oldVsNewShipIds, shipmentGuids, shipmentIds, interBranchShipment, copyDocumentsRequest, isCreateShipMap);
         log.info("Shipment got created successfully with RequestId: {}" , LoggerHelper.getRequestIdFromMDC());
 
         // Created console old vs new guid map
@@ -566,7 +582,7 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferConsolidationDetails.setCreatingFromDgShipment(entityTransferConsolidationDetails.getHazardous());
 
         // Create or update console
-        ConsolidationDetailsResponse consolidationDetailsResponse = this.createOrUpdateConsolidation(entityTransferConsolidationDetails, oldConsolidationDetailsList);
+        ConsolidationDetailsResponse consolidationDetailsResponse = this.createOrUpdateConsolidation(entityTransferConsolidationDetails, oldConsolidationDetailsList, isCreateConsole);
         log.info("Consolidation got created successfully with RequestId: {}" , LoggerHelper.getRequestIdFromMDC());
 
 
@@ -602,6 +618,9 @@ public class EntityTransferService implements IEntityTransferService {
 
             // Syncing Imported Shipment & Console to V1
             this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
+
+            // Push data to dependant service
+            pushImportConsoleDataToDependantService(consolidationDetailsResponse.getId(), shipmentIds, isCreateConsole.isTrue(), isCreateShipMap);
         }
 
         // Send consolidated shipments email
@@ -617,7 +636,21 @@ public class EntityTransferService implements IEntityTransferService {
         return consolidationDetailsResponse;
     }
 
-    private ConsolidationDetailsResponse createOrUpdateConsolidation(EntityTransferConsolidationDetails entityTransferConsolidationDetails, List<ConsolidationDetails> oldConsolidationDetailsList) throws RunnerException {
+    private void pushImportConsoleDataToDependantService(Long consoleId, List<Long> shipmentIds, boolean isCreateConsole, Map<Long, Boolean> isCreateShipMap) {
+        try {
+            Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findById(consoleId);
+            consolidation.ifPresent(consolidationDetails -> consolidationService.pushShipmentDataToDependentService(consolidationDetails, isCreateConsole, consolidationDetails.getContainersList()));
+
+            List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+            for (ShipmentDetails shipment : shipments) {
+                shipmentService.pushShipmentDataToDependentService(shipment, isCreateShipMap.containsKey(shipment.getId()) && Boolean.TRUE.equals(isCreateShipMap.get(shipment.getId())), false, shipment.getContainersList());
+            }
+        } catch (Exception ex) {
+            log.error("Error occurred while pushing import console data to dependent service : {}", ex.getMessage());
+        }
+    }
+
+    private ConsolidationDetailsResponse createOrUpdateConsolidation(EntityTransferConsolidationDetails entityTransferConsolidationDetails, List<ConsolidationDetails> oldConsolidationDetailsList, MutableBoolean isCreateConsole) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
         ConsolidationDetailsResponse consolidationDetailsResponse;
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
@@ -626,6 +659,7 @@ public class EntityTransferService implements IEntityTransferService {
             consolidationDetailsRequest.setSourceGuid(entityTransferConsolidationDetails.getGuid());
 
             consolidationDetailsResponse = consolidationService.createConsolidationFromEntityTransfer(consolidationDetailsRequest);
+            isCreateConsole.setTrue();
         } else {
             consolidationDetailsRequest = jsonHelper.convertValue(oldConsolidationDetailsList.get(0), ConsolidationDetailsRequest.class);
 
@@ -640,11 +674,12 @@ public class EntityTransferService implements IEntityTransferService {
 
             consolidationDetailsResponse = consolidationService.completeUpdateConsolidationFromEntityTransfer(consolidationDetailsRequest);
             oldConsolidationDetailsList.get(0).setContainersList(jsonHelper.convertValueToList(consolidationDetailsResponse.getContainersList(), Containers.class));
+            isCreateConsole.setFalse();
         }
         return consolidationDetailsResponse;
     }
 
-    private void createOrUpdateShipment(EntityTransferConsolidationDetails entityTransferConsolidationDetails, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, Long> oldVsNewShipIds, List<UUID> shipmentGuids, List<Long> shipmentIds, List<Long> interBranchShipment, CopyDocumentsRequest copyDocumentsRequest) throws RunnerException {
+    private void createOrUpdateShipment(EntityTransferConsolidationDetails entityTransferConsolidationDetails, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, Long> oldVsNewShipIds, List<UUID> shipmentGuids, List<Long> shipmentIds, List<Long> interBranchShipment, CopyDocumentsRequest copyDocumentsRequest, Map<Long, Boolean> isCreateShipMap) throws RunnerException {
         if(!CommonUtils.listIsNullOrEmpty(entityTransferConsolidationDetails.getShipmentsList())) {
             for (var ship : entityTransferConsolidationDetails.getShipmentsList()) {
                 // Container will be created with consolidation
@@ -664,9 +699,11 @@ public class EntityTransferService implements IEntityTransferService {
                 if (entityTransferConsolidationDetails.getShipAdditionalDocs() != null && entityTransferConsolidationDetails.getShipAdditionalDocs().containsKey(ship.getGuid().toString())) {
                     ship.setAdditionalDocs(entityTransferConsolidationDetails.getShipAdditionalDocs().get(ship.getGuid().toString()));
                 }
+                MutableBoolean isCreateShip = new MutableBoolean(false);
 
                 // Create shipment
-                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest);
+                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest, isCreateShip);
+                isCreateShipMap.put(shipmentDetailsResponse.getId(), isCreateShip.booleanValue());
 
                 oldVsNewShipIds.put(ship.getGuid(), shipmentDetailsResponse.getId());
                 shipmentIds.add(shipmentDetailsResponse.getId());
@@ -703,7 +740,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest) throws RunnerException {
+    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest, MutableBoolean isCreateShip) throws RunnerException {
         ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
         var tenantId = UserContext.getUser().getTenantId();
 
@@ -723,6 +760,7 @@ public class EntityTransferService implements IEntityTransferService {
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
 
             shipmentDetailsResponse = shipmentService.createShipmentFromEntityTransfer(shipmentRequest);
+            isCreateShip.setTrue();
         } else {
             shipmentRequest = jsonHelper.convertValue(oldShipmentDetailsList.get(0), ShipmentRequest.class);
 
@@ -738,6 +776,7 @@ public class EntityTransferService implements IEntityTransferService {
 
             shipmentDetailsResponse = shipmentService.completeUpdateShipmentFromEntityTransfer(shipmentRequest);
             oldShipmentDetailsList.get(0).setPackingList(jsonHelper.convertValueToList(shipmentDetailsResponse.getPackingList(), Packing.class));
+            isCreateShip.setFalse();
         }
 
         // Create shipment import event

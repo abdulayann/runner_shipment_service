@@ -380,7 +380,7 @@ class AwbDaoTest {
     }
 
     @Test
-    void testAirMessagingIntegrationForMawb() {
+    void testAirMessagingIntegrationForMawb() throws RunnerException {
         Long consolidationId = 1L;
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = false;
@@ -394,7 +394,7 @@ class AwbDaoTest {
         when(awbRepository.findByShipmentIdByQuery(any())).thenReturn(List.of(mockAwb));
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
@@ -406,7 +406,7 @@ class AwbDaoTest {
     }
 
     @Test
-    void testAirMessagingIntegrationForMawb2() {
+    void testAirMessagingIntegrationForMawb2() throws RunnerException {
         Long consolidationId = 1L;
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = false;
@@ -424,7 +424,7 @@ class AwbDaoTest {
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockMap);
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
@@ -437,7 +437,7 @@ class AwbDaoTest {
     }
 
     @Test
-    void testAirMessagingIntegrationForDMawb() {
+    void testAirMessagingIntegrationForDMawb() throws RunnerException {
         Long shipmentId = 1L;
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = true;
@@ -447,7 +447,7 @@ class AwbDaoTest {
         // Mock
         when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
 
         // Test
         try {

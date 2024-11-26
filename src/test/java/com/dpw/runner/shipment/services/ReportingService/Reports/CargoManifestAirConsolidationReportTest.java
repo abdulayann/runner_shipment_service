@@ -45,10 +45,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
@@ -58,6 +61,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -609,4 +613,15 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.getDocumentModel(123L));
     }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2 BBG, 1 BAG, 3 AMM", "2 BBG, 4 BBG"})
+    void testGetTotalPacksAndUnit(String totalPacks) {
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        packSummaryResponse.setTotalPacks(totalPacks);
+
+        String updatedPacksValue = cargoManifestAirConsolidationReport.getTotalPacksAndUnit(packSummaryResponse);
+        assertEquals("6 Pieces", updatedPacksValue);
+    }
+
 }
