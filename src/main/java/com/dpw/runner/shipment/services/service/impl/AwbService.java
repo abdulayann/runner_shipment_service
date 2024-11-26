@@ -792,6 +792,8 @@ public class AwbService implements IAwbService {
         if(!CommonUtils.listIsNullOrEmpty(awb.getAwbGoodsDescriptionInfo())){
             awb.getAwbGoodsDescriptionInfo().forEach(good -> {
                 if(good.getGuid() == null) good.setGuid(UUID.randomUUID());
+                if(good.getEntityId() == null) good.setEntityId(request.getAwbShipmentInfo().getEntityId());
+                if(good.getEntityType() == null) good.setEntityType(request.getAwbShipmentInfo().getEntityType());
             });
         }
         if(request.getShcIdList() != null) {
