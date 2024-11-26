@@ -22,15 +22,15 @@ CREATE TABLE IF NOT EXISTS dps_event (
     is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
     event_timestamp TIMESTAMP,
     username_list JSONB,
-    matching_condition TEXT,  -- Added column
-    transaction_id VARCHAR(255) NOT NULL,  -- Updated column with the correct type
-    tasks JSONB               -- Added column
+    matching_condition TEXT,
+    transaction_id VARCHAR(255) NOT NULL,
+    tasks JSONB
 );
 
 -- Create the 'dps_event_condition_message' table
 CREATE TABLE IF NOT EXISTS dps_event_condition_message (
     dps_event_id BIGINT NOT NULL,
-    condition_message TEXT NOT NULL,  -- Renamed from condition_message_list to condition_message
+    condition_message TEXT NOT NULL,
     PRIMARY KEY (dps_event_id, condition_message),
     CONSTRAINT fk_dps_event_condition_message FOREIGN KEY (dps_event_id) REFERENCES dps_event (id) ON DELETE CASCADE
 );
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS dps_event_condition_message (
 -- Create the 'dps_event_implication' table
 CREATE TABLE IF NOT EXISTS dps_event_implication (
     dps_event_id BIGINT NOT NULL,
-    implication TEXT NOT NULL,  -- Renamed from implication_list to implication
+    implication TEXT NOT NULL,
     PRIMARY KEY (dps_event_id, implication),
     CONSTRAINT fk_dps_event_implication FOREIGN KEY (dps_event_id) REFERENCES dps_event (id) ON DELETE CASCADE
 );
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS dps_event_implication (
 -- Create the 'dps_event_rule_matched_field' table
 CREATE TABLE IF NOT EXISTS dps_event_rule_matched_field (
     dps_event_id BIGINT NOT NULL,
-    rule_matched_field TEXT NOT NULL,  -- Renamed from rule_matched_field_list to rule_matched_field
+    rule_matched_field TEXT NOT NULL,
     PRIMARY KEY (dps_event_id, rule_matched_field),
     CONSTRAINT fk_dps_event FOREIGN KEY (dps_event_id) REFERENCES dps_event (id) ON DELETE CASCADE
 );
