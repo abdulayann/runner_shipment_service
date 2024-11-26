@@ -91,7 +91,6 @@ import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -944,12 +943,10 @@ public abstract class IReport {
 
         // Origin Agent
         var shipmentOriginAgent = additionalDetailModel.getExportBroker();
-        dictionary.put(CM_ORIGIN_AGENT_NAME, dictionary.get(ORIGIN_AGENT_NAME));
         ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentOriginAgent, CM_ORIGIN_AGENT_ADDRESS);
 
         // Destination Agent
         var shipmentDestinationAgent = additionalDetailModel.getImportBroker();
-        dictionary.put(CM_DESTINATION_AGENT_NAME, dictionary.get(DESTINATION_AGENT_NAME));
         ReportHelper.populateCargoManifestPartyAddress(dictionary, shipmentDestinationAgent, CM_DESTINATION_AGENT_ADDRESS);
 
     }
