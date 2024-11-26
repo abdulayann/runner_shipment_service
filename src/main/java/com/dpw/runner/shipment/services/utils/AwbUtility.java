@@ -379,6 +379,7 @@ public class AwbUtility {
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
+        this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
     }
@@ -628,6 +629,7 @@ public class AwbUtility {
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
+        this.roundOffVolumeFields(awbResponse);
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
             String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
             awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
@@ -676,6 +678,35 @@ public class AwbUtility {
             if (awbResponse.getAwbPaymentInfo().getDueCarrierCharges() != null) {
                 awbResponse.getAwbPaymentInfo().setDueCarrierCharges(awbResponse.getAwbPaymentInfo().getDueCarrierCharges().setScale(decimalPlaces, RoundingMode.HALF_UP));
             }
+            if(awbResponse.getAwbPaymentInfo().getValuationCharge() != null) {
+                awbResponse.getAwbPaymentInfo().setValuationCharge(awbResponse.getAwbPaymentInfo().getValuationCharge().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTax() != null) {
+                awbResponse.getAwbPaymentInfo().setTax(awbResponse.getAwbPaymentInfo().getTax().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null) {
+                awbResponse.getAwbPaymentInfo().setTotalPrepaid(awbResponse.getAwbPaymentInfo().getTotalPrepaid().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTotalCollect() != null) {
+                awbResponse.getAwbPaymentInfo().setTotalCollect(awbResponse.getAwbPaymentInfo().getTotalCollect().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+        }
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getRateCharge() != null) {
+                    good.setRateCharge(good.getRateCharge().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getTotalAmount() != null) {
+                    good.setTotalAmount(good.getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+        if(awbResponse.getAirMessagingAdditionalFields() != null) {
+            if(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency() != null)
+                awbResponse.getAirMessagingAdditionalFields().setCcchargesInDestinationCurrency(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            if(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination() != null) {
+                awbResponse.getAirMessagingAdditionalFields().setChargesAtDestination(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
         }
         if(awbResponse.getAwbOtherChargesInfo() != null) {
             awbResponse.getAwbOtherChargesInfo().forEach(charge -> {
@@ -699,11 +730,34 @@ public class AwbUtility {
                 }
             });
         }
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getGrossWt() != null) {
+                    good.setGrossWt(good.getGrossWt().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getChargeableWt() != null) {
+                    good.setChargeableWt(good.getChargeableWt().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getUldTareWeight() != null) {
+                    good.setUldTareWeight(good.getUldTareWeight().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
         if(awbResponse.getMeta().getMasterGrossWeightSum() != null) {
             awbResponse.getMeta().setMasterGrossWeightSum(awbResponse.getMeta().getMasterGrossWeightSum().setScale(decimalPlaces, RoundingMode.HALF_UP));
         }
     }
 
+    private void roundOffVolumeFields(AwbAirMessagingResponse awbResponse) {
+        int decimalPlaces = Optional.ofNullable(commonUtils.getCurrentTenantSettings().getVolumeDecimalPlace()).orElse(0);
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getGrossVolume() != null) {
+                    good.setGrossVolume(good.getGrossVolume().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+    }
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();
