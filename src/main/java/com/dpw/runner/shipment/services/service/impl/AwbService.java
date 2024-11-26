@@ -680,7 +680,7 @@ public class AwbService implements IAwbService {
 
         if(isPackUpdate) {
             mawbGoodsDescriptionInfo.setNtrQtyGoods(mawbGoodsDescriptionInfo.getNtrQtyGoods());
-            mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood);
+            mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood.setScale(3,RoundingMode.HALF_UP));
             mawbGoodsDescriptionInfo.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
             mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
             mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
@@ -2525,7 +2525,7 @@ public class AwbService implements IAwbService {
 
             if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeLock()) ||
                     (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeLock())) {
-                awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume());
+                awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume().setScale(3,RoundingMode.HALF_UP));
             }
             if((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getPackingVolumeUnitLock()) ||
                     (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getPackingVolumeUnitLock()))
