@@ -322,6 +322,8 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
+        this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
+
         if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
             var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
             awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
@@ -377,7 +379,7 @@ public class AwbUtility {
 
         return awbResponse;
     }
-    private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Set<String> rcpList, Map<String, UnlocationsResponse> unlocationsMap) {
+    private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Map<String, UnlocationsResponse> unlocationsMap) {
         if (awbResponse.getAwbNotifyPartyInfo() != null) {
             awbResponse.getAwbNotifyPartyInfo().forEach(party -> {
                 if (party.getSpecifiedAddressLocation() != null && unlocationsMap.containsKey(party.getSpecifiedAddressLocation())) {
@@ -555,6 +557,8 @@ public class AwbUtility {
 
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+
+        this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
 
         if(awb.getAwbOtherInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
             var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
