@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,7 +28,7 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
     void deleteById(Long id);
 
     @Modifying
-    @Transactional
-    @Query(value = "Update containers set pra_status = ?3, where guid = ?1 and consolidation_id = ?2", nativeQuery = true)
+    @Transactional @ExcludeTenantFilter
+    @Query(value = "Update containers set pra_status = ?1 where guid = ?2 and consolidation_id = ?3", nativeQuery = true)
     void savePraStatus(String praStatus, UUID guid, Long consolidationId);
 }
