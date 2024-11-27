@@ -258,17 +258,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IHblService;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -331,13 +321,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.http.auth.AuthenticationException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -552,6 +536,8 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private INetworkTransferService networkTransferService;
 
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -4134,6 +4120,10 @@ public class ShipmentService implements IShipmentService {
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
+
+        // set dps implications
+        response.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetails.get().getGuid().toString()));
+
         if(measurmentBasis) {
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
         } else {
@@ -7792,6 +7782,4 @@ public class ShipmentService implements IShipmentService {
 
         return ResponseHelper.buildSuccessResponse();
     }
-
-
 }

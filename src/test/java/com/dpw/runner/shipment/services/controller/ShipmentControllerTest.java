@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
@@ -44,10 +45,12 @@ import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -101,6 +104,8 @@ class ShipmentControllerTest {
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
     private IConsolidationService consolidationService;
+    @Mock
+    private IDpsEventService dpsEventService;
     @InjectMocks
     private ShipmentController shipmentController;
 
@@ -1383,6 +1388,29 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getMatchingRulesByGuid() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid(guid)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Failure() {
+        String guid = UUID.randomUUID().toString();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid((guid))).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> {
+            shipmentController.getMatchingRulesByGuid(guid);
+        });
+    }
     @Test
     void testListExternal() {
         // Mock

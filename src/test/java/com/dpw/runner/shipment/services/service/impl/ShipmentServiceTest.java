@@ -214,14 +214,7 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IHblService;
-import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -430,6 +423,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
+    private IDpsEventService dpsEventService;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -3829,6 +3825,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
@@ -3837,7 +3834,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel, true);
-        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).implicationList(Collections.emptyList()).build()), httpResponse);
     }
 
     @Test
@@ -9143,6 +9140,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(1).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
@@ -9159,6 +9157,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ShipmentDetailsResponse mockShipmentDetailsResponse = ShipmentDetailsResponse.builder().status(Integer.MAX_VALUE).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), any())).thenReturn(mockShipmentDetailsResponse);
