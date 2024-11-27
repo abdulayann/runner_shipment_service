@@ -80,4 +80,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
 
+    @Query(value = "SELECT id FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
+    Long findIdByGuid (UUID guid);
+
 }
