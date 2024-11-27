@@ -48,6 +48,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
     void saveJobStatus(Long id, String jobStatus);
 
+    @Modifying @Transactional @ExcludeTenantFilter
+    @Query(value = "Update shipment_details set dps_state = ?2 Where id = ?1", nativeQuery = true)
+    void saveDpsState(Long id, String dpsState);
+
     @Modifying @Transactional
     @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
