@@ -931,14 +931,20 @@ public class AwbService implements IAwbService {
         if(consolidationDetails.getSendingAgent().getAddressId()!=null && consolidationDetails.getReceivingAgent().getAddressId()!=null){
             addressIdList.addAll(List.of(consolidationDetails.getSendingAgent().getAddressId(), consolidationDetails.getReceivingAgent().getAddressId()));
         }
-        CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
-        V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-        List<AddressDataV1> addressDataV1List = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-        Map<Long, AddressDataV1> addressIdToEntityOrgMap = addressDataV1List.stream()
-                .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        if(addressIdToEntityOrgMap.size()>=2) {
-            awbShipmentInfo.setShipperTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())).getTaxRegNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())).getTaxRegNumber())) : null);
-            awbShipmentInfo.setConsigneeTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())).getTaxRegNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())).getTaxRegNumber())) : null);
+        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataV1List = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = Optional.of(addressDataV1List.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity))).orElse(new HashMap<>());
+
+            if(addressIdToEntityOrgMap.containsKey(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId()))) {
+                awbShipmentInfo.setShipperTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())).getTaxRegNumber())) : null);
+            }
+            if(addressIdToEntityOrgMap.containsKey(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId()))) {
+                awbShipmentInfo.setConsigneeTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())).getTaxRegNumber())) : null);
+            }
         }
 
          for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
@@ -951,11 +957,14 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
-                V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
-                List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
-                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
-                        .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
+                if(CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
+                    CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
+                    V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
+                    List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
+                    issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
+                            .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+                }
                 String country = orgRow.getOrgData() != null ?
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
@@ -1112,11 +1121,14 @@ public class AwbService implements IAwbService {
                     notifyAddressIdList.add(party.getAddressId());
                 }
             }
-            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(notifyAddressIdList);
-            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-            List<AddressDataV1> notifyPartyEntityAddressList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-            Map<Long, AddressDataV1> notifyPartyAddressIdToEntityOrgMap = notifyPartyEntityAddressList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            Map<Long, AddressDataV1> notifyPartyAddressIdToEntityOrgMap = new HashMap<>();
+            if(!CommonUtils.listIsNullOrEmpty(notifyAddressIdList)) {
+                CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(notifyAddressIdList);
+                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                List<AddressDataV1> notifyPartyEntityAddressList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+                notifyPartyAddressIdToEntityOrgMap = notifyPartyEntityAddressList.stream()
+                        .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            }
             for (int i = 0; i < notifyPartyList.size(); i++) {
                 AwbNotifyPartyInfo notifyParty = notifyPartyList.get(i);
                 if(notifyParty.getAddressId()!=null){
@@ -1445,17 +1457,17 @@ public class AwbService implements IAwbService {
         if(shipmentDetails.getConsigner().getAddressId()!=null && shipmentDetails.getConsignee().getAddressId()!=null){
             addressIdList.addAll(List.of(shipmentDetails.getConsigner().getAddressId(), shipmentDetails.getConsignee().getAddressId()));
         }
-        CommonV1ListRequest addresRequest = createCriteriaToFetchAddressList(addressIdList);
-        V1DataResponse addressResponse = v1Service.addressList(addresRequest);
-        List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-        Map<Long, AddressDataV1> addressIdToEntityOrgMap = addressDataList.stream()
-                .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        if(addressIdToEntityOrgMap.size()>=2) {
-            if(addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsigner().getAddressId()))){
-                awbShipmentInfo.setShipperTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber())) : null);
+        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addresRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addresRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = Optional.of(addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity))).orElse(new HashMap<>());
+            if (addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsigner().getAddressId()))) {
+                awbShipmentInfo.setShipperTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber())) : null);
             }
-            if(addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsignee().getAddressId()))){
-                awbShipmentInfo.setConsigneeTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber()!=null ?StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber())) : null);
+            if (addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsignee().getAddressId()))) {
+                awbShipmentInfo.setConsigneeTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber())) : null);
             }
         }
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
@@ -1467,11 +1479,14 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
-                V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
-                List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
-                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
-                        .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
+                if(!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
+                    CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
+                    V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
+                    List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
+                    issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
+                            .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+                }
                 String country = orgRow.getOrgData() != null ?
                         (String) orgRow.getOrgData().get(COUNTRY) : null;
                 if (country != null)
@@ -1530,11 +1545,14 @@ public class AwbService implements IAwbService {
                 alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
             }
             notifyPartyAddressList.add(shipmentNotifyParty.getAddressId());
-            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(notifyPartyAddressList);
-            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-            List<AddressDataV1> notifyPartyEntityAddressIdList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-            Map<Long, AddressDataV1> notifyPartyAddressIdToEntityMap = notifyPartyEntityAddressIdList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            Map<Long, AddressDataV1> notifyPartyAddressIdToEntityMap = new HashMap<>();
+            if(!CommonUtils.listIsNullOrEmpty(notifyPartyAddressList)) {
+                CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(notifyPartyAddressList);
+                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                List<AddressDataV1> notifyPartyEntityAddressIdList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+                notifyPartyAddressIdToEntityMap = notifyPartyEntityAddressIdList.stream()
+                        .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            }
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
             notifyPartyInfo.setIsShipmentCreated(true);
             var name = StringUtility.convertToString(shipmentNotifyParty.getOrgData().get(PartiesConstants.FULLNAME));
@@ -3602,7 +3620,7 @@ public class AwbService implements IAwbService {
                     addressRequest.setCriteriaRequests(addressCriteria);
                     V1DataResponse addressResponse = v1Service.addressList(addressRequest);
                     List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
-                    Map<Long, EntityTransferAddress> issuingAgentAddressIdToEntityMap = addressList.stream().collect(Collectors.toMap(EntityTransferAddress::getId, entity -> entity));
+                    Map<Long, EntityTransferAddress> issuingAgentAddressIdToEntityMap = Optional.of(addressList.stream().collect(Collectors.toMap(EntityTransferAddress::getId, entity -> entity))).orElse(new HashMap<>());
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                     if(issuingAgentAddressIdToEntityMap.containsKey(tenantModel.getDefaultAddressId())) {
                         awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()!=null ? StringUtility.toUpperCase(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()):null);
