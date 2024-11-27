@@ -908,6 +908,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
@@ -974,6 +975,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
         mockShipmentSettings();
         mockTenantSettings();
@@ -1027,6 +1029,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
 
         // OtherInfo Master data mocking
@@ -1400,6 +1403,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         when(masterDataUtils.consolidationAddressCountryMasterData(any())).thenReturn(Map.of("IN", "India", "EG", "Egypt"));
@@ -1959,6 +1963,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
         List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
@@ -3398,7 +3403,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
