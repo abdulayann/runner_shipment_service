@@ -220,6 +220,9 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
+        awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
+        awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
         // Populate Special handling codes master data
         this.populateMasterDataMap(awbResponse, awb);
 
@@ -302,6 +305,10 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
+        if(awb.getAwbOtherInfo() != null) {
+            if(awb.getAwbOtherInfo().getExecutedAt() != null)
+                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -318,6 +325,12 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
+        this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
+
+        if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
+            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
+            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        }
         if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
@@ -366,10 +379,11 @@ public class AwbUtility {
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
+        this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
     }
-    private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Set<String> rcpList, Map<String, UnlocationsResponse> unlocationsMap) {
+    private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Map<String, UnlocationsResponse> unlocationsMap) {
         if (awbResponse.getAwbNotifyPartyInfo() != null) {
             awbResponse.getAwbNotifyPartyInfo().forEach(party -> {
                 if (party.getSpecifiedAddressLocation() != null && unlocationsMap.containsKey(party.getSpecifiedAddressLocation())) {
@@ -445,6 +459,9 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
+        awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
+        awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
         // Populate Special handling codes master data
         this.populateMasterDataMap(awbResponse, awb);
 
@@ -529,6 +546,9 @@ public class AwbUtility {
                     unlocoRequests.add(party.getSpecifiedAddressLocation());
             });
         }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null) {
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
 
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
@@ -545,7 +565,12 @@ public class AwbUtility {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
 
+        this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
 
+        if(awb.getAwbOtherInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
+            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
+            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        }
         if(unlocationsMap.containsKey(shipmentDetails.getCarrierDetails().getOriginPort())) {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getOriginPort());
             awbResponse.getMeta().setPol(populateUnlocFields(unloc));
@@ -604,6 +629,7 @@ public class AwbUtility {
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
+        this.roundOffVolumeFields(awbResponse);
         if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
             String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
             awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
@@ -652,6 +678,35 @@ public class AwbUtility {
             if (awbResponse.getAwbPaymentInfo().getDueCarrierCharges() != null) {
                 awbResponse.getAwbPaymentInfo().setDueCarrierCharges(awbResponse.getAwbPaymentInfo().getDueCarrierCharges().setScale(decimalPlaces, RoundingMode.HALF_UP));
             }
+            if(awbResponse.getAwbPaymentInfo().getValuationCharge() != null) {
+                awbResponse.getAwbPaymentInfo().setValuationCharge(awbResponse.getAwbPaymentInfo().getValuationCharge().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTax() != null) {
+                awbResponse.getAwbPaymentInfo().setTax(awbResponse.getAwbPaymentInfo().getTax().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null) {
+                awbResponse.getAwbPaymentInfo().setTotalPrepaid(awbResponse.getAwbPaymentInfo().getTotalPrepaid().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+            if(awbResponse.getAwbPaymentInfo().getTotalCollect() != null) {
+                awbResponse.getAwbPaymentInfo().setTotalCollect(awbResponse.getAwbPaymentInfo().getTotalCollect().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+        }
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getRateCharge() != null) {
+                    good.setRateCharge(good.getRateCharge().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getTotalAmount() != null) {
+                    good.setTotalAmount(good.getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+        if(awbResponse.getAirMessagingAdditionalFields() != null) {
+            if(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency() != null)
+                awbResponse.getAirMessagingAdditionalFields().setCcchargesInDestinationCurrency(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            if(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination() != null) {
+                awbResponse.getAirMessagingAdditionalFields().setChargesAtDestination(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
         }
         if(awbResponse.getAwbOtherChargesInfo() != null) {
             awbResponse.getAwbOtherChargesInfo().forEach(charge -> {
@@ -675,11 +730,34 @@ public class AwbUtility {
                 }
             });
         }
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getGrossWt() != null) {
+                    good.setGrossWt(good.getGrossWt().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getChargeableWt() != null) {
+                    good.setChargeableWt(good.getChargeableWt().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+                if(good.getUldTareWeight() != null) {
+                    good.setUldTareWeight(good.getUldTareWeight().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
         if(awbResponse.getMeta().getMasterGrossWeightSum() != null) {
             awbResponse.getMeta().setMasterGrossWeightSum(awbResponse.getMeta().getMasterGrossWeightSum().setScale(decimalPlaces, RoundingMode.HALF_UP));
         }
     }
 
+    private void roundOffVolumeFields(AwbAirMessagingResponse awbResponse) {
+        int decimalPlaces = Optional.ofNullable(commonUtils.getCurrentTenantSettings().getVolumeDecimalPlace()).orElse(0);
+        if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
+            awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
+                if(good.getGrossVolume() != null) {
+                    good.setGrossVolume(good.getGrossVolume().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+    }
 
     public void createStatusUpdateForAirMessaging(AirMessagingStatusDto airMessageStatus) throws RunnerException, MessagingException, IOException {
         var guid = airMessageStatus.getGuid();

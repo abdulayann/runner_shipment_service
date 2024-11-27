@@ -35,7 +35,7 @@ public class AwbGoodsDescriptionInfoResponse implements IRunnerResponse {
     private Boolean enableFetchRatesWarning;
     private String rcp;
     private String uldSerialNumber;
-    private String uldTareWeight;
+    private BigDecimal uldTareWeight;
     private String uldTareWeightUnit;
     private String uldType;
     private String uldCode;
