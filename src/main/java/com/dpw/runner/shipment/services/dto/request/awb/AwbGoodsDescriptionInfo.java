@@ -52,7 +52,7 @@ public class AwbGoodsDescriptionInfo implements Serializable {
     @Pattern(regexp = "^[A-Za-z0-9]*$", message = "ULD Serial Number must be alphanumeric.")
     private String uldSerialNumber;
 
-    private String uldTareWeight;
+    private BigDecimal uldTareWeight;
     private String uldTareWeightUnit;
 
     @Size(max = 3, message = "ULD Type must be up to 3 alphanumeric characters.")
