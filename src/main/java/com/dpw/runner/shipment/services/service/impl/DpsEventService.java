@@ -18,8 +18,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
-import com.dpw.runner.shipment.services.service.handler.DpsWorkflowStateHandlerFactory;
-import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
@@ -48,8 +46,6 @@ public class DpsEventService implements IDpsEventService {
     private IAuditLogService auditLogService;
     @Autowired
     private IShipmentDao shipmentDao;
-    @Autowired
-    private DpsWorkflowStateHandlerFactory dpsWorkflowStateHandlerFactory;
 
     /**
      * Saves a new or updates an existing {@link DpsEvent} based on the provided {@link DpsDto}. This method constructs a {@link DpsEvent} from the given DTO, saves it to the
@@ -116,16 +112,9 @@ public class DpsEventService implements IDpsEventService {
     private void handleDpsEvents(DpsEvent dpsEvent, ShipmentDetails shipmentDetails) {
         try {
             DpsWorkflowState newState = dpsEvent.getState();
-            DpsWorkflowState currentState = shipmentDetails.getDpsState();
 
-            log.info("Handling DPS event for shipment GUID: {}, current state: {}, new state: {}",
-                    dpsEvent.getEntityId(), currentState, newState);
-
-            // Validate state transition
-            if(currentState != null) {
-                IDpsWorkflowStateHandler stateHandler = dpsWorkflowStateHandlerFactory.getHandler(currentState);
-                stateHandler.validateTransition(currentState, newState);
-            }
+            log.info("Saving DPS event for shipment GUID: {}, state: {}",
+                    dpsEvent.getEntityId(), newState);
 
             // Update the state if validation succeeds
             shipmentDao.saveDpsState(shipmentDetails.getId(), newState.name());
@@ -304,19 +293,19 @@ public class DpsEventService implements IDpsEventService {
             if (dtoData.getMatchingCondition() != null) {
                 dpsEvent.setMatchingCondition(dtoData.getMatchingCondition());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getImplications())) {
+            if (dtoData.getImplications() != null) {
                 dpsEvent.setImplicationList(dtoData.getImplications());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getConditionMessage())) {
+            if (dtoData.getConditionMessage() != null) {
                 dpsEvent.setConditionMessageList(dtoData.getConditionMessage());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getRuleMatchedFieldList())) {
+            if (dtoData.getRuleMatchedFieldList() != null) {
                 dpsEvent.setRuleMatchedFieldList(dtoData.getRuleMatchedFieldList());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getUsernameList())) {
+            if (dtoData.getUsernameList() != null) {
                 dpsEvent.setUsernameList(dtoData.getUsernameList());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getTasks())) {
+            if (dtoData.getTasks() != null) {
                 dpsEvent.setTasks(dtoData.getTasks());
             }
             if (dtoData.getEventTimestamp() != null) {
@@ -325,7 +314,7 @@ public class DpsEventService implements IDpsEventService {
             if (dpsDto.getTransactionId() != null) {
                 dpsEvent.setTransactionId(dpsDto.getTransactionId());
             }
-            if (ObjectUtils.isNotEmpty(dtoData.getFieldsDetectedValues())) {
+            if (dtoData.getFieldsDetectedValues() != null) {
 
                 dpsEvent.setDpsFieldData(ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>()));
                 dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
