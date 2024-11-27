@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -167,6 +168,32 @@ public class ReportHelper {
             list.add(city_zipcode);
         if(state_country != null)
             list.add(state_country);
+        return list;
+
+    }
+
+    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String state_country, String pincode)
+    {
+        List<String> list = new ArrayList<>();
+        if(address1 != null)
+            list.add(address1);
+        if(address2 != null)
+            list.add(address2);
+
+        StringBuilder sb = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city))
+            sb.append(city).append(" ");
+        if (StringUtility.isNotEmpty(state))
+            sb.append(state).append(" ");
+        if (StringUtility.isNotEmpty(pincode))
+            sb.append(pincode).append(" ");
+        if (StringUtility.isNotEmpty(state_country))
+            sb.append(state_country).append(" ");
+
+        if (StringUtility.isNotEmpty(sb.toString()))
+            list.add(sb.toString());
+
         return list;
 
     }

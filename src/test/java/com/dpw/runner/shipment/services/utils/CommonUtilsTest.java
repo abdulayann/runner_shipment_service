@@ -61,7 +61,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 import org.modelmapper.TypeMap;
 import org.modelmapper.config.Configuration;
 import org.springframework.core.io.ByteArrayResource;
@@ -88,7 +87,8 @@ import static com.dpw.runner.shipment.services.commons.constants.PermissionConst
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -3035,5 +3035,10 @@ class CommonUtilsTest {
         when(modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class)).thenReturn(typeMap);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd() {
+        assertFalse(commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().direction(IMP).build(), false));
     }
 }

@@ -7964,6 +7964,46 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendOceanDGApprovalEmail_Imp() throws RunnerException {
+        OceanDGApprovalRequest request = OceanDGApprovalRequest
+                .builder()
+                .shipmentId(1l)
+                .remarks("")
+                .build();
+        ShipmentDetails shipmentDetails = ShipmentDetails
+                .builder()
+                .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .containersList(List.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
+                .direction(Constants.IMP)
+                .build();
+
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                Optional.ofNullable(shipmentDetails));
+        shipmentService.sendOceanDGApprovalEmail(request);
+        verify(shipmentDao).findById(any());
+    }
+
+    @Test
+    void testDgApprovalResponse_Imp() throws RunnerException {
+        OceanDGRequest request = OceanDGRequest
+                .builder()
+                .shipmentId(1l)
+                .remarks("")
+                .build();
+        ShipmentDetails shipmentDetails = ShipmentDetails
+                .builder()
+                .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
+                .containersList(List.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
+                .direction(Constants.IMP)
+                .build();
+
+        when(shipmentDao.findById(request.getShipmentId())).thenReturn(
+                Optional.ofNullable(shipmentDetails));
+        shipmentService.dgApprovalResponse(request);
+        verify(shipmentDao).findById(any());
+    }
+
+    @Test
     void testDgApprovalResponse_NullRequest(){
         assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentService.dgApprovalResponse(null);

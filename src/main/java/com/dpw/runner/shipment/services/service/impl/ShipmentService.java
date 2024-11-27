@@ -64,10 +64,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -6733,6 +6733,10 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipId)
             .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + shipId));
 
+        if(Constants.IMP.equals(shipmentDetails.getDirection())) {
+            return ResponseHelper.buildSuccessResponseWithWarning("DG approval not required for Import Shipment");
+        }
+
         boolean isOceanDgUser = UserContext.isOceanDgUser();
         OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
@@ -6791,6 +6795,10 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId())
             .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + request.getShipmentId()));
+
+        if(Constants.IMP.equals(shipmentDetails.getDirection())) {
+            return ResponseHelper.buildSuccessResponseWithWarning("DG approval not required for Import Shipment");
+        }
 
        OceanDGStatus oldDgStatus = shipmentDetails.getOceanDGStatus();
        OceanDGStatus updatedDgStatus = getDgStatusAfterApprovalResponse(oldDgStatus, request.getStatus());

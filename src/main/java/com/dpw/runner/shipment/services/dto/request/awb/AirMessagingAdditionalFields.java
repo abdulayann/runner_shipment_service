@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.dto.request.awb;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.HeaderContentCode;
+
+import java.math.BigDecimal;
 import java.util.List;
 import javax.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -32,9 +34,9 @@ public class AirMessagingAdditionalFields implements IRunnerResponse {
   private String conversionRate;
   private String conversionId;
 
-  private String ccchargesInDestinationCurrency;
+  private BigDecimal ccchargesInDestinationCurrency;
 
-  private Double chargesAtDestination;
+  private BigDecimal chargesAtDestination;
 
   @Pattern(regexp = "^[A-Z]$", message = "Service Type Code must be a single uppercase letter.")
   private String serviceTypeCode;
