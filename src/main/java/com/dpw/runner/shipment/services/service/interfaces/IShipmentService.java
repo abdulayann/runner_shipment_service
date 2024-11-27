@@ -132,5 +132,6 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
 
 }

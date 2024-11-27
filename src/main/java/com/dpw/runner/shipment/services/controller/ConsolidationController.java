@@ -118,6 +118,15 @@ public class ConsolidationController {
         }
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ConsolidationConstants.API_CONSOLIDATION_RETRIEVE_FOR_NTE_SCREEN)
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        log.info("Received Consolidation NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(request));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {

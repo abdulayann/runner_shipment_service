@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
@@ -1715,5 +1716,14 @@ class ShipmentDaoTest extends CommonMocks {
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void findShipmentByIdWithQuery() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findShipmentByIdWithQuery(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> responseEntity = shipmentDao.findShipmentByIdWithQuery(shipmentDetails.getId());
+        assertEquals(Optional.of(shipmentDetails), responseEntity);
     }
 }
