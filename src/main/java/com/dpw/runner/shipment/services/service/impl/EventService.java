@@ -1097,6 +1097,8 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
+                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);

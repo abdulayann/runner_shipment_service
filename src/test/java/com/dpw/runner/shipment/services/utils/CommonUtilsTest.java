@@ -2783,7 +2783,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testUpdateEventWithMasterDataDescription() {
+    void testUpdateEventWithMasterData() {
         String mockEventCode = "EV1";
         String mockEventDescription = "mock description";
         String mockEventDescription2 = "mock description 2";
@@ -2797,14 +2797,14 @@ class CommonUtilsTest {
                 EntityTransferMasterLists.builder().ItemValue(mockEventCode).ItemDescription(mockEventDescription).build()
         ));
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent1.getDescription());
         assertEquals(mockEventDescription2, mockEvent2.getDescription());
     }
 
     @Test
-    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderDescriptionInCaseOfExceptionFromV1() {
+    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderInCaseOfExceptionFromV1() {
         String mockEventCode = "EV1";
         String mockEventDescription = "older description";
         Events mockEvent = Events.builder().eventCode(mockEventCode).description(mockEventDescription).build();
@@ -2812,7 +2812,7 @@ class CommonUtilsTest {
 
         when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent.getDescription());
     }
@@ -2823,7 +2823,7 @@ class CommonUtilsTest {
         Events mockEvent = Events.builder().description(mockEventDescription).build();
         List<Events> mockEventList = List.of(mockEvent);
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent.getDescription());
     }
