@@ -36,8 +36,6 @@ import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsFieldDataDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepository;
-import com.dpw.runner.shipment.services.service.handler.DpsWorkflowStateHandlerFactory;
-import com.dpw.runner.shipment.services.service.handler.IDpsWorkflowStateHandler;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.lang.reflect.InvocationTargetException;
@@ -67,11 +65,7 @@ class DpsEventServiceTest {
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
-    private DpsWorkflowStateHandlerFactory dpsWorkflowStateHandlerFactory;
-    @Mock
     private IAuditLogService auditLogService;
-    @Mock
-    private IDpsWorkflowStateHandler stateHandler;
 
     @Test
     void getShipmentMatchingRulesByGuid_Success() {
@@ -624,8 +618,6 @@ class DpsEventServiceTest {
         shipmentDetails.setId(1L);
         shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
-        when(dpsWorkflowStateHandlerFactory.getHandler(any())).thenReturn(stateHandler);
-        doNothing().when(stateHandler).validateTransition(any(DpsWorkflowState.class), any(DpsWorkflowState.class));
         when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(savedEvent);
         when(shipmentDao.findShipmentsByGuids(anySet()))
                 .thenReturn(List.of(shipmentDetails));
@@ -685,15 +677,6 @@ class DpsEventServiceTest {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(1L);
         shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
-
-        IDpsWorkflowStateHandler mockHandler = mock(IDpsWorkflowStateHandler.class);
-
-//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
-//        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(List.of(shipmentDetails));
-//        when(dpsWorkflowStateHandlerFactory.getHandler(shipmentDetails.getDpsState()))
-//                .thenReturn(mockHandler);
-//        doThrow(new RuntimeException("Invalid transition")).when(mockHandler)
-//                .validateTransition(eq(shipmentDetails.getDpsState()), eq(constructedEvent.getState()));
 
         // Act & Assert
         assertThrows(DpsException.class, () ->
