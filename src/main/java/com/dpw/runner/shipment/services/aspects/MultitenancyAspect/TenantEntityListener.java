@@ -5,9 +5,9 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.http.auth.AuthenticationException;
-
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
@@ -99,6 +99,8 @@ public class TenantEntityListener {
 
     public Boolean byPassMultiTenancyFilter(Object object){
         if(object instanceof NetworkTransfer)
+            return Boolean.TRUE;
+        if(object instanceof Notification)
             return Boolean.TRUE;
         return Boolean.FALSE;
     }
