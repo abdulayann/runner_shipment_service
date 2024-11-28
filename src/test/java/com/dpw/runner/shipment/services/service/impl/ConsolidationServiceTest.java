@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -203,6 +204,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -1952,6 +1954,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_disabled_consolsplitflag() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -1974,7 +1982,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -1983,6 +1990,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -2006,7 +2019,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -2015,6 +2027,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2047,6 +2065,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase_NoShipment() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2083,6 +2107,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2126,6 +2156,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase_NoShipment_DgFlagFalse() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2205,6 +2241,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Sync_Failure() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -5445,6 +5487,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea1() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -5473,7 +5521,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -5482,6 +5529,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea1_FCL() throws RunnerException {
+      Runnable mockRunnable = mock(Runnable.class);
+      when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+        Runnable argument = invocation.getArgument(0);
+        argument.run();
+        return mockRunnable;
+      });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -5511,7 +5564,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
