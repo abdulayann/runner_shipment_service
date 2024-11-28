@@ -8,6 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.persistence.Column;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -40,6 +41,10 @@ public class EventsResponse implements IRunnerResponse {
     private String event_estimate_update_reasons;
     private String flightNumber;
     private String flightName;
+    private String remarks;
+    private String userName;
+    private String userEmail;
+    private String branch;
 
     // Conditional response from TrackingEvents
     private String containerNumber;

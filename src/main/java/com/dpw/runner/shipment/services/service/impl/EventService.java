@@ -1227,6 +1227,10 @@ public class EventService implements IEventService {
         return allEvents;
     }
 
+    /**
+     * Trigger point for creating / updating event
+     * @param eventsRequest
+     */
     public void saveEvent(EventsRequest eventsRequest) {
         Events entity = convertRequestToEntity(eventsRequest);
 
