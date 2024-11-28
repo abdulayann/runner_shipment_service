@@ -1029,9 +1029,13 @@ public abstract class IReport {
                     var cargoInfoRows = awb.getAwbCargoInfo();
                     dict.put(SCI, cargoInfoRows.getSci());
                     dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
+                    dict.put(ORIGINAL_PRINT_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
+                    dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                     dictionary.put(ORIGINAL_PRINT_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
-                    if(StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate()))
+                    if(StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate())) {
                         dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true, true));
+                        dict.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true, true));
+                    }
                     dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 }
             }
