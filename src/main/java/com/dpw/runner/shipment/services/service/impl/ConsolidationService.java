@@ -4949,6 +4949,7 @@ public class ConsolidationService implements IConsolidationService {
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
         events.setConsolidationId(consolidationDetails.getId());
+        events.setDirection(consolidationDetails.getShipmentType());
         // Persist the event
         eventDao.save(events);
         return events;
