@@ -20,6 +20,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.ALREADY_ACCEPTED_NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
@@ -135,6 +136,7 @@ import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -246,6 +248,10 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
         entityTransferPayload.setAdditionalDocs(additionalDocs);
 
+        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && ObjectUtils.isNotEmpty(destinationTenantList)) {
+            checkForAcceptedNetworkTransfer(shipment.getId(), SHIPMENT, destinationTenantList);
+        }
+
         for(int i = 0; i < destinationTenantList.size(); i++) {
             var tenant = destinationTenantList.get(i);
             var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
@@ -329,6 +335,10 @@ public class EntityTransferService implements IEntityTransferService {
         interBranchValidation(consol, sendConsolidationRequest);
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
 
+        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && ObjectUtils.isNotEmpty(sendToBranch)) {
+            checkForAcceptedNetworkTransfer(consol.getId(), CONSOLIDATION, sendToBranch);
+        }
+
         for (int index = 0; index < sendToBranch.size(); index++) {
             var tenant = sendToBranch.get(index);
 
@@ -399,6 +409,17 @@ public class EntityTransferService implements IEntityTransferService {
             .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
 
+    }
+
+    private void checkForAcceptedNetworkTransfer(Long entityId, String entityType, List<Integer> tenantIds) {
+        List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
+        boolean isAcceptedTransferExists = ObjectUtils.isNotEmpty(networkTransfers) && networkTransfers.stream()
+                .anyMatch(networkTransfer -> Objects.nonNull(networkTransfer) && NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus());
+
+        if (isAcceptedTransferExists) {
+            log.debug("One or more network transfer requests are already in the ACCEPTED status for request Id: {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(ALREADY_ACCEPTED_NETWORK_TRANSFER);
+        }
     }
 
 
