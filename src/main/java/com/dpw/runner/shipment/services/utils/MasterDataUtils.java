@@ -204,6 +204,9 @@ public class MasterDataUtils{
                 if (response instanceof ConsolidationListResponse consolidationListResponse && (consolidationListResponse.getTenantId() != null)) {
                         tenantIdList.addAll(createInBulkTenantsRequest(consolidationListResponse, MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName() + consolidationListResponse.getId(), cacheMap));
                 }
+                if (response instanceof NetworkTransferListResponse networkTransferListResponse && (networkTransferListResponse.getSourceBranchId() != null)) {
+                    tenantIdList.addAll(createInBulkTenantsRequest(networkTransferListResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId(), cacheMap));
+                }
             }
 
             Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList);
@@ -223,6 +226,12 @@ public class MasterDataUtils{
                     consolidationListResponse.setTenantMasterData(new HashMap<>());
                     if (consolidationListResponse.getTenantId() != null)
                         consolidationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(MultiTenancy.class.getSimpleName() + consolidationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+                }
+
+                if (response instanceof NetworkTransferListResponse networkTransferListResponse) {
+                    networkTransferListResponse.setTenantMasterData(new HashMap<>());
+                    if (networkTransferListResponse.getSourceBranchId() != null)
+                        networkTransferListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
             }
             log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());

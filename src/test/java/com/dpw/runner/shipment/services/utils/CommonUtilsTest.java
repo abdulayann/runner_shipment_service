@@ -167,8 +167,6 @@ class CommonUtilsTest {
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
 
-    @Mock
-    private Configuration configuration;
 
     private PdfContentByte dc;
     private BaseFont font;
@@ -179,7 +177,6 @@ class CommonUtilsTest {
     private ByteArrayOutputStream outputStream;
     private PrintStream originalOut;
     private byte[] pdfBytes;
-    private TypeMap<ShipmentDetails, ShipmentDetailsLazyResponse> typeMap;
 
     @AfterEach
     void tearDown() {
@@ -3006,10 +3003,6 @@ class CommonUtilsTest {
     @Test
     void testGetShipmentDetailsResponse() {
         List<String> includeColumns = List.of("carrierDetails", "eventsList");
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(typeMap);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }
@@ -3017,22 +3010,6 @@ class CommonUtilsTest {
     @Test
     void testGetShipmentDetailsResponseWithEmptyString() {
         List<String> includeColumns = List.of(StringUtility.getEmptyString());
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(typeMap);
-        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testGetShipmentDetailsResponseWithNullTypeMap() {
-        List<String> includeColumns = List.of("carrierDetails", "eventsList");
-        when(modelMapper.getConfiguration()).thenReturn(configuration);
-        typeMap = mock(TypeMap.class);
-        when(modelMapper.getTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class))
-                .thenReturn(null);
-        when(modelMapper.createTypeMap(ShipmentDetails.class, ShipmentDetailsLazyResponse.class)).thenReturn(typeMap);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }

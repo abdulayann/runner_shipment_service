@@ -38,4 +38,5 @@ public interface IConsolidationDetailsDao {
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
     void entityDetach(List<ConsolidationDetails> consolidationDetails);
+    Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
 }
