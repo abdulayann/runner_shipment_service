@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -44,6 +45,10 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto.BillDto;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -104,6 +109,7 @@ public class EventService implements IEventService {
     private IDateTimeChangeLogService dateTimeChangeLogService;
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
+    private BillingServiceAdapter billingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
@@ -111,7 +117,7 @@ public class EventService implements IEventService {
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
-            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils) {
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, BillingServiceAdapter billingServiceAdapter) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -127,6 +133,7 @@ public class EventService implements IEventService {
         this.eventDumpDao = eventDumpDao;
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
+        this.billingServiceAdapter = billingServiceAdapter;
     }
 
     @Transactional
@@ -1052,6 +1059,52 @@ public class EventService implements IEventService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
+
+        InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
+        AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
+        List<BillDto> billDtoList = accountReceivableDto.getBills();
+
+        List<UUID> shipmentGuids = billDtoList.stream()
+                .map(billDto -> UUID.fromString(billDto.getModuleId())).distinct().toList();
+
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByGuids(shipmentGuids);
+
+        Map<UUID, ShipmentDetails> shipmentMap = shipmentDetailsList.stream().collect(Collectors.toMap(
+                ShipmentDetails::getGuid,
+                shipmentDetails -> shipmentDetails,
+                (existing, replacement) -> replacement));
+
+
+
+        billDtoList.forEach(billDto -> {
+            if(Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                List<Events> invoiceEvents = generateEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                updateShipmentWithBillingCommonEvents(invoiceEvents, shipmentDetails);
+            }
+
+        });
+    }
+
+    public List<Events> generateEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
+
+        Events event = new Events();
+        event.setEntityId(shipmentDetails.getId());
+        event.setEntityType(Constants.SHIPMENT);
+        event.setEventCode(EventConstants.INGE);
+        event.setActual(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceDate());
+        event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        event.setStatus(billingInvoiceDto.getPayload().getAccountReceivable().getFusionInvoiceStatus());
+        event.setShipmentNumber(shipmentDetails.getShipmentId());
+        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+        }
+
+        return List.of(event);
+    }
     /**
      * Persists tracking events to the database and updates the relevant shipment details.
      *
@@ -1133,6 +1186,51 @@ public class EventService implements IEventService {
         saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
 
         List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
+                Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap);
+        log.info("Saved {} events to Events table for shipment: {}", eventSaved.size(), shipmentDetails.getShipmentId());
+
+        // Extract ATA and ATD from container's journey details
+        LocalDateTime shipmentAta = Optional.ofNullable(container.getJourney())
+                .map(TrackingServiceApiResponse.Journey::getPortOfArrivalAta)
+                .map(TrackingServiceApiResponse.DateAndSources::getDateTime)
+                .orElse(null);
+
+        LocalDateTime shipmentAtd = Optional.ofNullable(container.getJourney())
+                .map(TrackingServiceApiResponse.Journey::getPortOfDepartureAtd)
+                .map(TrackingServiceApiResponse.DateAndSources::getDateTime)
+                .orElse(null);
+
+        log.info("Extracted ATA: {}, ATD: {} for shipment: {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId());
+
+        boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container);
+        log.info("Shipment update required: {}", isShipmentUpdateRequired);
+
+        if (isShipmentUpdateRequired) {
+            try {
+                saveAndSyncShipment(shipmentDetails);
+                log.info("Successfully saved and synced shipment: {}", shipmentDetails.getShipmentId());
+            } catch (Exception e) {
+                isSuccess = false;
+                log.error("Error performing sync on shipment entity: {}", shipmentDetails.getShipmentId(), e);
+            }
+        }
+
+        log.info("Finished updating shipment with tracking events. Success: {}", isSuccess);
+        return isSuccess;
+    }
+
+    private boolean updateShipmentWithBillingCommonEvents(List<Events> invoiceEvents, ShipmentDetails shipmentDetails) {
+        log.info("Starting updateShipmentWithTrackingEvents for shipment: {} and container: {}",
+                shipmentDetails.getShipmentId(), container);
+
+        boolean isSuccess = true;
+        Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
+        log.debug("Fetched identifier-to-location-role map: {}", identifier2ToLocationRoleMap);
+
+        log.info("Saving tracking events to EventsDump for shipment ID: {}", shipmentDetails.getId());
+        saveTrackingEventsToEventsDump(invoiceEvents, shipmentDetails.getId(), Constants.SHIPMENT);
+
+        List<Events> eventSaved = saveTrackingEventsToEvents(invoiceEvents, shipmentDetails.getId(),
                 Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap);
         log.info("Saved {} events to Events table for shipment: {}", eventSaved.size(), shipmentDetails.getShipmentId());
 
