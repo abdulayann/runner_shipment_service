@@ -331,6 +331,48 @@ class EntityTransferServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendShipmentSuccess_WithTriangulationPartner() {
+        Long shipmentId = 1L;
+        int mockTenantId = 10;
+
+        // Prepare SendShipmentRequest
+        SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
+        sendShipmentRequest.setSendToBranch(List.of(2, 3, 4)); // Include tenants, one of which is in triangulation partners
+        sendShipmentRequest.setShipId(shipmentId);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
+
+        // Mock ShipmentDetails
+        ShipmentDetails mockShipmentDetails = jsonTestUtility.getCompleteShipment();
+        mockShipmentDetails.setTenantId(mockTenantId);
+        mockShipmentDetails.setReceivingBranch(1L); // Ensure 1L is the receiving branch
+        mockShipmentDetails.setTriangulationPartnerList(List.of(3L, 4L)); // Set triangulation partners
+
+        // Mock Payload and Response
+        EntityTransferShipmentDetails mockETPayload = new EntityTransferShipmentDetails();
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
+
+        // Mocking
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(mockShipmentDetails));
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETPayload);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+
+        mockShipmentSettings();
+        var httpResponse = entityTransferService.sendShipment(commonRequestModel);
+
+        // Assertions
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+
+
+    @Test
     void testSendConsolidationFailureInCaseOfEmptySendToOrg() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
