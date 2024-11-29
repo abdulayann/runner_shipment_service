@@ -166,4 +166,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String department;
     private Boolean isNetworkFlag;
     private Boolean isReceivingBranchManually;
+    private Boolean isETTransferred;
 }

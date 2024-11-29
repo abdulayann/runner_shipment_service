@@ -142,4 +142,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String department;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
+    private Boolean isETTransferred;
 }

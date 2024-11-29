@@ -44,4 +44,5 @@ public interface IShipmentDao {
 
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
+    void saveETTransferred(Long id, Boolean entityTransferred);
 }
