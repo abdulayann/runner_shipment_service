@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,8 +53,6 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
@@ -1800,7 +1800,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETPayload);
         when(shipmentService.fetchAllMasterDataByKey(any(), any())).thenReturn(new HashMap<String, Object>());
-
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().entities("").build());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
@@ -1951,11 +1951,11 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
         when(networkTransferDao.findByEntityAndTenantList(2258L, CONSOLIDATION, sendConsolidationRequest.getSendToBranch())).thenReturn(List.of(mockNetworkTransfer));
-
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().entities("").build());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        assertThrows(ValidationException.class, () ->
+        var e = assertThrows(ValidationException.class, () ->
                 entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest)));
     }
 
