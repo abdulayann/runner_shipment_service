@@ -604,7 +604,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     @Transactional
-    public void saveETTransferred(Long id, Boolean entityTransferred) {
-        consolidationRepository.saveETTransferred(id, entityTransferred);
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        consolidationRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
     }
 }

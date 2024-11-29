@@ -247,7 +247,7 @@ class EntityTransferServiceTest extends CommonMocks {
         SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
 
-        var e = assertThrows(ValidationException.class, () ->
+        assertThrows(ValidationException.class, () ->
             entityTransferService.sendShipment(commonRequestModel));
 
     }
@@ -291,7 +291,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
 
-        var e = assertThrows(ValidationException.class, () -> entityTransferService.sendShipment(commonRequestModel));
+        assertThrows(ValidationException.class, () -> entityTransferService.sendShipment(commonRequestModel));
 
     }
     @Test
@@ -1955,7 +1955,7 @@ class EntityTransferServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
-        var e = assertThrows(ValidationException.class, () ->
+        assertThrows(ValidationException.class, () ->
                 entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest)));
     }
 

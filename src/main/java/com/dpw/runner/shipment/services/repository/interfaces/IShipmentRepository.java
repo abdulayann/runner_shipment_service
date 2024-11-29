@@ -97,7 +97,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Modifying @Transactional
     @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
-    void saveETTransferred(Long id, Boolean entityTransferred);
+    void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
     @ExcludeTenantFilter
     default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {

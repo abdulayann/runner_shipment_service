@@ -722,7 +722,7 @@ public class ShipmentDao implements IShipmentDao {
 
     @Override
     @Transactional
-    public void saveETTransferred(Long id, Boolean entityTransferred) {
-        shipmentRepository.saveETTransferred(id, entityTransferred);
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
     }
 }
