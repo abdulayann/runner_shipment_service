@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -75,6 +76,30 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
@@ -6399,14 +6424,14 @@ ShipmentServiceTest extends CommonMocks {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        for(var i: lst) {
-            ShipmentListResponse response = objectMapper.convertValue(i, ShipmentListResponse.class);
-            when(modelMapper.map(eq(i), eq(ShipmentListResponse.class))).thenReturn(response);
-            containerCountUpdate(i, response);
-            setEventData(i, response);
+        List<ShipmentListResponse> shipmentListResponses  = ShipmentMapper.INSTANCE.toShipmentListResponses(lst);
+        for(var i: shipmentListResponses) {
+            setEventData(i);
             if (i.getStatus() != null && i.getStatus() < ShipmentStatus.values().length)
-                response.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
-            responseList.add(response);
+                i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
+            if (ObjectUtils.isNotEmpty(i.getShipmentOrders()))
+                i.setOrdersCount(i.getShipmentOrders().size());
+            responseList.add(i);
         }
 
         return responseList;
@@ -6467,9 +6492,9 @@ ShipmentServiceTest extends CommonMocks {
         response.setContainer40RECount(container40RECount);
         response.setContainerNumbers(containerNumber);
     }
-    private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
-        if (shipmentDetail.getEventsList() != null) {
-            for (Events events : shipmentDetail.getEventsList()) {
+    private void setEventData(ShipmentListResponse response) {
+        if (response.getEventsList() != null) {
+            for (EventsResponse events : response.getEventsList()) {
                 if (StringUtility.isNotEmpty(events.getEventCode())) {
                     if (events.getEventCode().equalsIgnoreCase(EventConstants.INVGNTD)) {
                         response.setInvoiceDate(events.getActual());
@@ -6583,7 +6608,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, false, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -6608,7 +6632,6 @@ ShipmentServiceTest extends CommonMocks {
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -6633,7 +6656,6 @@ ShipmentServiceTest extends CommonMocks {
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        when(modelMapper.map(shipmentDetails, ShipmentListResponse.class)).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentListResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
