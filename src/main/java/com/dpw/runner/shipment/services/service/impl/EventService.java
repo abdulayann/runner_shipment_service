@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -102,9 +103,6 @@ public class EventService implements IEventService {
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
-
-    @Value("${events.revamp.enabled}")
-    private boolean isEventsRevampEnabled;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -1199,7 +1197,7 @@ public class EventService implements IEventService {
 
         List<EventsResponse> groupedEvents = allEventResponses;
 
-        if (!isEventsRevampEnabled) {
+        if (!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getEventsRevampEnabled())) {
             return ResponseHelper.buildSuccessResponse(groupedEvents);
         }
 

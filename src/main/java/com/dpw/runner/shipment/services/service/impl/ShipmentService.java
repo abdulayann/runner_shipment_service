@@ -55,6 +55,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -558,9 +559,6 @@ public class ShipmentService implements IShipmentService {
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
-
-    @Value("${events.revamp.enabled}")
-    private Boolean isEventsRevampEnabled;
 
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
@@ -2736,7 +2734,7 @@ public class ShipmentService implements IShipmentService {
     public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents, Boolean isNewShipment) {
         List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
 
-        if (Boolean.TRUE.equals(isEventsRevampEnabled)) {
+        if (Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getEventsRevampEnabled())) {
             // we need db events now instead of the eventslist in shipment
             newUpdatedEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
         }
