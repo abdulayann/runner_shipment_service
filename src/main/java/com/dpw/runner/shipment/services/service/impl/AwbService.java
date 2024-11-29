@@ -954,7 +954,7 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase());
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
                 var issuingAgentAddress = AwbUtility.constructAddressForAwb(orgRow.getAddressData());
-                awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+                awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(issuingAgentAddress));
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
                 Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
@@ -1476,7 +1476,7 @@ public class AwbService implements IAwbService {
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
                 var issuingAgentAddress = AwbUtility.constructAddressForAwb(orgRow.getAddressData());
-                awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+                awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(issuingAgentAddress));
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
                 Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
@@ -2367,7 +2367,7 @@ public class AwbService implements IAwbService {
                         (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getIssuingAgentAddressLock())) {
                     if(orgRow.getAddressData()!=null){
                         var issuingAgentAddress = AwbUtility.constructAddressForAwb(orgRow.getAddressData());
-                        awbShipmentInfo.setIssuingAgentAddress(issuingAgentAddress == null ? issuingAgentAddress : issuingAgentAddress.toUpperCase());
+                        awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(issuingAgentAddress));
                     }
                     constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 }
@@ -3615,8 +3615,8 @@ public class AwbService implements IAwbService {
 
                     // fetch all address for default org
                     CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                    List<Object> addressField = new ArrayList<>(List.of("OrgId"));
-                    List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgList.get(0).getId()));
+                    List<Object> addressField = new ArrayList<>(List.of("Id"));
+                    List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
                     addressRequest.setCriteriaRequests(addressCriteria);
                     V1DataResponse addressResponse = v1Service.addressList(addressRequest);
                     List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
@@ -3648,12 +3648,12 @@ public class AwbService implements IAwbService {
                         awbShipmentInfo.setIssuingAgentCountry(country);
                         awbShipmentInfo.setIssuingAgentCountryName(alpha2DigitToCountry != null ? alpha2DigitToCountry.get(country) : null);
                     } else {
-                        EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
+                        EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                         if(address != null) {
                             var addressMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(address));
                             alpha3CountriesList = masterDataUtils.addAlpha3Country(addressMap, alpha3CountriesList);
                             Map<String, String> alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
-                            awbShipmentInfo.setIssuingAgentAddress(AwbUtility.constructAddressForAwb(addressMap));
+                            awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(AwbUtility.constructAddressForAwb(addressMap)));
                             constructIssuingAgentAddress(awbShipmentInfo, addressMap, alpha2DigitToCountry);
                         }
                     }
