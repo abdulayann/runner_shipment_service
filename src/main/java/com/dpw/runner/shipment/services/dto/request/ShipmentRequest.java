@@ -183,5 +183,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
     private DpsWorkflowState dpsState;
-    private Boolean isETTransferred;
+    private Boolean isTransferredToReceivingBranch;
 }

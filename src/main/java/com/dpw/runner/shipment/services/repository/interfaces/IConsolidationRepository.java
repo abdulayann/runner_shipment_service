@@ -81,7 +81,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
 
     @Modifying @Transactional
-    @Query(value = "Update consolidation_details set is_et_transferred = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update consolidation_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveETTransferred(Long id, Boolean entityTransferred);
 
     @Query(value = "SELECT id FROM consolidation_details WHERE guid = ?1", nativeQuery = true)

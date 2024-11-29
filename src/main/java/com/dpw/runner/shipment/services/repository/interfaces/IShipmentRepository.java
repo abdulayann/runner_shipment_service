@@ -96,7 +96,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set is_et_transferred = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveETTransferred(Long id, Boolean entityTransferred);
 
     @ExcludeTenantFilter

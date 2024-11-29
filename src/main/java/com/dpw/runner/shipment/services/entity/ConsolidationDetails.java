@@ -471,6 +471,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
-    @Column(name = "is_et_transferred")
-    private Boolean isETTransferred;
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }

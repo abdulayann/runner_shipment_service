@@ -583,6 +583,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private DpsWorkflowState dpsState;
 
-    @Column(name = "is_et_transferred")
-    private Boolean isETTransferred;
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }
