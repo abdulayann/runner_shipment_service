@@ -601,4 +601,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id) {
         return consolidationRepository.findConsolidationByIdWithQuery(id);
     }
+
+    @Override
+    @Transactional
+    public void saveETTransferred(Long id, Boolean entityTransferred) {
+        consolidationRepository.saveETTransferred(id, entityTransferred);
+    }
 }

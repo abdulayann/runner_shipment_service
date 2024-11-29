@@ -95,6 +95,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
+    @Modifying @Transactional
+    @Query(value = "Update shipment_details set is_et_transferred = ?2 Where id = ?1", nativeQuery = true)
+    void saveETTransferred(Long id, Boolean entityTransferred);
+
     @ExcludeTenantFilter
     default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {
         return findAll(spec, pageable);
