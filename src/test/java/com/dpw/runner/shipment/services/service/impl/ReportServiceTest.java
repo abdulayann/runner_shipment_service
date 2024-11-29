@@ -64,9 +64,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
-import org.assertj.core.api.Assertions;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -154,8 +155,7 @@ class ReportServiceTest {
     @Mock
     private MasterDataUtils masterDataUtils;
 
-    @Mock
-    private ExecutorService executorService;
+    private ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Mock
     private DocumentManagerServiceImpl documentManagerService;
@@ -209,11 +209,13 @@ class ReportServiceTest {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         dataRetrived = new HashMap<>();
+        reportService.executorService = executorService;
     }
 
 
     @Test
-    void getSeawayBillDocumentData() throws DocumentException, RunnerException, IOException {
+    void getSeawayBillDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeawayMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -319,7 +321,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipTruckWayDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipTruckWayDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShipTruckWayBillMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -343,7 +346,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getConTruckWayDocumentData() throws DocumentException, RunnerException, IOException {
+    void getConTruckWayDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsTruckWayBillMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -367,7 +371,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipTruckDriverDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipTruckDriverDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShipTruckDriverProof("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -391,7 +396,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getConsTruckDriverDocumentData() throws DocumentException, RunnerException, IOException {
+    void getConsTruckDriverDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsTruckDriverProof("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -416,7 +422,8 @@ class ReportServiceTest {
 
 
     @Test
-    void getMAwbDocumentData() throws DocumentException, RunnerException, IOException {
+    void getMAwbDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -449,7 +456,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getMAwbDocumentDataForEAW() throws DocumentException, RunnerException, IOException {
+    void getMAwbDocumentDataForEAW()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -483,7 +491,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getMAwbWithOtherAmountDocumentData() throws DocumentException, RunnerException, IOException {
+    void getMAwbWithOtherAmountDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -516,7 +525,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getDMAwbDocumentData() throws DocumentException, RunnerException, IOException {
+    void getDMAwbDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -550,7 +560,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHawbDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHawbDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -586,7 +597,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHawbWithOtherAmountDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHawbWithOtherAmountDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -622,7 +634,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHawbDraftDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHawbDraftDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -656,7 +669,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHawbNeutralDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHawbNeutralDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAwbNeutral("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -691,7 +705,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHouseBillDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHouseBillDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -766,7 +781,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHouseBillWithReleaseTypeDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHouseBillWithReleaseTypeDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -840,7 +856,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHouseBillWithFailedUploadDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHouseBillWithFailedUploadDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -913,7 +930,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHouseBillDraftDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHouseBillDraftDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -959,7 +977,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHouseBillSurrenderDocumentData() throws DocumentException, RunnerException, IOException {
+    void getHouseBillSurrenderDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -997,7 +1016,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getSeaShippingInstructionDocumentData() throws DocumentException, RunnerException, IOException {
+    void getSeaShippingInstructionDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaShippingInstructionMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1035,7 +1055,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShippingRequestDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShippingRequestDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShippingRequestMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1074,7 +1095,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCargoManifestDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCargoManifestDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCargoManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1104,7 +1126,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCargoManifestAirImportDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCargoManifestAirImportDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1137,7 +1160,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getPackinListAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getPackinListAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPackingListMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1171,7 +1195,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getPackinListSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getPackinListSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPackingListMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1205,7 +1230,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCanSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCanSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCanMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1238,7 +1264,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCanAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCanAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCanMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1272,7 +1299,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getAirWayBillDocumentData() throws DocumentException, RunnerException, IOException {
+    void getAirWayBillDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirwayMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1306,7 +1334,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCustomSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCustomSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCustomsInsMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1340,7 +1369,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCustomAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCustomAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCustomsInsMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1374,7 +1404,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipArrivalNoticeSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipArrivalNoticeSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setArrivalNotice("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1406,7 +1437,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipArrivalNoticeAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipArrivalNoticeAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setArrivalNoticeAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1440,7 +1472,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipFreightCertificationNoticeSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipFreightCertificationNoticeSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setFreightCertification("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1474,7 +1507,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipFreightCertificationAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipFreightCertificationAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setFreightCertificationAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1508,7 +1542,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipPreAlertSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipPreAlertSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPreAlertDoc("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1541,7 +1576,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipPreAlertAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipPreAlertAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPreAlertAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1575,7 +1611,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipProofOfDeliveryDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipProofOfDeliveryDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setProofOfDelivery("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1609,7 +1646,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getPickupOrderSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getPickupOrderSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1642,7 +1680,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipPicupOrderAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipPicupOrderAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrderAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1676,7 +1715,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getDeliveryOrderSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getDeliveryOrderSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1709,7 +1749,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipDeliveryOrderAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipDeliveryOrderAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrderAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1743,7 +1784,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getBookingConfirmationSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getBookingConfirmationSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setBookingConfirmation("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1776,7 +1818,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipBookingConfirmationAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipBookingConfirmationAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setBookingConfirmationAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1810,7 +1853,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCoastalDocDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCoastalDocDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCostalDocument("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1844,7 +1888,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getConsolidationPackingListDocumentData() throws DocumentException, RunnerException, IOException {
+    void getConsolidationPackingListDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsolidatedPackingList("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1878,7 +1923,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShippingRequestAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShippingRequestAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShippingRequestAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1912,7 +1958,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getImportShipmentManifestSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getImportShipmentManifestSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1946,7 +1993,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipImportManifestAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipImportManifestAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1980,7 +2028,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getExportShipmentManifestSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getExportShipmentManifestSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2014,7 +2063,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipExportManifestAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipExportManifestAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2048,7 +2098,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCargoManifestAirImportDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCargoManifestAirImportDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2081,7 +2132,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCargoManifestAirExportDocumentDataSuccess() throws DocumentException, RunnerException, IOException {
+    void getShipCargoManifestAirExportDocumentDataSuccess()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2184,7 +2236,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCargoManifestAirConsolidationDocumentDataSuccess() throws DocumentException, RunnerException, IOException {
+    void getShipCargoManifestAirConsolidationDocumentDataSuccess()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2228,7 +2281,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getImportConsolManifestSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getImportConsolManifestSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2263,7 +2317,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getConsolImportManifestAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getConsolImportManifestAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2297,7 +2352,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getExportConsolManifestSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getExportConsolManifestSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2331,7 +2387,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getConsolExportManifestAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getConsolExportManifestAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2365,7 +2422,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCSRDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCSRDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCsr("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2399,7 +2457,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCommercialInvoiceSeaDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCommercialInvoiceSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCommercialInvMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2433,7 +2492,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getCommercialInvoiceAirDocumentData() throws DocumentException, RunnerException, IOException {
+    void getCommercialInvoiceAirDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCommercialInvMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2467,7 +2527,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getIsfFileDocumentData() throws DocumentException, RunnerException, IOException {
+    void getIsfFileDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setIsfFileMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2501,7 +2562,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getContainerManifestDocumentData() throws DocumentException, RunnerException, IOException {
+    void getContainerManifestDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setContainerManifestPrint("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2535,7 +2597,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getManifestPrintDocumentData() throws DocumentException, RunnerException, IOException {
+    void getManifestPrintDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setManifestPrint("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2569,7 +2632,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTransportOrderDocumentData() throws DocumentException, RunnerException, IOException {
+    void getTransportOrderDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setTransportOrderRoad("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2639,7 +2703,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTransportInstructionPickupOrderDocumentData() throws DocumentException, RunnerException, IOException {
+    void getTransportInstructionPickupOrderDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2677,7 +2742,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTransportInstructionDeliveryOrderDocumentData() throws DocumentException, RunnerException, IOException {
+    void getTransportInstructionDeliveryOrderDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2714,7 +2780,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getTransportInstructionTransportOrderDocumentData() throws DocumentException, RunnerException, IOException {
+    void getTransportInstructionTransportOrderDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2749,7 +2816,8 @@ class ReportServiceTest {
     }
 
     @Test
-    void getHblReportocumentData() throws DocumentException, RunnerException, IOException {
+    void getHblReportocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
         shipmentSettingsDetails.setTenantId(1);

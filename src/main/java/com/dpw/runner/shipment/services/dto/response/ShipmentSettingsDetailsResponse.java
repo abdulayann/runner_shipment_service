@@ -172,4 +172,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean hideManifest;
     private LocalDateTime isEntityTransferPrerequisiteEnabledDate;
     private Boolean isEntityTransferPrerequisiteEnabled;
+    private Boolean isNetworkTransferEntityEnabled;
 }

@@ -3476,7 +3476,8 @@ public abstract class IReport {
 
     private void validateOceanDGCheck(ShipmentModel shipmentModel) {
         if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) &&
+                    !Constants.IMP.equals(shipmentModel.getDirection())) {
                 throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
             }
             boolean dgContainer = false;

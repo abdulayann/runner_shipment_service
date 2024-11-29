@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -368,4 +369,8 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pra_status")
+    private ContainerPraStatus praStatus;
 }
