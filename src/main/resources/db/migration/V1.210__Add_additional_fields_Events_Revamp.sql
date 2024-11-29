@@ -4,5 +4,5 @@ ALTER TABLE IF EXISTS events
     ADD COLUMN IF NOT EXISTS user_email VARCHAR(255),
     ADD COLUMN IF NOT EXISTS branch VARCHAR(255);
 
-ALTER TABLE IF EXISTS shipment_settings
+ALTER TABLE IF EXISTS shipment_setting
     ADD COLUMN IF NOT EXISTS events_revamp_enabled BOOLEAN DEFAULT false;
