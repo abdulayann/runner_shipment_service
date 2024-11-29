@@ -1,0 +1,12 @@
+org.quartz.scheduler.instanceName: ShipmentServiceQuartz
+org.quartz.scheduler.instanceId: AUTO
+org.quartz.threadPool.threadCount: 2
+org.quartz.jobStore.class: org.springframework.scheduling.quartz.LocalDataSourceJobStore
+org.quartz.jobStore.driverDelegateClass: org.quartz.impl.jdbcjobstore.PostgreSQLDelegate
+org.quartz.jobStore.useProperties: true
+org.quartz.jobStore.misfireThreshold: 60000
+org.quartz.jobStore.tablePrefix: qrtz_
+#for distributed service make it true
+org.quartz.jobStore.isClustered: true
+org.quartz.plugin.shutdownHook.class: org.quartz.plugins.management.ShutdownHookPlugin
+org.quartz.plugin.shutdownHook.cleanShutdown: TRUE

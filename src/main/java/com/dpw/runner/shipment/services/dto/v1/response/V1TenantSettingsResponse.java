@@ -77,5 +77,30 @@ public class V1TenantSettingsResponse implements Serializable {
     private Boolean shipmentTransportModeRail;
     @JsonProperty("ShipmentTransportModeRoad")
     private Boolean shipmentTransportModeRoad;
+    @JsonProperty("FileTransferConfigurations")
+    private List<FileTransferConfigurations> fileTransferConfigurations;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class FileTransferConfigurations implements Serializable {
+        @JsonProperty("Id")
+        private Long id;
+        @JsonProperty("Guid")
+        private String guid;
+        @JsonProperty("TransportMode")
+        private String transportMode;
+        @JsonProperty("CriteriaField")
+        private int criteriaField;
+        @JsonProperty("TriggerType")
+        private int triggerType;
+        @JsonProperty("IntervalTime")
+        private int intervalTime;
+        @JsonProperty("IntervalTimeUnit")
+        private int intervalTimeUnit;
+        @JsonProperty("IsActive")
+        private int isActive;
+    }
     
 }

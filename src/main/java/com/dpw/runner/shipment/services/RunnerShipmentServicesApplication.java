@@ -11,6 +11,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.web.client.RestTemplate;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
@@ -22,6 +23,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
 @Generated
+@ComponentScan(value={"com.dpw.runner.shipment.services", "com.dpw.api"})
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {
