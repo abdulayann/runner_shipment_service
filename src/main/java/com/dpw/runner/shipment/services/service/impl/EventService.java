@@ -1209,11 +1209,16 @@ public class EventService implements IEventService {
                     .values().stream()
                     // Sort each group by `actual` in descending order
                     .map(group -> {
-                        group.sort(Comparator.comparing(EventsResponse::getShipmentNumber).thenComparing(EventsResponse::getActual).reversed());
+                        group.sort(
+                                Comparator.comparing(EventsResponse::getShipmentNumber)
+                                .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
+                        );
                         return group;
                     })
-                    // Sort groups by the latest actual date in descending order
-                    .sorted((group1, group2) -> group2.get(0).getActual().compareTo(group1.get(0).getActual()))
+//                     Sort groups by the latest actual date in descending order
+                    .sorted(Comparator.comparing(
+                            group -> group.get(0).getActual(), Comparator.nullsLast(Comparator.reverseOrder())
+                    ))
                     .flatMap(List::stream)
                     .toList();
         }
