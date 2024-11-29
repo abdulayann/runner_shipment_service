@@ -1197,7 +1197,7 @@ public class EventService implements IEventService {
 
         List<EventsResponse> groupedEvents = allEventResponses;
 
-        if (!Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getEventsRevampEnabled())) {
+        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
             return ResponseHelper.buildSuccessResponse(groupedEvents);
         }
 
