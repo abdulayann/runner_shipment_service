@@ -21,7 +21,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
 import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
@@ -290,8 +292,11 @@ public class ShipmentDetails extends MultiTenancy {
     private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
+    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
+    @BatchSize(size = 50)
     @TenantIdData
-    private Long triangulationPartner;
+    private List<Long> triangulationPartnerList;
 
     @Column(name = "receiving_branch")
     @TenantIdData

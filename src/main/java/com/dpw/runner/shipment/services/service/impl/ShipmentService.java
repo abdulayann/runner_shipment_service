@@ -64,10 +64,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -169,10 +169,10 @@ import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -2113,8 +2113,10 @@ public class ShipmentService implements IShipmentService {
 
         if(shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
             shipmentDetails.setReceivingBranch(null);
-        if(shipmentDetails.getTriangulationPartner() != null && shipmentDetails.getTriangulationPartner() == 0)
-            shipmentDetails.setTriangulationPartner(null);
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartnerList())
+                && shipmentDetails.getTriangulationPartnerList().size() == 1
+                && Long.valueOf(0).equals(shipmentDetails.getTriangulationPartnerList().get(0)))
+            shipmentDetails.setTriangulationPartnerList(null);
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
             shipmentDetails.setDocumentationPartner(null);
 
@@ -2676,25 +2678,52 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+    public void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         try{
+            // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransfer(shipmentDetails)) {
 
+                // Process the receiving branch for network transfer
                 processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
                         reverseDirection(shipmentDetails.getDirection()));
 
-                processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
-                        oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
-                        Constants.DIRECTION_CTS);
-            } else{
+                // Retrieve current and old triangulation partners
+                List<Long> currentPartners = shipmentDetails.getTriangulationPartnerList();
+                List<Long> oldPartners = oldEntity != null ? oldEntity.getTriangulationPartnerList() : Collections.emptyList();
+
+                // Determine new tenant IDs by removing old partners from the current partners
+                Set<Long> newTenantIds = new HashSet<>(currentPartners);
+                newTenantIds.removeAll(oldPartners);
+
+                // Determine old tenant IDs by removing current partners from the old partners
+                Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                oldTenantIds.removeAll(currentPartners);
+
+                // Process new tenant IDs for network transfer
+                newTenantIds.forEach(newTenantId -> {
+                    processNetworkTransferEntity(newTenantId, null, shipmentDetails, Constants.DIRECTION_CTS);
+                });
+
+                // Process old tenant IDs for removal from network transfer
+                oldTenantIds.forEach(oldTenantId -> {
+                    processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
+                });
+
+            } else {
+                // If not eligible for network transfer, handle deletion of old network transfer entities
                 if(oldEntity!=null && oldEntity.getReceivingBranch() != null)
                     networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getReceivingBranch(),
                             oldEntity.getId(), Constants.SHIPMENT);
 
-                if(oldEntity!=null && oldEntity.getTriangulationPartner() != null)
-                    networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getTriangulationPartner(),
-                            oldEntity.getId(), Constants.SHIPMENT);
+                // Delete network transfer entries for old triangulation partners
+                if (oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getTriangulationPartnerList())) {
+                    for (Long triangularPartner : oldEntity.getTriangulationPartnerList()) {
+                        networkTransferService.deleteValidNetworkTransferEntity(triangularPartner,
+                                oldEntity.getId(), Constants.SHIPMENT);
+                    }
+                }
+
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
@@ -4037,10 +4066,14 @@ public class ShipmentService implements IShipmentService {
                 log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(!Objects.equals(shipmentDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue()) &&
-                    !Objects.equals(shipmentDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+
+            List<Long> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
+            Long currentTenant = TenantContext.getCurrentTenant().longValue();
+            if ((triangulationPartners == null || !triangulationPartners.contains(currentTenant)) &&
+                    !Objects.equals(shipmentDetails.get().getReceivingBranch(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }
+
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             double current = System.currentTimeMillis();
             log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
@@ -5092,7 +5125,7 @@ public class ShipmentService implements IShipmentService {
                 .consolRef(consolidation.getConsolidationNumber())
                 .receivingBranch(consolidation.getReceivingBranch())
                 .documentationPartner(consolidation.getDocumentationPartner())
-                .triangulationPartner(consolidation.getTriangulationPartner())
+                .triangulationPartnerList(consolidation.getTriangulationPartnerList())
                 .build();
 
         shipment.setDepartment(commonUtils.getAutoPopulateDepartment(
