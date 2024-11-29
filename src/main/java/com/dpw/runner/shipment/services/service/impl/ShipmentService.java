@@ -2936,7 +2936,7 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted(),
-                        oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted())) {
+                        oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted(), isNewShipment)) {
 
             if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.ECCC))) {
                 List<Events> dbEvents = dbeventMap.get(EventConstants.ECCC);
@@ -2951,7 +2951,7 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getBlInstructionReceived(),
-                        oldEntity.getAdditionalDetails().getBlInstructionReceived())) {
+                        oldEntity.getAdditionalDetails().getBlInstructionReceived(), isNewShipment)) {
 
             if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BLRS))) {
                 List<Events> dbEvents = dbeventMap.get(EventConstants.BLRS);
@@ -2966,7 +2966,7 @@ public class ShipmentService implements IShipmentService {
 
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(),
-                        oldEntity.getAdditionalDetails().getCargoOutForDelivery())) {
+                        oldEntity.getAdditionalDetails().getCargoOutForDelivery(), isNewShipment)) {
 
             if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.COOD))) {
                 List<Events> dbEvents = dbeventMap.get(EventConstants.COOD);
