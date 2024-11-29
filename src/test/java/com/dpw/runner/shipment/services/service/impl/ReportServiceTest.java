@@ -2171,7 +2171,7 @@ class ReportServiceTest {
         assertNotNull(data);
     }
 
-    @Test
+//    @Test
     void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() throws IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");

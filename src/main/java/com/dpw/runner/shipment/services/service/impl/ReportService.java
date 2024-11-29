@@ -190,16 +190,12 @@ public class ReportService implements IReportService {
         if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT)) {
             Long shipmentId = Long.valueOf(reportRequest.getReportId());
             var awbList = awbDao.findByShipmentId(shipmentId);
-            if(awbList == null || awbList.isEmpty() || !Objects.equals(PrintType.ORIGINAL_PRINTED, awbList.get(0).getPrintType()))
-                throw new RunnerException("Please print original AWB before proceeding !");
         }
 
         // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
         if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)) {
             Long consolidationId = Long.valueOf(reportRequest.getReportId());
             var awbList = awbDao.findByConsolidationId(consolidationId);
-            if(awbList == null || awbList.isEmpty() || !Objects.equals(PrintType.ORIGINAL_PRINTED, awbList.get(0).getPrintType()))
-                throw new RunnerException("Please print original AWB before proceeding !");
             if(awbList != null && !awbList.isEmpty()) {
                 List<Awb> linkedHawb = awbDao.getLinkedAwbFromMawb(awbList.get(0).getId());
                 long count = linkedHawb.stream().filter(i -> !Objects.equals(PrintType.ORIGINAL_PRINTED, i.getPrintType())).count();
@@ -239,7 +235,7 @@ public class ReportService implements IReportService {
             }
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
