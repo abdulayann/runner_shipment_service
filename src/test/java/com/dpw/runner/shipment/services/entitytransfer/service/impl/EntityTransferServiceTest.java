@@ -1814,6 +1814,64 @@ class EntityTransferServiceTest extends CommonMocks {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testSendConsolidationWithTriangulationPartner() {
+        int mockTenantId = 10;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTenantId(mockTenantId);
+        consolidationDetails.getShipmentsList().forEach(i -> i.setTenantId(mockTenantId));
+        consolidationDetails.setTriangulationPartnerList(List.of(66L));  // Mock triangulation partner
+
+        EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+        V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();
+
+        Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
+        shipAdditionalDocs.put(consolidationDetails.getShipmentsList().get(0).getGuid().toString(), List.of(UUID.randomUUID().toString()));
+
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .sendToBranch(List.of(66)) // Send to the triangulation partner
+                .consolId(consolidationDetails.getId())
+                .sendToOrg(List.of(organizations.getWhitelistedTenantGUID()))
+                .additionalDocs(List.of(UUID.randomUUID().toString()))
+                .shipAdditionalDocs(shipAdditionalDocs)
+                .build();
+
+        EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
+        ShipmentDetails mockLinkedShipment = new ShipmentDetails();
+        EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
+
+        // Mocks
+        when(consolidationDetailsDao.findById(consolidationDetails.getId())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(jsonHelper.convertValue(any(), eq(EntityTransferConsolidationDetails.class))).thenReturn(mockETPayload);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
+
+        mockShipmentSettings();
+
+        // Call method
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
+
+        // Assertions
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        // Verify that the shipment direction for the triangulation partner was set to DIRECTION_CTS
+        verify(jsonHelper, times(1)).convertValue(any(), eq(EntityTransferShipmentDetails.class)); // Ensure convertValue was called
+
+        // Check the direction for the triangulation partner shipment
+        assertEquals(Constants.DIRECTION_CTS, mockETShipment.getDirection(), "Direction should be set to DIRECTION_CTS for triangulation partner.");
+    }
+
+
 
     private Runnable mockRunnable() {
         return null;
