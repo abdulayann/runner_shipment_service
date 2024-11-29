@@ -107,7 +107,7 @@ public class HawbReport extends IReport{
         if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
             CompanyDto companyDetails = companyDetailsList.get(0);
             List<String> companyAddress = ReportHelper.getOrgAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getState(), companyDetails.getCity(), companyDetails.getCountry(), companyDetails.getZipPostCode());
-            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
         //TODO- Tenant data
@@ -713,7 +713,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.BRANCH_NAME, StringUtility.toUpperCase(otherInfoRows.getBranch()));
                 dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
                 List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
-                companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
+                companyAddress = companyAddress.stream().filter(StringUtility::isNotEmpty).map(StringUtility::toUpperCase).toList();
 
                 dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
