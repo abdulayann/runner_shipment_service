@@ -235,7 +235,7 @@ public class ReportService implements IReportService {
             }
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
