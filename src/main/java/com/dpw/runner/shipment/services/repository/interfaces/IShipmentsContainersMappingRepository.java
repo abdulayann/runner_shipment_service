@@ -11,6 +11,7 @@ import java.util.List;
 @Generated
 public interface IShipmentsContainersMappingRepository extends JpaRepository <ShipmentsContainersMapping, Long> {
     List<ShipmentsContainersMapping> findByContainerId(Long containerId);
+    List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerId);
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
     Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable);
 }

@@ -5,7 +5,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappi
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,8 +28,18 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
+    private final IContainersSync containersSync;
+
+    private final ExecutorService executorService;
+    private final MasterDataUtils masterDataUtils;
+
     @Autowired
-    IContainersSync containersSync;
+    public ShipmentsContainersMappingDao(IContainersSync containersSync, ExecutorService executorService,
+        MasterDataUtils masterDataUtils) {
+        this.containersSync = containersSync;
+        this.executorService = executorService;
+        this.masterDataUtils = masterDataUtils;
+    }
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
@@ -60,7 +73,9 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
         shipmentsContainersMappingRepository.delete(shipmentsContainersMapping);
     }
-
+    private void deleteList(List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+        shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappings);
+    }
     @Override
     public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
@@ -141,6 +156,33 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 log.error("Error syncing containers");
             }
         }
+    }
+    public void detachListShipments(List<Long> containerIds, List<Long> shipIds, boolean fromV1) {
+        List<ShipmentsContainersMapping> mappings = findByContainerIdIn(containerIds);
+        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
+        List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
+        if (mappings != null && !mappings.isEmpty()) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
+                    deleteMappings.add(shipmentsContainersMappings);
+                }
+            }
+        }
+        if (!deleteMappings.isEmpty()) {
+            deleteList(deleteMappings);
+        }
+        if(!fromV1) {
+            try {
+                log.info("Call sync containers from detachShipments with ids: " + containerIds.toString());
+                CompletableFuture.runAsync(masterDataUtils.withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
+            }
+            catch (Exception e) {
+                log.error("Error syncing containers");
+            }
+        }
+    }
+    private List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
+        return shipmentsContainersMappingRepository.findByContainerIdIn(containerIds);
     }
 
     @Override

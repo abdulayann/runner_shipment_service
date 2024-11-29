@@ -1203,7 +1203,6 @@ public class ConsolidationService implements IConsolidationService {
         List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
                 .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
                 .orElse(Collections.emptyList());
-
         validateShipmentDetachment(shipmentDetails);
 
         if (consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole())) {
@@ -1215,14 +1214,14 @@ public class ConsolidationService implements IConsolidationService {
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
-            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(removedShipmentIds));
             Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
-            for(ShipmentDetails shipmentDetails1 : shipmentDetailsList) {
+            for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
                 shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
                 if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails1.getTransportMode()) && Boolean.TRUE.equals(shipmentDetails1.getContainsHazardous()) &&
                         (OceanDGStatus.OCEAN_DG_REQUESTED.equals(shipmentDetails1.getOceanDGStatus()) || OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED.equals(shipmentDetails1.getOceanDGStatus())))
                     throw new RunnerException("Shipment " + shipmentDetails1.getShipmentId() + " is in " + shipmentDetails1.getOceanDGStatus() + " state, first get the required approval");
             }
+            List<Containers> allContainersList = new ArrayList<>();
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 if(shipmentDetail.getContainersList() != null) {
@@ -1254,11 +1253,13 @@ public class ConsolidationService implements IConsolidationService {
                                 }
                             }
                         }
-                        shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipId), false);
                     }
-                    containersList = containerDao.saveAll(containersList);
-                    containerService.afterSaveList(containersList, false);
+                    allContainersList.addAll(containersList);
                 }
+                shipmentsContainersMappingDao.detachListShipments(allContainersList.stream().map(Containers::getId).toList(), removedShipmentIds, false);
+                containerDao.saveAll(allContainersList);
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerService.afterSaveList(allContainersList, false)), executorService);
+
                 if (shipmentDetail.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetail.getPackingList() != null) {
                     packingList = shipmentDetail.getPackingList();
                     for (Packing packing : packingList) {
