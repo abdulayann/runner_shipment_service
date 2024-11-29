@@ -141,5 +141,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Map<String, String> tenantMasterData;
     private Boolean isNetworkFlag;
     private Boolean isReceivingBranchManually;
-    private Boolean isETTransferred;
+    private Boolean isTransferredToReceivingBranch;
 }

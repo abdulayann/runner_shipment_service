@@ -226,5 +226,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
     private DpsWorkflowState dpsState;
-    private Boolean isETTransferred;
+    private Boolean isTransferredToReceivingBranch;
 }

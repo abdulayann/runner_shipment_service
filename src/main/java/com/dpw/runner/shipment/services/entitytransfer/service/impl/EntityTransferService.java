@@ -428,12 +428,13 @@ public class EntityTransferService implements IEntityTransferService {
 
     private void checkForAcceptedNetworkTransfer(Long entityId, String entityType, List<Integer> tenantIds) {
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
-        boolean isAcceptedTransferExists = ObjectUtils.isNotEmpty(networkTransfers) && networkTransfers.stream()
-                .anyMatch(networkTransfer -> Objects.nonNull(networkTransfer) && NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus());
+        networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
+                networkTransfers.stream().filter(networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus()).toList() : null;
 
-        if (isAcceptedTransferExists) {
+        if (ObjectUtils.isNotEmpty(networkTransfers)) {
+            List<Integer> tenantIdList = networkTransfers.stream().map(NetworkTransfer::getTenantId).toList();
             log.debug("One or more network transfer requests are already in the ACCEPTED status for request Id: {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(ALREADY_ACCEPTED_NETWORK_TRANSFER);
+            throw new ValidationException(ALREADY_ACCEPTED_NETWORK_TRANSFER + String.join(", ", getTenantName(tenantIdList)));
         }
     }
 
