@@ -2513,7 +2513,7 @@ class AwbServiceTest extends CommonMocks {
 
         AirMessagingLogs statusLog = new AirMessagingLogs();
         statusLog.setStatus(AirMessagingStatus.SUCCESS.name());
-        String responseMessage = "FZB submission is accepted";
+        String responseMessage = "FWB submission is accepted";
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
 
 

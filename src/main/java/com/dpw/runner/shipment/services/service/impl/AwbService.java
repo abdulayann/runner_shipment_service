@@ -3846,7 +3846,7 @@ public class AwbService implements IAwbService {
         if(Objects.equals(mawbStatusLog.getStatus(), AirMessagingStatus.SUCCESS.name())) {
             fnmStatus = true;
             if(awbType.equals(Constants.DMAWB))
-                responseStatusMessage.append("FZB submission is accepted");
+                responseStatusMessage.append("FWB submission is accepted");
             else if(successHawbCount == linkedHawb.size())
                 responseStatusMessage.append("FWB and FZB submissions are accepted");
         }
