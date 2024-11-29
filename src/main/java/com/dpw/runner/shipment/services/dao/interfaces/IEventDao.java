@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,4 +43,6 @@ public interface IEventDao {
     void updateEventDetails(Events event);
 
     boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode);
+
+    void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails);
 }
