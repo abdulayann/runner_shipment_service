@@ -1037,6 +1037,7 @@ class EventServiceTest extends CommonMocks {
 
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
 
         var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
 
@@ -1056,6 +1057,7 @@ class EventServiceTest extends CommonMocks {
 
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
         when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
 
         var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
 

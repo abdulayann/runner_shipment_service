@@ -2763,7 +2763,7 @@ public class ShipmentService implements IShipmentService {
     public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents, Boolean isNewShipment) {
         List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
 
-        if (Boolean.TRUE.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getEventsRevampEnabled())) {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
             // we need db events now instead of the eventslist in shipment
             newUpdatedEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
         }
