@@ -1,0 +1,2 @@
+UPDATE shipment_details SET master_bill = null, updated_at = now() where shipment_id = 'BOMS24093037' and tenant_id = 536;
+UPDATE shipment_details SET master_bill = 'HLCUBO12409AUVN8', updated_at = now() where shipment_id = 'BOMS24093187' and tenant_id = 536;
