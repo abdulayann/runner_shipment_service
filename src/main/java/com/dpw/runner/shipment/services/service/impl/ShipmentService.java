@@ -2991,7 +2991,6 @@ public class ShipmentService implements IShipmentService {
 
     private void handleEventDateTimeUpdate(Events event, LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         event.setActual(actualDateTime);
-//        event.setEstimated(estimatedDateTime);
     }
 
 
@@ -5798,7 +5797,6 @@ public class ShipmentService implements IShipmentService {
         Events response = null;
         response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), LocalDateTime.now());
 
-        // TODO: remove this
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
         }
@@ -5827,10 +5825,8 @@ public class ShipmentService implements IShipmentService {
         events.setEventCode(eventCode);
         events.setShipmentNumber(shipmentDetails.getShipmentId());
         // Attach to console as well
-        if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())
-                && eventDao.shouldSendEventFromShipmentToConsolidation(events, shipmentDetails.getTransportMode())) {
-            events.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
-        }
+        eventDao.updateFieldsForShipmentGeneratedEvents(List.of(events), shipmentDetails);
+
         return events;
     }
 
