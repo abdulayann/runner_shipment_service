@@ -71,12 +71,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -100,6 +102,9 @@ public class EventService implements IEventService {
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
+
+    @Value("${events.revamp.enabled}")
+    private boolean isEventsRevampEnabled;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
@@ -129,6 +134,7 @@ public class EventService implements IEventService {
         request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Empty request received");
         }
         Events event = convertRequestToEntity(request);
         try {
@@ -1193,7 +1199,11 @@ public class EventService implements IEventService {
 
         List<EventsResponse> groupedEvents = allEventResponses;
 
-        // Events grouping logic
+        if (!isEventsRevampEnabled) {
+            return ResponseHelper.buildSuccessResponse(groupedEvents);
+        }
+
+        // Events grouping logic if events revamp feature flag is enabled
         if (Objects.isNull(request.getSortRequest())) {
             groupedEvents = allEventResponses.stream()
                     // Group by eventCode and sort each group by `actual` in descending order
@@ -1261,7 +1271,7 @@ public class EventService implements IEventService {
         Pair<Specification<Events>, Pageable> pair = fetchData(duplicateEventRequest, Events.class);
         Page<Events> duplicateEventPage = eventDao.findAll(pair.getLeft(), pair.getRight());
 
-        if (duplicateEventPage.hasContent()) {
+        if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
             // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
             // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
             duplicateEventPage.getContent().stream().filter(i -> !i.getId().equals(event.getId())).forEach(i -> eventDao.delete(i));

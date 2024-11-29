@@ -559,6 +559,9 @@ public class ShipmentService implements IShipmentService {
     @Value("${include.master.data}")
     private Boolean includeMasterData;
 
+    @Value("${events.revamp.enabled}")
+    private Boolean isEventsRevampEnabled;
+
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
@@ -2732,15 +2735,13 @@ public class ShipmentService implements IShipmentService {
 
     public List<Events> createOrUpdateTrackingEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents, Boolean isNewShipment) {
         List<Events> newUpdatedEvents = (updatedEvents != null) ? new ArrayList<>(updatedEvents) : new ArrayList<>();
-        // we need db events now instead of the eventslist in shipment
-        List<Events> shipmentEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
 
-        //TODO Group create and update method together into single method
-        if (Boolean.FALSE.equals(isNewShipment) && ObjectUtils.isNotEmpty(oldEntity)) {
-            updateTrackingEvent(shipmentDetails, oldEntity, shipmentEvents);
-        }else{
-            createTrackingEvents(shipmentEvents, shipmentDetails);
+        if (Boolean.TRUE.equals(isEventsRevampEnabled)) {
+            // we need db events now instead of the eventslist in shipment
+            newUpdatedEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
         }
+
+        createUpdateTrackingEvent(shipmentDetails, oldEntity, newUpdatedEvents, isNewShipment);
 
         // update events with consolidation id with condition
         List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
@@ -2751,8 +2752,6 @@ public class ShipmentService implements IShipmentService {
                     .forEach(event -> event.setConsolidationId(consolidationId));
         }
 
-        // TODO : now this should be saved independent of shipment save
-        // add eventDao.saveAll(newUpdatedEvents)
         return newUpdatedEvents;
     }
 
@@ -2776,13 +2775,15 @@ public class ShipmentService implements IShipmentService {
         return eventMap;
     }
 
-    private void updateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events) {
+    private void createUpdateTrackingEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment) {
         commonUtils.removeDuplicateTrackingEvents(events);
         Map<String, List<Events>> dbeventMap = getCargoesRunnerTrackingEventMap(events);
+        oldEntity = Optional.ofNullable(oldEntity).orElse(new ShipmentDetails());
+        oldEntity.setAdditionalDetails(Optional.ofNullable(oldEntity.getAdditionalDetails()).orElse(new AdditionalDetails()));
 
         if (isLclOrFclOrAir(shipmentDetails)) {
 
-            if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber())) {
+            if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment)) {
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BOCO))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
@@ -2796,7 +2797,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
-                            oldEntity.getAdditionalDetails().getCargoDeliveredDate())) {
+                            oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CADE))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.CADE);
@@ -2812,7 +2813,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
-                            oldEntity.getAdditionalDetails().getPickupDate())) {
+                            oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CACO))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
@@ -2827,7 +2828,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                            oldEntity.getAdditionalDetails().getCustomReleaseDate())) {
+                            oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment)) {
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CURE))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
@@ -2842,7 +2843,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
-                            oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer())) {
+                            oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer(), isNewShipment)) {
 
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.DOTP))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.DOTP);
@@ -2857,7 +2858,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
-                            oldEntity.getAdditionalDetails().getProofOfDeliveryDate())) {
+                            oldEntity.getAdditionalDetails().getProofOfDeliveryDate(), isNewShipment)) {
                 if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.PRDE))) {
                     List<Events> dbEvents = dbeventMap.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
@@ -2872,7 +2873,7 @@ public class ShipmentService implements IShipmentService {
 
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
-                            oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted())) {
+                            oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted(), isNewShipment)) {
 
                 if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.SEPU))){
                     List<Events> dbEvents = dbeventMap.get(EventConstants.SEPU);
@@ -2889,7 +2890,7 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrAir(shipmentDetails)) {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
-                            oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate())) {
+                            oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate(), isNewShipment)) {
                 if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAFS))){
                     List<Events> dbEvents = dbeventMap.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
@@ -2902,7 +2903,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate()) &&
+            if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate(), isNewShipment) &&
                     shipmentDetails.getDateType()!=null) {
                 if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAAW))){
                     List<Events> dbEvents = dbeventMap.get(EventConstants.CAAW);
@@ -2927,7 +2928,7 @@ public class ShipmentService implements IShipmentService {
 
         if (isFcl(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
-                        oldEntity.getAdditionalDetails().getEmptyContainerReturned())) {
+                        oldEntity.getAdditionalDetails().getEmptyContainerReturned(), isNewShipment)) {
 
             if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.EMCR))){
                 List<Events> dbEvents = dbeventMap.get(EventConstants.EMCR);
@@ -2987,12 +2988,12 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    private boolean isEventChanged(Object newValue, Object oldValue) {
-        return newValue != null && !newValue.equals(oldValue);
+    private boolean isEventChanged(Object newValue, Object oldValue, Boolean isNewShipment) {
+        return Boolean.TRUE.equals(isNewShipment) || (newValue != null && !newValue.equals(oldValue));
     }
 
-    private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue) {
-        return Boolean.TRUE.equals(newValue) && !Boolean.TRUE.equals(oldValue);
+    private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue, Boolean isNewShipment) {
+        return Boolean.TRUE.equals(isNewShipment) || (Boolean.TRUE.equals(newValue) && !Boolean.TRUE.equals(oldValue));
     }
 
     private void handleEventDateTimeUpdate(Events event, LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {

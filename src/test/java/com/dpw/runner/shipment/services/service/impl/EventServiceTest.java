@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.ApiError;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
@@ -186,18 +187,12 @@ class EventServiceTest extends CommonMocks {
         EventsRequest request = objectMapperTest.convertValue(null, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        Events event = new Events();
-        event.setId(1L);
-        EventsResponse response = objectMapperTest.convertValue(event, EventsResponse.class);
-
-        when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(null);
-        when(eventDao.save(any())).thenReturn(event);
-        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
-
         ResponseEntity<IRunnerResponse> responseEntity = eventService.create(commonRequestModel);
 
         Assertions.assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("Empty request received", runnerResponse.getError().getMessage());
     }
 
     @Test

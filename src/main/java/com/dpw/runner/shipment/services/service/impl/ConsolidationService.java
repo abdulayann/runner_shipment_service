@@ -422,6 +422,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
+
+    @Value("${events.revamp.enabled}")
+    private Boolean isEventsRevampEnabled;
     
     private SecureRandom rnd = new SecureRandom();
 
@@ -4119,7 +4122,7 @@ public class ConsolidationService implements IConsolidationService {
             List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
             consolidationDetails.setPackingList(updatedPackings);
         }
-        if (eventsRequestList != null) {
+        if (eventsRequestList != null && !Boolean.TRUE.equals(isEventsRevampEnabled)) {
             eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
             List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
             commonUtils.removeDuplicateTrackingEvents(eventsList);
