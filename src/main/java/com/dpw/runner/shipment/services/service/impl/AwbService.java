@@ -853,7 +853,7 @@ public class AwbService implements IAwbService {
         if(!Strings.isNullOrEmpty(consolidationDetails.getSecurityStatus()) && AwbConstants.SecurityStatusList.contains(consolidationDetails.getSecurityStatus())) {
             sph.add(AwbSpecialHandlingCodesMappingInfo
                     .builder()
-                    .shcId(consolidationDetails.getSecurityStatus())
+                    .shcId(Objects.equals(consolidationDetails.getSecurityStatus(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : consolidationDetails.getSecurityStatus())
                     .entityId(consolidationDetails.getId())
                     .entityType(request.getAwbType())
                     .build());
@@ -866,6 +866,7 @@ public class AwbService implements IAwbService {
         }catch (Exception e) {
             throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
         }
+        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
         Awb awb = Awb.builder()
@@ -879,7 +880,7 @@ public class AwbService implements IAwbService {
                 .consolidationId(consolidationDetails.getId())
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
-        awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
+        awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
         awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
         return awb;
     }
@@ -1190,7 +1191,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) throws RunnerException {
+    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel) throws RunnerException {
         PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
@@ -1228,6 +1229,13 @@ public class AwbService implements IAwbService {
 //            }
 //        }
         awbCargoInfo.setChargeCode(fetchChargeCodes(consolidationDetails.getPayment()));
+        populateCsdInfo(awbCargoInfo, tenantModel);
+        // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
+        awbCargoInfo.setScreeningStatus(consolidationDetails.getScreeningStatus());
+        awbCargoInfo.setOtherInfo(consolidationDetails.getAomFreeText());
+        awbCargoInfo.setScreeningStatus(consolidationDetails.getScreeningStatus());
+        awbCargoInfo.setSecurityStatus(consolidationDetails.getAdditionalSecurityInformation());
+        awbCargoInfo.setExemptionCode(consolidationDetails.getExemptionCodes());
         return awbCargoInfo;
     }
 
@@ -1400,7 +1408,7 @@ public class AwbService implements IAwbService {
         if(!Strings.isNullOrEmpty(shipmentDetails.getSecurityStatus()) && AwbConstants.SecurityStatusList.contains(shipmentDetails.getSecurityStatus())) {
             sph.add(AwbSpecialHandlingCodesMappingInfo
                     .builder()
-                    .shcId(shipmentDetails.getSecurityStatus())
+                    .shcId(Objects.equals(shipmentDetails.getSecurityStatus(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : shipmentDetails.getSecurityStatus())
                     .entityId(shipmentDetails.getId())
                     .entityType(request.getAwbType())
                     .build());
@@ -1415,6 +1423,7 @@ public class AwbService implements IAwbService {
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
+        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
         // generate Awb Entity
         Awb awb = Awb.builder()
                 .awbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill())
@@ -1427,7 +1436,7 @@ public class AwbService implements IAwbService {
                 .shipmentId(shipmentDetails.getId())
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
-        awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo()));
+        awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
         awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
         return awb;
     }
@@ -1624,7 +1633,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateAwbCargoInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos) {
+    private AwbCargoInfo generateAwbCargoInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel) {
         String newLine = "\r\n";
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
@@ -1651,62 +1660,33 @@ public class AwbService implements IAwbService {
         if(request.getAwbType().equalsIgnoreCase("DMAWB"))
             awbCargoInfo.setChargeCode(fetchChargeCodes(shipmentDetails.getPaymentTerms()));
 
-        String csdInfo = populateCsdInfo(shipmentDetails);
-        awbCargoInfo.setCsdInfo(csdInfo);
+        // Set the RA Number and Country Code from branch default address
+        populateCsdInfo(awbCargoInfo, tenantModel);
+        // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
+        awbCargoInfo.setScreeningStatus(shipmentDetails.getAdditionalDetails().getScreeningStatus());
+        awbCargoInfo.setOtherInfo(shipmentDetails.getAdditionalDetails().getAomFreeText());
+        awbCargoInfo.setScreeningStatus(shipmentDetails.getAdditionalDetails().getScreeningStatus());
+        awbCargoInfo.setSecurityStatus(shipmentDetails.getAdditionalDetails().getAdditionalSecurityInformation());
+        awbCargoInfo.setExemptionCode(shipmentDetails.getAdditionalDetails().getExemptionCodes());
 
         return awbCargoInfo;
     }
 
-    public String populateCsdInfo(ShipmentDetails shipment) {
-        Parties originAgent = shipment.getAdditionalDetails().getExportBroker() != null ? shipment.getAdditionalDetails().getExportBroker() : null;
-        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(Arrays.asList(originAgent));
+    // Populate the RA Number and Country Code from branch default address
+    public void populateCsdInfo(AwbCargoInfo awbCargoInfo, TenantModel tenantModel) {
+        if (Objects.nonNull(tenantModel.getDefaultAddressId())) {
+            CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+            List<Object> addressField = new ArrayList<>(List.of("Id"));
+            List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
+            addressRequest.setCriteriaRequests(addressCriteria);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+            EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
 
-        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
-        Map<String, Object> addressSendingAgent = null;
-        String raNumber = "";
-        String securityStatus = "";
-        String screeningStatus = "";
-        String csdInfo = "";
-
-        if(addressMap != null && originAgent != null && addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode()) != null) {
-            addressSendingAgent = addressMap.get(originAgent.getOrgCode() + "#" + originAgent.getAddressCode());
-
-            // Agent not expired
-            if(StringUtility.isNotEmpty(StringUtility.convertToString(addressSendingAgent.get(KCRA_EXPIRY)))) {
-                LocalDateTime agentExpiry = LocalDateTime.parse(StringUtility.convertToString(addressSendingAgent.get(KCRA_EXPIRY)));
-
-                if(LocalDateTime.now().isAfter(agentExpiry))
-                    return csdInfo;
-
-                if(Boolean.TRUE.equals(addressSendingAgent.get(REGULATED_AGENT))) {
-                    raNumber = StringUtility.convertToString(addressSendingAgent.get(KCRA_NUMBER));
-                }
-
-                if(shipment.getSecurityStatus() != null) {
-                    securityStatus = shipment.getSecurityStatus();
-                    // Set security status as SPX whenever we get Exemption Cargo
-                    if(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS.equalsIgnoreCase(securityStatus))
-                        securityStatus = AwbConstants.SPX + String.format("/%s", shipment.getAdditionalDetails().getExemptionCodes());
-                }
-
-                if(shipment.getAdditionalDetails().getScreeningStatus() != null ) {
-                    screeningStatus = String.join("+",
-                        shipment.getAdditionalDetails().getScreeningStatus().stream()
-                            // Ignore the NOT screening status from the result set
-                            .filter(i -> !AwbConstants.NOT_SCREENING_STATUS.equalsIgnoreCase(i))
-                            .map(i -> {
-                                var res = i;
-                                // Add the free text value whenever AOM is selected as screening status
-                                if (AwbConstants.AOM_SCREENING_STATUS.equalsIgnoreCase(i))
-                                    res += String.format(" (%s)", shipment.getAdditionalDetails().getAomFreeText());
-                                return res;
-                        }).toList()
-                    );
-                }
-                csdInfo = formatCSDInfo(raNumber, securityStatus, screeningStatus);
-            }
+            awbCargoInfo.setRaNumber(address.getKCRANumber());
+            if (StringUtility.isNotEmpty(address.getCountry()))
+                awbCargoInfo.setCountryCode(address.getCountry().length() == 2 ? address.getCountry() : CountryListHelper.ISO3166.getAlpha2IfAlpha3(address.getCountry()));
         }
-        return csdInfo;
     }
 
     private String formatCSDInfo(String raNumber, String securityStatus, String screeningStatus) {
