@@ -388,6 +388,7 @@ class AwbDaoTest {
         testConsol.setShipmentsList(List.of(testShipment));
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
@@ -417,6 +418,7 @@ class AwbDaoTest {
         mockMap.put(testShipment.getTenantId(), new TenantModel());
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));

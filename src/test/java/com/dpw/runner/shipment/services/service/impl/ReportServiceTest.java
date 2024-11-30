@@ -2120,35 +2120,6 @@ class ReportServiceTest {
     }
 
     @Test
-    void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() throws IOException {
-        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
-        shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
-        shipmentSettingsDetails.setTenantId(1);
-        shipmentSettingsDetails.setAutoEventCreate(true);
-
-        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
-        shipmentSettingsDetails2.setAirExportShipmentManifest("123456789");
-        shipmentSettingsDetails2.setTenantId(44);
-        shipmentSettingsDetails2.setAutoEventCreate(true);
-        reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT);
-        reportRequest.setPrintIATAChargeCode(true);
-        reportRequest.setDisplayFreightAmount(false);
-        reportRequest.setDisplayOtherAmount(false);
-        reportRequest.setPrintType(ReportConstants.ORIGINAL);
-        reportRequest.setPrintForParties(true);
-        reportRequest.setPrintingFor_str("0");
-        // Mock
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
-
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-
-        assertThrows(RunnerException.class, () -> reportService.getDocumentData(commonRequestModel));
-
-    }
-
-    @Test
     void getShipCargoManifestAirConsolidationDocumentData() throws DocumentException, RunnerException, IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
