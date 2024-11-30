@@ -3594,12 +3594,15 @@ public class AwbService implements IAwbService {
                 if(orgList.size() > 0) {
 
                     // fetch all address for default org
-                    CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                    List<Object> addressField = new ArrayList<>(List.of("Id"));
-                    List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
-                    addressRequest.setCriteriaRequests(addressCriteria);
-                    V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-                    List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                    List<EntityTransferAddress> addressList = new ArrayList<>();
+                    if(tenantModel.getDefaultAddressId() != null) {
+                        CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+                        List<Object> addressField = new ArrayList<>(List.of("Id"));
+                        List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
+                        addressRequest.setCriteriaRequests(addressCriteria);
+                        V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+                        addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                    }
                     Map<Long, EntityTransferAddress> issuingAgentAddressIdToEntityMap = Optional.of(addressList.stream().collect(Collectors.toMap(EntityTransferAddress::getId, entity -> entity))).orElse(new HashMap<>());
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                     if(issuingAgentAddressIdToEntityMap.containsKey(tenantModel.getDefaultAddressId())) {
