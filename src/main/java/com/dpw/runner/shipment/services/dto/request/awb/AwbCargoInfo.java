@@ -9,6 +9,8 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @ApiModel("AWB Cargo Info Model")
@@ -39,8 +41,18 @@ public class AwbCargoInfo implements Serializable {
     private BigDecimal customsValue;
     private BigDecimal insuranceAmount;
     private String customOriginCode;
+    // To be removed in Future Iterations
     private String csdInfo;
     private String csdInfoDate;
+    // To be used for Screener's name
     private String userInitials;
     private Integer slac;
+
+    private String countryCode;
+    private String raNumber;
+    private List<String> screeningStatus;
+    private String otherMethod;
+    private String exemptionCode;
+    private LocalDateTime screeningTime;
+    private String securityStatus;
 }
