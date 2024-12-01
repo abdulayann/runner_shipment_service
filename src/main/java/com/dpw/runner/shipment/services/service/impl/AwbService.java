@@ -1232,9 +1232,8 @@ public class AwbService implements IAwbService {
         populateCsdInfo(awbCargoInfo, tenantModel);
         // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
         awbCargoInfo.setScreeningStatus(consolidationDetails.getScreeningStatus());
-        awbCargoInfo.setOtherInfo(consolidationDetails.getAomFreeText());
-        awbCargoInfo.setScreeningStatus(consolidationDetails.getScreeningStatus());
-        awbCargoInfo.setSecurityStatus(consolidationDetails.getAdditionalSecurityInformation());
+        awbCargoInfo.setOtherMethod(consolidationDetails.getAomFreeText());
+        awbCargoInfo.setSecurityStatus(consolidationDetails.getSecurityStatus());
         awbCargoInfo.setExemptionCode(consolidationDetails.getExemptionCodes());
         return awbCargoInfo;
     }
@@ -1664,9 +1663,8 @@ public class AwbService implements IAwbService {
         populateCsdInfo(awbCargoInfo, tenantModel);
         // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
         awbCargoInfo.setScreeningStatus(shipmentDetails.getAdditionalDetails().getScreeningStatus());
-        awbCargoInfo.setOtherInfo(shipmentDetails.getAdditionalDetails().getAomFreeText());
-        awbCargoInfo.setScreeningStatus(shipmentDetails.getAdditionalDetails().getScreeningStatus());
-        awbCargoInfo.setSecurityStatus(shipmentDetails.getAdditionalDetails().getAdditionalSecurityInformation());
+        awbCargoInfo.setOtherMethod(shipmentDetails.getAdditionalDetails().getAomFreeText());
+        awbCargoInfo.setSecurityStatus(shipmentDetails.getSecurityStatus());
         awbCargoInfo.setExemptionCode(shipmentDetails.getAdditionalDetails().getExemptionCodes());
 
         return awbCargoInfo;
