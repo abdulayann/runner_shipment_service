@@ -14,10 +14,7 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -3623,7 +3620,7 @@ public abstract class IReport {
                     .toList()));
         }
         eCsdInfoList.add(awb.getAwbCargoInfo().getSecurityStatus());
-        eCsdInfoList.add(awb.getAwbCargoInfo().getExemptionCode());
+        eCsdInfoList.add(Objects.equals(awb.getAwbCargoInfo().getExemptionCode(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : awb.getAwbCargoInfo().getExemptionCode());
 
         eCsdInfoList.add(getPrintOriginalDate(awb));
 
