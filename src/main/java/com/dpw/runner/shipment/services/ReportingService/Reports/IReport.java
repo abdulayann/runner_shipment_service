@@ -3619,8 +3619,8 @@ public abstract class IReport {
                     .map(c -> Objects.equals(c, Constants.AOM) ? c + "(" + awb.getAwbCargoInfo().getOtherMethod() + ")" : c)
                     .toList()));
         }
-        eCsdInfoList.add(awb.getAwbCargoInfo().getSecurityStatus());
-        eCsdInfoList.add(Objects.equals(awb.getAwbCargoInfo().getExemptionCode(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : awb.getAwbCargoInfo().getExemptionCode());
+        eCsdInfoList.add(Objects.equals(awb.getAwbCargoInfo().getSecurityStatus(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : awb.getAwbCargoInfo().getSecurityStatus());
+        eCsdInfoList.add(awb.getAwbCargoInfo().getExemptionCode());
 
         eCsdInfoList.add(getPrintOriginalDate(awb));
 
