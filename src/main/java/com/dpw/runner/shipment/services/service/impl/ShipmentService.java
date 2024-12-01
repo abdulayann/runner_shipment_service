@@ -6156,6 +6156,41 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    public void sendEmailForPushRequestWithdrawl(Long shipmentId, List<Long> consolidationIds, Set<ShipmentRequestedType> shipmentRequestedTypes, String withdrawRemarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> usernameEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+        Set<Integer> tenantIds = new HashSet<>();
+        Set<String> usernamesList = new HashSet<>();
+        Map<Integer, TenantModel> tenantsModelMap = new HashMap<>();
+
+        List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(consolidationIds));
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
+        Map<Long, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
+        if(!listIsNullOrEmpty(consolidationDetails)) {
+            for(ConsolidationDetails consolidationDetails1 : consolidationDetails) {
+                consolidationDetailsMap.put(consolidationDetails1.getId(), consolidationDetails1);
+                tenantIds.add(consolidationDetails1.getTenantId());
+                usernamesList.add(consolidationDetails1.getCreatedBy());
+            }
+        }
+        usernamesList.add(shipmentDetails.get().getCreatedBy());
+        usernamesList.add(shipmentDetails.get().getAssignedTo());
+        tenantIds.add(shipmentDetails.get().getTenantId());
+
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        var tenantsDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettingsAndTenantsData(tenantIds, v1TenantSettingsMap, tenantsModelMap)), executorService);
+        CompletableFuture.allOf(emailTemplateFuture, tenantsDataFuture, userEmailsFuture).join();
+        for(ConsolidationDetails consolidationDetails1 : consolidationDetails){
+            try {
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetails.get(), consolidationDetails1, SHIPMENT_PUSH_WITHDRAW, withdrawRemarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, tenantsModelMap);
+            } catch (Exception e) {
+                log.error(ERROR_WHILE_SENDING_EMAIL);
+            }
+        }
+    }
+
     public void sendEmailForPullRequestWithdrawal(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, Set<ShipmentRequestedType> shipmentRequestedTypes, String withdrawRemarks) {
         Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
         Map<String, String> usernameEmailsMap = new HashMap<>();
@@ -6377,6 +6412,9 @@ public class ShipmentService implements IShipmentService {
             // one shipment and multiple console, shipment pull rejected
             if(ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType())) {
                 sendEmailForPullRequestReject(request.getShipmentId(), request.getConsoleIdsList(), shipmentRequestedTypes, request.getRejectRemarks(), consoleShipmentMappings);
+            }
+            if(ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
+                sendEmailForPushRequestWithdrawl(request.getShipmentId(), request.getConsoleIdsList(), shipmentRequestedTypes, request.getRejectRemarks());
             }
         }
     }

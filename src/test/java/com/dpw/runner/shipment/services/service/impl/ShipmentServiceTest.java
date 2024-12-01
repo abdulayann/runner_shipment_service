@@ -7355,6 +7355,16 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void sendEmailForPushRequestWithdrawl() throws Exception {
+        ShipmentService spyService = spy(shipmentService);
+        when(consolidationDetailsDao.findConsolidationsByIds(any())).thenReturn(List.of(testConsol));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        spyService.sendEmailForPushRequestWithdrawl(1L, List.of(2L), new HashSet<>(), "rejectRemarks");
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
     void sendEmailForPushRequestReject() throws Exception {
         ShipmentService spyService = spy(shipmentService);
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
@@ -7371,7 +7381,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        spyService.sendEmailForPullRequestReject(shipmentDetails, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
+        spyService.sendEmailForPullRequestReject(1L, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
         verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
