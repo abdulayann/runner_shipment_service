@@ -51,7 +51,6 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.*;
-import java.lang.reflect.InvocationTargetException;
 import lombok.extern.slf4j.Slf4j;
 import net.sourceforge.barbecue.Barcode;
 import net.sourceforge.barbecue.BarcodeException;
@@ -62,7 +61,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,6 +76,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1003,11 +1002,15 @@ public class CommonUtils {
                 toEmailIds.addAll(Arrays.stream(sendEmailDto.getV1TenantSettingsMap().get(sendEmailDto.getShipmentDetails().getTenantId()).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
                         .filter(s -> !s.isEmpty()).toList());
         }
-        if(sendEmailDto.getV1TenantSettingsMap().containsKey(sendEmailDto.getConsolidationDetails().getTenantId())) {
-            if(!IsStringNullOrEmpty(sendEmailDto.getV1TenantSettingsMap().get(sendEmailDto.getConsolidationDetails().getTenantId()).getConsolidationAttachDefaultCCMailId())) {
-                ccEmailIds.addAll(Arrays.stream(sendEmailDto.getV1TenantSettingsMap().get(sendEmailDto.getConsolidationDetails().getTenantId()).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
-                        .filter(s -> !s.isEmpty()).toList());
-            }
+        if(sendEmailDto.getV1TenantSettingsMap().containsKey(sendEmailDto.getConsolidationDetails().getTenantId()) &&
+                !IsStringNullOrEmpty(sendEmailDto.getV1TenantSettingsMap().get(sendEmailDto.getConsolidationDetails().getTenantId()).getConsolidationAttachDefaultCCMailId())) {
+            ccEmailIds.addAll(Arrays.stream(sendEmailDto.getV1TenantSettingsMap()
+                            .get(sendEmailDto.getConsolidationDetails().getTenantId())
+                            .getConsolidationAttachDefaultCCMailId()
+                            .split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .toList());
         }
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, emailTemplatesRequest.getBody()),
@@ -1432,12 +1435,6 @@ public class CommonUtils {
             log.error(ex.getMessage());
             return new HashMap<>();
         }
-    }
-
-    public void getTenantDetails(List<Integer> tenantIds) {
-        if(listIsNullOrEmpty(tenantIds))
-            return;
-
     }
 
     public void getUserDetails(Set<String> usernamesList, Map<String, String> usernameEmailsMap) {

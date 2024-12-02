@@ -224,7 +224,7 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     ConsolidationService consolidationService;
     @Mock
-    private HttpServletResponse response;
+    private HttpServletResponse httpServletResponse;
     @Mock
     private GetNextNumberHelper getNextNumberHelper;
     @Mock
@@ -2545,7 +2545,7 @@ ShipmentServiceTest extends CommonMocks {
     public void testExportExcel_NullRequest() throws IOException, IllegalAccessException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
         String errorMessage = "Shipment List Request is Null";
-        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel(response, commonRequestModel));
+        Exception e = assertThrows(ValidationException.class, () -> shipmentService.exportExcel(httpServletResponse, commonRequestModel));
         assertEquals(errorMessage, e.getMessage());
     }
 
