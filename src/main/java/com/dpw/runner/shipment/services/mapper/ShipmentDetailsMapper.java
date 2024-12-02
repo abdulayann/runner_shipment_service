@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(
         uses = {JsonNullableMapper.class, AuditLogMapper.class},
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
@@ -35,6 +37,7 @@ public interface ShipmentDetailsMapper {
     CarrierDetails map(CarrierDetailRequest req);
     Jobs map(JobRequest req);
     Containers map(ContainerRequest req);
+    List<TriangulationPartner> map(List<TriangulationPartnerRequest> req);
 
     @InheritConfiguration
     void update(ShipmentPatchRequest update, @MappingTarget ShipmentDetails destination);

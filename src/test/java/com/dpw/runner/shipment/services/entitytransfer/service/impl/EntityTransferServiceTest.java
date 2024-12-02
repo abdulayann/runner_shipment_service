@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
@@ -60,14 +61,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
@@ -348,7 +341,9 @@ class EntityTransferServiceTest extends CommonMocks {
         ShipmentDetails mockShipmentDetails = jsonTestUtility.getCompleteShipment();
         mockShipmentDetails.setTenantId(mockTenantId);
         mockShipmentDetails.setReceivingBranch(1L); // Ensure 1L is the receiving branch
-        mockShipmentDetails.setTriangulationPartnerList(List.of(3L, 4L)); // Set triangulation partners
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(3L).isAccepted(false).build();
+        TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(4L).isAccepted(false).build();
+        mockShipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1)); // Set triangulation partners
 
         // Mock Payload and Response
         EntityTransferShipmentDetails mockETPayload = new EntityTransferShipmentDetails();
@@ -1032,7 +1027,8 @@ class EntityTransferServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
-        consolidationDetails.setTriangulationPartnerList(List.of(231L));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(231L).isAccepted(false).build();
+        consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
         shipmentDetailsDrt.setGuid(UUID.randomUUID());
         shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -1047,7 +1043,8 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp.setGuid(UUID.randomUUID());
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
-        consolidationDetailsImp.setTriangulationPartnerList(List.of(33L));
+        TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(33L).isAccepted(false).build();
+        consolidationDetailsImp.setTriangulationPartnerList(List.of(triangulationPartner1));
 
         ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
         shipmentDetailsImp1.setGuid(UUID.randomUUID());
@@ -1058,7 +1055,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp1.setGuid(UUID.randomUUID());
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
-        consolidationDetailsImp1.setTriangulationPartnerList(List.of(33L));
+        consolidationDetailsImp1.setTriangulationPartnerList(List.of(triangulationPartner1));
 
         ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
         shipmentDetailsImp2.setGuid(UUID.randomUUID());
@@ -1102,7 +1099,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole.setGuid(UUID.randomUUID());
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
-        originShipConsole.setTriangulationPartnerList(List.of(33L));
+        originShipConsole.setTriangulationPartnerList(List.of(triangulationPartner1));
         originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
@@ -1112,7 +1109,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole1.setGuid(UUID.randomUUID());
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
-        originShipConsole1.setTriangulationPartnerList(List.of(33L));
+        originShipConsole1.setTriangulationPartnerList(List.of(triangulationPartner1));
         originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
@@ -1122,7 +1119,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole2.setGuid(UUID.randomUUID());
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
-        originShipConsole2.setTriangulationPartnerList(List.of(35L));
+        originShipConsole2.setTriangulationPartnerList(List.of(triangulationPartner1));
         originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
@@ -1137,7 +1134,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole3.setGuid(UUID.randomUUID());
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
-        originShipConsole3.setTriangulationPartnerList(List.of(33L));
+        originShipConsole3.setTriangulationPartnerList(List.of(triangulationPartner1));
         originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
 
         ShipmentDetails receivingShipment = new ShipmentDetails();
@@ -1890,7 +1887,8 @@ class EntityTransferServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
         consolidationDetails.getShipmentsList().forEach(i -> i.setTenantId(mockTenantId));
-        consolidationDetails.setTriangulationPartnerList(List.of(66L));  // Mock triangulation partner
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(66L).build();
+        consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));  // Mock triangulation partner
 
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
         V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();

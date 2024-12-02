@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.entity.*;
 import org.mapstruct.*;
 
+import java.util.List;
+
 @Mapper(
         uses = JsonNullableMapper.class,
         nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
@@ -32,6 +34,7 @@ public interface ConsolidationDetailsMapper {
     CarrierDetails map(CarrierDetailRequest req);
     Jobs map(JobRequest req);
     Containers map(ContainerRequest req);
+    List<TriangulationPartner> map(List<TriangulationPartnerRequest> req);
 
     @InheritConfiguration
     void update(ConsolidationPatchRequest update, @MappingTarget ConsolidationDetails destination);

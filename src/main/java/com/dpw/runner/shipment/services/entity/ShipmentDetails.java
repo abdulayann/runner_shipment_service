@@ -292,11 +292,11 @@ public class ShipmentDetails extends MultiTenancy {
     private Long documentationPartner;
 
     @Column(name = "triangulation_partner")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
+    @ElementCollection(targetClass = TriangulationPartner.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
     @BatchSize(size = 50)
     @TenantIdData
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "receiving_branch")
     @TenantIdData

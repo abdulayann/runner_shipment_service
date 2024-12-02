@@ -104,7 +104,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long sourceTenantId;
     private Integer status;
     private String transportMode;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private BigDecimal volume;
     private String volumeUnit;

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dto.patchrequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -98,7 +99,7 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Long> warehouseId;
     private JsonNullable<Long> sourceTenantId;
     private JsonNullable<String> ediTransactionId;
-    private JsonNullable<List<Long>> triangulationPartnerList;
+    private JsonNullable<List<TriangulationPartnerRequest>> triangulationPartnerList;
     private JsonNullable<Long> receivingBranch;
     private JsonNullable<Boolean> intraBranch;
     private JsonNullable<Long> documentationPartner;
