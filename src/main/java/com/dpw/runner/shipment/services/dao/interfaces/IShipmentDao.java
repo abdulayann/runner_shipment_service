@@ -22,6 +22,9 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
+
+    List<ShipmentDetails> findByGuids(List<UUID> guids);
+
     Optional<ShipmentDetails> findByGuid(UUID id);
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);

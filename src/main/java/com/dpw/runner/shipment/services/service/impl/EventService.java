@@ -39,11 +39,17 @@ import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto.BillDto;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -1053,6 +1059,61 @@ public class EventService implements IEventService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
+        try {
+            InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
+            AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
+            List<BillDto> billDtoList = accountReceivableDto.getBills();
+
+            List<UUID> shipmentGuids = billDtoList.stream()
+                    .map(billDto -> UUID.fromString(billDto.getModuleId())).distinct().toList();
+
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByGuids(shipmentGuids);
+
+            Map<UUID, ShipmentDetails> shipmentMap = shipmentDetailsList.stream().collect(Collectors.toMap(
+                    ShipmentDetails::getGuid,
+                    shipmentDetails -> shipmentDetails,
+                    (existing, replacement) -> replacement));
+
+            List<Events> invoiceEvents = new ArrayList<>();
+
+            billDtoList.forEach(billDto -> {
+                if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                    ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                    List<Events> vInvoiceEvents = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                    invoiceEvents.addAll(vInvoiceEvents);
+                }
+
+            });
+
+            eventDao.saveAll(invoiceEvents);
+        } catch (Exception e) {
+            throw new BillingException(e.getMessage());
+        }
+    }
+
+    public List<Events> prepareEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
+
+        Events event = new Events();
+        event.setEntityId(shipmentDetails.getId());
+        event.setEntityType(Constants.SHIPMENT);
+        event.setEventCode(EventConstants.INGE);
+        event.setActual(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceDate());
+        event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        event.setStatus(billingInvoiceDto.getPayload().getAccountReceivable().getFusionInvoiceStatus());
+        event.setShipmentNumber(shipmentDetails.getShipmentId());
+        event.setEventType(EventType.INVOICE);
+        event.setContainerNumber(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceNumber());
+        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())
+                && ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+
+        }
+        commonUtils.updateEventWithMasterData(List.of(event));
+        return List.of(event);
+    }
     /**
      * Persists tracking events to the database and updates the relevant shipment details.
      *

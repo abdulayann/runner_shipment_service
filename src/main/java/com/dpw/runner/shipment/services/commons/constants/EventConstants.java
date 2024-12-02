@@ -69,6 +69,7 @@ public class EventConstants {
     public static final String COCR  = "COCR";
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
+    public static final String INGE  = "INGE";
     // ~~~~~~ end runner event short codes
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");

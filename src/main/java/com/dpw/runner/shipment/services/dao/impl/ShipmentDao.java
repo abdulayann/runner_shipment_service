@@ -262,7 +262,10 @@ public class ShipmentDao implements IShipmentDao {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }
-
+    @Override
+    public List<ShipmentDetails> findByGuids(List<UUID> guids) {
+        return shipmentRepository.findAllByGuids(guids);
+    }
     @Override
     public Optional<ShipmentDetails> findByGuid(UUID id) {
         return shipmentRepository.findByGuid(id);
