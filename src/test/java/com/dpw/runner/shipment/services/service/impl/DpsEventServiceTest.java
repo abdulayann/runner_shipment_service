@@ -200,6 +200,7 @@ class DpsEventServiceTest {
         DpsDataDto dataDto = new DpsDataDto();
         dataDto.setRuleExecutionId(UUID.randomUUID());
         dataDto.setEntityId("123");
+        dataDto.setEntityType("SHIPMENT");
         // Leave workflowType, state, status, entityType as null
         dataDto.setText("Test Event");
         dataDto.setEventTimestamp(LocalDateTime.now());
@@ -215,7 +216,6 @@ class DpsEventServiceTest {
         assertNull(dpsEvent.getWorkflowType());
         assertNull(dpsEvent.getState());
         assertNull(dpsEvent.getStatus());
-        assertNull(dpsEvent.getEntityType());
     }
 
     @Test
@@ -617,6 +617,7 @@ class DpsEventServiceTest {
         shipmentDetails.setId(1L);
         shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
+        when(dpsEventRepository.findByExecutionId(any())).thenReturn(savedEvent);
         when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(savedEvent);
         when(shipmentDao.findShipmentsByGuids(anySet()))
                 .thenReturn(List.of(shipmentDetails));
