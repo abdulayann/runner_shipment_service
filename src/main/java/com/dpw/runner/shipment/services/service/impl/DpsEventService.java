@@ -202,7 +202,7 @@ public class DpsEventService implements IDpsEventService {
         List<DpsEvent> dpsEventList = dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            throw new DpsException("No DPS Event found with provided entity id "+ shipmentGuid);
+            log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
         }
 
         List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
