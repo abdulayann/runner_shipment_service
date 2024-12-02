@@ -1104,13 +1104,11 @@ class EventServiceTest extends CommonMocks {
         shipment1.setGuid(guid1);
         shipment1.setId(1L);
         shipment1.setShipmentId("S123");
-//        shipment1.setConsolidationList(List.of(ConsolidationDetails.builder().build()));
 
         ShipmentDetails shipment2 = new ShipmentDetails();
         shipment2.setGuid(guid2);
         shipment2.setId(2L);
         shipment2.setShipmentId("S456");
-//        shipment2.setConsolidationList(List.of(ConsolidationDetails.builder().build()));
 
         Events mockEvent = Events.builder().build();
 

@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.service.impl;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
-import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -112,7 +111,6 @@ public class EventService implements IEventService {
     private IDateTimeChangeLogService dateTimeChangeLogService;
     private PartialFetchUtils partialFetchUtils;
     private ITrackingServiceAdapter trackingServiceAdapter;
-    private BillingServiceAdapter billingServiceAdapter;
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
@@ -120,7 +118,7 @@ public class EventService implements IEventService {
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
-            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, BillingServiceAdapter billingServiceAdapter) {
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -136,7 +134,6 @@ public class EventService implements IEventService {
         this.eventDumpDao = eventDumpDao;
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
-        this.billingServiceAdapter = billingServiceAdapter;
     }
 
     @Transactional
@@ -1109,10 +1106,10 @@ public class EventService implements IEventService {
         event.setShipmentNumber(shipmentDetails.getShipmentId());
         event.setEventType(EventType.INVOICE);
         event.setContainerNumber(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceNumber());
-        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
-            if (ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
-                event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
-            }
+        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())
+                && ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+
         }
         commonUtils.updateEventWithMasterData(List.of(event));
         return List.of(event);
