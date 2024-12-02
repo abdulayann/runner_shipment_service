@@ -20,6 +20,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURC
 import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.ALREADY_ACCEPTED_NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
@@ -259,6 +260,10 @@ public class EntityTransferService implements IEntityTransferService {
         entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
         entityTransferPayload.setAdditionalDocs(additionalDocs);
 
+        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && ObjectUtils.isNotEmpty(destinationTenantList)) {
+            checkForAcceptedNetworkTransfer(shipment.getId(), SHIPMENT, destinationTenantList);
+        }
+
         for (Integer tenant : destinationTenantList) {
             var taskPayload = jsonHelper.convertValue(entityTransferPayload, EntityTransferShipmentDetails.class);
             if ((Long.valueOf(tenant).equals(shipment.getReceivingBranch())))
@@ -342,6 +347,10 @@ public class EntityTransferService implements IEntityTransferService {
         interBranchValidation(consol, sendConsolidationRequest);
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
 
+        if (Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && ObjectUtils.isNotEmpty(sendToBranch)) {
+            checkForAcceptedNetworkTransfer(consol.getId(), CONSOLIDATION, sendToBranch);
+        }
+
         for (int index = 0; index < sendToBranch.size(); index++) {
             var tenant = sendToBranch.get(index);
 
@@ -414,6 +423,18 @@ public class EntityTransferService implements IEntityTransferService {
             .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
 
+    }
+
+    private void checkForAcceptedNetworkTransfer(Long entityId, String entityType, List<Integer> tenantIds) {
+        List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
+        networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
+                networkTransfers.stream().filter(networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus()).toList() : null;
+
+        if (ObjectUtils.isNotEmpty(networkTransfers)) {
+            List<Integer> tenantIdList = networkTransfers.stream().map(NetworkTransfer::getTenantId).toList();
+            log.debug("One or more network transfer requests are already in the ACCEPTED status for request Id: {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException(ALREADY_ACCEPTED_NETWORK_TRANSFER + String.join(", ", getTenantName(tenantIdList)));
+        }
     }
 
 
@@ -503,6 +524,9 @@ public class EntityTransferService implements IEntityTransferService {
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
             networkTransferDao.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
+            Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
+            if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
+                shipmentDao.saveIsTransferredToReceivingBranch(shipmentDetailsResponse.getId(), Boolean.TRUE);
         } else if (Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
         }
@@ -549,6 +573,19 @@ public class EntityTransferService implements IEntityTransferService {
         // Update task status approved
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
             networkTransferDao.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
+            Long consolId = consolidationDetailsResponse.getId();
+            Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
+            if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
+                consolidationDetailsDao.saveIsTransferredToReceivingBranch(consolId, Boolean.TRUE);
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
+            if (!consolidationDetails.isPresent()) {
+                log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            for (var shipment : consolidationDetails.get().getShipmentsList()) {
+                if (tenantId.equals(shipment.getReceivingBranch()))
+                    shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
+            }
         } else if (Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.APPROVED, importConsolidationRequest.getRejectRemarks());
         }

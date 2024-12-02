@@ -128,4 +128,5 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
     private JsonNullable<DpsWorkflowState> dpsState;
+    private JsonNullable<Boolean> isTransferredToReceivingBranch;
 }

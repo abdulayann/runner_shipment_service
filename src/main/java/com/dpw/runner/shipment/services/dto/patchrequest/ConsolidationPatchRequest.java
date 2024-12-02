@@ -131,4 +131,5 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Boolean> openForAttachment;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
+    private JsonNullable<Boolean> isTransferredToReceivingBranch;
 }

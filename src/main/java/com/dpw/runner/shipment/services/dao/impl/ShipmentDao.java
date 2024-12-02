@@ -719,4 +719,10 @@ public class ShipmentDao implements IShipmentDao {
     public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
         return shipmentRepository.save(shipmentDetails);
     }
+
+    @Override
+    @Transactional
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
+    }
 }
