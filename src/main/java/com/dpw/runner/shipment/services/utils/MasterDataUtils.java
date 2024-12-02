@@ -1046,6 +1046,7 @@ public class MasterDataUtils{
                         TenantModel object7 = (TenantModel) cache;
                         fieldNameMasterDataMap.put(key, object7.tenantName);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object7.code);
+                        fieldNameMasterDataMap.put(key + Constants.DISPLAY_NAME, object7.displayName);
                         break;
                     case CacheConstants.WAREHOUSES:
                         WareHouseResponse object8 = (WareHouseResponse) cache;
