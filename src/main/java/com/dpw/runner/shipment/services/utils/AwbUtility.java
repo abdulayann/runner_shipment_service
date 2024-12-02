@@ -256,10 +256,13 @@ public class AwbUtility {
 
                 String number = null;
                 String expiry = null;
+                Boolean isRA = false, isKC = false;
                 if(addressList != null && !addressList.isEmpty()){
                     EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                     number = address.getKCRANumber();
                     expiry = address.getKCRAExpiry();
+                    isRA = address.getRegulatedAgent();
+                    isKC = address.getKnownConsignor();
                 }
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
@@ -268,6 +271,7 @@ public class AwbUtility {
                         .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
                         .number(number)
                         .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
+                        .isRA(isRA).isKC(isKC)
                         .build());
             }
         } else {
@@ -359,7 +363,7 @@ public class AwbUtility {
         if(awbResponse.getAwbPaymentInfo() != null)
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
-
+        awbResponse.getMeta().setAdditionalSecurityInfo(consolidationDetails.getAdditionalSecurityInformation());
         if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
             awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
         }
@@ -443,6 +447,8 @@ public class AwbUtility {
                         .currency(org.containsKey(PartiesConstants.CURRENCY_CODE) ? (String) org.get(PartiesConstants.CURRENCY_CODE) : null)
                         .expiry(address.containsKey(PartiesConstants.KC_RA_EXPIRY) && StringUtility.isNotEmpty((String)address.get(PartiesConstants.KC_RA_EXPIRY)) ? LocalDateTime.parse((String) address.get(PartiesConstants.KC_RA_EXPIRY)) : null)
                         .number(address.containsKey(PartiesConstants.KC_RA_NUMBER) ? (String) address.get(PartiesConstants.KC_RA_NUMBER) : null)
+                        .isKC(Boolean.TRUE.equals(address.get(PartiesConstants.KNOWN_CONSIGNOR)))
+                        .isRA(Boolean.TRUE.equals(address.get(PartiesConstants.REGULATED_AGENT)))
                         .postCode(zipCode)
                 .build();
     }
@@ -491,10 +497,13 @@ public class AwbUtility {
 
                 String number = null;
                 String expiry = null;
+                Boolean isRA = false, isKC = false;
                 if(addressList != null && !addressList.isEmpty()){
                     EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                     number = address.getKCRANumber();
                     expiry = address.getKCRAExpiry();
+                    isRA = address.getRegulatedAgent();
+                    isKC = address.getKnownConsignor();
                 }
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
@@ -503,6 +512,7 @@ public class AwbUtility {
                         .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
                         .number(number)
                         .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
+                        .isRA(isRA).isKC(isKC)
                         .build());
             }
         } else {
@@ -601,7 +611,7 @@ public class AwbUtility {
                 awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalPrepaid());
         }
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
-
+        awbResponse.getMeta().setAdditionalSecurityInfo(shipmentDetails.getAdditionalDetails().getAdditionalSecurityInformation());
         if(awbResponse.getMeta() != null) {
             var user = UserContext.getUser();
 
