@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DATE_OF_PRINT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
 
 @Component
@@ -44,8 +46,10 @@ public class CSDReport extends IReport{
         csdModel.setUsersDto(UserContext.getUser());
         if(isConsolidation){
             csdModel.setConsolidationModel(getConsolidation(id));
+            csdModel.setAwb(getMawb(id, true));
         }else{
             csdModel.setShipmentModel(getShipment(id));
+            csdModel.setAwb(getHawb(id));
         }
         return csdModel;
     }
@@ -102,6 +106,10 @@ public class CSDReport extends IReport{
         dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
         dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
 
+        if (Objects.nonNull(csdModel.getAwb())) {
+            dictionary.put(RA_CSD, geteCSDInfo(csdModel.getAwb()));
+            dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(csdModel.getAwb()));
+        }
         return dictionary;
     }
 

@@ -388,6 +388,7 @@ class AwbDaoTest {
         testConsol.setShipmentsList(List.of(testShipment));
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
@@ -398,7 +399,7 @@ class AwbDaoTest {
         when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
-            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
+            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment, false);
         } catch (Exception e) {
             fail("Unexpected error occured", e);
         }
@@ -417,6 +418,7 @@ class AwbDaoTest {
         mockMap.put(testShipment.getTenantId(), new TenantModel());
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
@@ -429,7 +431,7 @@ class AwbDaoTest {
         when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
-            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
+            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment, true);
         } catch (Exception e) {
             fail("Unexpected error occured", e);
         }
@@ -451,7 +453,7 @@ class AwbDaoTest {
 
         // Test
         try {
-            awbDao.airMessagingIntegration(shipmentId, reportType, fromShipment);
+            awbDao.airMessagingIntegration(shipmentId, reportType, fromShipment, true);
         } catch (Exception e) {
             fail("Unexpected error occured", e);
         }

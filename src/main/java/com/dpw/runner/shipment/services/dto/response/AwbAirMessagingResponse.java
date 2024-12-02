@@ -44,6 +44,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private Integer currencyDecimalPlaces;
         private Integer weightDecimalPlaces;
         private Integer volumeDecimalPlaces;
+        private Boolean includeCSD;
     }
 
     @Data

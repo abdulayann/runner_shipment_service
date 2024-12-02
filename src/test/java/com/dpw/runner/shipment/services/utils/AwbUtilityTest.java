@@ -366,6 +366,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
@@ -443,6 +444,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
@@ -621,6 +623,7 @@ class AwbUtilityTest extends CommonMocks {
 
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         mockTenantModel.setCountry("IND");
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);

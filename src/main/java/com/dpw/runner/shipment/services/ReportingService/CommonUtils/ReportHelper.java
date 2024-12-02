@@ -235,9 +235,9 @@ public class ReportHelper {
     public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String state_country, String pincode)
     {
         List<String> list = new ArrayList<>();
-        if(address1 != null)
+        if(StringUtility.isNotEmpty(address1))
             list.add(address1);
-        if(address2 != null)
+        if(StringUtility.isNotEmpty(address2))
             list.add(address2);
 
         StringBuilder sb = new StringBuilder();

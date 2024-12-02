@@ -37,4 +37,5 @@ public class ReportRequest implements IRunnerRequest {
     boolean isSecurityData;
     String transportInstructionId;
     String remarks;
+    boolean includeCsdInfo;
 }
