@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TriangulationPartnerResponse implements IRunnerResponse {
     private Long triangulationPartner;
-    private boolean isAccepted;
+    private Boolean isAccepted;
 }

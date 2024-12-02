@@ -13,5 +13,5 @@ public class TriangulationPartnerModel implements IDocumentModel {
     private Long triangulationPartner;
 
     @JsonProperty("IsAccepted")
-    private boolean isAccepted;
+    private Boolean isAccepted;
 }

@@ -5056,7 +5056,7 @@ public class ShipmentService implements IShipmentService {
                         .filter(Objects::nonNull)
                         .map(tp -> TriangulationPartnerResponse.builder()
                                 .triangulationPartner(tp.getTriangulationPartner())
-                                .isAccepted(tp.isAccepted())
+                                .isAccepted(tp.getIsAccepted())
                                 .build())
                         .toList() : null;
         shipment = ShipmentDetailsResponse.builder()

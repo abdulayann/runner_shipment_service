@@ -21,5 +21,5 @@ public class TriangulationPartner {
     private Long triangulationPartner;
 
     @Column(name = "is_accepted")
-    private boolean isAccepted;
+    private Boolean isAccepted;
 }

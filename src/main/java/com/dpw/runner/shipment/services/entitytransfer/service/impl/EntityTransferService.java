@@ -1401,7 +1401,7 @@ public class EntityTransferService implements IEntityTransferService {
                                         .filter(Objects::nonNull)
                                         .map(pt -> TriangulationPartnerResponse.builder()
                                                 .triangulationPartner(pt.getTriangulationPartner())
-                                                .isAccepted(pt.isAccepted())
+                                                .isAccepted(pt.getIsAccepted())
                                                 .build())
                                     .toList() : null;
                             arValidationResponse.setTriangulationPartnerList(triangulationPartnerResponseList);
@@ -1463,7 +1463,7 @@ public class EntityTransferService implements IEntityTransferService {
                                     .filter(Objects::nonNull)
                                     .map(tp -> TriangulationPartnerResponse.builder()
                                             .triangulationPartner(tp.getTriangulationPartner())
-                                            .isAccepted(tp.isAccepted())
+                                            .isAccepted(tp.getIsAccepted())
                                             .build())
                                     .toList() : null;
                         arValidationResponse.setTriangulationPartnerList(triangulationPartnerResponseList);
