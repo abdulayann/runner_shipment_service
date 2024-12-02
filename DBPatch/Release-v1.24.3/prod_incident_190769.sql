@@ -1,0 +1,48 @@
+update parties set
+ org_code = 'FRC00011257',
+ address_code = 'FRO00011572',
+ org_id = '126165',
+ address_id = '163779',
+ org_data =
+ '{
+      "Id": 126165,
+      "City": "Jacksonville",
+      "Guid": "74b88e14-a8df-4ffa-bb27-28a497bbf20a",
+      "Email": "Wlivermore@margocaribe.com",
+      "State": "FL",
+      "label": "Margo Outdoor Living",
+      "value": "FRC00011257",
+      "Country": "USA",
+      "Address1": "10501 Cold Storage Rd Building #100",
+      "FullName": "Margo Outdoor Living",
+      "Payables": false,
+      "CompanyId": 372,
+      "Receivables": true,
+      "ZipPostCode": "32218",
+      "ForworderAgent": false,
+      "OrganizationCode": "FRC00011257",
+      "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+      "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com"
+  }',
+ address_data = '{
+                     "Id": 163779,
+                     "City": "Jacksonville",
+                     "Guid": "2a3bffa3-5ffc-4284-b420-4368eae998f3",
+                     "Email": "Wlivermore@margocaribe.com",
+                     "State": "Florida",
+                     "Country": "USA",
+                     "OrgGuid": "74b88e14-a8df-4ffa-bb27-28a497bbf20a",
+                     "Address1": "10501 Cold Storage Rd Building #100",
+                     "OrgSource": "CRP",
+                     "AddressType": 2,
+                     "CompanyName": "Margo Outdoor Living",
+                     "OrgFullName": "Margo Outdoor Living",
+                     "OrgPayables": false,
+                     "ZipPostCode": "32218",
+                     "TaxRegNumber": "202239817",
+                     "OrgReceivables": true,
+                     "OrgActiveClient": true,
+                     "AddressShortCode": "FRO00011572",
+                     "OrgOrganizationCode": "FRC00011257"
+                 }'
+ where id IN (select client_id from shipment_details where shipment_id IN ('BOMS24114213') and tenant_id = 536);
