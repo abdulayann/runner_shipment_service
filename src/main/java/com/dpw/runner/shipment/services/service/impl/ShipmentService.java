@@ -55,7 +55,6 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -65,10 +64,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -170,10 +169,10 @@ import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -2574,7 +2573,7 @@ public class ShipmentService implements IShipmentService {
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             eventsList = createOrUpdateTrackingEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
-                commonUtils.updateEventWithMasterDataDescription(eventsList);
+                commonUtils.updateEventWithMasterData(eventsList);
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
                 eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
@@ -2767,6 +2766,10 @@ public class ShipmentService implements IShipmentService {
             // we need db events now instead of the eventslist in shipment
             newUpdatedEvents = Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>());
         }
+
+        // Update the direction if blank
+        newUpdatedEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
+                shipmentDetails.getDirection() : events.getDirection()));
 
         createUpdateTrackingEvent(shipmentDetails, oldEntity, newUpdatedEvents, isNewShipment);
 
@@ -5857,6 +5860,7 @@ public class ShipmentService implements IShipmentService {
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
         events.setShipmentNumber(shipmentDetails.getShipmentId());
+        events.setDirection(shipmentDetails.getDirection());
         // Attach to console as well
         eventDao.updateFieldsForShipmentGeneratedEvents(List.of(events), shipmentDetails);
 

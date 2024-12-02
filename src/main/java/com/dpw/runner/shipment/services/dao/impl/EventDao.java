@@ -517,6 +517,9 @@ public class EventDao implements IEventDao {
                 // Set shipment number
                 event.setShipmentNumber(shipmentDetails.getShipmentId());
                 event.setEntityId(shipmentDetails.getId());
+                if (event.getDirection() == null) {
+                    event.setDirection(shipmentDetails.getDirection());
+                }
             });
 
         } else if (Constants.CONSOLIDATION.equals(entityType)) {

@@ -4136,7 +4136,7 @@ public class ConsolidationService implements IConsolidationService {
             eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
             List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
             commonUtils.removeDuplicateTrackingEvents(eventsList);
-            commonUtils.updateEventWithMasterDataDescription(eventsList);
+            commonUtils.updateEventWithMasterData(eventsList);
             eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.CONSOLIDATION);
             consolidationDetails.setEventsList(eventsList);
         }
@@ -4981,6 +4981,7 @@ public class ConsolidationService implements IConsolidationService {
         events.setTenantId(TenantContext.getCurrentTenant());
         events.setEventCode(eventCode);
         events.setConsolidationId(consolidationDetails.getId());
+        events.setDirection(consolidationDetails.getShipmentType());
         // Persist the event
         eventDao.save(events);
         return events;

@@ -1752,32 +1752,42 @@ public class CommonUtils {
     }
 
     /**
-     * @param eventsList
-     * Updates the input events list with description from the master data
+     * Updates the given list of events with description and direction from master data.
+     *
+     * <p>Filters events without IDs and with non-null event codes, fetches corresponding
+     * master data, and updates the description and direction if matching data is found.
+     * Preserves original values if no match is available.</p>
+     *
+     * @param eventsList the list of {@link Events} to update; does nothing if null or empty.
      */
-    public void updateEventWithMasterDataDescription(List<Events> eventsList) {
+    public void updateEventWithMasterData(List<Events> eventsList) {
         if(CollectionUtils.isEmpty(eventsList))
             return;
-
-        var eventCodeDescriptionMap = getEventDescription(eventsList.stream()
+        // Create a map of event codes to their corresponding master data entries.
+        // Filter out events with non-null IDs and null event codes before mapping.
+        Map<String, EntityTransferMasterLists> eventCodeMasterDataMap = getEventCodeMasterDataMap(eventsList.stream()
                 .filter(i -> Objects.isNull(i.getId()))
                 .map(Events::getEventCode)
                 .filter(Objects::nonNull).toList());
-        // Keeping the older description in case we don't get anything in the map that could be due to failed v1 call
-        // or missing entry in the master-data
-        eventsList.forEach(i -> i.setDescription(Optional.ofNullable(eventCodeDescriptionMap.get(i.getEventCode())).orElse(i.getDescription())));
+
+        eventsList.forEach(event -> {
+            EntityTransferMasterLists masterData = eventCodeMasterDataMap.get(event.getEventCode());
+            // If master data is found, update the event's description and direction.
+            if (masterData != null) {
+                event.setDescription(masterData.getItemDescription());
+                if (masterData.getIdentifier3() != null) {
+                    event.setDirection(masterData.getIdentifier3());
+                }
+            }
+            // If no master data is found, retain the original description and direction.
+        });
     }
 
-    /**
-     * @param eventCodes : list of input event codes
-     * @return Map<String, String>
-     * Helper function that returns map of event code vs description
-     */
-    private Map<String, String> getEventDescription(List<String> eventCodes) {
-        Map<String, String> eventCodeDescriptionMap = new HashMap<>();
-        log.info("EventService: received {} eventcodes for fetching description", eventCodes.size());
+    private Map<String, EntityTransferMasterLists> getEventCodeMasterDataMap(List<String> eventCodes) {
+        Map<String, EntityTransferMasterLists> eventCodeMasterDataMap = new HashMap<>();
+        log.info("EventService: received {} event codes for fetching Masterdata", eventCodes.size());
         if (CollectionUtils.isEmpty(eventCodes))
-            return eventCodeDescriptionMap;
+            return eventCodeMasterDataMap;
         try {
             List<Object> masterDataListCriteria = Arrays.asList(
                     List.of(
@@ -1795,13 +1805,13 @@ public class CommonUtils {
             CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder().criteriaRequests(masterDataListCriteria).build();
             var v1DataResponse = iv1Service.fetchMasterData(v1ListRequest);
             List<EntityTransferMasterLists> masterData = jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class);
-            masterData.forEach(i -> eventCodeDescriptionMap.put(i.getItemValue(), i.getItemDescription()));
+            masterData.forEach(i -> eventCodeMasterDataMap.put(i.getItemValue(), i));
         }
         catch (Exception e) {
-            log.error("EventService : Error fetching event description from event codes", e);
+            log.error("EventService : Error fetching masterdata for event codes", e);
         }
 
-        return eventCodeDescriptionMap;
+        return eventCodeMasterDataMap;
     }
 
     public boolean checkIfPartyExists(PartiesResponse party) {

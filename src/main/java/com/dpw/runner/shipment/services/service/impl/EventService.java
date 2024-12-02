@@ -4,7 +4,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -58,8 +57,16 @@ import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.time.LocalDateTime;
-import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -72,14 +79,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
@@ -1093,6 +1098,8 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
+                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
@@ -1251,7 +1258,7 @@ public class EventService implements IEventService {
             entity.setEntityType(Constants.SHIPMENT);
         }
         // event code and master-data description
-        commonUtils.updateEventWithMasterDataDescription(List.of(entity));
+        commonUtils.updateEventWithMasterData(List.of(entity));
         eventDao.updateEventDetails(entity);
 
         handleDuplicationForExistingEvents(entity);
