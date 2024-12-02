@@ -106,5 +106,5 @@ public class EventConstants {
     public static final String DESTINATION = "destination";
     public static final String ORIGIN = "origin";
 
-    public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
+    public static final String SYSTEM_GENERATED = "System Generated";
 }

@@ -562,4 +562,6 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_network_transfer_entity_enabled")
     private Boolean isNetworkTransferEntityEnabled = false;
 
+    @Column(name = "events_revamp_enabled")
+    private Boolean eventsRevampEnabled;
 }

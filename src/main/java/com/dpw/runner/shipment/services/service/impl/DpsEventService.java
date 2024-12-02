@@ -24,7 +24,6 @@ import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -202,13 +201,13 @@ public class DpsEventService implements IDpsEventService {
         List<DpsEvent> dpsEventList = dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            throw new DpsException("No DPS Event found with provided entity id "+ shipmentGuid);
+            log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
+            return ResponseHelper.buildSuccessResponse(Collections.emptyList());
+        } else {
+            List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
+                    .map(this::constructDpsEventResponse).toList();
+            return ResponseHelper.buildSuccessResponse(dpsEventResponses);
         }
-
-        List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
-                .map(this::constructDpsEventResponse).toList();
-
-        return ResponseHelper.buildSuccessResponse(dpsEventResponses);
     }
 
     /**
@@ -265,8 +264,20 @@ public class DpsEventService implements IDpsEventService {
         try {
             // Attempt to find an existing DpsEvent by execution ID, or create a new one if not found
             DpsDataDto dtoData = dpsDto.getData();
-            DpsEvent dpsEvent = Optional.ofNullable(dpsEventRepository.findByExecutionId(dtoData.getRuleExecutionId()))
-                    .orElseGet(DpsEvent::new);
+            if (dtoData == null) {
+                throw new DpsException("DpsDataDto cannot be null.");
+            }
+
+            // Fetch existing DpsEvent or create a new one
+            DpsEvent dpsEvent = dpsEventRepository.findByExecutionId(dtoData.getRuleExecutionId());
+            if (dpsEvent == null) {
+                // Validate mandatory fields for creating a new DpsEvent
+                if (dtoData.getEntityType() == null || dtoData.getEntityId() == null) {
+                    throw new DpsException("Entity Type and Entity ID are mandatory for new Dps rule execution id: "
+                            + dtoData.getRuleExecutionId());
+                }
+                dpsEvent = new DpsEvent();
+            }
 
             // Update fields conditionally only if non-null
             if (dtoData.getRuleExecutionId() != null) {
@@ -315,14 +326,14 @@ public class DpsEventService implements IDpsEventService {
                 dpsEvent.setTransactionId(dpsDto.getTransactionId());
             }
             if (dtoData.getFieldsDetectedValues() != null) {
-
-                dpsEvent.setDpsFieldData(ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>()));
+                List<DpsFieldData> fieldDataList = ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>());
                 dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
-                        dpsEvent.getDpsFieldData().add(DpsFieldData.builder()
+                        fieldDataList.add(DpsFieldData.builder()
                                 .key(fieldDataDto.getKey())
-                                .value(fieldDataDto.getValue()).build()
-                        )
+                                .value(fieldDataDto.getValue())
+                                .build())
                 );
+                dpsEvent.setDpsFieldData(fieldDataList); // Set the updated list back to the entity
             }
 
             return dpsEvent;

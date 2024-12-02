@@ -41,6 +41,10 @@ public class EventsResponse implements IRunnerResponse {
     private String event_estimate_update_reasons;
     private String flightNumber;
     private String flightName;
+    private String remarks;
+    private String userName;
+    private String userEmail;
+    private String branch;
 
     // Conditional response from TrackingEvents
     private String containerNumber;
@@ -56,4 +60,5 @@ public class EventsResponse implements IRunnerResponse {
     private LocalDateTime receivedDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime scheduledDate;
+    private String direction;
 }

@@ -129,4 +129,19 @@ public class Events extends MultiTenancy {
 
     @Column(name = "shipment_number")
     private String shipmentNumber;
+
+    @Column(name = "direction")
+    private String direction;
+
+    @Column(name = "remarks")
+    private String remarks;
+
+    @Column(name = "user_name")
+    private String userName;
+
+    @Column(name = "user_email")
+    private String userEmail;
+
+    @Column(name = "branch")
+    private String branch;
 }

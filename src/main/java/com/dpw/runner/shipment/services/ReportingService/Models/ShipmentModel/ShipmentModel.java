@@ -175,8 +175,8 @@ public class ShipmentModel implements IDocumentModel {
     private Integer status;
     @JsonProperty("TransportMode")
     private String transportMode;
-    @JsonProperty("TriangulationPartner")
-    private Long triangulationPartner;
+    @JsonProperty("TriangulationPartnerList")
+    private List<Long> triangulationPartnerList;
     @JsonProperty("TruckDriverDetails")
     private List<TruckDriverDetailsModel> truckDriverDetails;
     @JsonProperty("Volume")

@@ -404,8 +404,8 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartner")
-    private Integer TriangulationPartner;
+    @JsonProperty("TriangulationPartnerList")
+    private List<Long> TriangulationPartnerList;
 
 
 

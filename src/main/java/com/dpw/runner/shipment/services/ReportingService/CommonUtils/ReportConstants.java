@@ -543,6 +543,10 @@ public class ReportConstants {
     public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
+    public static final String CLIENT_ADD_WITHOUT_CONTACT = "ClientAddwoCont";
+    public static final String CONSIGNER_ADD_WITHOUT_CONTACT = "CsgnrAddwoCont";
+    public static final String CONSIGNEE_ADD_WITHOUT_CONTACT = "CneesAddwoCont";
+    public static final String NOTIFY_PARTY_ADD_WITHOUT_CONTACT = "NPAddwoCont";
     public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String ISSUING_CARRIER_AGENT_NAME = "IssuingCarrierAgentName";
     public static final String ISSUiNG_CARRIER_CITY = "IssuingCarrierCity";
@@ -967,6 +971,10 @@ public class ReportConstants {
 
     public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
     // Local Language Tags
+    public static final String CLIENT_ADDWO_CONT_LL = "ClientAddwoContLL";
+    public static final String CONSIGNER_ADDWO_CONT_LL = "CsgnrAddwoContLL";
+    public static final String CONSIGNEE_ADDWO_CONT_LL = "CneesAddwoContLL";
+    public static final String NOTIFY_PART_ADDWO_CONT_LL = "NPAddwoContLL";
     public static final String CLIENT_LL = "ClientLL";
     public static final String CLIENT_ADDRESS_LL = "ClientAddressLL";
     public static final String CONSIGNER_LL = "ConsignerLL";
@@ -1310,5 +1318,6 @@ public class ReportConstants {
     public static final String USER_INITIALS = "UserInitials";
 
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
-    public static final String  ISSUING_AGENT_CITY = "IssuingAgentCity";
+    public static final String ISSUING_AGENT_CITY = "IssuingAgentCity";
+    public static final String RA_CSD = "RA_CSD";
 }

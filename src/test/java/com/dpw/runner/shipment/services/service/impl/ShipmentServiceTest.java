@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -13,6 +15,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
@@ -123,7 +126,23 @@ import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValida
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
@@ -197,7 +216,15 @@ import com.dpw.runner.shipment.services.notification.service.INotificationServic
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IHblService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -6434,7 +6461,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(0L);
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6465,7 +6492,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(0L);
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6502,7 +6529,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(0L);
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -7741,7 +7768,7 @@ ShipmentServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartner(0L);
+        shipmentDetails.setTriangulationPartnerList(List.of(0L));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -9176,7 +9203,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRetrieveForNTE() {
         shipmentDetails.setStatus(null);
-        shipmentDetails.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        shipmentDetails.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
@@ -9197,7 +9224,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRetrieveForNTE2() {
         shipmentDetails.setStatus(100);
-        shipmentDetails.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        shipmentDetails.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
@@ -9291,7 +9318,7 @@ ShipmentServiceTest extends CommonMocks {
 
         // Mock
         shipmentDetails.setReceivingBranch(1L);
-        shipmentDetails.setTriangulationPartner(12L);
+        shipmentDetails.setTriangulationPartnerList(List.of(12L));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails.setConsolidationList(new ArrayList<>())
                 .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -9400,5 +9427,67 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
+
+    @Test
+    public void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setReceivingBranch(1L);
+        shipmentDetails.setDirection("Inbound");
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
+        shipmentDetails.setDirection(DIRECTION_EXP);
+        shipmentDetails.setTriangulationPartnerList(List.of(1L, 2L, 3L));
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setTriangulationPartnerList(List.of(3L, 4L));
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
+
+        // Verify new tenant IDs processing
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull());
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull());
+    }
+
+    @Test
+    public void testCreateOrUpdateNetworkTransferEntity_NotEligibleForNetworkTransfer() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setReceivingBranch(1L);
+        shipmentDetails.setDirection("NonEligibleDirection"); // Non-eligible direction
+        shipmentDetails.setTransportMode("NonEligibleTransportMode"); // Non-eligible transport mode
+        shipmentDetails.setJobType("NonEligibleJobType"); // Non-eligible job type
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setId(100L); // Mocked ID for oldEntity
+        oldEntity.setReceivingBranch(2L); // Old receiving branch
+        oldEntity.setTriangulationPartnerList(List.of(3L, 4L, 5L)); // Old triangulation partners
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
+
+        // Assert and Verify
+
+        // Verify that deleteValidNetworkTransferEntity is called for oldEntity's receivingBranch
+        verify(networkTransferService, times(1))
+                .deleteValidNetworkTransferEntity(eq(2L), eq(100L), eq(Constants.SHIPMENT));
+
+        // Verify that deleteValidNetworkTransferEntity is called for each triangulation partner
+        verify(networkTransferService, times(1))
+                .deleteValidNetworkTransferEntity(eq(3L), eq(100L), eq(Constants.SHIPMENT));
+        verify(networkTransferService, times(1))
+                .deleteValidNetworkTransferEntity(eq(4L), eq(100L), eq(Constants.SHIPMENT));
+        verify(networkTransferService, times(1))
+                .deleteValidNetworkTransferEntity(eq(5L), eq(100L), eq(Constants.SHIPMENT));
+
+        // Ensure no processNetworkTransferEntity is invoked
+        verify(networkTransferService, never()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any());
+    }
+
 
 }

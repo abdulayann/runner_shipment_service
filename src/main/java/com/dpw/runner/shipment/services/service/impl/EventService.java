@@ -68,6 +68,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,11 +146,11 @@ public class EventService implements IEventService {
         request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Empty request received");
         }
         Events event = convertRequestToEntity(request);
         try {
-            eventDao.updateEventDetails(event);
-            event = eventDao.save(event);
+            saveEvent(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -199,8 +200,8 @@ public class EventService implements IEventService {
         }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            eventDao.updateEventDetails(events);
-            events = eventDao.save(events);
+
+            saveEvent(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1159,6 +1160,8 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
+                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
@@ -1261,7 +1264,35 @@ public class EventService implements IEventService {
                 EventsResponse::setDescription
         );
 
-        return ResponseHelper.buildSuccessResponse(allEventResponses);
+        List<EventsResponse> groupedEvents = allEventResponses;
+
+        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
+            return ResponseHelper.buildSuccessResponse(groupedEvents);
+        }
+
+        // Events grouping logic if events revamp feature flag is enabled
+        if (Objects.isNull(request.getSortRequest())) {
+            groupedEvents = allEventResponses.stream()
+                    // Group by eventCode and sort each group by `actual` in descending order
+                    .collect(Collectors.groupingBy(EventsResponse::getEventCode))
+                    .values().stream()
+                    // Sort each group by `actual` in descending order
+                    .map(group -> {
+                        group.sort(
+                                Comparator.comparing(EventsResponse::getShipmentNumber)
+                                .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
+                        );
+                        return group;
+                    })
+//                     Sort groups by the latest actual date in descending order
+                    .sorted(Comparator.comparing(
+                            group -> group.get(0).getActual(), Comparator.nullsLast(Comparator.reverseOrder())
+                    ))
+                    .flatMap(List::stream)
+                    .toList();
+        }
+
+        return ResponseHelper.buildSuccessResponse(groupedEvents);
     }
 
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest) {
@@ -1277,4 +1308,46 @@ public class EventService implements IEventService {
         log.info("EventsList - fetched {} events", allEvents.size());
         return allEvents;
     }
+
+    /**
+     * Trigger point for creating / updating event
+     * @param eventsRequest
+     */
+    public void saveEvent(EventsRequest eventsRequest) {
+        Events entity = convertRequestToEntity(eventsRequest);
+
+        if (Boolean.TRUE.equals(eventsRequest.getSaveFromShipment())) {
+            entity.setEntityType(Constants.SHIPMENT);
+        }
+        // event code and master-data description
+        commonUtils.updateEventWithMasterData(List.of(entity));
+        eventDao.updateEventDetails(entity);
+
+        handleDuplicationForExistingEvents(entity);
+
+        eventDao.save(entity);
+        // auto generate runner events | will remain as it is inside shipment and consolidation
+    }
+
+    private void handleDuplicationForExistingEvents(Events event) {
+
+        // find the event with duplication key criteria
+        // shipment number, container number, event code, source, place name
+        ListCommonRequest duplicateEventRequest = CommonUtils.constructListCommonRequest("eventCode", "=", event.getEventCode());
+        duplicateEventRequest = CommonUtils.andCriteria("shipmentNumber",  event.getShipmentNumber(), "=", duplicateEventRequest);
+        duplicateEventRequest = CommonUtils.andCriteria("containerNumber",  event.getContainerNumber(), "=", duplicateEventRequest);
+        duplicateEventRequest = CommonUtils.andCriteria("source",  event.getSource(), "=", duplicateEventRequest);
+        duplicateEventRequest = CommonUtils.andCriteria("placeName",  event.getPlaceName(), "=", duplicateEventRequest);
+        duplicateEventRequest = CommonUtils.andCriteria("entityId",  event.getEntityId(), "=", duplicateEventRequest);
+        duplicateEventRequest = CommonUtils.andCriteria("entityType",  event.getEntityType(), "=", duplicateEventRequest);
+        Pair<Specification<Events>, Pageable> pair = fetchData(duplicateEventRequest, Events.class);
+        Page<Events> duplicateEventPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+
+        if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
+            // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
+            // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
+            duplicateEventPage.getContent().stream().filter(i -> !i.getId().equals(event.getId())).forEach(i -> eventDao.delete(i));
+        }
+    }
+
 }
