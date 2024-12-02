@@ -6519,8 +6519,8 @@ public class ShipmentService implements IShipmentService {
             }
             if(!pushRequests.isEmpty()) {
                 pushRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));
-                // ConsolidationDetails consoleForPushReject = consolidationDetailsDao.findConsolidationsById(pushRequests.get(0).getConsolidationId());
-                // TODO- Vamsi call push withdraw method here
+                 ConsolidationDetails consoleForPushReject = consolidationDetailsDao.findConsolidationsById(pushRequests.get(0).getConsolidationId());
+                sendEmailForPushRequestWithdrawl(shipId, List.of(consoleForPushReject.getId()), shipmentRequestedTypes, remarks);
             }
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
             String warning = null;
