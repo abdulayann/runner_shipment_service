@@ -1110,7 +1110,9 @@ public class EventService implements IEventService {
         event.setEventType(EventType.INVOICE);
         event.setContainerNumber(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceNumber());
         if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
-            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+            if (ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+                event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+            }
         }
         commonUtils.updateEventWithMasterData(List.of(event));
         return List.of(event);

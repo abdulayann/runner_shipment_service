@@ -1,8 +1,17 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -25,7 +34,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
@@ -43,6 +56,10 @@ import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto.BillDto;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
@@ -53,7 +70,11 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
@@ -1065,6 +1086,57 @@ class EventServiceTest extends CommonMocks {
 
         assertNotNull(httpResponse);
         assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void processUpstreamBillingCommonEventMessage_SuccessfulExecution() {
+        // Arrange
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        BillDto billDto1 = mock(BillDto.class);
+        BillDto billDto2 = mock(BillDto.class);
+
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setGuid(guid1);
+        shipment1.setId(1L);
+        shipment1.setShipmentId("S123");
+//        shipment1.setConsolidationList(List.of(ConsolidationDetails.builder().build()));
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setGuid(guid2);
+        shipment2.setId(2L);
+        shipment2.setShipmentId("S456");
+//        shipment2.setConsolidationList(List.of(ConsolidationDetails.builder().build()));
+
+        Events mockEvent = Events.builder().build();
+
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getBills()).thenReturn(List.of(billDto1, billDto2));
+
+        when(billDto1.getModuleId()).thenReturn(guid1.toString());
+        when(billDto1.getModuleTypeCode()).thenReturn(Constants.SHIPMENT);
+        when(billDto2.getModuleId()).thenReturn(guid2.toString());
+        when(billDto2.getModuleTypeCode()).thenReturn(Constants.SHIPMENT);
+
+        when(shipmentDao.findByGuids(anyList())).thenReturn(List.of(shipment1, shipment2));
+        when(eventDao.shouldSendEventFromShipmentToConsolidation(any(), any())).thenReturn(false);
+
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
+
+        // Act
+        eventService.processUpstreamBillingCommonEventMessage(billingInvoiceDto);
+
+        // Assert
+        verify(shipmentDao).findByGuids(List.of(guid1, guid2));
+        verify(eventDao).saveAll(anyList());
+        verify(commonUtils, times(2)).updateEventWithMasterData(anyList()); // Updated expectation
     }
 
 
