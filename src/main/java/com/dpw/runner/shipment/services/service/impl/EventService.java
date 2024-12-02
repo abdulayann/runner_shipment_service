@@ -1112,7 +1112,7 @@ public class EventService implements IEventService {
         if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
             event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
         }
-        commonUtils.updateEventWithMasterDataDescription(List.of(event));
+        commonUtils.updateEventWithMasterData(List.of(event));
         return List.of(event);
     }
     /**
