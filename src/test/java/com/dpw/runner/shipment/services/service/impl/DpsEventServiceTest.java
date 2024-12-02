@@ -86,8 +86,7 @@ class DpsEventServiceTest {
         String guid = UUID.randomUUID().toString();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
-
-        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(guid));
+        assertEquals(HttpStatus.OK, dpsEventService.getShipmentMatchingRulesByGuid(guid).getStatusCode());
     }
 
     @Test

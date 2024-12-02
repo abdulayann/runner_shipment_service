@@ -203,12 +203,12 @@ public class DpsEventService implements IDpsEventService {
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
+            return ResponseHelper.buildSuccessResponse(Collections.emptyList());
+        } else {
+            List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
+                    .map(this::constructDpsEventResponse).toList();
+            return ResponseHelper.buildSuccessResponse(dpsEventResponses);
         }
-
-        List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
-                .map(this::constructDpsEventResponse).toList();
-
-        return ResponseHelper.buildSuccessResponse(dpsEventResponses);
     }
 
     /**
