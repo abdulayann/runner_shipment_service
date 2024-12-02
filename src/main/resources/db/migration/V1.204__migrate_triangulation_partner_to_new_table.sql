@@ -16,11 +16,6 @@ SELECT shipment_details.id, shipment_details.triangulation_partner
 FROM shipment_details
 WHERE shipment_details.triangulation_partner IS NOT NULL;
 
--- Step 3: Drop the old triangulationPartner column
-ALTER TABLE shipment_details
-DROP COLUMN triangulation_partner;
-
-
 -- Script for transferring triangulationPartner data for Consolidation entity
 
 -- 1. Create the new table triangulation_partner_consolidation if not exists
@@ -36,6 +31,3 @@ INSERT INTO triangulation_partner_consolidation (consolidation_id, triangulation
 SELECT consolidation_details.id, consolidation_details.triangulation_partner
 FROM consolidation_details
 WHERE consolidation_details.triangulation_partner IS NOT NULL;
-
--- 3. Drop the old triangulation_partner column
-ALTER TABLE consolidation_details DROP COLUMN triangulation_partner;
