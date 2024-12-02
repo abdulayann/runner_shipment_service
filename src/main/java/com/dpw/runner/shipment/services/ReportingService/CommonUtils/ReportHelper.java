@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -103,6 +104,65 @@ public class ReportHelper {
             list.add(phone);
         if(pincode != null)
             list.add(pincode);
+        return list;
+    }
+
+    public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
+    {
+        List<String> details = new ArrayList<>();
+        details.add(name);
+        if(!Strings.isNullOrEmpty(address1)) {
+            details.add(address1);
+        }
+        if(!Strings.isNullOrEmpty(address2)) {
+            details.add(address2);
+        }
+
+        StringBuilder locationDetails = new StringBuilder();
+        if (!Strings.isNullOrEmpty(city)) {
+            locationDetails.append(city);
+        }
+        if (!Strings.isNullOrEmpty(stateCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(stateCode);
+        }
+        if (!Strings.isNullOrEmpty(pinCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(pinCode);
+        }
+        if (!Strings.isNullOrEmpty(countryCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(countryCode);
+        }
+
+        if (!locationDetails.isEmpty()) {
+            details.add(locationDetails.toString());
+        }
+
+        return details;
+    }
+
+    public static List<String> getOrgAddressWithoutPhoneEmail(PartiesModel party) {
+        if(party == null || party.getAddressData() == null)
+            return new ArrayList<>();
+        Map<String, Object> partyAddress = party.getAddressData();
+        List<String> list = new ArrayList<String>();
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)) != null)
+            list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
+        if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
+            list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
         return list;
     }
 

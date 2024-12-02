@@ -2,19 +2,20 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 @Builder
 @NoArgsConstructor
@@ -74,7 +75,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String route;
     private long sourceTenantId;
     private long documentationPartner;
-    private long triangulationPartner;
+    private List<Long> triangulationPartnerList;
     private long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
@@ -141,4 +142,5 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Integer ordersCount;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
+    private DpsWorkflowState dpsState;
 }

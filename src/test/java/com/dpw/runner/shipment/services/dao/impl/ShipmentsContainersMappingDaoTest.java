@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -137,7 +139,6 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByShipmentId(shipmentsContainersMapping.getShipmentId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.assignContainers(shipmentsContainersMapping.getShipmentId(), List.of(shipmentsContainersMapping.getContainerId(), shipmentsContainersMapping1.getContainerId()), UUID.randomUUID().toString()));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
@@ -166,7 +167,6 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), List.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId()), false));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
@@ -183,7 +183,130 @@ class ShipmentsContainersMappingDaoTest {
         assertDoesNotThrow(() ->spyService.detachShipments(shipmentsContainersMapping.getContainerId(), List.of(shipmentsContainersMapping.getShipmentId()), false));
         verify(shipmentsContainersMappingRepository, times(1)).delete(any(ShipmentsContainersMapping.class));
     }
+    @Test
+    void testDetachListShipments() {
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(new ArrayList<>());
+        ArrayList<Long> containerIds = new ArrayList<>();
+        shipmentsContainersMappingDao.detachListShipments(containerIds, new ArrayList<>(), true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
 
+    /**
+     * Method under test:
+     * {@link ShipmentsContainersMappingDao#detachListShipments(List, List, boolean)}
+     */
+    @Test
+    void testDetachListShipments2() {
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(1L);
+        shipmentsContainersMapping.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentsContainersMapping.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        shipmentsContainersMapping.setGuid(UUID.randomUUID());
+        shipmentsContainersMapping.setId(1L);
+        shipmentsContainersMapping.setIsDeleted(true);
+        shipmentsContainersMapping.setShipmentId(1L);
+        shipmentsContainersMapping.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentsContainersMapping.setUpdatedBy("2020-03-01");
+
+        ArrayList<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+        shipmentsContainersMappingList.add(shipmentsContainersMapping);
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(shipmentsContainersMappingList);
+        ArrayList<Long> containerIds = new ArrayList<>();
+        shipmentsContainersMappingDao.detachListShipments(containerIds, new ArrayList<>(), true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentsContainersMappingDao#detachListShipments(List, List, boolean)}
+     */
+    @Test
+    void testDetachListShipments3() {
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(new ArrayList<>());
+
+        ArrayList<Long> containerIds = new ArrayList<>();
+        containerIds.add(1L);
+        shipmentsContainersMappingDao.detachListShipments(containerIds, new ArrayList<>(), true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentsContainersMappingDao#detachListShipments(List, List, boolean)}
+     */
+    @Test
+    void testDetachListShipments4() {
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(new ArrayList<>());
+
+        ArrayList<Long> containerIds = new ArrayList<>();
+        containerIds.add(0L);
+        containerIds.add(1L);
+        shipmentsContainersMappingDao.detachListShipments(containerIds, new ArrayList<>(), true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentsContainersMappingDao#detachListShipments(List, List, boolean)}
+     */
+    @Test
+    void testDetachListShipments5() {
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(new ArrayList<>());
+        ArrayList<Long> containerIds = new ArrayList<>();
+
+        ArrayList<Long> shipIds = new ArrayList<>();
+        shipIds.add(1L);
+        shipmentsContainersMappingDao.detachListShipments(containerIds, shipIds, true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentsContainersMappingDao#detachListShipments(List, List, boolean)}
+     */
+    @Test
+    void testDetachListShipments6() {
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(new ArrayList<>());
+        ArrayList<Long> containerIds = new ArrayList<>();
+
+        ArrayList<Long> shipIds = new ArrayList<>();
+        shipIds.add(0L);
+        shipIds.add(1L);
+        shipmentsContainersMappingDao.detachListShipments(containerIds, shipIds, true);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+    }
+    @Test
+    void testDetachListShipments7() {
+        ShipmentsContainersMapping shipmentsContainersMapping = new ShipmentsContainersMapping();
+        shipmentsContainersMapping.setContainerId(1L);
+        shipmentsContainersMapping.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentsContainersMapping.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        shipmentsContainersMapping.setGuid(UUID.randomUUID());
+        shipmentsContainersMapping.setId(1L);
+        shipmentsContainersMapping.setIsDeleted(true);
+        shipmentsContainersMapping.setShipmentId(1L);
+        shipmentsContainersMapping.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentsContainersMapping.setUpdatedBy("2020-03-01");
+
+        ArrayList<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+        shipmentsContainersMappingList.add(shipmentsContainersMapping);
+        when(shipmentsContainersMappingRepository.findByContainerIdIn(Mockito.<List<Long>>any()))
+            .thenReturn(shipmentsContainersMappingList);
+        ArrayList<Long> containerIds = new ArrayList<>();
+
+        ArrayList<Long> shipIds = new ArrayList<>();
+        shipIds.add(0L);
+        shipIds.add(1L);
+        shipmentsContainersMappingDao.detachListShipments(containerIds, shipIds, false);
+        verify(shipmentsContainersMappingRepository).findByContainerIdIn(Mockito.<List<Long>>any());
+        verify(shipmentsContainersMappingRepository).deleteAll(shipmentsContainersMappingList);
+    }
     @Test
     void testDetachShipments_Success1() {
         ShipmentsContainersMapping shipmentsContainersMapping = testShipmentsContainersMapping;
@@ -193,7 +316,6 @@ class ShipmentsContainersMappingDaoTest {
 
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping, shipmentsContainersMapping1)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
-        when(containersSync.sync(any(), any())).thenThrow(new RuntimeException());
         assertDoesNotThrow(() ->spyService.detachShipments(shipmentsContainersMapping.getContainerId(), List.of(shipmentsContainersMapping.getShipmentId()), false));
         verify(shipmentsContainersMappingRepository, times(1)).delete(any(ShipmentsContainersMapping.class));
     }

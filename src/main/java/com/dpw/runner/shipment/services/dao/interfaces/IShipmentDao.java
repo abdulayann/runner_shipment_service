@@ -4,14 +4,15 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException;
@@ -26,6 +27,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
+    void saveDpsState(Long id, String dpsState);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
     void saveEntityTransfer(Long id, Boolean entityTransfer);
@@ -33,6 +35,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid);
     List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId);
     List<ShipmentDetails> findShipmentsByIds(Set<Long> ids);
+    Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id);
     void entityDetach(List<ShipmentDetails> shipmentDetails);
     List<ShipmentDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);

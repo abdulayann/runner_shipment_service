@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS containers
+    ADD COLUMN IF NOT EXISTS pra_status VARCHAR;
