@@ -63,6 +63,7 @@ public class BillingCommonEventConsumer {
 
                     InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
                     List<BillDto> billDtoList = invoiceDto.getAccountReceivable().getBills();
+                    // Remove any BillDto that does not match the required module type
                     billDtoList.removeIf(billDto -> !Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode()));
 
                     eventService.processUpstreamBillingCommonEventMessage(billingInvoiceDto);
@@ -73,7 +74,8 @@ public class BillingCommonEventConsumer {
                 return null;
             });
         } catch (Exception ex) {
-            log.error("{} | DPS ERROR: Exception occurred while processing message: {} with exception: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, message, ex.getMessage(), ex);
+            log.error("{} | Exception occurred while processing message: {} with exception: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, message,
+                    ex.getMessage(), ex);
         } finally {
             acknowledgment.acknowledge();
         }

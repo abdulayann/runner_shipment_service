@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1.BookingEntity;
@@ -39,8 +38,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListRespo
 import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse.BillingData;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
@@ -48,7 +45,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -140,9 +136,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
         return clientCodeList;
     }
-
-    @Override
-
 
     @Override
     public Boolean fetchActiveInvoices(CommonGetRequest request) throws RunnerException {
