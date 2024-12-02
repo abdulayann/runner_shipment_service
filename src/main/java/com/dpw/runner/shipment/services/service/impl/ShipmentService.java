@@ -6519,8 +6519,7 @@ public class ShipmentService implements IShipmentService {
             }
             if(!pushRequests.isEmpty()) {
                 pushRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));
-                 ConsolidationDetails consoleForPushReject = consolidationDetailsDao.findConsolidationsById(pushRequests.get(0).getConsolidationId());
-                sendEmailForPushRequestWithdrawl(shipId, List.of(consoleForPushReject.getId()), shipmentRequestedTypes, remarks);
+                sendEmailForPushRequestWithdrawl(shipId, List.of(pushRequests.get(0).getConsolidationId()), shipmentRequestedTypes, remarks);
             }
             sendEmailForPushRequested(shipId, consoleId, shipmentRequestedTypes);
             String warning = null;
