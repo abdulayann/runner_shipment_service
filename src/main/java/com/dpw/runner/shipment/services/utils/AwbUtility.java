@@ -248,22 +248,18 @@ public class AwbUtility {
             if(!orgs.isEmpty()) {
 
                 CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                List<Object> addressField = new ArrayList<>(List.of("OrgId"));
-                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgs.get(0).getId()));
+                List<Object> addressField = new ArrayList<>(List.of("Id"));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
                 addressRequest.setCriteriaRequests(addressCriteria);
                 V1DataResponse addressResponse = v1Service.addressList(addressRequest);
                 List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
 
                 String number = null;
                 String expiry = null;
-                String postCode = null;
                 if(addressList != null && !addressList.isEmpty()){
-                    EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
-                    if(address != null) {
-                        number = address.getKCRANumber();
-                        expiry = address.getKCRAExpiry();
-                        postCode = address.getZipPostCode();
-                    }
+                    EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
+                    number = address.getKCRANumber();
+                    expiry = address.getKCRAExpiry();
                 }
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
@@ -487,22 +483,18 @@ public class AwbUtility {
             if(!orgs.isEmpty()) {
 
                 CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                List<Object> addressField = new ArrayList<>(List.of("OrgId"));
-                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", orgs.get(0).getId()));
+                List<Object> addressField = new ArrayList<>(List.of("Id"));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
                 addressRequest.setCriteriaRequests(addressCriteria);
                 V1DataResponse addressResponse = v1Service.addressList(addressRequest);
                 List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
 
                 String number = null;
                 String expiry = null;
-                String postCode = null;
                 if(addressList != null && !addressList.isEmpty()){
-                    EntityTransferAddress address = addressList.stream().filter(x -> Objects.equals(x.getAddressShortCode(), "Default")).findFirst().orElse(addressList.get(0));
-                    if(address != null) {
-                        number = address.getKCRANumber();
-                        expiry = address.getKCRAExpiry();
-                        postCode = address.getZipPostCode();
-                    }
+                    EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
+                    number = address.getKCRANumber();
+                    expiry = address.getKCRAExpiry();
                 }
                 awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
                         .city(awb.getAwbShipmentInfo().getIssuingAgentCity())

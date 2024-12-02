@@ -107,7 +107,7 @@ public class HawbReport extends IReport{
         if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
             CompanyDto companyDetails = companyDetailsList.get(0);
             List<String> companyAddress = ReportHelper.getOrgAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getState(), companyDetails.getCity(), companyDetails.getCountry(), companyDetails.getZipPostCode());
-            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
         //TODO- Tenant data
@@ -294,11 +294,8 @@ public class HawbReport extends IReport{
                 if(StringUtility.isNotEmpty(cargoInfoRows.getChargeCode()))
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
-                dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                dictionary.put(CSD_INFO_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
-                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()) && StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate())) {
-                    dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
-                }
+                dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
+                dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
                 dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
                 dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
@@ -713,7 +710,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.BRANCH_NAME, StringUtility.toUpperCase(otherInfoRows.getBranch()));
                 dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
                 List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
-                companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
+                companyAddress = companyAddress.stream().filter(StringUtility::isNotEmpty).map(StringUtility::toUpperCase).toList();
 
                 dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));
