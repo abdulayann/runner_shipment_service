@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -204,12 +203,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -5595,7 +5595,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testRetrieveForNTE() {
-        testConsol.setTriangulationPartner(TenantContext.getCurrentTenant().longValue());
+        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -5620,7 +5620,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails3 = testConsol;
         testConsol.setReceivingBranch(1L);
-        testConsol.setTriangulationPartner(12L);
+        testConsol.setTriangulationPartnerList(List.of(12L));
 
         ConsolidationDetails consolidationDetails2 = testConsol;
 

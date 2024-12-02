@@ -77,7 +77,7 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
-    private Long triangulationPartner;
+    private List<Long> triangulationPartnerList;
     private Long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;

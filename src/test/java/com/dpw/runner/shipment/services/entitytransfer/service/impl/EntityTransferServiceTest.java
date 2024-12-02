@@ -1,5 +1,25 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -10,7 +30,17 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
@@ -21,13 +51,33 @@ import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckTaskExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.PostArValidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -50,6 +100,18 @@ import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,16 +127,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -277,6 +329,48 @@ class EntityTransferServiceTest extends CommonMocks {
         verify(tasksService, times(3)).createTask(any());
 
     }
+
+    @Test
+    void testSendShipmentSuccess_WithTriangulationPartner() {
+        Long shipmentId = 1L;
+        int mockTenantId = 10;
+
+        // Prepare SendShipmentRequest
+        SendShipmentRequest sendShipmentRequest = new SendShipmentRequest();
+        sendShipmentRequest.setSendToBranch(List.of(2, 3, 4)); // Include tenants, one of which is in triangulation partners
+        sendShipmentRequest.setShipId(shipmentId);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendShipmentRequest);
+
+        // Mock ShipmentDetails
+        ShipmentDetails mockShipmentDetails = jsonTestUtility.getCompleteShipment();
+        mockShipmentDetails.setTenantId(mockTenantId);
+        mockShipmentDetails.setReceivingBranch(1L); // Ensure 1L is the receiving branch
+        mockShipmentDetails.setTriangulationPartnerList(List.of(3L, 4L)); // Set triangulation partners
+
+        // Mock Payload and Response
+        EntityTransferShipmentDetails mockETPayload = new EntityTransferShipmentDetails();
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
+
+        // Mocking
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(mockShipmentDetails));
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETPayload);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+
+        mockShipmentSettings();
+        var httpResponse = entityTransferService.sendShipment(commonRequestModel);
+
+        // Assertions
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+
 
     @Test
     void testSendConsolidationFailureInCaseOfEmptySendToOrg() {
@@ -555,7 +649,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetails.getCarrierDetails().setOriginPort(null);
         consolidationDetails.getCarrierDetails().setDestinationPort(null);
         consolidationDetails.setReceivingBranch(null);
-        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -796,7 +890,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.getCarrierDetails().setOriginPort(null);
         shipmentDetails.getCarrierDetails().setDestinationPort(null);
         shipmentDetails.setReceivingBranch(null);
-        shipmentDetails.setTriangulationPartner(null);
+        shipmentDetails.setTriangulationPartnerList(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -935,7 +1029,7 @@ class EntityTransferServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
-        consolidationDetails.setTriangulationPartner(231L);
+        consolidationDetails.setTriangulationPartnerList(List.of(231L));
         ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
         shipmentDetailsDrt.setGuid(UUID.randomUUID());
         shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -950,7 +1044,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp.setGuid(UUID.randomUUID());
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
-        consolidationDetailsImp.setTriangulationPartner(33L);
+        consolidationDetailsImp.setTriangulationPartnerList(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
         shipmentDetailsImp1.setGuid(UUID.randomUUID());
@@ -961,7 +1055,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp1.setGuid(UUID.randomUUID());
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
-        consolidationDetailsImp1.setTriangulationPartner(33L);
+        consolidationDetailsImp1.setTriangulationPartnerList(List.of(33L));
 
         ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
         shipmentDetailsImp2.setGuid(UUID.randomUUID());
@@ -1005,7 +1099,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole.setGuid(UUID.randomUUID());
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
-        originShipConsole.setTriangulationPartner(33L);
+        originShipConsole.setTriangulationPartnerList(List.of(33L));
         originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
@@ -1015,7 +1109,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole1.setGuid(UUID.randomUUID());
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
-        originShipConsole1.setTriangulationPartner(33L);
+        originShipConsole1.setTriangulationPartnerList(List.of(33L));
         originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
@@ -1025,7 +1119,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole2.setGuid(UUID.randomUUID());
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
-        originShipConsole2.setTriangulationPartner(35L);
+        originShipConsole2.setTriangulationPartnerList(List.of(35L));
         originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
@@ -1040,7 +1134,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole3.setGuid(UUID.randomUUID());
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
-        originShipConsole3.setTriangulationPartner(33L);
+        originShipConsole3.setTriangulationPartnerList(List.of(33L));
         originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
 
         ShipmentDetails receivingShipment = new ShipmentDetails();
@@ -1661,9 +1755,9 @@ class EntityTransferServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
         when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETPayload);
         when(shipmentService.fetchAllMasterDataByKey(any(), any())).thenReturn(new HashMap<String, Object>());
-        when(networkTransferDao.findByTenantAndEntity(1,155357L, SHIPMENT)).thenReturn(Optional.of(mockNetworkTransfer));
-        when(networkTransferDao.findByTenantAndEntity(2,155357L, SHIPMENT)).thenReturn(Optional.empty());
-        when(networkTransferDao.findByTenantAndEntity(2,155357L, SHIPMENT)).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(1, 155357L, Constants.SHIPMENT)).thenReturn(Optional.of(mockNetworkTransfer));
+        when(networkTransferDao.findByTenantAndEntity(2, 155357L, Constants.SHIPMENT)).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(2, 155357L, Constants.SHIPMENT)).thenReturn(Optional.empty());
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -1711,14 +1805,72 @@ class EntityTransferServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
         when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
-        when(networkTransferDao.findByTenantAndEntity(66,2258L, CONSOLIDATION)).thenReturn(Optional.of(mockNetworkTransfer));
-        when(networkTransferDao.findByTenantAndEntity(11,2258L, CONSOLIDATION)).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(66, 2258L, Constants.CONSOLIDATION)).thenReturn(Optional.of(mockNetworkTransfer));
+        when(networkTransferDao.findByTenantAndEntity(11, 2258L, Constants.CONSOLIDATION)).thenReturn(Optional.empty());
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+
+    @Test
+    void testSendConsolidationWithTriangulationPartner() {
+        int mockTenantId = 10;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTenantId(mockTenantId);
+        consolidationDetails.getShipmentsList().forEach(i -> i.setTenantId(mockTenantId));
+        consolidationDetails.setTriangulationPartnerList(List.of(66L));  // Mock triangulation partner
+
+        EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+        V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();
+
+        Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
+        shipAdditionalDocs.put(consolidationDetails.getShipmentsList().get(0).getGuid().toString(), List.of(UUID.randomUUID().toString()));
+
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .sendToBranch(List.of(66)) // Send to the triangulation partner
+                .consolId(consolidationDetails.getId())
+                .sendToOrg(List.of(organizations.getWhitelistedTenantGUID()))
+                .additionalDocs(List.of(UUID.randomUUID().toString()))
+                .shipAdditionalDocs(shipAdditionalDocs)
+                .build();
+
+        EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
+        ShipmentDetails mockLinkedShipment = new ShipmentDetails();
+        EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
+
+        // Mocks
+        when(consolidationDetailsDao.findById(consolidationDetails.getId())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(jsonHelper.convertValue(any(), eq(EntityTransferConsolidationDetails.class))).thenReturn(mockETPayload);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
+
+        mockShipmentSettings();
+
+        // Call method
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
+
+        // Assertions
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+        // Verify that the shipment direction for the triangulation partner was set to DIRECTION_CTS
+        verify(jsonHelper, times(1)).convertValue(any(), eq(EntityTransferShipmentDetails.class)); // Ensure convertValue was called
+
+        // Check the direction for the triangulation partner shipment
+        assertEquals(Constants.DIRECTION_CTS, mockETShipment.getDirection(), "Direction should be set to DIRECTION_CTS for triangulation partner.");
+    }
+
 
 
     private Runnable mockRunnable() {

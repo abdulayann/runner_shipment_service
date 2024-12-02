@@ -129,4 +129,5 @@ public class ShipmentConstants {
     public static final String SHIPMENT_RETRIEVE_NULL_REQUEST =  "Request Id is null for Shipment retrieve with Request Id {}";
 
     public static final String FETCH_MATCHING_RULES_SUCCESS = "Matching Rules Fetched Successfully";
+
 }

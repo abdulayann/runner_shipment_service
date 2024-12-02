@@ -255,7 +255,7 @@ public class HawbReport extends IReport{
             var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
             dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
             dictionary.put(AWB_ISSUING_AGENT_ADDRESS, getAwbFormattedDetails(shipInfo.getIssuingAgentName(),shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentContactName(), shipInfo.getIssuingAgentPhone(), shipInfo.getIssuingAgentTaxRegistrationNumber()));
-            dictionary.put(ISSUING_AGENT_CITY, shipInfo.getIssuingAgentCity());
+            dictionary.put(ISSUING_AGENT_CITY, StringUtility.toUpperCase(shipInfo.getIssuingAgentCity()));
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
             EntityTransferMasterLists paymentCodeDetails = null;
@@ -437,8 +437,11 @@ public class HawbReport extends IReport{
                 String finalFreightAmountText = FreightAmountText;
                 valuesFAT.forEach(value -> {
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
+                    value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
+                    value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
+                    value.put(AWB_DIMS, value.get(DIMENSIONS));
                     if(value.get(ReportConstants.RATE_CLASS) != null){
-                        value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
+                        value.put(ReportConstants.RATE_CLASS, value.get(ReportConstants.RATE_CLASS));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));

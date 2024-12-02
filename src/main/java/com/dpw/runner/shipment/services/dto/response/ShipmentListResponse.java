@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -74,7 +75,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String route;
     private long sourceTenantId;
     private long documentationPartner;
-    private long triangulationPartner;
+    private List<Long> triangulationPartnerList;
     private long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
