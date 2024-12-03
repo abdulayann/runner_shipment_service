@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -26,4 +27,10 @@ public interface INotificationRepository extends MultiTenancyRepository<Notifica
     }
 
     List<Notification> findByEntityIdAndEntityType(Long entityId, String entityType);
+
+    @Query(value = "SELECT entity_id, COUNT(*) FROM notification WHERE entity_id IN ?1 AND entity_type = ?2 group by entity_id", nativeQuery = true)
+    List<Object[]> pendingNotificationCountBasedOnEntityIdsAndEntityType(List<Long> entityIds, String entityType);
+
+    @Query(value = "SELECT * FROM notification WHERE entity_id = ?1 AND entity_type = ?2 AND requested_branch_id = ?3 AND request_type = ?4", nativeQuery = true)
+    List<Notification> findNotificationBasedOnEntityIdAndEntityTypeAndRequestedBranchIdAndRequestType(Long entityId, String entityType, Integer branchId, String requestType);
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.NotificationConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INotificationService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
@@ -49,5 +51,33 @@ public class NotificationsController {
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         return notificationService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsController.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)})
+    @GetMapping(NotificationConstants.NOTIFICATION_ACCEPT)
+    public ResponseEntity<IRunnerResponse> accept(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
+        String responseMsg;
+        try {
+            return notificationService.acceptNotification(id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsController.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_CONFIRMATION_SUCCESSFUL)})
+    @GetMapping(NotificationConstants.NOTIFICATION_CONFIRMATION_MSG_API)
+    public ResponseEntity<IRunnerResponse> confirmationMessage(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
+        String responseMsg;
+        try {
+            return notificationService.confirmationMessage(id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

@@ -7,18 +7,30 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.NotificationConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.RequestType;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.INotificationService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
@@ -36,6 +48,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -55,16 +68,26 @@ public class NotificationService implements INotificationService {
 
     private final MasterDataKeyUtils masterDataKeyUtils;
 
+    private final IShipmentService shipmentService;
+
+    private final IConsolidationService consolidationService;
+
+    private final V1ServiceUtil v1ServiceUtil;
+
     @Autowired
     public NotificationService(ModelMapper modelMapper, JsonHelper jsonHelper, INotificationDao notificationDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
-                                  MasterDataKeyUtils masterDataKeyUtils) {
+                                  MasterDataKeyUtils masterDataKeyUtils, IShipmentService shipmentService,
+                                  IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
         this.masterDataUtils = masterDataUtils;
         this.executorService = executorService;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.modelMapper = modelMapper;
+        this.shipmentService = shipmentService;
+        this.consolidationService = consolidationService;
+        this.v1ServiceUtil = v1ServiceUtil;
     }
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -153,7 +176,7 @@ public class NotificationService implements INotificationService {
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         } catch (Exception ex) {
-            log.error("Request: {} | Error Occurred in CompletableFuture: addAllTenantDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), NetworkTransferResponse.class.getSimpleName(), ex.getMessage());
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllTenantDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), NotificationResponse.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -180,5 +203,233 @@ public class NotificationService implements INotificationService {
         }
 
         return responseList;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> acceptNotification(Long id) {
+        String responseMsg;
+        try {
+            if(id == null ) {
+                log.error("Id is null for Notification accept with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Notification accept failed because Id is null.");
+            }
+            Optional<Notification> notification = notificationDao.findById(id);
+            if(!notification.isPresent()) {
+                log.debug(NotificationConstants.NOTIFICATION_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(Objects.equals(notification.get().getRequestType(), RequestType.REASSIGN)) {
+                processReassignBranchForEntityTransfer(notification.get());
+            }
+            notificationDao.delete(notification.get());
+
+            log.info("Notification accept successful for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NotificationConstants.NOTIFICATION_ACCEPT_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> confirmationMessage(Long id) {
+        String responseMsg;
+        try {
+            if(id == null ) {
+                log.error("Id is null for Notification Confirmation message with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Notification Confirmation message failed because Id is null.");
+            }
+            NotificationResponse notificationResponse = getNotificationResponseById(id);
+            if(notificationResponse == null) {
+                log.debug(NotificationConstants.NOTIFICATION_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            Long receivingBranch = null;
+            List<Long> triangulationPartners = new ArrayList<>();
+            CommonGetRequest request = CommonGetRequest.builder().id(notificationResponse.getEntityId()).build();
+            if(Objects.equals(notificationResponse.getEntityType(), Constants.SHIPMENT)) {
+                RunnerResponse<ShipmentDetailsResponse> runnerShipmentResponse = (RunnerResponse<ShipmentDetailsResponse>) shipmentService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
+                ShipmentDetailsResponse shipmentDetailsResponse = runnerShipmentResponse.getData();
+                receivingBranch = shipmentDetailsResponse.getReceivingBranch();
+                triangulationPartners = Optional.ofNullable(shipmentDetailsResponse.getTriangulationPartnerList())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
+            } else if (Objects.equals(notificationResponse.getEntityType(), Constants.CONSOLIDATION)){
+                RunnerResponse<ConsolidationDetailsResponse> runnerConsolidationResponse = (RunnerResponse<ConsolidationDetailsResponse>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
+                ConsolidationDetailsResponse consolidationDetailsResponse = runnerConsolidationResponse.getData();
+                receivingBranch = consolidationDetailsResponse.getReceivingBranch();
+                triangulationPartners = Optional.ofNullable(consolidationDetailsResponse.getTriangulationPartnerList())
+                        .orElse(Collections.emptyList())
+                        .stream()
+                        .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
+            }
+            String oldBranchName = notificationResponse.getTenantIdsData().getOrDefault(
+                    NotificationConstants.RECEIVING_BRANCH_ID_FIELD,
+                    notificationResponse.getRequestedBranchId().toString()
+            );
+            String newBranchName = notificationResponse.getTenantIdsData().getOrDefault(
+                    NotificationConstants.REASSIGNED_TO_BRANCH_ID_FIELD,
+                    notificationResponse.getReassignedToBranchId().toString()
+            );
+            String confirmationMsg = getConfirmationMessage(notificationResponse.getRequestedBranchId(),
+                    receivingBranch, triangulationPartners,
+                    oldBranchName, newBranchName
+            );
+            return ResponseHelper.buildSuccessResponse(confirmationMsg);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NotificationConstants.NOTIFICATION_CONFIRMATION_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private NotificationResponse getNotificationResponseById(Long id) {
+        CommonGetRequest commonRequest = CommonGetRequest.builder().id(id).build();
+        ResponseEntity<IRunnerResponse> response = retrieveById(CommonRequestModel.buildRequest(commonRequest));
+        RunnerResponse<NotificationResponse> runnerResponse = (RunnerResponse<NotificationResponse>) response.getBody();
+        return runnerResponse != null ? runnerResponse.getData() : null;
+    }
+
+    private String getConfirmationMessage(Long requestedBranchId, Long receivingBranch, List<Long> triangulationPartners,
+                                            String oldBranchName, String newBranchName) {
+
+        if(receivingBranch != null && Objects.equals(receivingBranch, requestedBranchId)) {
+            return String.format(NotificationConstants.RECEIVING_BRANCH_MSG, oldBranchName, newBranchName);
+        } else if(!CommonUtils.listIsNullOrEmpty(triangulationPartners) && triangulationPartners.contains(requestedBranchId)) {
+            return String.format(NotificationConstants.TRAINGULATION_BRANCH_MSG, oldBranchName, newBranchName);
+        } else {
+            throw new InputMismatchException("Requested Branch does not match with Receiving or Triangulation Partners.");
+        }
+    }
+
+    private void processReassignBranchForEntityTransfer(Notification notification) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
+            if (Objects.equals(notification.getEntityType(), Constants.SHIPMENT)) {
+                processShipmentReassignment(notification, request);
+            } else {
+                processConsolidationReassignment(notification, request);
+            }
+        } catch (RunnerException e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NotificationConstants.REASSIGN_BRANCH_ERROR;
+            log.error(responseMsg, e);
+        }
+    }
+
+    private void processShipmentReassignment(Notification notification, CommonGetRequest request) throws RunnerException {
+        RunnerResponse<ShipmentDetailsResponse> runnerResponse =
+                (RunnerResponse<ShipmentDetailsResponse>) shipmentService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
+        if(runnerResponse == null || runnerResponse.getData() == null)
+            return;
+        ShipmentDetailsResponse shipmentDetailsResponse = runnerResponse.getData();
+        List<Long> triangulationPartners = Optional.ofNullable(shipmentDetailsResponse.getTriangulationPartnerList())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
+        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), shipmentDetailsResponse.getReceivingBranch(), triangulationPartners);
+
+        ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetailsResponse, ShipmentRequest.class);
+        Long requestedBranchId = notification.getRequestedBranchId() != null ? notification.getRequestedBranchId().longValue() : null;
+        Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
+        if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
+            shipmentRequest.setReceivingBranch(reassignedToBranchId);
+            if (!Boolean.TRUE.equals(shipmentDetailsResponse.getIsReceivingBranchManually())) {
+                PartiesRequest partiesRequest = getPartiesRequestFromTenantDefaultOrg(notification.getReassignedToBranchId());
+                Optional.ofNullable(partiesRequest).ifPresent(importBroker -> shipmentRequest.getAdditionalDetails().setImportBroker(importBroker));
+            }
+        } else if(Objects.equals(branchType, NotificationConstants.TRAINGULATION_BRANCH)) {
+            List<TriangulationPartnerRequest> triangulationPartnerRequestList = processTriangulationPartners(shipmentRequest.getTriangulationPartnerList(),
+                    requestedBranchId, reassignedToBranchId);
+            if (CommonUtils.listIsNullOrEmpty(triangulationPartnerRequestList)) {
+                shipmentRequest.setTriangulationPartnerList(null);
+            } else {
+                shipmentRequest.setTriangulationPartnerList(triangulationPartnerRequestList);
+            }
+        }
+        shipmentService.completeUpdate(CommonRequestModel.buildRequest(shipmentRequest));
+    }
+
+    private void processConsolidationReassignment(Notification notification, CommonGetRequest request) throws RunnerException {
+        RunnerResponse<ConsolidationDetailsResponse> runnerResponse =
+                (RunnerResponse<ConsolidationDetailsResponse>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
+        if(runnerResponse == null || runnerResponse.getData() == null)
+            return;
+        ConsolidationDetailsResponse consolidationDetailsResponse = runnerResponse.getData();
+        List<Long> triangulationPartners = Optional.ofNullable(consolidationDetailsResponse.getTriangulationPartnerList())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
+        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), consolidationDetailsResponse.getReceivingBranch(), triangulationPartners);
+
+        ConsolidationDetailsRequest consolidationRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
+        Long requestedBranchId = notification.getRequestedBranchId() != null ? notification.getRequestedBranchId().longValue() : null;
+        Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
+        if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
+            consolidationRequest.setReceivingBranch(reassignedToBranchId);
+            if (!Boolean.TRUE.equals(consolidationDetailsResponse.getIsReceivingBranchManually())) {
+                PartiesRequest partiesRequest = getPartiesRequestFromTenantDefaultOrg(notification.getReassignedToBranchId());
+                Optional.ofNullable(partiesRequest).ifPresent(consolidationRequest::setReceivingAgent);
+            }
+        } else if(Objects.equals(branchType, NotificationConstants.TRAINGULATION_BRANCH)) {
+            List<TriangulationPartnerRequest> triangulationPartnerRequestList = processTriangulationPartners(consolidationRequest.getTriangulationPartnerList(),
+                    requestedBranchId, reassignedToBranchId);
+            if (CommonUtils.listIsNullOrEmpty(triangulationPartnerRequestList)) {
+                consolidationRequest.setTriangulationPartnerList(null);
+            } else {
+                consolidationRequest.setTriangulationPartnerList(triangulationPartnerRequestList);
+            }
+        }
+        consolidationService.completeUpdate(CommonRequestModel.buildRequest(consolidationRequest));
+    }
+
+    public String getReassignType(Long requestedBranchId, Long receivingBranch, List<Long> triangulationPartners) {
+        if(receivingBranch != null && Objects.equals(receivingBranch, requestedBranchId)) {
+            return NotificationConstants.RECEIVING_BRANCH;
+        } else if(!CommonUtils.listIsNullOrEmpty(triangulationPartners) && triangulationPartners.contains(requestedBranchId)) {
+            return NotificationConstants.TRAINGULATION_BRANCH;
+        } else {
+            throw new InputMismatchException("Requested Branch does not match with Receiving or Triangulation Partners.");
+        }
+    }
+
+    public PartiesRequest getPartiesRequestFromTenantDefaultOrg(Integer tenantId) {
+        PartiesRequest partiesRequest = null;
+        var v1Map = v1ServiceUtil.getTenantDetails(List.of(tenantId));
+        if(!v1Map.isEmpty() && v1Map.containsKey(tenantId)) {
+            TenantModel tenantModel = jsonHelper.convertValue(v1Map.get(tenantId), TenantModel.class);
+            if(tenantModel.getDefaultOrgId() == null || tenantModel.getDefaultAddressId() == null)
+                return partiesRequest;
+            partiesRequest = v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
+        }
+        return partiesRequest;
+    }
+
+    public List<TriangulationPartnerRequest> processTriangulationPartners(List<TriangulationPartnerRequest> triangulationPartnerRequestList, Long requestedBranchId, Long reassignedToBranchId) {
+        if (CommonUtils.listIsNullOrEmpty(triangulationPartnerRequestList)) {
+            return new ArrayList<>();
+        }
+
+        // Remove matching triangulation partner
+        if (requestedBranchId != null) {
+            triangulationPartnerRequestList.removeIf(request ->
+                    requestedBranchId.equals(request.getTriangulationPartner())
+            );
+        }
+
+        // Add the new triangulation partner
+        triangulationPartnerRequestList.add(
+                TriangulationPartnerRequest.builder()
+                        .triangulationPartner(reassignedToBranchId)
+                        .isAccepted(false)
+                        .build()
+        );
+
+        return triangulationPartnerRequestList;
     }
 }

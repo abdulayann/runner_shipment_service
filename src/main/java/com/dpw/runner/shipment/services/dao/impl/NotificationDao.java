@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Map;
+import java.util.HashMap;
 
 @Repository
 @Slf4j
@@ -88,5 +90,33 @@ public class NotificationDao implements INotificationDao {
                 throw new ValidationException(String.join(",", errors));
         }
         return notificationRepository.saveAll(notificationEntityList);
+    }
+
+    @Override
+    public Map<Long, Integer> pendingNotificationCountBasedOnEntityIdsAndEntityType(List<Long> entityIds, String entityType) {
+        List<Object[]> results = notificationRepository.pendingNotificationCountBasedOnEntityIdsAndEntityType(entityIds, entityType);
+        return this.convertResponseToMap(results);
+    }
+
+    private Map<Long, Integer> convertResponseToMap(List<Object[]> results) {
+        Map<Long, Integer> responseMap = new HashMap<>();
+
+        for (Object[] result : results) {
+            Long key = ((Number) result[0]).longValue();
+            int count = ((Number) result[1]).intValue();
+            responseMap.put(key, count);
+        }
+
+        return responseMap;
+    }
+
+    @Override
+    public List<Notification> findNotificationForEntityTransfer(Long entityId, String entityType, Integer branchId, String requestType) {
+        return notificationRepository.findNotificationBasedOnEntityIdAndEntityTypeAndRequestedBranchIdAndRequestType(entityId, entityType, branchId, requestType);
+    }
+
+    @Override
+    public void deleteAll(List<Notification> notificationList) {
+        notificationRepository.deleteAll(notificationList);
     }
 }

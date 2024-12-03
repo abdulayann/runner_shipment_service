@@ -20,6 +20,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipm
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -107,6 +108,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AssignAllDialogDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
@@ -532,6 +534,9 @@ public class ShipmentService implements IShipmentService {
     @Autowired
     private IDpsEventService dpsEventService;
 
+    @Autowired
+    private INotificationDao notificationDao;
+
     @Value("${include.master.data}")
     private Boolean includeMasterData;
 
@@ -719,13 +724,15 @@ public class ShipmentService implements IShipmentService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
         lst.forEach(shipmentDetail -> {
             ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
 //            containerCountUpdate(shipmentDetail, response);
             setEventData(shipmentDetail, response);
             if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
-            response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).orElse(null));
+            int pendingCount = map.getOrDefault(shipmentDetail.getId(), 0) + notificationMap.getOrDefault(shipmentDetail.getId(), 0);
+            response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
             if(ObjectUtils.isNotEmpty(shipmentDetail.getShipmentOrders()))
                 response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
             responseList.add(response);
@@ -4115,8 +4122,10 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
-        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
-        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(shipmentDetails.get().getId()), SHIPMENT);
+        int pendingCount = map.getOrDefault(shipmentDetails.get().getId(), 0) + notificationMap.getOrDefault(shipmentDetails.get().getId(), 0);
+        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
 
