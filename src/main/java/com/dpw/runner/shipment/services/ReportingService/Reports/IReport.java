@@ -3611,12 +3611,12 @@ public abstract class IReport {
             return StringUtility.getEmptyString();
 
         List<String> eCsdInfoList = new ArrayList<>();
-        eCsdInfoList.add(ReportConstants.RA);
         eCsdInfoList.add(awb.getAwbCargoInfo().getCountryCode());
+        eCsdInfoList.add(ReportConstants.RA);
         eCsdInfoList.add(awb.getAwbCargoInfo().getRaNumber());
         if (!CommonUtils.listIsNullOrEmpty(awb.getAwbCargoInfo().getScreeningStatus())) {
-            eCsdInfoList.add(String.join("+", awb.getAwbCargoInfo().getScreeningStatus().stream()
-                    .map(c -> Objects.equals(c, Constants.AOM) ? c + "(" + awb.getAwbCargoInfo().getOtherMethod() + ")" : c)
+            eCsdInfoList.add(String.join("/", awb.getAwbCargoInfo().getScreeningStatus().stream()
+                    .map(c -> Objects.equals(c, Constants.AOM) ? awb.getAwbCargoInfo().getOtherMethod() : c)
                     .toList()));
         }
         eCsdInfoList.add(Objects.equals(awb.getAwbCargoInfo().getSecurityStatus(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : awb.getAwbCargoInfo().getSecurityStatus());
