@@ -1548,7 +1548,7 @@ public class ReportService implements IReportService {
             if(shipmentsRow.isPresent()) {
                 shipmentDetails = shipmentsRow.get();
             } else {
-                shipmentDetails = null;
+                throw new RunnerException("Shipment Id is Invalid");
             }
 
             byte[] finalPdfByte_Content = pdfByte_Content;
