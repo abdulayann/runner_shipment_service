@@ -440,6 +440,9 @@ public class ReportService implements IReportService {
             {
                 shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
             }
+
+            addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
             return pdfByte_Content;
         }
         else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB))
@@ -563,6 +566,9 @@ public class ReportService implements IReportService {
             } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
             }
+
+            addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
             //Update shipment issue date
             return pdfByte_Content;
         }
@@ -1533,6 +1539,54 @@ public class ReportService implements IReportService {
             }
             hblReleaseTypeMappingDao.save(releaseTypeMapping);
         }
+    }
+
+    public void addDocumentToDocumentMaster(ReportRequest reportRequest,  byte[] pdfByte_Content) {
+        try {
+            Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+            ShipmentDetails shipmentDetails;
+            if(shipmentsRow.isPresent()) {
+                shipmentDetails = shipmentsRow.get();
+            } else {
+                shipmentDetails = null;
+            }
+
+            byte[] finalPdfByte_Content = pdfByte_Content;
+            String documentType = documentTypeFinder(reportRequest);
+
+            DocUploadRequest docUploadRequest = new DocUploadRequest();
+            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
+            docUploadRequest.setType(documentType);
+            docUploadRequest.setReportId(reportRequest.getReportId());
+            String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
+            CompletableFuture.runAsync(masterDataUtils.withMdc(
+                () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
+                    docUploadRequest, StringUtility.convertToString(shipmentDetails.getGuid()))), executorService);
+        }catch(Exception ex){
+            log.error(ex.getMessage());
+        }
+    }
+
+    private String documentTypeFinder(ReportRequest reportRequest){
+        String documentType = ReportConstants.HAWB;
+
+        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                documentType = ReportConstants.ORIGINAL_HAWB;
+            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                documentType = ReportConstants.DRAFT_HAWB;
+            }
+        }else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)){
+            documentType = ReportConstants.MAWB;
+            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                documentType = ReportConstants.ORIGINAL_MAWB;
+            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                documentType = ReportConstants.DRAFT_MAWB;
+            }
+        }
+
+        return documentType;
     }
 
     public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {
