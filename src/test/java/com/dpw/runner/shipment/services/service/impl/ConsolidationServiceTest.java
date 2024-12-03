@@ -113,23 +113,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -5595,7 +5579,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testRetrieveForNTE() {
-        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder()
+                .triangulationPartner(TenantContext.getCurrentTenant().longValue()).isAccepted(false).build();
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -5617,10 +5603,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false).setIsNetworkTransferEntityEnabled(true);
-
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(12L).build();
         ConsolidationDetails consolidationDetails3 = testConsol;
         testConsol.setReceivingBranch(1L);
-        testConsol.setTriangulationPartnerList(List.of(12L));
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
 
         ConsolidationDetails consolidationDetails2 = testConsol;
 

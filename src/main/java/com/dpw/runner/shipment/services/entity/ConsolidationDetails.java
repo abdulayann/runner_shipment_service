@@ -268,12 +268,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
-    @Column(name = "triangulation_partner")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
+    @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
     @BatchSize(size = 50)
-    @TenantIdData
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "receiving_branch")
     @TenantIdData

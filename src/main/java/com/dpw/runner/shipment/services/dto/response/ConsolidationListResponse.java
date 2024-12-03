@@ -89,7 +89,7 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long receivingBranch;
     private boolean intraBranch;
     private Long documentationPartner;

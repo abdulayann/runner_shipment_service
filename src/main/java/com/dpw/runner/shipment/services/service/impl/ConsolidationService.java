@@ -139,24 +139,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -229,18 +212,7 @@ import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -1658,8 +1630,10 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getAircraftType(),oldEntity.getCarrierDetails().getAircraftType()) ||
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
-                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of()))
-                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartnerList()).orElse(List.of()))) ||
+                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of())
+                                        .stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList())
+                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartnerList()).orElse(List.of())
+                                        .stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList())) ||
                         !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner()) ||
                         !Objects.equals(console.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber()) ||
                         !Objects.equals(console.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
@@ -2935,10 +2909,13 @@ public class ConsolidationService implements IConsolidationService {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            List<Long> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
+            List<TriangulationPartner> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            if ((triangulationPartners == null || !triangulationPartners.contains(currentTenant)) &&
-                    !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant)) {
+            if ((triangulationPartners == null
+                    || triangulationPartners.stream()
+                        .filter(Objects::nonNull)
+                        .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                    && !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
             }
 
@@ -3970,10 +3947,11 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
         if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartnerList())
-                && consolidationDetails.getTriangulationPartnerList().size() == 1
-                && Long.valueOf(0).equals(consolidationDetails.getTriangulationPartnerList().get(0)))
-            consolidationDetails.setTriangulationPartnerList(null);
-
+                && consolidationDetails.getTriangulationPartnerList().size() == 1) {
+            TriangulationPartner triangulationPartner = consolidationDetails.getTriangulationPartnerList().get(0);
+            if (triangulationPartner != null && Long.valueOf(0).equals(triangulationPartner.getTriangulationPartner()))
+                consolidationDetails.setTriangulationPartnerList(null);
+        }
         if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, commonUtils.getShipmentSettingFromContext())) {
             List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
             if(!awbs.isEmpty()) {
@@ -4190,8 +4168,9 @@ public class ConsolidationService implements IConsolidationService {
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
                         reverseDirection(consolidationDetails.getShipmentType()));
 
-                List<Long> currentPartners = consolidationDetails.getTriangulationPartnerList();
-                List<Long> oldPartners = oldEntity != null ? oldEntity.getTriangulationPartnerList() : Collections.emptyList();
+                List<Long> currentPartners = commonUtils.getTriangulationPartnerList(consolidationDetails.getTriangulationPartnerList());
+                List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                        : Collections.emptyList();
 
                 // Determine new tenant IDs by removing old partners from the current partners
                 Set<Long> newTenantIds = new HashSet<>(currentPartners);
