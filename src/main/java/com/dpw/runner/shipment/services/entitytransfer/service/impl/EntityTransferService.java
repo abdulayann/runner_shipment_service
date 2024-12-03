@@ -266,7 +266,7 @@ public class EntityTransferService implements IEntityTransferService {
             else if (ObjectUtils.isNotEmpty(shipment.getTriangulationPartnerList())
                     && shipment.getTriangulationPartnerList().contains(Long.valueOf(tenant))) {
                 taskPayload.setDirection(Constants.DIRECTION_CTS);
-            } else if (Long.valueOf(tenant).equals(shipment.getTriangulationPartner())) {
+            } else if (shipment.getTriangulationPartnerList() == null && Long.valueOf(tenant).equals(shipment.getTriangulationPartner())) {
                 taskPayload.setDirection(Constants.DIRECTION_CTS);
             }
             taskPayload.setSendToBranch(tenant);
@@ -359,7 +359,8 @@ public class EntityTransferService implements IEntityTransferService {
                     && consol.getTriangulationPartnerList().contains(Long.valueOf(tenant))) {
                 consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
                 sendingToTriangulationPartner = true;
-            } else if (Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
+            } else if (consol.getTriangulationPartnerList() == null
+                    && Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
                 consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
                 sendingToTriangulationPartner = true;
             }
@@ -1267,8 +1268,9 @@ public class EntityTransferService implements IEntityTransferService {
                                 Objects.equals(tp, receivingAgent)
                                         || Objects.equals(tp, shipmentDetails.getTenantId().longValue()))) {
                             shipmentGuids.add(shipmentDetails.getGuid());
-                        } else if (triangulationPartner != null && !Objects.equals(triangulationPartner, receivingAgent) && !shipmentDetails.getTenantId()
-                                .equals(triangulationPartner.intValue())) {
+                        } else if (triangulationPartnerList == null
+                                && triangulationPartner != null
+                                && !Objects.equals(triangulationPartner, receivingAgent) && !shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
                             shipmentGuids.add(shipmentDetails.getGuid());
                         }
                     }
@@ -1354,7 +1356,7 @@ public class EntityTransferService implements IEntityTransferService {
                                         arValidationResponse.setTriangulationShipment(triangulationShipmentData);
                                     }
                                 }
-                            } else if (triangulationPartner != null) {
+                            } else if (triangulationPartnerList == null && triangulationPartner != null) {
                                 if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
                                     ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
                                     arValidationResponse.setTransferToTriangulationPartner(true);
@@ -1417,7 +1419,7 @@ public class EntityTransferService implements IEntityTransferService {
                                     arValidationResponse.setTriangulationShipment(triangulationData);
                                 }
                             }
-                        } else if (triangulationPartner != null) {
+                        } else if (triangulationPartnerList == null && triangulationPartner != null) {
                             if (Objects.equals(triangulationPartner, receivingAgent)) {
                                 arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
                                 arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());

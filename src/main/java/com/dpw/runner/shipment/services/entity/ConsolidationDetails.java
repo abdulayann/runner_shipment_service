@@ -274,7 +274,6 @@ public class ConsolidationDetails extends MultiTenancy {
             name = "triangulation_partner_consolidation",
             joinColumns = @JoinColumn(name = "consolidation_id"))
     @BatchSize(size = 50)
-    @TenantIdData
     private List<Long> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")

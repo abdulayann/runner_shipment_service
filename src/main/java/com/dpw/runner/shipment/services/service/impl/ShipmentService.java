@@ -2122,7 +2122,9 @@ public class ShipmentService implements IShipmentService {
                 && shipmentDetails.getTriangulationPartnerList().size() == 1
                 && Long.valueOf(0).equals(shipmentDetails.getTriangulationPartnerList().get(0))) {
             shipmentDetails.setTriangulationPartnerList(null);
-        } else if (shipmentDetails.getTriangulationPartner() != null && shipmentDetails.getTriangulationPartner() == 0) {
+        } else if (shipmentDetails.getTriangulationPartnerList() == null
+                && shipmentDetails.getTriangulationPartner() != null
+                && shipmentDetails.getTriangulationPartner() == 0) {
             shipmentDetails.setTriangulationPartner(null);
         }
         if(shipmentDetails.getDocumentationPartner() != null && shipmentDetails.getDocumentationPartner() == 0)
@@ -2718,8 +2720,7 @@ public class ShipmentService implements IShipmentService {
                     oldTenantIds.forEach(oldTenantId -> {
                         processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
                     });
-                }
-                if (shipmentDetails.getTriangulationPartner() != null) {
+                } else if (shipmentDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
                             Constants.DIRECTION_CTS);
@@ -2737,7 +2738,9 @@ public class ShipmentService implements IShipmentService {
                         networkTransferService.deleteValidNetworkTransferEntity(triangularPartner,
                                 oldEntity.getId(), Constants.SHIPMENT);
                     }
-                } else if (oldEntity != null && oldEntity.getTriangulationPartner() != null) {
+                } else if (oldEntity.getTriangulationPartnerList() == null
+                        && oldEntity != null
+                        && oldEntity.getTriangulationPartner() != null) {
                     networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getTriangulationPartner(),
                             oldEntity.getId(), Constants.SHIPMENT);
                 }
@@ -4091,8 +4094,9 @@ public class ShipmentService implements IShipmentService {
             if ((triangulationPartners == null || !triangulationPartners.contains(currentTenant)) &&
                     !Objects.equals(shipmentDetails.get().getReceivingBranch(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
-            } else if (!Objects.equals(shipmentDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue()) &&
-                    !Objects.equals(shipmentDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+            } else if (triangulationPartners == null
+                    && !Objects.equals(shipmentDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                    && !Objects.equals(shipmentDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }
 

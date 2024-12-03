@@ -2955,8 +2955,9 @@ public class ConsolidationService implements IConsolidationService {
             if ((triangulationPartnerList == null || !triangulationPartnerList.contains(currentTenant)) &&
                     !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
-            } else if (!Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue()) &&
-                    !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+            } else if (triangulationPartnerList == null
+                    && !Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                    && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
             }
 
@@ -3991,7 +3992,9 @@ public class ConsolidationService implements IConsolidationService {
                 && consolidationDetails.getTriangulationPartnerList().size() == 1
                 && Long.valueOf(0).equals(consolidationDetails.getTriangulationPartnerList().get(0))) {
             consolidationDetails.setTriangulationPartnerList(null);
-        } else if (consolidationDetails.getTriangulationPartner() != null && consolidationDetails.getTriangulationPartner() == 0) {
+        } else if (consolidationDetails.getTriangulationPartnerList() == null
+                && consolidationDetails.getTriangulationPartner() != null
+                && consolidationDetails.getTriangulationPartner() == 0) {
             consolidationDetails.setTriangulationPartner(null);
         }
 
