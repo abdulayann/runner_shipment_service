@@ -1212,9 +1212,9 @@ class ShipmentControllerTest {
     @Test
     void testRequestInterBranchConsole() throws RunnerException {
         // Mock
-        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.requestInterBranchConsole(1L, 2L, "")).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L, "");
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1222,9 +1222,9 @@ class ShipmentControllerTest {
     @Test
     void testRequestInterBranchConsole_Failure() throws RunnerException {
         // Mock
-        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenThrow(new RuntimeException());
+        when(shipmentService.requestInterBranchConsole(1L, 2L, "")).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L, "");
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

@@ -728,10 +728,10 @@ public class ShipmentController {
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.REQUEST_INTER_BRANCH_CONSOLE)
-    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId) {
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId, @RequestParam(required = false) String remarks) {
         log.info("Request received for interBrnach console request");
         try {
-            return shipmentService.requestInterBranchConsole(shipId, consoleId);
+            return shipmentService.requestInterBranchConsole(shipId, consoleId, remarks);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
