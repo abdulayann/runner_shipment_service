@@ -3168,5 +3168,60 @@ class ReportServiceTest {
         assertTrue(pdfBytes.size() > 0);
     }
 
+    @Test
+    void addDocumentToDocumentMasterTestHAWBORIGNAL(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setReportInfo("HAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestMAWBDRAFT(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("DRAFT");
+        reportRequest.setReportInfo("MAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestHAWBDRAFT(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("DRAFT");
+        reportRequest.setReportInfo("HAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestMAWBORIGNAL(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setReportInfo("MAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
 
 }
