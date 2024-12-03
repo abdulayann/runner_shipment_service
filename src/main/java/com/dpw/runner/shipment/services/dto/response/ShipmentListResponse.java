@@ -76,6 +76,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private long sourceTenantId;
     private long documentationPartner;
     private List<Long> triangulationPartnerList;
+    private Long triangulationPartner;
     private long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;

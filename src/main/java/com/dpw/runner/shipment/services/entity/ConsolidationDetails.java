@@ -275,6 +275,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @TenantIdData
     private List<Long> triangulationPartnerList;
 
+    @Column(name = "triangulation_partner_single")
+    @TenantIdData
+    private Long triangulationPartner;
+
     @Column(name = "receiving_branch")
     @TenantIdData
     private Long receivingBranch;

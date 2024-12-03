@@ -650,6 +650,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetails.getCarrierDetails().setDestinationPort(null);
         consolidationDetails.setReceivingBranch(null);
         consolidationDetails.setTriangulationPartnerList(null);
+        consolidationDetails.setTriangulationPartner(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -891,6 +892,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.getCarrierDetails().setDestinationPort(null);
         shipmentDetails.setReceivingBranch(null);
         shipmentDetails.setTriangulationPartnerList(null);
+        shipmentDetails.setTriangulationPartner(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -1030,6 +1032,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetails.setGuid(UUID.randomUUID());
         consolidationDetails.setReceivingBranch(123L);
         consolidationDetails.setTriangulationPartnerList(List.of(231L));
+        consolidationDetails.setTriangulationPartner(231L);
         ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
         shipmentDetailsDrt.setGuid(UUID.randomUUID());
         shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -1045,6 +1048,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp.setReceivingBranch(33L);
         consolidationDetailsImp.setTriangulationPartnerList(List.of(33L));
+        consolidationDetailsImp.setTriangulationPartner(33L);
 
         ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
         shipmentDetailsImp1.setGuid(UUID.randomUUID());
@@ -1056,6 +1060,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetailsImp1.setShipmentType(Constants.DIRECTION_IMP);
         consolidationDetailsImp1.setReceivingBranch(null);
         consolidationDetailsImp1.setTriangulationPartnerList(List.of(33L));
+        consolidationDetailsImp1.setTriangulationPartner(33L);
 
         ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
         shipmentDetailsImp2.setGuid(UUID.randomUUID());
@@ -1100,6 +1105,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole.setReceivingBranch(33L);
         originShipConsole.setTriangulationPartnerList(List.of(33L));
+        originShipConsole.setTriangulationPartner(33L);
         originShipment.setConsolidationList(new ArrayList<>(List.of(originShipConsole)));
 
         ShipmentDetails originShipment1 = new ShipmentDetails();
@@ -1110,6 +1116,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
         originShipConsole1.setReceivingBranch(null);
         originShipConsole1.setTriangulationPartnerList(List.of(33L));
+        originShipConsole1.setTriangulationPartner(33L);
         originShipment1.setConsolidationList(new ArrayList<>(List.of(originShipConsole1)));
 
         ShipmentDetails originShipment2 = new ShipmentDetails();
@@ -1120,6 +1127,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole2.setReceivingBranch(33L);
         originShipConsole2.setTriangulationPartnerList(List.of(35L));
+        originShipConsole2.setTriangulationPartner(33L);
         originShipment2.setConsolidationList(new ArrayList<>(List.of(originShipConsole2)));
 
         ShipmentDetails triangulationShipment = new ShipmentDetails();
@@ -1134,6 +1142,7 @@ class EntityTransferServiceTest extends CommonMocks {
         originShipConsole3.setGuid(UUID.randomUUID());
         originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
         originShipConsole3.setReceivingBranch(35L);
+        originShipConsole3.setTriangulationPartnerList(List.of(33L));
         originShipConsole3.setTriangulationPartnerList(List.of(33L));
         originShipment3.setConsolidationList(new ArrayList<>(List.of(originShipConsole3)));
 

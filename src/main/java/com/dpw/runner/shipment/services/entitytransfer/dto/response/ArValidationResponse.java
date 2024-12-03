@@ -19,6 +19,7 @@ public class ArValidationResponse implements IRunnerResponse {
     private String consolidationType;
     private Long receivingAgent;
     private List<Long> triangulationPartnerList;
+    private Long triangulationPartner;
     private Integer sourceBranch;
     private Integer origin;
     private String salesBranch;
