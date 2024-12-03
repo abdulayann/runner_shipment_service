@@ -3,13 +3,12 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
@@ -123,6 +122,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String SpecialInstructions;
     @JsonProperty("TriangulationPartnerList")
     private List<Long> TriangulationPartnerList;
+    @JsonProperty("TriangulationPartner")
+    private Integer TriangulationPartner;
     @JsonProperty("WarehouseId")
     private Long WarehouseId;
 
