@@ -591,8 +591,9 @@ public class EntityTransferService implements IEntityTransferService {
             for (var shipment : consolidationDetails.get().getShipmentsList()) {
                 if (tenantId.equals(shipment.getReceivingBranch()))
                     shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
-                if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream().filter(Objects::nonNull)
-                        .anyMatch(tp -> Objects.equals(shipment.getId(), tenantId)))
+                if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream()
+                        .filter(Objects::nonNull)
+                        .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), tenantId)))
                     shipmentDao.updateIsAcceptedTriangulationPartner(shipment.getId(), tenantId, Boolean.TRUE);
             }
         } else if (Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
