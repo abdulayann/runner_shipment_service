@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.EventsRequestDTO;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
@@ -31,6 +32,7 @@ public class EventConsumer {
   private final IShipmentDao shipmentDao;
   private final IConsolidationDetailsDao consolidationDetailsDao;
   private final CommonUtils commonUtils;
+  private IV1Service iv1Service;
 
   @Autowired
   public EventConsumer(
@@ -38,12 +40,13 @@ public class EventConsumer {
       IEventDao eventDao,
       IShipmentDao shipmentDao,
       IConsolidationDetailsDao consolidationDetailsDao,
-      CommonUtils commonUtils) {
+      CommonUtils commonUtils, IV1Service iv1Service) {
     this.jsonHelper = jsonHelper;
     this.eventDao = eventDao;
     this.shipmentDao = shipmentDao;
     this.consolidationDetailsDao = consolidationDetailsDao;
     this.commonUtils = commonUtils;
+    this.iv1Service = iv1Service;
   }
 
   @KafkaListener(topics = {"#{'${wfm.event.kafka.queue}'}"}, groupId = "#{'${wfm.event.kafka.subs}'}")
@@ -60,7 +63,7 @@ public class EventConsumer {
 
       // Convert DTO to entity
       Events events = jsonHelper.convertValue(eventsRequestDTO, Events.class);
-
+      iv1Service.setAuthContext();
       // Determine entity type and set context
       if (eventsRequestDTO.getShipmentGuid() != null) {
         handleShipmentEntity(eventsRequestDTO, events);
@@ -76,6 +79,8 @@ public class EventConsumer {
       commonUtils.updateEventWithMasterData(List.of(events));
       eventDao.save(events);
 
+      iv1Service.clearAuthContext();
+      TenantContext.removeTenant();
       log.info("Event successfully saved from WFM Event message");
     } catch (Exception ex) {
       log.error("{} | Exception occurred while processing event message: {} with exception: {}", LoggerEvent.WFM_EVENTS_KAFKA_PULL, message, ex.getMessage(), ex);
