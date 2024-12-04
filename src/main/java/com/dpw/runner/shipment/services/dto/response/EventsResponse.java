@@ -45,6 +45,8 @@ public class EventsResponse implements IRunnerResponse {
     private String userName;
     private String userEmail;
     private String branch;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt; // Generated Date field for UI
 
     // Conditional response from TrackingEvents
     private String containerNumber;
