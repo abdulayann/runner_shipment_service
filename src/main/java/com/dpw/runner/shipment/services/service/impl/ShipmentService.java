@@ -3036,11 +3036,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isEventChanged(Object newValue, Object oldValue, Boolean isNewShipment) {
-        return Boolean.TRUE.equals(isNewShipment) || (newValue != null && !newValue.equals(oldValue));
+        return newValue != null && (Boolean.TRUE.equals(isNewShipment) || !newValue.equals(oldValue));
     }
 
     private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue, Boolean isNewShipment) {
-        return Boolean.TRUE.equals(isNewShipment) || (Boolean.TRUE.equals(newValue) && !Boolean.TRUE.equals(oldValue));
+        return Boolean.TRUE.equals(newValue) && (Boolean.TRUE.equals(isNewShipment) || !Boolean.TRUE.equals(oldValue));
     }
 
     private void handleEventDateTimeUpdate(Events event, LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {

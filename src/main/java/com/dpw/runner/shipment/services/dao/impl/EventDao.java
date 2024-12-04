@@ -372,11 +372,11 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDate.now().atStartOfDay());
+                eventsRow.setActual(LocalDateTime.now());
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
+                eventsRow.setEstimated(LocalDateTime.now());
             }
 
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
