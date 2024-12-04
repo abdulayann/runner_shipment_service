@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.RequestType;
@@ -209,7 +210,7 @@ public class NotificationService implements INotificationService {
     public ResponseEntity<IRunnerResponse> acceptNotification(Long id) {
         String responseMsg;
         try {
-            if(id == null ) {
+            if(id == null) {
                 log.error("Id is null for Notification accept with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("Notification accept failed because Id is null.");
             }
@@ -278,7 +279,8 @@ public class NotificationService implements INotificationService {
                     receivingBranch, triangulationPartners,
                     oldBranchName, newBranchName
             );
-            return ResponseHelper.buildSuccessResponse(confirmationMsg);
+            NotificationConfirmationMsgResponse notificationConfirmationMsgResponse = NotificationConfirmationMsgResponse.builder().message(confirmationMsg).build();
+            return ResponseHelper.buildSuccessResponse(notificationConfirmationMsgResponse);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NotificationConstants.NOTIFICATION_CONFIRMATION_ERROR;
