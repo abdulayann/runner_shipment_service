@@ -4,5 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum EventType {
-    INVOICE
+    INVOICE,
+    REPORT
 }

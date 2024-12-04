@@ -78,6 +78,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -1095,17 +1096,20 @@ public class EventService implements IEventService {
     }
 
     public List<Events> prepareEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
+        InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
+        AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
 
         Events event = new Events();
         event.setEntityId(shipmentDetails.getId());
         event.setEntityType(Constants.SHIPMENT);
         event.setEventCode(EventConstants.INGE);
-        event.setActual(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceDate());
+        event.setActual(accountReceivableDto.getInvoiceDate());
         event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        event.setStatus(billingInvoiceDto.getPayload().getAccountReceivable().getFusionInvoiceStatus());
+        event.setStatus(accountReceivableDto.getFusionInvoiceStatus());
         event.setShipmentNumber(shipmentDetails.getShipmentId());
         event.setEventType(EventType.INVOICE);
-        event.setContainerNumber(billingInvoiceDto.getPayload().getAccountReceivable().getInvoiceNumber());
+        event.setContainerNumber(accountReceivableDto.getInvoiceNumber());
+        event.setReferenceNumber(accountReceivableDto.getId());
         if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())
                 && ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
             event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
@@ -1312,6 +1316,8 @@ public class EventService implements IEventService {
      * Trigger point for creating / updating event
      * @param eventsRequest
      */
+    @Override
+    @Transactional
     public void saveEvent(EventsRequest eventsRequest) {
         Events entity = convertRequestToEntity(eventsRequest);
 
@@ -1328,24 +1334,69 @@ public class EventService implements IEventService {
         // auto generate runner events | will remain as it is inside shipment and consolidation
     }
 
+    public Specification<Events> buildDuplicateEventSpecification(Events event) {
+        return (root, query, cb) -> {
+            Predicate predicate = cb.conjunction();
+
+            if (event.getEventCode() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("eventCode"), event.getEventCode()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("eventCode")));
+            }
+
+            if (event.getShipmentNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("shipmentNumber"), event.getShipmentNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("shipmentNumber")));
+            }
+
+            if (event.getContainerNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("containerNumber"), event.getContainerNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("containerNumber")));
+            }
+
+            if (event.getSource() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("source"), event.getSource()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("source")));
+            }
+
+            if (event.getPlaceName() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("placeName"), event.getPlaceName()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("placeName")));
+            }
+
+            if (event.getEntityId() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("entityId"), event.getEntityId()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("entityId")));
+            }
+
+            if (event.getEntityType() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("entityType"), event.getEntityType()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("entityType")));
+            }
+
+            predicate = cb.and(predicate, cb.equal(root.get("isDeleted"), false));
+
+            return predicate;
+        };
+    }
+
     private void handleDuplicationForExistingEvents(Events event) {
 
-        // find the event with duplication key criteria
-        // shipment number, container number, event code, source, place name
-        ListCommonRequest duplicateEventRequest = CommonUtils.constructListCommonRequest("eventCode", "=", event.getEventCode());
-        duplicateEventRequest = CommonUtils.andCriteria("shipmentNumber",  event.getShipmentNumber(), "=", duplicateEventRequest);
-        duplicateEventRequest = CommonUtils.andCriteria("containerNumber",  event.getContainerNumber(), "=", duplicateEventRequest);
-        duplicateEventRequest = CommonUtils.andCriteria("source",  event.getSource(), "=", duplicateEventRequest);
-        duplicateEventRequest = CommonUtils.andCriteria("placeName",  event.getPlaceName(), "=", duplicateEventRequest);
-        duplicateEventRequest = CommonUtils.andCriteria("entityId",  event.getEntityId(), "=", duplicateEventRequest);
-        duplicateEventRequest = CommonUtils.andCriteria("entityType",  event.getEntityType(), "=", duplicateEventRequest);
-        Pair<Specification<Events>, Pageable> pair = fetchData(duplicateEventRequest, Events.class);
-        Page<Events> duplicateEventPage = eventDao.findAll(pair.getLeft(), pair.getRight());
+        Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
+        Page<Events> duplicateEventPage = eventDao.findAll(duplicateEventSpecification, Pageable.unpaged());
 
         if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
             // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
             // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
-            duplicateEventPage.getContent().stream().filter(i -> !i.getId().equals(event.getId())).forEach(i -> eventDao.delete(i));
+            duplicateEventPage.getContent().stream()
+                    .filter(dupEvent -> !dupEvent.getId().equals(event.getId()))
+                    .forEach(dupEvent -> eventDao.delete(dupEvent));
         }
     }
 

@@ -17,7 +17,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -552,7 +551,8 @@ public class EventDao implements IEventDao {
                         EventConstants.FHBL, EventConstants.FNMU, EventConstants.PRST, EventConstants.ARDP,
                         EventConstants.DOGE, EventConstants.DOTP, EventConstants.FUGO, EventConstants.CAFS,
                         EventConstants.PRDE, EventConstants.EMCR, EventConstants.ECCC, EventConstants.BLRS,
-                        EventConstants.COOD, EventConstants.INGE
+                        EventConstants.COOD, EventConstants.INGE, EventConstants.SISC, EventConstants.VGMS,
+                        EventConstants.BBCK, EventConstants.DORC
                 ),
                 TRANSPORT_MODE_AIR, Set.of(
                         EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
