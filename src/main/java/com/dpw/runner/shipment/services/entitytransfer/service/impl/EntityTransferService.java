@@ -526,6 +526,10 @@ public class EntityTransferService implements IEntityTransferService {
             Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
             if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
                 shipmentDao.saveIsTransferredToReceivingBranch(shipmentDetailsResponse.getId(), Boolean.TRUE);
+            if (shipmentDetailsResponse.getTriangulationPartnerList() != null && shipmentDetailsResponse.getTriangulationPartnerList().stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
+                shipmentDao.updateIsAcceptedTriangulationPartner(shipmentDetailsResponse.getId(), tenantId, Boolean.TRUE);
         } else if (Objects.equals(importShipmentRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.APPROVED, importShipmentRequest.getRejectRemarks());
         }
@@ -576,6 +580,9 @@ public class EntityTransferService implements IEntityTransferService {
             Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
             if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
                 consolidationDetailsDao.saveIsTransferredToReceivingBranch(consolId, Boolean.TRUE);
+            if (consolidationDetailsResponse.getTriangulationPartnerList() != null && consolidationDetailsResponse.getTriangulationPartnerList().stream()
+                    .filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
+                consolidationDetailsDao.updateIsAcceptedTriangulationPartner(consolId, tenantId, Boolean.TRUE);
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
             if (!consolidationDetails.isPresent()) {
                 log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
@@ -584,6 +591,10 @@ public class EntityTransferService implements IEntityTransferService {
             for (var shipment : consolidationDetails.get().getShipmentsList()) {
                 if (tenantId.equals(shipment.getReceivingBranch()))
                     shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
+                if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream()
+                        .filter(Objects::nonNull)
+                        .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), tenantId)))
+                    shipmentDao.updateIsAcceptedTriangulationPartner(shipment.getId(), tenantId, Boolean.TRUE);
             }
         } else if (Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.APPROVED.getDescription())) {
             updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.APPROVED, importConsolidationRequest.getRejectRemarks());

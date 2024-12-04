@@ -45,4 +45,5 @@ public interface IShipmentDao {
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
+    void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 }
