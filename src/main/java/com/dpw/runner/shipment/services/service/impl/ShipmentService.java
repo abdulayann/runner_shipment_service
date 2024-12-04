@@ -123,6 +123,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
@@ -163,6 +164,7 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.DateTimeChangeLogResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
 import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
 import com.dpw.runner.shipment.services.dto.response.LatestCargoDeliveryInfo;
@@ -745,15 +747,14 @@ public class ShipmentService implements IShipmentService {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
-        lst.forEach(shipmentDetail -> {
-            ShipmentListResponse response = modelMapper.map(shipmentDetail, ShipmentListResponse.class);
-//            containerCountUpdate(shipmentDetail, response);
-            setEventData(shipmentDetail, response);
-            if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
-                response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
-            response.setPendingActionCount(Optional.ofNullable(map.get(shipmentDetail.getId())).orElse(null));
-            if(ObjectUtils.isNotEmpty(shipmentDetail.getShipmentOrders()))
-                response.setOrdersCount(shipmentDetail.getShipmentOrders().size());
+        List<ShipmentListResponse> shipmentListResponses = ShipmentMapper.INSTANCE.toShipmentListResponses(lst);
+        shipmentListResponses.forEach(response -> {
+            setEventData(response);
+            if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
+                response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+            response.setPendingActionCount(Optional.ofNullable(map.get(response.getId())).orElse(null));
+            if(ObjectUtils.isNotEmpty(response.getShipmentOrders()))
+                response.setOrdersCount(response.getShipmentOrders().size());
             responseList.add(response);
         });
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
@@ -820,9 +821,9 @@ public class ShipmentService implements IShipmentService {
         response.setContainerNumbers(containerNumber);
     }
 
-    private void setEventData(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
-        if (shipmentDetail.getEventsList() != null) {
-            for (Events events : shipmentDetail.getEventsList()) {
+    private void setEventData(ShipmentListResponse response) {
+        if (response.getEventsList() != null) {
+            for (EventsResponse events : response.getEventsList()) {
                 if (StringUtility.isNotEmpty(events.getEventCode())) {
                     //todo: check for event INVGNTD
                     if (events.getEventCode().equalsIgnoreCase(EventConstants.INVGNTD)) {
