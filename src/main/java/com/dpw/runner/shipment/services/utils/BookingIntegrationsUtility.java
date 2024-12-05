@@ -6,6 +6,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
@@ -21,6 +23,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
 import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
 import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
@@ -91,6 +94,7 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 
 /**
@@ -749,6 +753,7 @@ public class BookingIntegrationsUtility {
      * This method will be used to send shipment document to platform
      * @param payload
      */
+    @Transactional
     public void documentUploadEvent(DocumentDto payload) {
 
         Document payloadData = payload.getData();
@@ -801,6 +806,9 @@ public class BookingIntegrationsUtility {
                         .stream().findFirst().orElse(new ShipmentDetails());
 
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
+                TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+                UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
                 if (ObjectUtils.isNotEmpty(eventListFromDb)) {
@@ -816,34 +824,35 @@ public class BookingIntegrationsUtility {
 
                             // Update the event details in the database
                             eventDao.updateEventDetails(event);
+                            updatedExistingEvent = true;
                             log.info("Event updated successfully for event code: {}", event.getEventCode());
                         }
                     }
-                } else {
-                    // Auto-generate events if the event code matches specific codes
-                    if (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())) {
-                        log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
+                }
+                if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode()))) {
+                    log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
 
-                        if (shipmentDetails.getId() == null) {
-                            throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
-                        }
-
-                        CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-                        eventReq.setEntityId(shipmentDetails.getId());
-                        eventReq.setEntityType(Constants.SHIPMENT);
-                        eventReq.setEventCode(payloadData.getEventCode());
-
-                        log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
-                        eventDao.autoGenerateEvents(eventReq);
-                        log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    if (shipmentDetails.getId() == null) {
+                        throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
                     }
+
+                    CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
+                    eventReq.setEntityId(shipmentDetails.getId());
+                    eventReq.setEntityType(Constants.SHIPMENT);
+                    eventReq.setEventCode(payloadData.getEventCode());
+
+                    log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    eventDao.autoGenerateEvents(eventReq);
+                    log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
             }
         } catch (Exception ex) {
             log.error("Unexpected error in handleEventCreation: {}", ex.getMessage(), ex);
+        } finally {
+            log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
+            TenantContext.removeTenant();
+            UserContext.removeUser();
         }
-
-        log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
     }
 
     private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
