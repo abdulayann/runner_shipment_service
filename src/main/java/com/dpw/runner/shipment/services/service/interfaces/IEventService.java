@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -20,4 +21,5 @@ public interface IEventService extends ICommonService {
     boolean processUpstreamTrackingMessage(TrackingServiceApiResponse.Container container);
     ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel);
     void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto);
+    void saveEvent(EventsRequest eventsRequest);
 }

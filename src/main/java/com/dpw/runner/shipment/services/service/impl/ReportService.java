@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -54,12 +55,18 @@ import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -82,7 +89,14 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -127,6 +141,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IEventDao eventDao;
+
+    @Autowired
+    private IEventService eventService;
 
     @Autowired
     private IHblDao hblDao;
@@ -329,11 +346,11 @@ public class ReportService implements IReportService {
                 createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             }
         } else if (report instanceof PreAlertReport vPreAlertReport) {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.PRST, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.PRST);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
@@ -765,7 +782,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
@@ -828,6 +845,17 @@ public class ReportService implements IReportService {
         }
 
         return pdfByteContent;
+    }
+
+    private void createEvent(ReportRequest reportRequest, String eventCode) {
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setActual(LocalDateTime.now());
+        eventsRequest.setEntityId(Long.parseLong(reportRequest.getReportId()));
+        eventsRequest.setEntityType(Constants.SHIPMENT);
+        eventsRequest.setEventCode(eventCode);
+        eventsRequest.setEventType(EventType.REPORT.name());
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        eventService.saveEvent(eventsRequest);
     }
 
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {

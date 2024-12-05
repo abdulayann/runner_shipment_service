@@ -19,6 +19,7 @@ public class BillingInvoiceDto {
         @Data
         @JsonIgnoreProperties(ignoreUnknown = true)
         public static class AccountReceivableDto {
+            private String id;
             private String invoiceNumber;
             private LocalDateTime invoiceDate;
             private String fusionInvoiceStatus;

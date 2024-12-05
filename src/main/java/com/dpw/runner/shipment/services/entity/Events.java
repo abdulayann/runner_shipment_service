@@ -144,4 +144,8 @@ public class Events extends MultiTenancy {
 
     @Column(name = "branch")
     private String branch;
+
+    @Column(name = "reference_number")
+    private String referenceNumber;
+
 }

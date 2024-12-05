@@ -3014,7 +3014,7 @@ public class ShipmentService implements IShipmentService {
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
-                        LocalDateTime.now(), LocalDateTime.now()));
+                        shipmentDetails.getAdditionalDetails().getBlInstructionReceived(), LocalDateTime.now()));
             }
         }
 
@@ -3029,7 +3029,7 @@ public class ShipmentService implements IShipmentService {
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
-                        LocalDateTime.now(), LocalDateTime.now()));
+                        shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(), LocalDateTime.now()));
             }
         }
 
