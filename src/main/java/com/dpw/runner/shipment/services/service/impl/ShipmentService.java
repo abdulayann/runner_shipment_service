@@ -4117,7 +4117,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {
-            return ResponseHelper.buildSuccessResponse(retireveShipmentData(commonRequestModel, false, getMasterData));
+            return ResponseHelper.buildSuccessResponse(retireveShipmentData(commonRequestModel, false, false));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -4823,7 +4823,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
-        createShipmentPayload(shipmentDetails, shipmentDetailsResponse, false);
+        createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
     }
 
     /**
@@ -4834,7 +4834,7 @@ public class ShipmentService implements IShipmentService {
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
-            if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
+            if(getMasterData) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, null)), executorServiceMasterData);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, null)), executorServiceMasterData);
                 var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, null)), executorServiceMasterData);

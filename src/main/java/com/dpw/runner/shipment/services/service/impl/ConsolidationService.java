@@ -3017,7 +3017,7 @@ public class ConsolidationService implements IConsolidationService {
         ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
         var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
-        createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
+        createConsolidationPayload(consolidationDetails.get(), response, false);
 
         return response;
     }
@@ -3104,13 +3104,13 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
-        createConsolidationPayload(consolidationDetails, consolidationDetailsResponse, false);
+        createConsolidationPayload(consolidationDetails, consolidationDetailsResponse, true);
     }
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         try {
             double _start = System.currentTimeMillis();
-            if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
+            if(getMasterData) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
                 var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
