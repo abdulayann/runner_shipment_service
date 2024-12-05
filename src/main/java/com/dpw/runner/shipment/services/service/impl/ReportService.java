@@ -356,7 +356,7 @@ public class ReportService implements IReportService {
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.BOCO, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.BOCO);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
