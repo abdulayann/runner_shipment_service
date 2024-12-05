@@ -126,12 +126,18 @@ public class NotificationService implements INotificationService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
-                log.error("Request Id is null for Notification retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new ValidationException("Notification Retrieve failed because Id is null.");
+            if (request == null || (request.getId() == null && request.getGuid() == null)) {
+                log.error("Request Id and Guid are null for Notification retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
-            long id = request.getId();
-            Optional<Notification> notification = notificationDao.findById(id);
+            Long id = request.getId();
+            Optional<Notification> notification;
+            if(id != null) {
+                notification = notificationDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                notification = notificationDao.findByGuid(guid);
+            }
             if(!notification.isPresent()) {
                 log.debug(NotificationConstants.NOTIFICATION_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
