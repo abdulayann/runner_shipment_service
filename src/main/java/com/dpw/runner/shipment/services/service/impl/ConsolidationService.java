@@ -2802,7 +2802,7 @@ public class ConsolidationService implements IConsolidationService {
             try {
                 calculateAchievedValues(consolidationDetails.get(), new ShipmentGridChangeResponse(), consolidationDetails.get().getShipmentsList());
             } catch (Exception e) {
-                log.error("Error while calculating achieved values ");
+                log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.get().getId());
             }
 
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
@@ -2859,7 +2859,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             calculateAchievedValues(consolidationDetails.get(), new ShipmentGridChangeResponse(), consolidationDetails.get().getShipmentsList());
         } catch (Exception e) {
-            log.error("Error while calculating achieved values ");
+            log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.get().getId());
         }
         ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
         var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
