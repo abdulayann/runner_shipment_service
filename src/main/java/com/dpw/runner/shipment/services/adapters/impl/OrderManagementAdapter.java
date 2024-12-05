@@ -292,6 +292,8 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     }
 
     private Map<String, Map<String, Object>> getPartyDetails (List<String> orgCodes) {
+        if(orgCodes.isEmpty())
+            return new HashMap<>();
         CommonV1ListRequest orgRequest = new CommonV1ListRequest();
         List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
         String operator = Operators.IN.getValue();
