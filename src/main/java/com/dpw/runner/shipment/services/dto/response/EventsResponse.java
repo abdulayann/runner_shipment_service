@@ -63,4 +63,5 @@ public class EventsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime scheduledDate;
     private String direction;
+    private String referenceNumber;
 }
