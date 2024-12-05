@@ -387,9 +387,7 @@ class OrderManagementAdapterTest {
         when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
         HttpEntity<Object> httpEntity = new HttpEntity<>(headers);
         doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull1234-5678-9123-4567", HttpMethod.GET, httpEntity, OrderManagementResponse.class);
-        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
         List<Map<String, Object>> responseMap = new ArrayList<>();
-        doReturn(responseMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         ShipmentDetails shipmentDetails = orderManagementAdapter.getOrderByGuid("1234-5678-9123-4567");
         assertNotNull(shipmentDetails);
         assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
