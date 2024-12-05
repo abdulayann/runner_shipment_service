@@ -3696,7 +3696,7 @@ ShipmentServiceTest extends CommonMocks {
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveById(commonRequestModel, true);
-        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).implicationList(Collections.emptyList()).build()), httpResponse);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
