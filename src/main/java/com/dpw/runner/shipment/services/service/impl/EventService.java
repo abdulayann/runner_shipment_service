@@ -1282,7 +1282,7 @@ public class EventService implements IEventService {
                     // Sort each group by `actual` in descending order
                     .map(group -> {
                         group.sort(
-                                Comparator.comparing(EventsResponse::getShipmentNumber)
+                                Comparator.comparing(EventsResponse::getShipmentNumber, Comparator.nullsLast(Comparator.naturalOrder()))
                                 .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
                         );
                         return group;
