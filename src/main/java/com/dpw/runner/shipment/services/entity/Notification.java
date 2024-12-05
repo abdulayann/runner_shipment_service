@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.entity.enums.RequestType;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -39,7 +39,7 @@ public class Notification extends MultiTenancy {
 
     @Column(name = "request_type")
     @Enumerated(EnumType.STRING)
-    private RequestType requestType;
+    private NotificationRequestType notificationRequestType;
 
     @Column(name = "reason")
     @Size(max = 512, message = "max size is 512 for reason")

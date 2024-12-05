@@ -26,7 +26,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.RequestType;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -376,7 +376,7 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Request to Transfer state.");
         }
         networkTransfer.get().setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
-        Notification notification = getNotificationEntity(networkTransfer.get(), RequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null);
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null);
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         return ResponseHelper.buildSuccessResponse();
@@ -394,22 +394,22 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Reassigned state.");
         }
         networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
-        Notification notification = getNotificationEntity(networkTransfer.get(), RequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId());
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId());
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public Notification getNotificationEntity(NetworkTransfer networkTransfer, RequestType requestType, String reason, Integer reassignBranchId) {
+    public Notification getNotificationEntity(NetworkTransfer networkTransfer, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId) {
         Notification notification = new Notification();
         notification.setEntityId(networkTransfer.getEntityId());
         notification.setEntityType(networkTransfer.getEntityType());
         notification.setRequestedBranchId(TenantContext.getCurrentTenant());
         notification.setRequestedUser(UserContext.getUser().getUsername());
         notification.setRequestedOn(LocalDateTime.now(ZoneOffset.UTC));
-        notification.setRequestType(requestType);
+        notification.setNotificationRequestType(notificationRequestType);
         notification.setReason(reason);
-        if (Objects.equals(requestType, RequestType.REASSIGN)) {
+        if (Objects.equals(notificationRequestType, NotificationRequestType.REASSIGN)) {
             notification.setReassignedToBranchId(reassignBranchId);
         }
         notification.setTenantId(networkTransfer.getSourceBranchId());

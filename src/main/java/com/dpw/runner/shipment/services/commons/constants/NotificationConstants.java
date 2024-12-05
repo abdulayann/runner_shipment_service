@@ -10,7 +10,7 @@ public class NotificationConstants {
     public static final String NOTIFICATION_ID = "Notification Id";
     public static final String NOTIFICATION_GUID = "Notification Guid";
     public static final String RESPONSE_LIST = "List";
-    public static final String NOTIFICATION_ACCEPT = "/accept";
+    public static final String NOTIFICATION_ACCEPT = "/acceptNotification";
     public static final String NOTIFICATION_ACCEPT_SUCCESSFUL = "Notifications accept successful";
     public static final String NOTIFICATION_ACCEPT_ERROR = "Notifications accept failed";
     public static final String NOTIFICATION_CONFIRMATION_MSG_API = "/confirmationMessage";

@@ -41,23 +41,23 @@ class NotificationsControllerTest {
     }
 
     @Test
-    void accept1() {
+    void acceptNotification1() {
         when(notificationService.acceptNotification(anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
-        var responseEntity = notificationsController.accept(anyLong());
+        var responseEntity = notificationsController.acceptNotification(anyLong());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void accept2() {
+    void acceptNotification2() {
         when(notificationService.acceptNotification(anyLong())).thenThrow(new RuntimeException());
-        var responseEntity = notificationsController.accept(anyLong());
+        var responseEntity = notificationsController.acceptNotification(anyLong());
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void accept3() {
+    void acceptNotification3() {
         when(notificationService.acceptNotification(anyLong())).thenThrow(new RuntimeException("test"));
-        var responseEntity = notificationsController.accept(anyLong());
+        var responseEntity = notificationsController.acceptNotification(anyLong());
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 

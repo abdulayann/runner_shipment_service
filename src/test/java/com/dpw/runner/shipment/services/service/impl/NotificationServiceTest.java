@@ -20,7 +20,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.enums.RequestType;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -403,7 +403,7 @@ class NotificationServiceTest {
     @Test
     void testAcceptNotification_ShipmentEntity_ReassignBranch() throws RunnerException {
         Long id = 11L;
-        notification.setRequestType(RequestType.REASSIGN);
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
@@ -439,7 +439,7 @@ class NotificationServiceTest {
     @Test
     void testAcceptNotification_ConsolidationEntity_ReassignBranch() throws RunnerException {
         Long id = 11L;
-        notification.setRequestType(RequestType.REASSIGN);
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
         notification.setEntityType(Constants.CONSOLIDATION);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
@@ -476,7 +476,7 @@ class NotificationServiceTest {
     void testAcceptNotification_ShipmentEntity_TriangulationPartnerBranch() throws RunnerException {
         Long id = 11L;
         List<Long> triangulationPartners = List.of(3L);
-        notification.setRequestType(RequestType.REASSIGN);
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(3);
@@ -509,7 +509,7 @@ class NotificationServiceTest {
     void testAcceptNotification_ConsolidationEntity_TriangulationPartnerBranch() throws RunnerException {
         Long id = 11L;
         List<Long> triangulationPartners = List.of(3L);
-        notification.setRequestType(RequestType.REASSIGN);
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
         notification.setEntityType(Constants.CONSOLIDATION);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(3);

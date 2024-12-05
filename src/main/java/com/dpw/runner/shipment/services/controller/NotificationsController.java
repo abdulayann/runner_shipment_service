@@ -54,8 +54,8 @@ public class NotificationsController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsController.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_ACCEPT_SUCCESSFUL)})
-    @GetMapping(NotificationConstants.NOTIFICATION_ACCEPT)
-    public ResponseEntity<IRunnerResponse> accept(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
+    @PostMapping(NotificationConstants.NOTIFICATION_ACCEPT)
+    public ResponseEntity<IRunnerResponse> acceptNotification(@ApiParam(value = NotificationConstants.NOTIFICATION_ID) @RequestParam Long id) {
         String responseMsg;
         try {
             return notificationService.acceptNotification(id);

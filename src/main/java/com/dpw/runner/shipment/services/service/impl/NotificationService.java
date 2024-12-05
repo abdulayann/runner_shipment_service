@@ -21,7 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.RequestType;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -97,7 +97,7 @@ public class NotificationService implements INotificationService {
             Map.entry("requestedBranchId", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(Integer.class).fieldName("requestedBranchId").build()),
             Map.entry("requestedUser", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(String.class).fieldName("requestedUser").isContainsText(true).build()),
             Map.entry("requestedOn", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(LocalDateTime.class).fieldName("requestedOn").build()),
-            Map.entry("requestType", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(RequestType.class).fieldName("requestType").build()),
+            Map.entry("requestType", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(NotificationRequestType.class).fieldName("requestType").build()),
             Map.entry("reassignedToBranchId", RunnerEntityMapping.builder().tableName(Constants.NOTIFICATION_ENTITY).dataType(Integer.class).fieldName("reassignedToBranchId").build())
     );
 
@@ -225,7 +225,7 @@ public class NotificationService implements INotificationService {
                 log.debug(NotificationConstants.NOTIFICATION_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(Objects.equals(notification.get().getRequestType(), RequestType.REASSIGN)) {
+            if(Objects.equals(notification.get().getNotificationRequestType(), NotificationRequestType.REASSIGN)) {
                 processReassignBranchForEntityTransfer(notification.get());
             }
             notificationDao.delete(notification.get());
