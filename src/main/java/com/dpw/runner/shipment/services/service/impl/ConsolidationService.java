@@ -2799,11 +2799,7 @@ public class ConsolidationService implements IConsolidationService {
                     && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
             }
-            try {
-                calculateAchievedValues(consolidationDetails.get(), new ShipmentGridChangeResponse(), consolidationDetails.get().getShipmentsList());
-            } catch (Exception e) {
-                log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.get().getId());
-            }
+            calculateAchievedValuesForRetrieve(consolidationDetails.get());
 
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
             ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
@@ -2856,17 +2852,21 @@ public class ConsolidationService implements IConsolidationService {
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getMergeContainers()) && consolidationDetails.get().getContainersList() != null && !consolidationDetails.get().getContainersList().isEmpty()) {
             consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
         }
-        try {
-            calculateAchievedValues(consolidationDetails.get(), new ShipmentGridChangeResponse(), consolidationDetails.get().getShipmentsList());
-        } catch (Exception e) {
-            log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.get().getId());
-        }
+        calculateAchievedValuesForRetrieve(consolidationDetails.get());
         ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
         var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
         createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
 
         return response;
+    }
+
+    private void calculateAchievedValuesForRetrieve(ConsolidationDetails consolidationDetails) {
+        try {
+            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), consolidationDetails.getShipmentsList());
+        } catch (Exception e) {
+            log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.getId());
+        }
     }
 
     @Async
