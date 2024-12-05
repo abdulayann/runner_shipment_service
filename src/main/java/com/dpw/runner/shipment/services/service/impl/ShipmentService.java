@@ -2600,7 +2600,7 @@ public class ShipmentService implements IShipmentService {
 
         // Create events on basis of shipment status Confirmed/Created
         autoGenerateEvents(shipmentDetails, previousStatus);
-        log.info("shipment afterSave autoGenerateEvents.... ");
+        log.info("shipment afterSave generateEvents.... ");
 
         if (packingRequestList != null) {
             packingRequestList = setPackingDetails(packingRequestList, shipmentDetails.getTransportMode(), consolidationId);
@@ -3323,7 +3323,7 @@ public class ShipmentService implements IShipmentService {
             }
             consolidationDetails.setContainersList(containers);
             if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
-                consolidationService.autoGenerateEvents(consolidationDetails);
+                consolidationService.generateEvents(consolidationDetails);
             }
             consolidationService.pushShipmentDataToDependentService(consolidationDetails, true, null);
             return consolidationDetails;
