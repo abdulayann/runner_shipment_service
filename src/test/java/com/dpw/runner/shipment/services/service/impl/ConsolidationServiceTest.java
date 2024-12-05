@@ -635,7 +635,6 @@ import static org.mockito.Mockito.*;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any() , any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(modelMapper.map(any() , any())).thenReturn(response);
         Runnable mockRunnable = mock(Runnable.class);
         mockShipmentSettings();
 
@@ -3379,7 +3378,6 @@ import static org.mockito.Mockito.*;
 
         consolidationDetails.setShipmentsList(Arrays.asList(shipmentDetails));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(shipmentLevelContainer);
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
@@ -3400,7 +3398,6 @@ import static org.mockito.Mockito.*;
         responseMap.put("consolidationNumber", "CONS000231188");
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -3423,7 +3420,6 @@ import static org.mockito.Mockito.*;
         Page<Long> consolIdPage = new PageImpl<>(List.of(1L));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(consolIdPage);
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -3439,7 +3435,6 @@ import static org.mockito.Mockito.*;
         resp.setGuidsList(List.of(UUID.randomUUID()));
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         when(v1Service.fetchBookingIdFilterGuids(any())).thenReturn(resp);
         mockShipmentSettings();
 
@@ -3461,7 +3456,6 @@ import static org.mockito.Mockito.*;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
@@ -3588,7 +3582,6 @@ import static org.mockito.Mockito.*;
         ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(consolidationListResponse);
         mockShipmentSettings();
 
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
