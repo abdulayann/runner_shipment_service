@@ -26,8 +26,6 @@ public class TrackingConsumer {
     private final IEventService eventService;
     private ServiceBusProcessorClient processorClient;
     private final IV1Service v1Service;
-    @Value("${thread.sleep.time.ms}")
-    private long TIMEOUT_MS;
 
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
@@ -63,7 +61,6 @@ public class TrackingConsumer {
     @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        Thread.sleep(TIMEOUT_MS);
         log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
