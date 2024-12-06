@@ -32,6 +32,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,9 +60,12 @@ public class RoutingsService implements IRoutingsService {
     public MasterDataUtils masterDataUtils;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    ExecutorService executorService;
 
     @Override
-    public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException {
+    public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings)
+        throws RunnerException, ExecutionException, InterruptedException {
         if (shipmentId == null) {
             log.warn("Received null shipment ID. Aborting routing update.");
             return;
@@ -78,7 +84,17 @@ public class RoutingsService implements IRoutingsService {
             return;
         }
 
-        TrackingServiceApiResponse trackingServiceApiResponse = getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+        CompletableFuture<TrackingServiceApiResponse> trackingServiceApiResponseFuture =  CompletableFuture.supplyAsync(() -> {
+            try {
+                return getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+            } catch (RunnerException e) {
+                throw new RoutingException(e.getMessage(), e);
+            }
+        }, executorService);
+        CompletableFuture<Map<String, List<Routings>>> polToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, true), executorService);
+        CompletableFuture<Map<String, List<Routings>>> podToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, false), executorService);
+        CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
+        TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
         if (trackingServiceApiResponse == null) {
             return;
         }
@@ -86,8 +102,9 @@ public class RoutingsService implements IRoutingsService {
         log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
 
         // Create routing maps for POL and POD
-        Map<String, List<Routings>> polToRoutingMap = createRoutingMap(routings, true);
-        Map<String, List<Routings>> podToRoutingMap = createRoutingMap(routings, false);
+
+        Map<String, List<Routings>> polToRoutingMap = polToRoutingMapFuture.get();
+        Map<String, List<Routings>> podToRoutingMap = podToRoutingMapFuture.get();
 
         log.info("Routing maps created for shipment ID: {}. POL size: {}, POD size: {}",
                 shipmentId, polToRoutingMap.size(), podToRoutingMap.size());
@@ -137,7 +154,7 @@ public class RoutingsService implements IRoutingsService {
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
-        } catch (RuntimeException | RunnerException e) {
+        } catch (RuntimeException | RunnerException | ExecutionException | InterruptedException e) {
             log.error("Error updating routings: {}", e.getMessage(), e);
             throw new RoutingException("Failed to update routings", e);
         }
