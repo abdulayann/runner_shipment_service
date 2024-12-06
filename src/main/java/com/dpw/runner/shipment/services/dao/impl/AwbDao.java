@@ -1,13 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-
-import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -16,12 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbHawbLinkDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
@@ -32,13 +19,13 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import java.time.LocalDateTime;
-import java.util.*;
-import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -51,6 +38,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityManager;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXEMPTION_CARGO;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -427,6 +422,33 @@ public class AwbDao implements IAwbDao {
         return awbRepository.findAwbByGuidByQuery(guid);
     }
 
+    private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
+        awb.setAwbSpecialHandlingCodesMappings(null);
+        List<AwbSpecialHandlingCodesMappingInfo> sphs = new ArrayList<>();
+        if(!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
+            AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                    .shcId(eFreightStatus)
+                    .entityId(id)
+                    .build();
+
+            sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
+            sphs.add(sph);
+        }
+        if(!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
+            if(securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
+                securityStatus = Constants.SPX;
+            AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
+                    .shcId(securityStatus)
+                    .entityId(id)
+                    .build();
+
+            sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
+            sphs.add(sph);
+        }
+        if(!sphs.isEmpty())
+            awb.setAwbSpecialHandlingCodesMappings(sphs);
+    }
+
     @Override
     public void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException {
         // fetch Awb
@@ -440,17 +462,10 @@ public class AwbDao implements IAwbDao {
             if(Objects.isNull(awb))
                 return;
 
-            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus())) {
-                sph = AwbSpecialHandlingCodesMappingInfo.builder()
-                        .shcId(shipmentDetails.getAdditionalDetails().getEfreightStatus())
-                        .entityId(shipmentDetails.getId())
-                        .build();
-
-                sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
-
-                // set resubmitted false and sph
+            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus()) ||
+                    !Objects.equals(shipmentDetails.getSecurityStatus(), oldShipment.getSecurityStatus())) {
+                getAwbSphEntity(shipmentDetails.getAdditionalDetails().getEfreightStatus(), shipmentDetails.getSecurityStatus(), shipmentDetails.getId(), awb);
                 awb.setAirMessageResubmitted(false);
-                awb.setAwbSpecialHandlingCodesMappings(List.of(sph));
             }
             if(!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())){
                 awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
@@ -465,17 +480,10 @@ public class AwbDao implements IAwbDao {
             if(Objects.isNull(awb))
                 return;
 
-            if(!Objects.equals(consolidationDetails.getEfreightStatus(), oldConsolidation.getEfreightStatus())) {
-                sph = AwbSpecialHandlingCodesMappingInfo.builder()
-                        .shcId(consolidationDetails.getEfreightStatus())
-                        .entityId(consolidationDetails.getId())
-                        .build();
-
-                sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
-
-                // set resubmitted false and sph
+            if(!Objects.equals(consolidationDetails.getEfreightStatus(), oldConsolidation.getEfreightStatus()) ||
+                    !Objects.equals(consolidationDetails.getSecurityStatus(), oldConsolidation.getSecurityStatus())) {
+                getAwbSphEntity(consolidationDetails.getEfreightStatus(), consolidationDetails.getSecurityStatus(), consolidationDetails.getId(), awb);
                 awb.setAirMessageResubmitted(false);
-                awb.setAwbSpecialHandlingCodesMappings(List.of(sph));
             }
             if(!Objects.equals(consolidationDetails.getSci(), oldConsolidation.getSci())){
                 awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
