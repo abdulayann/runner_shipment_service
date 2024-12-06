@@ -76,29 +76,6 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -3549,6 +3526,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setShipmentOrders(Collections.singletonList(shipmentOrder));
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails.setCarrierDetails(CarrierDetails.builder().build());
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
@@ -5586,6 +5565,8 @@ ShipmentServiceTest extends CommonMocks {
         shipmentRequest.setPackingList(Arrays.asList(PackingRequest.builder().build()));
         shipmentRequest.setRoutingsList(Arrays.asList(RoutingsRequest.builder().build()));
         shipmentRequest.setNotesList(Arrays.asList(NotesRequest.builder().build()));
+        shipmentRequest.setAdditionalDetails(new AdditionalDetailRequest());
+        shipmentRequest.setCarrierDetails(CarrierDetailRequest.builder().build());
 
         Packing packing = new Packing();
         Routings routings = new Routings();
@@ -6252,7 +6233,10 @@ ShipmentServiceTest extends CommonMocks {
 
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001")
+                .additionalDetails(new AdditionalDetails())
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
         shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetailsResponse mockConsolidationDetailsResponse = new ConsolidationDetailsResponse();
 
