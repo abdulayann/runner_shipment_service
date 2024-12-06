@@ -1321,9 +1321,6 @@ public class EventService implements IEventService {
     public void saveEvent(EventsRequest eventsRequest) {
         Events entity = convertRequestToEntity(eventsRequest);
 
-        if (Boolean.TRUE.equals(eventsRequest.getSaveFromShipment())) {
-            entity.setEntityType(Constants.SHIPMENT);
-        }
         // event code and master-data description
         commonUtils.updateEventWithMasterData(List.of(entity));
         eventDao.updateEventDetails(entity);
