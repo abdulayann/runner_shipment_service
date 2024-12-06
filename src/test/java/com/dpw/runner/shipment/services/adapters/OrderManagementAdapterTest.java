@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderPartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.QuantityPair;
@@ -100,17 +100,42 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .supplierAddress(Map.of())
-                .buyerCode("buyCode")
-                .buyerAddress(Map.of())
-                .notifyPartyCode("notifyCode")
-                .notifyPartyAddress(Map.of())
-                .sendingAgentCode("sendingCode")
-                .sendingAgentAddress(Map.of())
-                .receivingAgentCode("receivingCode")
-                .receivingAgentAddress(Map.of())
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
@@ -148,12 +173,41 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
-                .notifyPartyCode("notifyCode")
-                .sendingAgentCode("sendingCode")
-                .receivingAgentCode("receivingCode")
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .guid(guid)
                 .build();
         response.setOrder(orderManagementDTO);
@@ -174,12 +228,41 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
-                .notifyPartyCode("notifyCode")
-                .sendingAgentCode("sendingCode")
-                .receivingAgentCode("receivingCode")
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
@@ -198,12 +281,41 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
-                .notifyPartyCode("notifyCode")
-                .sendingAgentCode("sendingCode")
-                .receivingAgentCode("receivingCode")
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
@@ -223,12 +335,41 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
-                .notifyPartyCode("notifyCode")
-                .sendingAgentCode("sendingCode")
-                .receivingAgentCode("receivingCode")
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
@@ -271,17 +412,41 @@ class OrderManagementAdapterTest {
         UUID guid = UUID.randomUUID();
         var referenceResponse = new ReferencesResponse();
         var goodsDescription = "GoodsDescription";
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .supplierAddress(Map.of("Id", "123"))
-                .buyerCode("buyCode")
-                .buyerAddress(Map.of("Id", "123"))
-                .notifyPartyCode("notifyCode")
-                .notifyPartyAddress(Map.of("Id", "123"))
-                .sendingAgentCode("sendingCode")
-                .sendingAgentAddress(Map.of("Id", "123"))
-                .receivingAgentCode("receivingCode")
-                .receivingAgentAddress(Map.of("Id", "123"))
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
@@ -313,8 +478,6 @@ class OrderManagementAdapterTest {
         ShipmentDetails shipmentDetails = orderManagementAdapter.getOrder("123");
         assertNotNull(shipmentDetails);
         assertNotNull(shipmentDetails.getReferenceNumbersList());
-        assertNotNull(shipmentDetails.getAdditionalDetails().getImportBroker());
-        assertNotNull(shipmentDetails.getAdditionalDetails().getExportBroker());
         assertEquals(goodsDescription, shipmentDetails.getGoodsDescription());
     }
 
@@ -325,12 +488,41 @@ class OrderManagementAdapterTest {
         quantityPair.setAmount(new BigDecimal(23));
         quantityPair.setUnit(Constants.WEIGHT_UNIT_KG);
         UUID guid = UUID.randomUUID();
+        Map<String, Object> partiesAddress = new HashMap<>();
+        partiesAddress.put("Id", 36118);
+        partiesAddress.put("OrgId", 24008);
+        OrderPartiesResponse partyConsignor = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("supCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyConsignee = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("buyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
+        OrderPartiesResponse partyNotifyParty = OrderPartiesResponse.builder()
+                .id("Parties00691")
+                .partyType("Consignor")
+                .partyCode("notifyCode")
+                .partyName("DP World Egypt Logistic Service (1034563)")
+                .addressCode("VNSGN - DP World Vietnam Ho chi")
+                .reference("contact@godship.com")
+                .address(partiesAddress)
+                .build();
+
         OrderManagementDTO orderManagementDTO = OrderManagementDTO.builder()
-                .supplierCode("supCode")
-                .buyerCode("buyCode")
-                .notifyPartyCode("notifyCode")
-                .sendingAgentCode("sendingCode")
-                .receivingAgentCode("receivingCode")
+                .parties(List.of(partyConsignor, partyConsignee,partyNotifyParty ))
                 .packsAmount(quantityPair)
                 .weightAmount(quantityPair)
                 .volumeAmount(quantityPair)
