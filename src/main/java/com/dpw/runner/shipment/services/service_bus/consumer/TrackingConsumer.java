@@ -63,7 +63,6 @@ public class TrackingConsumer {
     @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        Thread.sleep(TIMEOUT_MS);
         log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
