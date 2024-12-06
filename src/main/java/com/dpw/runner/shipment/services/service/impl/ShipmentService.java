@@ -5645,6 +5645,7 @@ public class ShipmentService implements IShipmentService {
     private Events createAutomatedEvents(ShipmentDetails shipmentDetails, String eventCode,
             LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
         Events events = initializeAutomatedEvents(shipmentDetails, eventCode, actualDateTime, estimatedDateTime);
+        commonUtils.updateEventWithMasterData(List.of(events));
         // Persist the event
         eventDao.save(events);
         return events;
