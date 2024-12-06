@@ -39,4 +39,6 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
     void entityDetach(List<ConsolidationDetails> consolidationDetails);
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
+    void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
+    void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
 }

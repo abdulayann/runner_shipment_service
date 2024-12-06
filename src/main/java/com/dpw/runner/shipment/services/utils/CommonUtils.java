@@ -2038,4 +2038,11 @@ public class CommonUtils {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
+    public List<Long> getTriangulationPartnerList(List<TriangulationPartner> partnerList) {
+        return partnerList != null ? partnerList.stream()
+                .filter(Objects::nonNull)
+                .map(TriangulationPartner::getTriangulationPartner)
+                .toList() : Collections.emptyList();
+    }
+
 }

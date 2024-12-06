@@ -86,7 +86,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -142,4 +142,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String department;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

@@ -265,6 +265,8 @@ public class ConsolidationService implements IConsolidationService {
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
 
+    @Autowired
+    private INotificationDao notificationDao;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -375,13 +377,15 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(consolidationIdList, CONSOLIDATION);
         lst.forEach(consolidationDetails -> {
             var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
-            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).orElse(null));
+            int pendingCount = map.getOrDefault(consolidationDetails.getId(), 0) + notificationMap.getOrDefault(consolidationDetails.getId(), 0);
+            res.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
             consolidationListResponses.add(res);
         });
         consolidationListResponses.forEach(consolidationDetails -> {
@@ -1510,8 +1514,10 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getCfs(), oldEntity.getCarrierDetails().getCfs()) ||
                         !Objects.equals(console.getReceivingBranch(), oldEntity.getReceivingBranch()) ||
                         !Objects.equals(console.getTriangulationPartner(), oldEntity.getTriangulationPartner()) ||
-                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of()))
-                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartnerList()).orElse(List.of()))) ||
+                        !Set.copyOf(Optional.ofNullable(console.getTriangulationPartnerList()).orElse(List.of())
+                                        .stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList())
+                                .equals(Set.copyOf(Optional.ofNullable(oldEntity.getTriangulationPartnerList()).orElse(List.of())
+                                        .stream().filter(Objects::nonNull).map(TriangulationPartner::getTriangulationPartner).toList())) ||
                         !Objects.equals(console.getDocumentationPartner(), oldEntity.getDocumentationPartner()) ||
                         !Objects.equals(console.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber()) ||
                         !Objects.equals(console.getCarrierDetails().getOriginPort(), oldEntity.getCarrierDetails().getOriginPort()) ||
@@ -1529,7 +1535,7 @@ public class ConsolidationService implements IConsolidationService {
                 i.setDirection(console.getShipmentType());
                 i.setBookingNumber(console.getCarrierBookingRef());
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
-                    i.setTriangulationPartnerList(jsonHelper.convertValueToList(console.getTriangulationPartnerList(), Long.class));
+                    i.setTriangulationPartnerList(console.getTriangulationPartnerList());
                     i.setTriangulationPartner(console.getTriangulationPartner());
                     i.setDocumentationPartner(console.getDocumentationPartner());
                     if (!Boolean.TRUE.equals(i.getIsReceivingBranchAdded()))
@@ -2788,13 +2794,16 @@ public class ConsolidationService implements IConsolidationService {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            List<Long> triangulationPartnerList = consolidationDetails.get().getTriangulationPartnerList();
 
+            List<TriangulationPartner> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            if ((triangulationPartnerList == null || !triangulationPartnerList.contains(currentTenant)) &&
-                    !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant)) {
+            if ((triangulationPartners == null
+                    || triangulationPartners.stream()
+                        .filter(Objects::nonNull)
+                        .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                    && !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
-            } else if (triangulationPartnerList == null
+            } else if (triangulationPartners == null
                     && !Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
                     && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
@@ -2854,9 +2863,11 @@ public class ConsolidationService implements IConsolidationService {
         }
         calculateAchievedValuesForRetrieve(consolidationDetails.get());
         ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-        var notificationMap = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-        response.setPendingActionCount(Optional.ofNullable(notificationMap.get(id)).orElse(null));
-        createConsolidationPayload(consolidationDetails.get(), response, false);
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.get().getId()), CONSOLIDATION);
+        int pendingCount = map.getOrDefault(consolidationDetails.get().getId(), 0) + notificationMap.getOrDefault(consolidationDetails.get().getId(), 0);
+        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+        createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
 
         return response;
     }
@@ -3838,15 +3849,15 @@ public class ConsolidationService implements IConsolidationService {
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
         if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartnerList())
-                && consolidationDetails.getTriangulationPartnerList().size() == 1
-                && Long.valueOf(0).equals(consolidationDetails.getTriangulationPartnerList().get(0))) {
-            consolidationDetails.setTriangulationPartnerList(null);
+                && consolidationDetails.getTriangulationPartnerList().size() == 1) {
+            TriangulationPartner triangulationPartner = consolidationDetails.getTriangulationPartnerList().get(0);
+            if (triangulationPartner != null && Long.valueOf(0).equals(triangulationPartner.getTriangulationPartner()))
+                consolidationDetails.setTriangulationPartnerList(null);
         } else if (consolidationDetails.getTriangulationPartnerList() == null
                 && consolidationDetails.getTriangulationPartner() != null
                 && consolidationDetails.getTriangulationPartner() == 0) {
             consolidationDetails.setTriangulationPartner(null);
         }
-
         if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, commonUtils.getShipmentSettingFromContext())) {
             List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
             if(!awbs.isEmpty()) {
@@ -4066,9 +4077,9 @@ public class ConsolidationService implements IConsolidationService {
                         reverseDirection(consolidationDetails.getShipmentType()));
 
                 if (consolidationDetails.getTriangulationPartnerList() != null) {
-
-                    List<Long> currentPartners = consolidationDetails.getTriangulationPartnerList();
-                    List<Long> oldPartners = oldEntity != null ? oldEntity.getTriangulationPartnerList() : Collections.emptyList();
+                    List<Long> currentPartners = commonUtils.getTriangulationPartnerList(consolidationDetails.getTriangulationPartnerList());
+                    List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                            : Collections.emptyList();
 
                     // Determine new tenant IDs by removing old partners from the current partners
                     Set<Long> newTenantIds = new HashSet<>(currentPartners);

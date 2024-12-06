@@ -268,13 +268,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
-    @Column(name = "partner_id")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "triangulation_partner_consolidation",
-            joinColumns = @JoinColumn(name = "consolidation_id"))
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
     @BatchSize(size = 50)
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")
     @TenantIdData
@@ -499,4 +496,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }

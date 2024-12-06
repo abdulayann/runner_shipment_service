@@ -41,4 +41,5 @@ public class EntityTransferConstants {
     public static final String MISSING_RECEIVING_BRANCH_VALIDATION = "Please enter the receiving agent in entity transfer tab before proceeding with the transfer !";
 
     public static final String TRANSFERRED_ENTITY_ALREADY_PRESENT = "%s already exists, do you want to update the entry?";
+    public static final String ALREADY_ACCEPTED_NETWORK_TRANSFER = "One or more network transfer requests are already in the ACCEPTED status: ";
 }

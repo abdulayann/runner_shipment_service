@@ -265,6 +265,9 @@ ShipmentServiceTest extends CommonMocks {
     @Mock
     private IDpsEventService dpsEventService;
 
+    @Mock
+    private INotificationDao notificationDao;
+
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -6297,9 +6300,10 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void create_successBranch() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(0L).build();
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartnerList(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6328,9 +6332,10 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void create_successBranch_ShipmentPackStatusAndDate() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(0L).build();
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartnerList(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -6365,9 +6370,10 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void create_successBranchHblNotEmpty() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(0L).build();
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartnerList(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -7623,9 +7629,10 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void createShipmentEvents() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(0L).build();
         ShipmentDetails mockShipment = shipmentDetails;
         shipmentDetails.setReceivingBranch(0L);
-        shipmentDetails.setTriangulationPartnerList(List.of(0L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         shipmentDetails.setDocumentationPartner(0L);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
@@ -9060,7 +9067,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRetrieveForNTE() {
         shipmentDetails.setStatus(null);
-        shipmentDetails.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder()
+                .triangulationPartner(TenantContext.getCurrentTenant().longValue()).build();
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
@@ -9081,7 +9090,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRetrieveForNTE2() {
         shipmentDetails.setStatus(100);
-        shipmentDetails.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder()
+                .triangulationPartner(TenantContext.getCurrentTenant().longValue()).build();
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
@@ -9172,10 +9183,10 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
-
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(12L).build();
         // Mock
         shipmentDetails.setReceivingBranch(1L);
-        shipmentDetails.setTriangulationPartnerList(List.of(12L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails.setConsolidationList(new ArrayList<>())
                 .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -9287,6 +9298,10 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     public void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer() {
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(1L).build();
+        TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(2L).build();
+        TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(3L).build();
+        TriangulationPartner triangulationPartner3 = TriangulationPartner.builder().triangulationPartner(4L).build();
         // Arrange
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setReceivingBranch(1L);
@@ -9294,12 +9309,15 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(SHIPMENT_TYPE_DRT);
         shipmentDetails.setDirection(DIRECTION_EXP);
-        shipmentDetails.setTriangulationPartnerList(List.of(1L, 2L, 3L));
+        shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1, triangulationPartner2));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
         oldEntity.setReceivingBranch(1L);
-        oldEntity.setTriangulationPartnerList(List.of(3L, 4L));
-
+        oldEntity.setTriangulationPartnerList(List.of(triangulationPartner2, triangulationPartner3));
+        when(commonUtils.getTriangulationPartnerList(eq(shipmentDetails.getTriangulationPartnerList())))
+                .thenReturn(List.of(1L, 2L, 3L));
+        when(commonUtils.getTriangulationPartnerList(eq(oldEntity.getTriangulationPartnerList())))
+                .thenReturn(List.of(3L, 4L));
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
 
@@ -9313,6 +9331,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     public void testCreateOrUpdateNetworkTransferEntity_NotEligibleForNetworkTransfer() {
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(3L).build();
+        TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(4L).build();
+        TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(5L).build();
         // Arrange
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setReceivingBranch(1L);
@@ -9323,7 +9344,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails oldEntity = new ShipmentDetails();
         oldEntity.setId(100L); // Mocked ID for oldEntity
         oldEntity.setReceivingBranch(2L); // Old receiving branch
-        oldEntity.setTriangulationPartnerList(List.of(3L, 4L, 5L)); // Old triangulation partners
+        oldEntity.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1, triangulationPartner2)); // Old triangulation partners
 
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);

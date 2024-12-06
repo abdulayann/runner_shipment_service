@@ -78,7 +78,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String route;
     private long sourceTenantId;
     private long documentationPartner;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private long receivingBranch;
     private boolean intraBranch;
@@ -147,6 +147,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
     private DpsWorkflowState dpsState;
+    private Boolean isTransferredToReceivingBranch;
     @JsonIgnore
     private List<EventsResponse> eventsList;
     @JsonIgnore

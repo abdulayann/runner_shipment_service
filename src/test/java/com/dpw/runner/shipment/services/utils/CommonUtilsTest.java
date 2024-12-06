@@ -3089,4 +3089,32 @@ class CommonUtilsTest {
     void testChangeShipmentDGStatusToReqd() {
         assertFalse(commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().direction(IMP).build(), false));
     }
+
+    @Test
+    public void testGetTriangulationPartnerList_EmptyInput() {
+        List<TriangulationPartner> partnerList = null;
+
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        assertNotNull(triangulationPartnerIds);
+        assertTrue(triangulationPartnerIds.isEmpty());
+    }
+
+    @Test
+    public void testGetTriangulationPartnerList_NonEmptyInput() {
+        List<TriangulationPartner> partnerList = Arrays.asList(
+                TriangulationPartner.builder().triangulationPartner(1L).isAccepted(true).build(),
+                TriangulationPartner.builder().triangulationPartner(2L).isAccepted(false).build(),
+                null
+        );
+
+        // Act
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        // Assert
+        assertNotNull(triangulationPartnerIds);
+        assertEquals(2, triangulationPartnerIds.size());
+        assertTrue(triangulationPartnerIds.contains(1L));
+        assertTrue(triangulationPartnerIds.contains(2L));
+    }
 }

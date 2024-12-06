@@ -108,6 +108,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
         return networkTransferRepository.findByTenantAndEntity(tenantId, entityId, entityType);
     }
 
+    @Override
+    public List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds) {
+        return networkTransferRepository.findByEntityAndTenantList(entityId, entityType, tenantIds);
+    }
+
     public List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList) {
         for(var networkTransferEntity : networkTransferEntityList){
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(networkTransferEntity), Constants.NETWORK_TRANSFER_ENTITY, LifecycleHooks.ON_CREATE, false);

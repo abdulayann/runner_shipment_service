@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +19,7 @@ public class ArValidationResponse implements IRunnerResponse {
     private UUID shipmentGuid;
     private String consolidationType;
     private Long receivingAgent;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Integer sourceBranch;
     private Integer origin;

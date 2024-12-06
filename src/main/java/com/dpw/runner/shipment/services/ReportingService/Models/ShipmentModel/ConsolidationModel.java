@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TriangulationPartnerModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -163,7 +164,7 @@ public class ConsolidationModel implements IDocumentModel {
     @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
     @JsonProperty("TriangulationPartnerList")
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerModel> triangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private long triangulationPartner;
     @JsonProperty("ReceivingBranch")

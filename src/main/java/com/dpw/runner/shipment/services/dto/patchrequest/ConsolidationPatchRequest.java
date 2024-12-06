@@ -2,19 +2,7 @@ package com.dpw.runner.shipment.services.dto.patchrequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
-import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
-import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.FileRepoRequest;
-import com.dpw.runner.shipment.services.dto.request.JobRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -109,7 +97,7 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Long> warehouseId;
     private JsonNullable<Long> sourceTenantId;
     private JsonNullable<String> ediTransactionId;
-    private JsonNullable<List<Long>> triangulationPartnerList;
+    private JsonNullable<List<TriangulationPartnerRequest>> triangulationPartnerList;
     private JsonNullable<Long> triangulationPartner;
     private JsonNullable<Long> receivingBranch;
     private JsonNullable<Boolean> intraBranch;
@@ -143,4 +131,5 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<Boolean> openForAttachment;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
+    private JsonNullable<Boolean> isTransferredToReceivingBranch;
 }

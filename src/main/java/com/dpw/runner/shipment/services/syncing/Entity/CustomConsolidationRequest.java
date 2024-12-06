@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -121,7 +122,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("SpecialInstructions")
     private String SpecialInstructions;
     @JsonProperty("TriangulationPartnerList")
-    private List<Long> TriangulationPartnerList;
+    private List<TriangulationPartnerRequest> TriangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private Integer TriangulationPartner;
     @JsonProperty("WarehouseId")

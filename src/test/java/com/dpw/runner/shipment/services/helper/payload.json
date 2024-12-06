@@ -2675,7 +2675,10 @@
     },
     "receivingBranch": 66,
     "documentationPartner": 484,
-    "triangulationPartnerList": [2312],
+    "triangulationPartnerList": [{
+      "triangulationPartner": 2312,
+      "isAccepted": false
+    }],
     "triangulationPartner": 2312,
     "departureDetails": {
       "ctoid": {},
@@ -2808,7 +2811,10 @@
       },
       "triangulationPartnerList": {
         "label": "DPWCANADA_SS",
-        "value": [2312],
+        "value": [{
+          "triangulationPartner": 2312,
+          "isAccepted": false
+        }],
         "TenantId": 2312
       },
       "carrierDetails": {
@@ -11496,7 +11502,10 @@
     "cargoFinanceBooking": false,
     "sourceTenantId": 937,
     "documentationPartner": 728,
-    "triangulationPartnerList": [728],
+    "triangulationPartnerList": [{
+      "triangulationPartner": 728,
+      "isAccepted": false
+    }],
     "triangulationPartner": 728,
     "receivingBranch": 728,
     "intraBranch": false,
@@ -14286,6 +14295,24 @@
       "numberOfPackages": "3",
       "shipmentReference": "SHP00012345"
     }
+  },
+  "NOTIFICATION_RESPONSE": {
+    "id": 11,
+    "guid": "893cc8fa-7315-4d23-a635-3ce8705a5140",
+    "entityType": "SHIPMENT",
+    "entityId": 12977,
+    "requestedBranchId": 937,
+    "requestedUser": "egypt_qa@yopmail.com",
+    "requestedOn": "2024-12-04 09:39:49",
+    "requestType": "REASSIGN",
+    "reason": "Reassigned requested",
+    "reassignedToBranchId": 908,
+    "tenantIdsData": {
+      "requestedBranchId": "EGYPT_TEST QA",
+      "reassignedToBranchId_code": "EGYSHP100",
+      "requestedBranchId_code": "EGYPT_TESTQA",
+      "reassignedToBranchId": "EGYSHP100"
+    },
+    "tenantId": 728
   }
-
 }
