@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
@@ -14,15 +15,18 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -45,8 +49,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -71,10 +75,12 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final MasterDataKeyUtils masterDataKeyUtils;
 
+    private final INotificationDao notificationDao;
+
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
-                                  CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils) {
+                                  CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -82,6 +88,7 @@ public class NetworkTransferService implements INetworkTransferService {
         this.executorService = executorService;
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
+        this.notificationDao = notificationDao;
     }
 
 
@@ -365,7 +372,12 @@ public class NetworkTransferService implements INetworkTransferService {
             log.debug(NetworkTransferConstants.NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR, requestForTransferRequest.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if(Objects.equals(networkTransfer.get().getStatus(), NetworkTransferStatus.REQUESTED_TO_TRANSFER)) {
+            throw new DataRetrievalFailureException("Network Transfer is already in Request to Transfer state.");
+        }
         networkTransfer.get().setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null);
+        notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         return ResponseHelper.buildSuccessResponse();
     }
@@ -378,8 +390,29 @@ public class NetworkTransferService implements INetworkTransferService {
             log.debug(NetworkTransferConstants.NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR, reassignRequest.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        if(Objects.equals(networkTransfer.get().getStatus(), NetworkTransferStatus.REASSIGNED)) {
+            throw new DataRetrievalFailureException("Network Transfer is already in Reassigned state.");
+        }
         networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId());
+        notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    public Notification getNotificationEntity(NetworkTransfer networkTransfer, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId) {
+        Notification notification = new Notification();
+        notification.setEntityId(networkTransfer.getEntityId());
+        notification.setEntityType(networkTransfer.getEntityType());
+        notification.setRequestedBranchId(TenantContext.getCurrentTenant());
+        notification.setRequestedUser(UserContext.getUser().getUsername());
+        notification.setRequestedOn(LocalDateTime.now(ZoneOffset.UTC));
+        notification.setNotificationRequestType(notificationRequestType);
+        notification.setReason(reason);
+        if (Objects.equals(notificationRequestType, NotificationRequestType.REASSIGN)) {
+            notification.setReassignedToBranchId(reassignBranchId);
+        }
+        notification.setTenantId(networkTransfer.getSourceBranchId());
+        return notification;
     }
 }
