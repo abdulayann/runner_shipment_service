@@ -7,6 +7,11 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,12 +19,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 
 @Repository @Generated
@@ -37,7 +36,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     }
 
     @ExcludeTenantFilter
-    @Query(value = "SELECT * FROM shipment_details WHERE guid IN (:guids)", nativeQuery = true)
+    @Query(value = "SELECT * FROM shipment_details WHERE guid IN ?1", nativeQuery = true)
     List<ShipmentDetails> findAllByGuids(List<UUID> guids);
 
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)

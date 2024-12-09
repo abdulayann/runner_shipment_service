@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -1104,13 +1105,17 @@ class EventServiceTest extends CommonMocks {
         shipment1.setGuid(guid1);
         shipment1.setId(1L);
         shipment1.setShipmentId("S123");
+        shipment1.setTenantId(1);
 
         ShipmentDetails shipment2 = new ShipmentDetails();
         shipment2.setGuid(guid2);
         shipment2.setId(2L);
         shipment2.setShipmentId("S456");
+        shipment2.setTenantId(2);
 
-        Events mockEvent = Events.builder().build();
+        EventsRequest mockRequest1 = new EventsRequest(); // Populate as needed
+        EventsRequest mockRequest2 = new EventsRequest();
+        Events mockEvent = new Events();
 
         when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
         when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
@@ -1122,19 +1127,23 @@ class EventServiceTest extends CommonMocks {
         when(billDto2.getModuleTypeCode()).thenReturn(Constants.SHIPMENT);
 
         when(shipmentDao.findByGuids(anyList())).thenReturn(List.of(shipment1, shipment2));
-        when(eventDao.shouldSendEventFromShipmentToConsolidation(any(), any())).thenReturn(false);
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(mockEvent);
 
         doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        doNothing().when(eventDao).updateEventDetails(any());
 
-        when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
+        when(eventDao.findAll(any(), any())).thenReturn(Page.empty());
+//        doNothing().when(eventDao).delete(any());
+        when(eventDao.save(any())).thenReturn(mockEvent);
 
         // Act
         eventService.processUpstreamBillingCommonEventMessage(billingInvoiceDto);
 
         // Assert
         verify(shipmentDao).findByGuids(List.of(guid1, guid2));
-        verify(eventDao).saveAll(anyList());
-        verify(commonUtils, times(2)).updateEventWithMasterData(anyList()); // Updated expectation
+        verify(eventDao, times(2)).save(any());
+        verify(commonUtils, times(2)).updateEventWithMasterData(anyList());
+        verify(eventDao, never()).delete(any()); // No duplicate events, so delete should not be called
     }
 
 
