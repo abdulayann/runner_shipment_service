@@ -182,7 +182,7 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void saveDpsStateTest() {
+    void saveStatusTest() {
         Long shipmentId = 1L;
         Integer status = 1;
 

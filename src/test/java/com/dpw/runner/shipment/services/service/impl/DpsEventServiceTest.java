@@ -615,7 +615,6 @@ class DpsEventServiceTest {
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(1L);
-        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
         when(dpsEventRepository.findByExecutionId(any())).thenReturn(savedEvent);
         when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(savedEvent);
@@ -676,7 +675,6 @@ class DpsEventServiceTest {
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(1L);
-        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
         // Act & Assert
         assertThrows(DpsException.class, () ->

@@ -29,7 +29,6 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
-
     void saveStatus(Long id, Integer status);
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
