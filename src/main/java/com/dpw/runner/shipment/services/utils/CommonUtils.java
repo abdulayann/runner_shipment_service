@@ -1352,8 +1352,9 @@ public class CommonUtils {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
         String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
-        request.setCriteriaRequests(criteria);
+        List<Object> criteria1 = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        List<Object> criteria2 = new ArrayList<>(List.of(List.of(TENANTID), "=", TenantContext.getCurrentTenant()));
+        request.setCriteriaRequests(List.of(criteria1, "and", criteria2));
         V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
         if(v1DataResponse != null)
         {
