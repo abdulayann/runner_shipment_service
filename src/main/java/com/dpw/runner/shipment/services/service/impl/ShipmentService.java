@@ -6735,7 +6735,9 @@ public class ShipmentService implements IShipmentService {
             consoleShipmentMappingDao.save(entity);
             if(!pullRequests.isEmpty()) {
                 pullRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));
-                sendEmailForPullRequestReject(shipId, pullRequests.stream().map(e -> e.getConsolidationId()).toList(), shipmentRequestedTypes, remarks, pullRequests);
+                sendEmailForPullRequestReject(shipId, pullRequests.stream().map(e -> e.getConsolidationId()).toList(), shipmentRequestedTypes,
+                        remarks + "<br>Target Shipment has been requested to attach with an another consolidation already.",
+                        pullRequests);
             }
             if(!pushRequests.isEmpty()) {
                 pushRequests.forEach(e -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(e.getConsolidationId(), e.getShipmentId()));

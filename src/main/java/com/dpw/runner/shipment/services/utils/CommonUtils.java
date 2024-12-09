@@ -1214,6 +1214,8 @@ public class CommonUtils {
         dictionary.put(SOURCE_CONSOLIDATION_NUMBER, consolidationDetails.getConsolidationNumber());
         dictionary.put(Constants.WITHDRAW_REMARKS, remarks);
         dictionary.put(ACTIONED_USER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(SHIPMENT_CREATE_USER, shipmentDetails.getCreatedBy());
+        dictionary.put(REQUESTED_USER_NAME, UserContext.getUser().getUsername());
     }
 
     public void populateDictionaryForShipmentDetach(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, String detachRemarks) {
