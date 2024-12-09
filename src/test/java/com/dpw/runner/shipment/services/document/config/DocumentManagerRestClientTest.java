@@ -185,4 +185,18 @@ class DocumentManagerRestClientTest {
         );
     }
 
+    @Test
+    void testMultipleEntityFilesWithTenant_Failure() {
+        DocumentManagerMultipleEntityFileRequest request = new DocumentManagerMultipleEntityFileRequest();
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, () -> documentManagerRestClient.multipleEntityFilesWithTenant(request));
+    }
+
 }

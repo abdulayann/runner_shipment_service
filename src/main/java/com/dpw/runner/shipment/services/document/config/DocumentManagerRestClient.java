@@ -165,17 +165,23 @@ public class DocumentManagerRestClient {
     }
 
     public DocumentManagerListResponse<DocumentManagerEntityFileResponse> multipleEntityFilesWithTenant(DocumentManagerMultipleEntityFileRequest request) {
-        HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
-        HttpEntity<DocumentManagerMultipleEntityFileRequest> requestEntity = new HttpEntity<>(request, headers);
-        String url = baseUrl + multipleEntityFilesWithTenantUrl;
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<DocumentManagerMultipleEntityFileRequest> requestEntity = new HttpEntity<>(request, headers);
+            String url = baseUrl + multipleEntityFilesWithTenantUrl;
 
-        ResponseEntity<DocumentManagerListResponse<DocumentManagerEntityFileResponse>> responseEntity = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                requestEntity,
-                new ParameterizedTypeReference<>() {}
-        );
+            ResponseEntity<DocumentManagerListResponse<DocumentManagerEntityFileResponse>> responseEntity = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
 
-        return responseEntity.getBody();
+            return responseEntity.getBody();
+        } catch (Exception ex) {
+            log.error("Error in MultipleEntityFilesWithTenant Api from Document Service: {}", ex.getMessage());
+            throw new RuntimeException(ex);
+        }
     }
 }
