@@ -20,6 +20,9 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipm
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -106,6 +109,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AssignAllDialogDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
@@ -226,6 +231,8 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
@@ -239,6 +246,8 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -270,6 +279,7 @@ import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferServi
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
@@ -552,6 +562,15 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private INetworkTransferService networkTransferService;
+
+    @Autowired
+    private INetworkTransferDao networkTransferDao;
+
+    @Autowired
+    private IQuartzJobInfoService quartzJobInfoService;
+
+    @Autowired
+    private IQuartzJobInfoDao quartzJobInfoDao;
 
     @Autowired
     private IDpsEventService dpsEventService;
@@ -2666,6 +2685,8 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
         log.info("shipment afterSave end..... ");
     }
 
@@ -2728,6 +2749,151 @@ public class ShipmentService implements IShipmentService {
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
+    }
+
+    private boolean hasHouseBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return (oldEntity == null && shipmentDetails.getHouseBill() != null)
+                || (oldEntity != null && isValueChanged(shipmentDetails.getHouseBill(), oldEntity.getHouseBill()));
+    }
+
+    private void triggerConsoleTransfer(ShipmentDetails shipmentDetails){
+        if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
+            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
+                if(consolidationDetails!=null && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
+                        ObjectUtils.notEqual(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT)
+                        && ObjectUtils.notEqual(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD))
+                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+            }
+        }
+    }
+
+    public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
+
+        QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+
+        if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
+            if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
+                createOrUpdateQuartzJob(shipmentDetails, null);
+            } else if (quartzJobInfo!=null && shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
+                createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
+            }
+        } else if (quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR &&
+                hasHouseBillChange(shipmentDetails, oldEntity)) {
+            triggerConsoleTransfer(shipmentDetails);
+        }
+    }
+
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
+                || (isValidReceivingBranchChange(shipmentDetails, oldEntity))
+                || (isValidDateChange(shipmentDetails, oldEntity));
+    }
+
+    private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+        if (carrierDetails == null) {
+            return;
+        }
+        if(ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd())){
+            return;
+        }
+
+        LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
+                carrierDetails.getEta(), carrierDetails.getEtd(),
+                carrierDetails.getAta(), carrierDetails.getAtd());
+
+        if(jobTime == null)
+            return;
+
+        QuartzJobInfo quartzJobInfo = (existingJob != null) ? existingJob : createNewQuartzJob(shipmentDetails);
+        quartzJobInfo.setJobStatus(JobState.QUEUED);
+        quartzJobInfo.setStartTime(jobTime);
+        QuartzJobInfo newQuartzJobInfo = quartzJobInfoDao.save(quartzJobInfo);
+
+        if(existingJob!=null){
+            quartzJobInfoService.updateSimpleJob(newQuartzJobInfo);
+        }else{
+            quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
+        }
+    }
+
+    private QuartzJobInfo createNewQuartzJob(ShipmentDetails shipmentDetails) {
+        return QuartzJobInfo.builder()
+                .entityId(shipmentDetails.getId())
+                .entityType(SHIPMENT)
+                .tenantId(shipmentDetails.getTenantId())
+                .build();
+    }
+
+    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
+            return false;
+        }
+
+        boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
+        if (!isBranchChanged) {
+            return false;
+        }
+
+        Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT
+        );
+
+        return oldOptionalNetworkTransfer
+                .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
+                .orElse(false);
+    }
+
+    private boolean isValidDateChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
+        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
+        if(oldEntity!=null && oldEntity.getCarrierDetails()!=null && newCarrierDetails!=null){
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
+                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
+                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
+                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
+        }
+        return false;
+    }
+
+    private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        if(quartzJobInfo.getJobStatus() != JobState.ERROR)
+            return false;
+
+        if(Boolean.TRUE.equals(isDocAdded))
+            return true;
+
+        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
+        if (newCarrierDetails == null) {
+            return false; // No new details to compare.
+        }
+
+        // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
+        if (oldEntity == null || oldEntity.getCarrierDetails()==null) {
+            return newCarrierDetails.getEta() != null
+                    || newCarrierDetails.getEtd() != null
+                    || newCarrierDetails.getAta() != null
+                    || newCarrierDetails.getAtd() != null;
+        }
+
+        if(shipmentDetails.getReceivingBranch()!=null && (oldEntity.getReceivingBranch()!=null && Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch()))){
+            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
+            if(oldOptionalNetworkTransfer.isPresent() && oldOptionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
+                return false;
+            }
+        }
+
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        // Compare individual fields for changes.
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber())
+                || (isValidDateChange(shipmentDetails, oldEntity));
+    }
+
+    private boolean isValueChanged(Object newValue, Object oldValue) {
+        return newValue != null && !newValue.equals(oldValue);
     }
 
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
@@ -4366,6 +4532,8 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails newShipment = newShipmentDetails;
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(newShipment, oldEntity)), executorService);
+            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(newShipment, oldEntity, false)), executorService);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

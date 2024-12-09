@@ -18,6 +18,12 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.DIREC
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
@@ -70,6 +76,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
@@ -156,6 +164,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
@@ -197,6 +209,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -416,6 +429,15 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
+
+    @Autowired
+    private IQuartzJobInfoService quartzJobInfoService;
+
+    @Autowired
+    private IQuartzJobInfoDao quartzJobInfoDao;
+
+    @Autowired
+    private INetworkTransferDao networkTransferDao;
 
 
     @Value("${consolidationsKafka.queue}")
@@ -4168,6 +4190,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
     }
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
@@ -4214,6 +4237,212 @@ public class ConsolidationService implements IConsolidationService {
             log.error("Exception during creation or updation of Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
 
+    }
+
+    public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
+                                         ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
+        if (isInvalidForTransfer(consolidationDetails)) {
+            return;
+        }
+
+        Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
+
+        if (!optionalQuartzJobInfo.isPresent() && oldEntity==null) {
+            createOrUpdateQuartzJob(consolidationDetails, null);
+        } else if (optionalQuartzJobInfo.isPresent() && shouldUpdateExistingJob(optionalQuartzJobInfo.get(), oldEntity, consolidationDetails, isDocOrHawbNumAdded)) {
+            createOrUpdateQuartzJob(consolidationDetails, optionalQuartzJobInfo.get());
+        }
+    }
+
+    private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        shipmentSettingsDetails.setIsAutomaticTransferEnabled(true);
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) &&
+                (ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
+                && (consolidationDetails.getTransportMode()!=null &&
+                !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))) ;
+    }
+
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded) {
+        return (isValidforAutomaticTransfer(quartzJobInfo, consolidationDetails, oldEntity, isDocAdded))
+                || (isValidReceivingBranchChange(consolidationDetails, oldEntity))
+                || (isValidDateChange(consolidationDetails, oldEntity));
+    }
+
+    private boolean isValidDateChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+        CarrierDetails newCarrierDetails = consolidationDetails.getCarrierDetails();
+        if(oldEntity!=null && oldEntity.getCarrierDetails()!=null && newCarrierDetails!=null){
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
+                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
+                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
+                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
+        }
+        return false;
+    }
+
+    private boolean isValidReceivingBranchChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        if(oldEntity!=null && oldEntity.getReceivingBranch()!=null && !Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch())){
+            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), CONSOLIDATION);
+            if(oldOptionalNetworkTransfer.isPresent()){
+                if(oldOptionalNetworkTransfer.get().getStatus()!=NetworkTransferStatus.TRANSFERRED)
+                    return true;
+                return false;
+            }
+        }
+        return false;
+    }
+
+    private void createOrUpdateQuartzJob(ConsolidationDetails consolidationDetails, QuartzJobInfo existingJob) {
+        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+        if (carrierDetails == null) {
+            return;
+        }
+
+        if(ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd())){
+            return;
+        }
+
+        LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
+                carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd());
+
+        if(jobTime == null)
+            return;
+
+        QuartzJobInfo quartzJobInfo = (existingJob != null) ? existingJob : createNewQuartzJob(consolidationDetails);
+        quartzJobInfo.setJobStatus(JobState.QUEUED);
+        quartzJobInfo.setStartTime(jobTime);
+
+        QuartzJobInfo newQuartzJobInfo = quartzJobInfoDao.save(quartzJobInfo);
+        if(existingJob!=null){
+            quartzJobInfoService.updateSimpleJob(newQuartzJobInfo);
+        }else{
+            quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
+        }
+    }
+
+    private QuartzJobInfo createNewQuartzJob(ConsolidationDetails consolidationDetails) {
+        return QuartzJobInfo.builder()
+                .entityId(consolidationDetails.getId())
+                .entityType(CONSOLIDATION)
+                .tenantId(consolidationDetails.getTenantId())
+                .build();
+    }
+
+    private boolean isCarrierDetailsPopulated(CarrierDetails newCarrierDetails, ConsolidationDetails oldEntity) {
+        if (oldEntity == null || oldEntity.getCarrierDetails() == null) {
+            return newCarrierDetails.getEta() != null ||
+                    newCarrierDetails.getEtd() != null ||
+                    newCarrierDetails.getAta() != null ||
+                    newCarrierDetails.getAtd() != null;
+        }
+        return false;
+    }
+
+
+    private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isDocAdded) {
+        if(quartzJobInfo.getJobStatus() != JobState.ERROR)
+            return false;
+        if(Boolean.TRUE.equals(isDocAdded))
+            return true;
+        CarrierDetails newCarrierDetails = consolidationDetails.getCarrierDetails();
+        if (newCarrierDetails == null) {
+            return false; // No new details to compare.
+        }
+
+        // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
+        if (isCarrierDetailsPopulated(newCarrierDetails, oldEntity)) {
+            return true;
+        }
+
+
+        if(consolidationDetails.getReceivingBranch()!=null && (oldEntity.getReceivingBranch()!=null && Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch()))){
+            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
+            if(oldOptionalNetworkTransfer.isPresent() && oldOptionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
+                return false;
+            }
+        }
+
+
+        // Compare individual fields for changes.
+        return isAirStandardCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
+                isAirNonStandardNonDrtCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
+                isSeaCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
+                isDefaultCaseChanged(consolidationDetails, oldEntity, newCarrierDetails);
+    }
+
+
+    private boolean isAirStandardCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
+        if (isAirStandardCase(consolidationDetails)) {
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd());
+        }
+        return false;
+    }
+
+    private boolean isAirStandardCase(ConsolidationDetails consolidationDetails) {
+        return Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_AIR) &&
+                Objects.equals(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD);
+    }
+
+    private boolean isAirNonStandardNonDrtCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
+        if (isAirNonStandardNonDrtCase(consolidationDetails)) {
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
+                    isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
+        }
+        return false;
+    }
+
+    private boolean isAirNonStandardNonDrtCase(ConsolidationDetails consolidationDetails) {
+        return Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_AIR) &&
+                !Objects.equals(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD) &&
+                !Objects.equals(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT);
+    }
+
+    private boolean isSeaCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
+        if (isSeaCase(consolidationDetails)) {
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
+                    isValueChanged(newCarrierDetails.getVessel(), oldCarrierDetails.getVessel()) ||
+                    isValueChanged(newCarrierDetails.getShippingLine(), oldCarrierDetails.getShippingLine()) ||
+                    isValueChanged(newCarrierDetails.getVoyage(), oldCarrierDetails.getVoyage()) ||
+                    isAgentChanged(consolidationDetails, oldEntity) ||
+                    isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
+        }
+        return false;
+    }
+
+    private boolean isSeaCase(ConsolidationDetails consolidationDetails) {
+        return Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA);
+    }
+
+    private boolean isAgentChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        return (consolidationDetails.getSendingAgent() != null && oldEntity.getSendingAgent() == null) ||
+                (consolidationDetails.getSendingAgent() != null && oldEntity.getSendingAgent() != null &&
+                        isValueChanged(consolidationDetails.getSendingAgent().getOrgCode(), oldEntity.getSendingAgent().getOrgCode())) ||
+                (consolidationDetails.getReceivingAgent() != null && oldEntity.getReceivingAgent() == null) ||
+                (consolidationDetails.getReceivingAgent() != null && oldEntity.getReceivingAgent() != null &&
+                        isValueChanged(consolidationDetails.getReceivingAgent().getOrgCode(), oldEntity.getReceivingAgent().getOrgCode()));
+    }
+
+    private boolean isDefaultCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
+                isAgentChanged(consolidationDetails, oldEntity);
+    }
+
+    private boolean isValueChanged(Object newValue, Object oldValue) {
+        return newValue != null && !newValue.equals(oldValue);
     }
 
     private String reverseDirection(String direction) {

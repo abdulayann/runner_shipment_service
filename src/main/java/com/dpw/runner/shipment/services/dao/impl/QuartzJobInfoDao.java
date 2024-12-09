@@ -45,4 +45,9 @@ public class QuartzJobInfoDao implements IQuartzJobInfoDao {
     public void deleteById(Long id) {
         quartzJobInfoRepository.deleteById(id);
     }
+
+    @Override
+    public Optional<QuartzJobInfo> findByJobFilters(Integer tenantId, Long entityId, String entityType){
+        return quartzJobInfoRepository.findByJobFilters(tenantId, entityId, entityType);
+    }
 }

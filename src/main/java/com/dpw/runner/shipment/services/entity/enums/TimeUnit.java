@@ -13,4 +13,14 @@ public enum TimeUnit {
         this.id = id;
         this.description = description;
     }
+
+    // Static method to get description by id
+    public static String getDescriptionById(int id) {
+        for (TimeUnit field : TimeUnit.values()) {
+            if (field.getId() == id) {
+                return field.getDescription();
+            }
+        }
+        throw new IllegalArgumentException("No matching field found for id: " + id);
+    }
 }
