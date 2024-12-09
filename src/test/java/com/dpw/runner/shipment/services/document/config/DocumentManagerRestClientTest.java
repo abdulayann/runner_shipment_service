@@ -5,9 +5,12 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import java.util.concurrent.CompletableFuture;
@@ -154,6 +157,46 @@ class DocumentManagerRestClientTest {
         // Expect a RuntimeException when calling join on the CompletableFuture
         CompletableFuture<ResponseEntity<Object>> future = documentManagerRestClient.copyDocuments(commonRequestModel, "authToken");
         assertThrows(RuntimeException.class, future::join);
+    }
+
+    @Test
+    void testMultipleEntityFilesWithTenant() {
+        DocumentManagerMultipleEntityFileRequest request = new DocumentManagerMultipleEntityFileRequest();
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> expectedResponse = new DocumentManagerListResponse<>();
+        ResponseEntity<DocumentManagerListResponse<DocumentManagerEntityFileResponse>> responseEntity =
+                new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(responseEntity);
+
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> actualResponse =
+                documentManagerRestClient.multipleEntityFilesWithTenant(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(restTemplate, times(1)).exchange(
+                anyString(),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        );
+    }
+
+    @Test
+    void testMultipleEntityFilesWithTenant_Failure() {
+        DocumentManagerMultipleEntityFileRequest request = new DocumentManagerMultipleEntityFileRequest();
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, () -> documentManagerRestClient.multipleEntityFilesWithTenant(request));
     }
 
 }
