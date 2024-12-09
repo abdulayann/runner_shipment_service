@@ -622,7 +622,7 @@ class DpsEventServiceTest {
         when(shipmentDao.findShipmentsByGuids(anySet()))
                 .thenReturn(List.of(shipmentDetails));
         doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doNothing().when(shipmentDao).saveDpsState(any(),any());
+        doNothing().when(shipmentDao).saveStatus(any(), any());
         // Act
         DpsEvent result = dpsEventService.saveDpsEvent(dpsDto);
 

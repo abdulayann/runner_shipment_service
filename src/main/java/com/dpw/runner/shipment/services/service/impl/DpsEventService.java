@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
@@ -115,8 +116,10 @@ public class DpsEventService implements IDpsEventService {
             log.info("Saving DPS event for shipment GUID: {}, state: {}",
                     dpsEvent.getEntityId(), newState);
 
-            // Update the state if validation succeeds
-            shipmentDao.saveDpsState(shipmentDetails.getId(), newState.name());
+            // Update the non movement state if permanent blocked state
+            if (DpsWorkflowState.PER_BLOCKED.equals(newState)) {
+                shipmentDao.saveStatus(shipmentDetails.getId(), ShipmentStatus.NonMovement.getValue());
+            }
         } catch (Exception e) {
             throw new DpsException(e.getMessage(), e);
         }
