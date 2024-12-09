@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -375,8 +376,13 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        List<ConsolidationListResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationListResponses(
+            lst);
+        Map<Long, ConsolidationListResponse> responseMap = listResponses.stream()
+            .collect(Collectors.toMap(ConsolidationListResponse::getId, response -> response));
+
         lst.forEach(consolidationDetails -> {
-            var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
+            ConsolidationListResponse res = responseMap.get(consolidationDetails.getId());
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);

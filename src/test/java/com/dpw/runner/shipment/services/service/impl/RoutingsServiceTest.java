@@ -36,6 +36,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +86,8 @@ class RoutingsServiceTest extends CommonMocks {
     private RoutingsRequest routingsRequest;
     private List<RoutingsRequest> routingsRequests;
     private List<RoutingsResponse> routingsResponseList;
+    private ExecutorService executorService = Executors.newFixedThreadPool(10);
+
 
     @BeforeEach
     void setUp() {
@@ -145,10 +150,12 @@ class RoutingsServiceTest extends CommonMocks {
         routingsUpdateRequest.setRoutingsRequests(routingsRequests);
 
         routingsResponseList = List.of(new RoutingsResponse());
+        routingsService.executorService = executorService;
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_validData() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_validData()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Set<String> referenceGuids = routingsList.stream()
                 .flatMap(routing -> Stream.of(routing.getPol(), routing.getPod()))
@@ -173,7 +180,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullShipmentDetails() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullShipmentDetails()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
@@ -185,7 +193,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullRoutings() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullRoutings()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
          List<Routings> vRoutings = new ArrayList<>();
 
@@ -195,7 +204,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullPolAndPod() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullPolAndPod()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Routings routings = new Routings();
         List<Routings> routingsList = new ArrayList<>();
@@ -212,7 +222,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_emptyTrackingServiceResponse() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_emptyTrackingServiceResponse()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
@@ -225,7 +236,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_noContainers() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_noContainers()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         TrackingServiceApiResponse emptyResponse = new TrackingServiceApiResponse();
         emptyResponse.setContainers(null);
@@ -240,7 +252,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_noEventsOrPlacesInContainer() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_noEventsOrPlacesInContainer()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Container containerWithoutEventsAndPlaces = new Container();
         containerWithoutEventsAndPlaces.setEvents(null);
