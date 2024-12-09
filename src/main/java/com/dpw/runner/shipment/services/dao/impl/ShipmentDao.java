@@ -644,6 +644,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Transactional
+    public void saveStatus(Long id, Integer status) {
+        shipmentRepository.saveStatus(id, status);
+    }
+
+    @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {shipmentRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
     @Override
