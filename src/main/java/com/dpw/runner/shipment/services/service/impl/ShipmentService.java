@@ -2845,7 +2845,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
-                            LocalDateTime.now(), LocalDateTime.now()));
+                            LocalDateTime.now(), null));
                 }
             }
 
@@ -2860,7 +2860,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), null));
                 }
             }
 
@@ -2874,7 +2874,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                            shipmentDetails.getAdditionalDetails().getPickupDate(), LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getPickupDate(), null));
                 }
             }
 
@@ -2888,7 +2888,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), null));
                 }
             }
 
@@ -2903,7 +2903,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
-                            LocalDateTime.now(), LocalDateTime.now()));
+                            LocalDateTime.now(), null));
                 }
             }
 
@@ -2917,7 +2917,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
-                        shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
+                        shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), null));
                 }
             }
 
@@ -2932,7 +2932,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
-                            LocalDateTime.now(), LocalDateTime.now()));
+                            LocalDateTime.now(), null));
                 }
             }
         }
@@ -2948,7 +2948,7 @@ public class ShipmentService implements IShipmentService {
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
+                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), null));
                 }
             }
 
@@ -2986,7 +2986,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
-                        LocalDateTime.now(), LocalDateTime.now()));
+                        LocalDateTime.now(), null));
             }
         }
 
@@ -3001,7 +3001,7 @@ public class ShipmentService implements IShipmentService {
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
-                        LocalDateTime.now(), LocalDateTime.now()));
+                        LocalDateTime.now(), null));
             }
         }
 
@@ -3016,7 +3016,7 @@ public class ShipmentService implements IShipmentService {
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
-                        shipmentDetails.getAdditionalDetails().getBlInstructionReceived(), LocalDateTime.now()));
+                        shipmentDetails.getAdditionalDetails().getBlInstructionReceived(), null));
             }
         }
 
@@ -3031,7 +3031,7 @@ public class ShipmentService implements IShipmentService {
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
-                        shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(), LocalDateTime.now()));
+                        shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(), null));
             }
         }
 
@@ -3058,77 +3058,6 @@ public class ShipmentService implements IShipmentService {
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
         return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
-    }
-
-
-    private void createTrackingEvents(List<Events> events, ShipmentDetails shipmentDetails) {
-
-        if (!StringUtility.isEmpty(shipmentDetails.getBookingNumber()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getPickupDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                    shipmentDetails.getAdditionalDetails().getPickupDate(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCargoDeliveredDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                    shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), LocalDateTime.now()));
-        }
-
-        if (shipmentDetails.getShipmentGateInDate() != null && isLclOrAir(shipmentDetails) && shipmentDetails.getDateType()!=null) {
-            if (ACTUAL.equals(shipmentDetails.getDateType())) {
-                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, shipmentDetails.getShipmentGateInDate(),
-                        LocalDateTime.now()));
-            } else if (ESTIMATED.equals(shipmentDetails.getDateType())) {
-                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
-                        shipmentDetails.getShipmentGateInDate()));
-            }
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCustomReleaseDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                    shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP, LocalDateTime.now(),
-                    LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate() != null && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
-                    shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate() != null && isLclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-                    shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted()) && isLclOrFclOrAir(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU, LocalDateTime.now(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned()) && isFcl(shipmentDetails)) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR, LocalDateTime.now(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted())) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC, LocalDateTime.now(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getBlInstructionReceived() != null) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
-                    shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
-        }
-
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) && shipmentDetails.getAdditionalDetails().getCargoOutForDelivery() != null) {
-            events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
-                    shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), LocalDateTime.now()));
-        }
-
     }
 
     private boolean checkForAwbUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
