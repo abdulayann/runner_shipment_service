@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
@@ -183,5 +182,4 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
-    private DpsWorkflowState dpsState;
 }

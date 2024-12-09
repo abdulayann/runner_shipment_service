@@ -644,11 +644,6 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Transactional
-    public void saveDpsState(Long id, String dpsState) {
-        shipmentRepository.saveDpsState(id, dpsState);
-    }
-
-    @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {shipmentRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
     @Override

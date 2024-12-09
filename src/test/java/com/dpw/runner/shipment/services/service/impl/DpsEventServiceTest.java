@@ -615,14 +615,12 @@ class DpsEventServiceTest {
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(1L);
-        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
         when(dpsEventRepository.findByExecutionId(any())).thenReturn(savedEvent);
         when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(savedEvent);
         when(shipmentDao.findShipmentsByGuids(anySet()))
                 .thenReturn(List.of(shipmentDetails));
         doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
-        doNothing().when(shipmentDao).saveDpsState(any(),any());
         // Act
         DpsEvent result = dpsEventService.saveDpsEvent(dpsDto);
 
@@ -676,7 +674,6 @@ class DpsEventServiceTest {
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(1L);
-        shipmentDetails.setDpsState(DpsWorkflowState.PER_BLOCKED);
 
         // Act & Assert
         assertThrows(DpsException.class, () ->

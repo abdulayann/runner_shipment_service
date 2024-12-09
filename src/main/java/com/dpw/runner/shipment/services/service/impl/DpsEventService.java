@@ -90,35 +90,8 @@ public class DpsEventService implements IDpsEventService {
             ShipmentDetails shipmentDetails = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(shipmentGuid)))
                     .stream().findFirst().orElseThrow(() -> new DpsException("No Shipment found with GUID: " + shipmentGuid));
 
-            // Handle DPS events
-            handleDpsEvents(dpsEvent, shipmentDetails);
-
             // Create audit log
             createAuditLog(dpsEvent, shipmentDetails);
-        }
-    }
-    /**
-     * Handles DPS event transitions for a given {@link DpsEvent} and {@link ShipmentDetails}. This method validates the state transition according to the current state and the new
-     * state from the DPS event. If the transition is valid, it updates the state of the shipment and persists the changes. If an error occurs during processing, a
-     * {@link DpsException} is thrown.
-     *
-     * <p>Logs important details for tracing and validation, including current and new states and any exceptions encountered.</p>
-     *
-     * @param dpsEvent        the {@link DpsEvent} to be processed
-     * @param shipmentDetails the {@link ShipmentDetails} associated with the shipment being handled
-     * @throws DpsException if the state transition validation fails or if there is an error while updating the shipment state
-     */
-    private void handleDpsEvents(DpsEvent dpsEvent, ShipmentDetails shipmentDetails) {
-        try {
-            DpsWorkflowState newState = dpsEvent.getState();
-
-            log.info("Saving DPS event for shipment GUID: {}, state: {}",
-                    dpsEvent.getEntityId(), newState);
-
-            // Update the state if validation succeeds
-            shipmentDao.saveDpsState(shipmentDetails.getId(), newState.name());
-        } catch (Exception e) {
-            throw new DpsException(e.getMessage(), e);
         }
     }
 

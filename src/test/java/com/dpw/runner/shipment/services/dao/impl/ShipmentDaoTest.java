@@ -182,18 +182,6 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void saveDpsStateTest() {
-        Long shipmentId = 1L;
-        String dpsState = "ACTIVE";
-
-        doNothing().when(shipmentRepository).saveDpsState(shipmentId, dpsState);
-
-        shipmentDao.saveDpsState(shipmentId, dpsState);
-
-        verify(shipmentRepository, times(1)).saveDpsState(shipmentId, dpsState);
-    }
-
-    @Test
     void saveTest2() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
