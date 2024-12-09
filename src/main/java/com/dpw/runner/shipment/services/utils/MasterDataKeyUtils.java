@@ -111,6 +111,7 @@ public class MasterDataKeyUtils {
                             case CacheConstants.COUNTRIES:
                                 EntityTransferUnLocations obj13 = (EntityTransferUnLocations) cache;
                                 response.put(value, obj13.Country);
+                                break;
                             default:
                         }
                     }
