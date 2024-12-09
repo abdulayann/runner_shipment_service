@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -128,5 +127,4 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private List<ShipmentOrderRequest> shipmentOrders;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
-    private JsonNullable<DpsWorkflowState> dpsState;
 }

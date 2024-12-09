@@ -1,0 +1,1 @@
+ALTER TABLE shipment_details DROP COLUMN IF EXISTS dps_state;
