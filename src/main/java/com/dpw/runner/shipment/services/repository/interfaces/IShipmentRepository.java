@@ -36,7 +36,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     }
 
     @ExcludeTenantFilter
-    @Query(value = "SELECT * FROM shipment_details WHERE guid IN (:guids)", nativeQuery = true)
+    @Query(value = "SELECT * FROM shipment_details WHERE guid IN ?1", nativeQuery = true)
     List<ShipmentDetails> findAllByGuids(List<UUID> guids);
 
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)
