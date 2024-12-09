@@ -3106,6 +3106,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             else {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COUNTRIES, masterDataResponse, cacheMap);
             }
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
