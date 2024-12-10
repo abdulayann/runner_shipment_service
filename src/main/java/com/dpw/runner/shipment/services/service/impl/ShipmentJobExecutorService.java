@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
@@ -100,7 +101,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             if(shipment.get().getReceivingBranch() != null)
                 sendToBranch.add(shipment.get().getReceivingBranch());
             if(!CommonUtils.listIsNullOrEmpty(shipment.get().getTriangulationPartnerList()))
-                sendToBranch.addAll(shipment.get().getTriangulationPartnerList());
+                sendToBranch.addAll(shipment.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
             SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
                     .shipId(quartzJobInfo.getEntityId())
                     .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
@@ -153,8 +154,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         var consolidation = consolidationDao.findById(quartzJobInfo.getEntityId());
         if(consolidation.isPresent()) {
             List<Long> sendToBranch = new ArrayList<>();
-            sendToBranch.add(consolidation.get().getReceivingBranch());
-            sendToBranch.addAll(consolidation.get().getTriangulationPartnerList());
+            if(consolidation.get().getReceivingBranch() != null)
+                sendToBranch.add(consolidation.get().getReceivingBranch());
+            if(!CommonUtils.listIsNullOrEmpty(consolidation.get().getTriangulationPartnerList()))
+                sendToBranch.addAll(consolidation.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
+
             SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
                     .consolId(quartzJobInfo.getEntityId())
                     .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
