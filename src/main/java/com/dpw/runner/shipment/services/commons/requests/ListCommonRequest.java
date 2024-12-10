@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.commons.requests;
 
 import lombok.*;
 
-import javax.validation.constraints.Size;
+import javax.validation.constraints.Pattern;
 import java.util.List;
 
 @Getter
@@ -19,7 +19,7 @@ public class ListCommonRequest implements IRunnerRequest{
     @Builder.Default
     private Integer pageSize = Integer.MAX_VALUE;
     private List<String> includeTbls;
-    @Size(min = 3, message = "min size is 3 for containsText search criteria")
+    @Pattern(regexp = "^$|.{3,}", message = "min size is 3 for containsText search criteria")
     private String containsText;
     private String entityId;
     private List<String> includeColumns;
