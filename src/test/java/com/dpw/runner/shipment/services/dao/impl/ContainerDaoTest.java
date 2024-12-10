@@ -248,8 +248,6 @@ class ContainerDaoTest {
     void testUpdateEntityFromShipmentConsole() throws RunnerException {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
-        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
-        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(jsonTestUtility.getTestPacking())));
         ContainerDao spyService = spy(containerDao);
         doReturn(containersList).when(spyService).saveAll(anyList());
         List<Containers> containers = spyService.updateEntityFromShipmentConsole(containersList, 1L, 2L, true);
@@ -353,7 +351,7 @@ class ContainerDaoTest {
 
     @Test
     void updateEntityFromShipmentConsole() {
-        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenThrow(new RuntimeException());
+        when(containerRepository.findByConsolidationId(anyLong())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> containerDao.updateEntityFromShipmentConsole(List.of(testContainer), 3L, null, true));
     }
 

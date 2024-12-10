@@ -126,12 +126,7 @@ class ELDetailsDaoTest {
         testData.setId(1L);
         testData.setShipmentId(5L);
         List<ELDetails> elDetailsList = Arrays.asList(testData);
-
-        PageImpl<ELDetails> elDetailsPage = new PageImpl<>(elDetailsList);
-        ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
-        Pair<Specification<ELDetails>, Pageable> pair = fetchData(listReq, HblTermsConditionTemplate.class);
-
-        when(elDetailsRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(elDetailsPage);
+        when(elDetailsRepository.findByShipmentId(anyLong())).thenReturn(elDetailsList);
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(elDetailsRepository.saveAll(any())).thenReturn(elDetailsList);
         assertEquals(elDetailsList, dao.updateEntityFromShipment(elDetailsList, 5L));
@@ -195,6 +190,7 @@ class ELDetailsDaoTest {
 
     @Test
     void updateEntityFromShipmentCatch() throws RunnerException {
+        when(dao.findByShipmentId(anyLong())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> {
             dao.updateEntityFromShipment(new ArrayList<>(), -1L);
         });

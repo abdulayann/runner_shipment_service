@@ -1802,18 +1802,17 @@ public class ShipmentService implements IShipmentService {
         if(removedConsolIds != null && removedConsolIds.size() > 0) {
             shipmentDetails.setConsolRef(null);
             List<Containers> allConsolConts = new ArrayList<>();
-            for(Long consolidationId: removedConsolIds) {
-                List<Containers> containersList = containerDao.findByConsolidationId(consolidationId);
-                if(containersList != null && containersList.size() > 0) {
-                    allConsolConts.addAll(containersList);
+            List<Containers> containersList = containerDao.findByConsolidationIdIn(removedConsolIds);
+            if (containersList != null && containersList.size() > 0) {
+                allConsolConts.addAll(containersList);
+                if (Objects.isNull(containerRequest) && !Objects.isNull(oldEntity)) {
+                    containerRequest = jsonHelper.convertValueToList(oldEntity.getContainersList(),
+                        ContainerRequest.class);
                 }
-            }
-            if(allConsolConts.size() > 0) {
-                if(Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
-                    containerRequest = jsonHelper.convertValueToList(oldEntity.getContainersList(), ContainerRequest.class);
                 containerRequest.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
                 changeContainerWtVolOnDetach(shipmentRequest, allConsolConts);
             }
+
         }
 
         if(shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
@@ -2296,30 +2295,25 @@ public class ShipmentService implements IShipmentService {
         List<Packing> packsForSync = null;
         List<UUID> deletedContGuids = new ArrayList<>();
 
-        if(!isCreate){
-            if(shipmentRequest.getDeletedContainerIds() != null && shipmentRequest.getDeletedContainerIds().size() > 0) {
+        if (!isCreate){
+            if (shipmentRequest.getDeletedContainerIds() != null && shipmentRequest.getDeletedContainerIds().size() > 0) {
                 deleteContainerIds = shipmentRequest.getDeletedContainerIds().stream().filter(e -> e.getId() != null).map(e -> e.getId()).toList();
-                if(deleteContainerIds != null && deleteContainerIds.size() > 0) {
-                    ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", deleteContainerIds, "IN");
-                    Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                    Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-                    if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+                if (deleteContainerIds != null && deleteContainerIds.size() > 0) {
+                    List<Packing> packings = packingDao.findByContainerIdIn(deleteContainerIds);
+                    if (!CollectionUtils.isEmpty(packings)) {
                         List<Packing> packingList = new ArrayList<>();
-                        for (Packing packing : packings.getContent()) {
+                        for (Packing packing : packings) {
                             packing.setContainerId(null);
                             packingList.add(packing);
                         }
                         packingDao.saveAll(packingList);
                         packsForSync = packingList;
                     }
-                    listCommonRequest = constructListCommonRequest("id", deleteContainerIds, "IN");
-                    Pair<Specification<Containers>, Pageable> pair2 = fetchData(listCommonRequest, Containers.class);
-                    Page<Containers> containersPage = containerDao.findAll(pair2.getLeft(), pair2.getRight());
-                    if(containersPage != null && !containersPage.isEmpty())
-                        deletedContGuids = containersPage.stream().map(e -> e.getGuid()).toList();
-                    for (Long containerId : deleteContainerIds) {
-                        containerDao.deleteById(containerId);
+                    List<Containers> containers = containerDao.findByIdIn(deleteContainerIds);
+                    if (!CollectionUtils.isEmpty(containers)) {
+                        deletedContGuids = containers.stream().map(e -> e.getGuid()).toList();
                     }
+                    containerDao.deleteByIdIn(deleteContainerIds);
                 }
             }
 
@@ -3985,14 +3979,12 @@ public class ShipmentService implements IShipmentService {
             id = oldShipmentDetails.get().getId();
         }
         else {
-            ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentRequest.getShipmentId().get(), "=");
-            Pair<Specification<ShipmentDetails>, Pageable> shipmentPair = fetchData(listCommonRequest, ShipmentDetails.class);
-            Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(shipmentPair.getLeft(), shipmentPair.getRight());
-            if(shipmentDetails != null && shipmentDetails.get().count() == 1) {
-                oldShipmentDetails = shipmentDetails.get().findFirst();
+            List<ShipmentDetails> shipmentDetails = shipmentDao.findByShipmentIdIn(List.of(shipmentRequest.getShipmentId().get()));
+            if(!CollectionUtils.isEmpty(shipmentDetails) && shipmentDetails.size() == 1) {
+                oldShipmentDetails = Optional.of(shipmentDetails.get(0));
                 id = oldShipmentDetails.get().getId();
             }
-            else if(shipmentDetails == null || shipmentDetails.get().count() == 0) {
+            else if(CollectionUtils.isEmpty(shipmentDetails)) {
                 log.error("Shipment not available for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -5385,11 +5377,8 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setHazardous(true);
             List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationList.get(0).getId(), shipment);
             if (!shipmentIdList.isEmpty()) {
-                ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-                Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
-                Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-
-                List<ShipmentDetails> shipments = page.getContent();
+                List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIdList.stream().collect(
+                    Collectors.toSet()));
                 shipments.stream()
                     .map(i -> {
                         i.setMasterBill(shipment.getMasterBill());
@@ -5462,11 +5451,8 @@ public class ShipmentService implements IShipmentService {
 
     public boolean checkIfAllShipmentsAreNonDG(List<Long> shipmentIdList) {
         if (!shipmentIdList.isEmpty()) {
-            ListCommonRequest listReq = constructListCommonRequest("id", shipmentIdList, "IN");
-            listReq = andCriteria(CONTAINS_HAZARDOUS, true, "=", listReq);
-            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> page = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-            if(page != null && !page.getContent().isEmpty())
+            List<ShipmentDetails> shipmentDetails = shipmentDao.findByShipmentIdInAndContainsHazardous(shipmentIdList, true);
+            if(!CollectionUtils.isEmpty(shipmentDetails))
                 return false;
         }
         return true;

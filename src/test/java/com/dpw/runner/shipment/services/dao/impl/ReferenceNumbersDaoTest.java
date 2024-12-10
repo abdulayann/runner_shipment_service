@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -63,6 +65,10 @@ class ReferenceNumbersDaoTest {
     void setUp() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         testData = jsonTestUtility.getTestReferenceNumbers();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
         MockitoAnnotations.openMocks(this);
     }
 
@@ -124,7 +130,7 @@ class ReferenceNumbersDaoTest {
     void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList() {
         Long shipmentId = 1L;
         var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
-        doThrow(new RuntimeException("Test")).when(referenceNumbersDaoSpy).findAll(any(),any());
+        doThrow(new RuntimeException("Test")).when(referenceNumbersDaoSpy).findByShipmentId(any());
         assertThrows(RunnerException.class, () -> referenceNumbersDaoSpy.updateEntityFromShipment(Collections.emptyList(), shipmentId));
     }
 
@@ -133,7 +139,6 @@ class ReferenceNumbersDaoTest {
         Long shipmentId = 1L;
         List<ReferenceNumbers> referenceNumbersList = Arrays.asList(new ReferenceNumbers(), new ReferenceNumbers());
         var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
-        doReturn(mock(Page.class)).when(referenceNumbersDaoSpy).findAll(any(), any());
         doReturn(referenceNumbersList).when(referenceNumbersDaoSpy).saveEntityFromShipment(anyList(), eq(shipmentId), anyMap());
         List<ReferenceNumbers> result = referenceNumbersDaoSpy.updateEntityFromShipment(referenceNumbersList, shipmentId);
         assertEquals(referenceNumbersList, result);
@@ -143,7 +148,7 @@ class ReferenceNumbersDaoTest {
     void updateEntityFromShipment_ReferenceNumbersListIsEmpty_ReturnsEmptyList() throws RunnerException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<ReferenceNumbers>(List.of(testData)));
+        when(referenceNumbersRepository.findByShipmentId(any())).thenReturn(List.of(testData));
         List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromShipment(Collections.singletonList(testData), shipmentId);
         assertNotNull(result);
         assertTrue(result.isEmpty());
