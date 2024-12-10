@@ -12,12 +12,14 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.web.client.RestTemplate;
+import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import java.util.TimeZone;
 
 
 @SpringBootApplication(scanBasePackages = "com.dpw.runner.shipment.services")
 @Slf4j
+@EnableSwagger2
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
 @Generated
