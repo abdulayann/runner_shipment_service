@@ -12,4 +12,5 @@ public interface IQuartzJobInfoDao {
     List<QuartzJobInfo> saveAll(List<QuartzJobInfo> quartzJobInfoList);
     void deleteById(Long id);
     Optional<QuartzJobInfo> findByJobFilters(Integer tenantId, Long entityId, String entityType);
+    Optional<QuartzJobInfo> findByIdQuery(Long id);
 }

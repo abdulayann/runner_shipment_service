@@ -50,4 +50,9 @@ public class QuartzJobInfoDao implements IQuartzJobInfoDao {
     public Optional<QuartzJobInfo> findByJobFilters(Integer tenantId, Long entityId, String entityType){
         return quartzJobInfoRepository.findByJobFilters(tenantId, entityId, entityType);
     }
+
+    @Override
+    public Optional<QuartzJobInfo> findByIdQuery(Long id) {
+        return quartzJobInfoRepository.findByIdQuery(id);
+    }
 }
