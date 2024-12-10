@@ -30,9 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 
@@ -81,15 +82,16 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 quartzJob.setErrorMessage(ex.getMessage());
                 quartzJobInfoDao.save(quartzJob);
 
-            } finally {
-                TenantContext.removeTenant();
-                RequestAuthContext.removeToken();
-                UserContext.removeUser();
-                PermissionsContext.removePermissions();
-                SecurityContextHolder.clearContext();
-                log.info("Job Finished: {}", jobId);
             }
         }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                v1Service.clearAuthContext();
+                log.info("Job Finished: {}", jobId);
+            }
+        });
 
     }
 

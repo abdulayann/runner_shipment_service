@@ -69,7 +69,7 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
             // All shipment related Errors Handled
             List<Long> failedShipIds = sendConsoleValidationResponse.getShipmentIds();
             List<CommonErrorLogs> shipCommonErrorList = new ArrayList<>();
-            if (CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+            if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
                 var shipCommonErrors = commonErrorLogsRepository.findByEntityIdListAndEntityTypeAndErrorType(shipmentIds, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER.name());
                 Map<Long, CommonErrorLogs> shipCommonErrorsMap = shipCommonErrors.stream().collect(Collectors.toMap(CommonErrorLogs::getEntityId, x -> x));
                 for (Long shipId : failedShipIds) {
@@ -108,14 +108,14 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     public void deleteAllConsoleAndShipmentErrorsLogs(Long consoleId, List<Long> shipmentIds) {
         var commonErrors = this.findByEntityIdAndEntityTypeAndErrorType(consoleId, Constants.CONSOLIDATION, CommonErrorType.AUTOMATIC_TRANSFER);
         List<CommonErrorLogs> shipCommonErrors = new ArrayList<>();
-        if(CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+        if(!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
             shipCommonErrors = commonErrorLogsRepository.findByEntityIdListAndEntityTypeAndErrorType(shipmentIds, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER.name());
         }
 
         List<Long> deleteIds = new ArrayList<>();
-        if(CommonUtils.listIsNullOrEmpty(shipCommonErrors))
+        if(!CommonUtils.listIsNullOrEmpty(commonErrors))
             deleteIds = commonErrors.stream().map(BaseEntity::getId).collect(Collectors.toList());
-        if(CommonUtils.listIsNullOrEmpty(shipCommonErrors))
+        if(!CommonUtils.listIsNullOrEmpty(shipCommonErrors))
             deleteIds.addAll(shipCommonErrors.stream().map(BaseEntity::getId).toList());
         if(!deleteIds.isEmpty())
             commonErrorLogsRepository.deleteAllById(deleteIds);
@@ -145,7 +145,7 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     @Override
     public void deleteShipmentErrorsLogs(Long shipmentId) {
         var commonErrors = this.findByEntityIdAndEntityTypeAndErrorType(shipmentId, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER);
-        if(CommonUtils.listIsNullOrEmpty(commonErrors)) {
+        if(!CommonUtils.listIsNullOrEmpty(commonErrors)) {
             commonErrorLogsRepository.deleteById(commonErrors.get(0).getId());
         }
     }
