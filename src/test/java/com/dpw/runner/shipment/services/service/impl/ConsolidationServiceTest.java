@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,22 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -50,6 +37,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -117,12 +105,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -140,7 +123,6 @@ import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjectio
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -191,7 +173,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -346,6 +327,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Mock
     private NetworkTransferDao networkTransferDao;
+
+    @Mock
+    private CommonErrorLogsDao commonErrorLogsDao;
 
     @Mock
     private NetworkTransferService networkTransferService;
@@ -1127,7 +1111,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails = testConsol;
         copy.setCfsCutOffDate(LocalDateTime.MIN);
-        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setTransportMode(TRANSPORT_MODE_SEA);
         copy.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentRequest> shipmentRequests = new ArrayList<>();
         shipmentRequests.add(shipmentDetails1);
@@ -1135,7 +1119,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         copy.setContainersList(null);
 
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
         shipmentDetailsRequests.add(shipmentDetails2);
@@ -1166,7 +1150,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails = testConsol;
         copy.setCfsCutOffDate(LocalDateTime.MIN);
-        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setTransportMode(TRANSPORT_MODE_SEA);
         copy.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentRequest> shipmentRequests = new ArrayList<>();
         shipmentRequests.add(shipmentDetails1);
@@ -1174,7 +1158,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         copy.setContainersList(null);
 
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
         shipmentDetailsRequests.add(shipmentDetails2);
@@ -1402,7 +1386,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         containers.setId(1L);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1448,7 +1432,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         containers.setId(1L);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
@@ -1456,7 +1440,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setInterBranchConsole(true);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
 
@@ -1497,14 +1481,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1556,14 +1540,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1616,7 +1600,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1624,7 +1608,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1661,7 +1645,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1669,7 +1653,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1707,7 +1691,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1715,7 +1699,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1752,7 +1736,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1762,7 +1746,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1800,7 +1784,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1810,7 +1794,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetails.setTenantId(shipmentDetails.getTenantId());
 
@@ -1847,14 +1831,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setContainsHazardous(true);
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(false);
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTenantId(UserContext.getUser().TenantId);
@@ -1919,7 +1903,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setEventsList(List.of(new Events()));
@@ -1967,7 +1951,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2003,7 +1987,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2040,7 +2024,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2054,7 +2038,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2079,7 +2063,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setId(1L);
         shipmentDetails.setContainsHazardous(true);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2094,7 +2078,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2120,7 +2104,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2142,7 +2126,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(true);
         consolidationDetails.setShipmentsList(new ArrayList<>(List.of(shipmentDetails1)));
 
@@ -2170,7 +2154,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         packing.setId(1L);
         shipmentDetails.setId(1L);
         shipmentDetails.setContainsHazardous(true);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.fromString("bdade3d2-4529-4ff1-80b1-ad047b41b100"));
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2185,7 +2169,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2254,7 +2238,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2290,7 +2274,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2941,7 +2925,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     @Test
     void testCalculateChargeable_Success_Air() {
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
         consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_T);
         consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
@@ -3797,7 +3781,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         request.setShipmentType(Constants.SHIPMENT_TYPE_LSE);
@@ -3824,7 +3808,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_emptyHubTenantIds() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -3850,7 +3834,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_CoLoadFlag_False() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -3870,7 +3854,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_IMP() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_IMP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -4429,7 +4413,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
@@ -4468,7 +4452,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4505,7 +4489,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4547,7 +4531,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setScreeningStatus(Collections.emptyList());
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4588,7 +4572,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setScreeningStatus(Collections.emptyList());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4625,7 +4609,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setScreeningStatus(Collections.emptyList());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4666,7 +4650,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
@@ -4711,7 +4695,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4751,7 +4735,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -5419,7 +5403,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
@@ -5430,7 +5414,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments1() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
@@ -5441,7 +5425,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments2() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         testConsol.setHazardous(true);
@@ -5453,7 +5437,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments3() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5465,7 +5449,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments4() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5477,7 +5461,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testValidationsBeforeAttachShipments5() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5500,7 +5484,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -5542,7 +5526,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -5665,6 +5649,242 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             assertEquals(expectedEntity, response);
 
         }
+    }
+
+    @Test
+    void triggerAutomaticTransfer_InvalidForTransfer() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(false)
+                .build());
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .transportMode(TRANSPORT_MODE_AIR)
+                .receivingBranch(null)
+                .build();
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verifyNoInteractions(quartzJobInfoDao);
+        verifyNoInteractions(quartzJobInfoService);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_NoExistingQuartzJob_CreateNewJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        QuartzJobInfo newJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(newJob);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(testConsol, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_NoChanges() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_UpdateJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(new QuartzJobInfo());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ErrorLog() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(new CarrierDetails());
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isAirStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isAirNonStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isSeaCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(new Parties());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidReceivingBranchChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(null);
+        consolidationDetails.setId(5L);
+        consolidationDetails.setReceivingBranch(200L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidDateChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_ROA);
+        consolidationDetails1.setShipmentType(null);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setReceivingAgent(new Parties());
+        consolidationDetails1.setSendingAgent(new Parties());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(new Parties());
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
     }
 
 }
