@@ -208,7 +208,7 @@ public class AwbService implements IAwbService {
             }
 
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            shipmentSettingsDetails.setIsAutomaticTransferEnabled(true);
+            
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
                 ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
                 if (Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())
@@ -562,7 +562,7 @@ public class AwbService implements IAwbService {
             linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
 
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            shipmentSettingsDetails.setIsAutomaticTransferEnabled(true);
+            
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) &&
                     Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                         Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType()))

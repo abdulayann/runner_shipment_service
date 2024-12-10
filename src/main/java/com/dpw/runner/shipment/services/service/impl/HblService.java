@@ -298,7 +298,6 @@ public class HblService implements IHblService {
             hblSync.sync(hbl, UUID.randomUUID().toString());
 
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            shipmentSettingsDetails.setIsAutomaticTransferEnabled(true);
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
                 if(shipmentDetails.isPresent()){

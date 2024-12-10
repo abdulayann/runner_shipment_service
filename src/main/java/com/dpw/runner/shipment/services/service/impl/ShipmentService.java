@@ -2689,7 +2689,7 @@ public class ShipmentService implements IShipmentService {
             return false;
 
         return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
-                || (isValidReceivingBranchChange(shipmentDetails, oldEntity));
+                || (isValidReceivingBranchChange(shipmentDetails, oldEntity, optionalNetworkTransfer));
     }
 
     private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
@@ -2725,7 +2725,10 @@ public class ShipmentService implements IShipmentService {
                 .build();
     }
 
-    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
+        if (optionalNetworkTransfer.isEmpty())
+            return true;
+
         if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
             return false;
         }

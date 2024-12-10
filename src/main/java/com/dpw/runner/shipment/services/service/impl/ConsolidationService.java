@@ -4247,14 +4247,13 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded) {
-        if(consolidationDetails.getReceivingBranch()!=null){
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), SHIPMENT);
             if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
                     optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
                 return false;
-        }
+
         return (isValidforAutomaticTransfer(quartzJobInfo, consolidationDetails, oldEntity, isDocAdded))
-                || (isValidReceivingBranchChange(consolidationDetails, oldEntity));
+                || (isValidReceivingBranchChange(consolidationDetails, oldEntity, optionalNetworkTransfer));
     }
 
     private boolean isValidDateChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
@@ -4269,16 +4268,24 @@ public class ConsolidationService implements IConsolidationService {
         return false;
     }
 
-    private boolean isValidReceivingBranchChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
-        if(oldEntity!=null && oldEntity.getReceivingBranch()!=null && !Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch())){
-            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), CONSOLIDATION);
-            if(oldOptionalNetworkTransfer.isPresent()){
-                if(oldOptionalNetworkTransfer.get().getStatus()!=NetworkTransferStatus.TRANSFERRED)
-                    return true;
-                return false;
-            }
+    private boolean isValidReceivingBranchChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
+        if (optionalNetworkTransfer.isEmpty())
+            return true;
+        if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
+            return false;
         }
-        return false;
+
+        boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch());
+        if (!isBranchChanged) {
+            return false;
+        }
+
+        Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), CONSOLIDATION);
+
+        return oldOptionalNetworkTransfer
+                .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
+                .orElse(false);
     }
 
     private void createOrUpdateQuartzJob(ConsolidationDetails consolidationDetails, QuartzJobInfo existingJob) {
