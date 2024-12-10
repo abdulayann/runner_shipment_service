@@ -24,6 +24,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 
+import com.azure.core.implementation.util.ObjectsUtil;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -1369,7 +1370,13 @@ public class EntityTransferService implements IEntityTransferService {
             boolean isAwbPrintError = false;
             List<String> missingField = new ArrayList<>();
             if(Strings.isNullOrEmpty(shipmentDetails.getCarrierDetails().getFlightNumber())) {
-                missingField.add("flight number");
+                missingField.add("Flight number");
+            }
+            if(shipmentDetails.getCarrierDetails().getEtd()==null) {
+                missingField.add("Eta");
+            }
+            if(shipmentDetails.getCarrierDetails().getEta()==null) {
+                missingField.add("Etd");
             }
             if (awbs.isEmpty()) {
                 isAwbPrintError = true;
