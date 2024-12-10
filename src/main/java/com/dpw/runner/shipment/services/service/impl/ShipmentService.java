@@ -2661,6 +2661,16 @@ public class ShipmentService implements IShipmentService {
         QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
 
         if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
+            CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+            if(carrierDetails!=null && (ObjectUtils.isEmpty(carrierDetails.getEta()) &&
+                    ObjectUtils.isEmpty(carrierDetails.getEtd()) && ObjectUtils.isEmpty(carrierDetails.getAta()) &&
+                    ObjectUtils.isEmpty(carrierDetails.getAtd()))){
+                String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
+                SendShipmentValidationResponse sendShipmentValidationResponse = SendShipmentValidationResponse.builder().isError(true).shipmentErrorMessage(errorMessage).build();
+                commonErrorLogsDao.logShipmentAutomaticTransferErrors(sendShipmentValidationResponse, shipmentDetails.getId());
+                return;
+            }
+
             if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
                 createOrUpdateQuartzJob(shipmentDetails, null);
             } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
@@ -2674,24 +2684,17 @@ public class ShipmentService implements IShipmentService {
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
         Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
-        if(optionalNetworkTransfer.isPresent() && optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED)
+        if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
+                optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
             return false;
 
         return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
-                || (isValidReceivingBranchChange(shipmentDetails, oldEntity))
-                || (isValidDateChange(shipmentDetails, oldEntity));
+                || (isValidReceivingBranchChange(shipmentDetails, oldEntity));
     }
 
     private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
         CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
         if (carrierDetails == null) {
-            return;
-        }
-        if(ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
-                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd())){
-            String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-            SendShipmentValidationResponse sendShipmentValidationResponse = SendShipmentValidationResponse.builder().isError(true).shipmentErrorMessage(errorMessage).build();
-            commonErrorLogsDao.logShipmentAutomaticTransferErrors(sendShipmentValidationResponse, shipmentDetails.getId());
             return;
         }
 
@@ -2733,8 +2736,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
-                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT
-        );
+                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
 
         return oldOptionalNetworkTransfer
                 .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
@@ -2754,6 +2756,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        if (isValidDateChange(shipmentDetails, oldEntity))
+            return true;
+
         if(quartzJobInfo==null ||(quartzJobInfo!=null && quartzJobInfo.getJobStatus() != JobState.ERROR))
             return false;
 
@@ -2775,8 +2780,7 @@ public class ShipmentService implements IShipmentService {
 
         CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
         // Compare individual fields for changes.
-        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber())
-                || (isValidDateChange(shipmentDetails, oldEntity));
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber());
     }
 
     private boolean isValueChanged(Object newValue, Object oldValue) {

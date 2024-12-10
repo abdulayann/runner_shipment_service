@@ -4222,6 +4222,15 @@ public class ConsolidationService implements IConsolidationService {
 
         QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
 
+        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+        if(carrierDetails!=null && (ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd()))){
+            String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
+            SendConsoleValidationResponse sendConsoleValidationResponse = SendConsoleValidationResponse.builder().isError(true).consoleErrorMessage(errorMessage).build();
+            commonErrorLogsDao.logConsoleAutomaticTransferErrors(sendConsoleValidationResponse, consolidationDetails.getId(), new ArrayList<>());
+            return;
+        }
+
         if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
             createOrUpdateQuartzJob(consolidationDetails, null);
         } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, consolidationDetails, isDocOrHawbNumAdded)) {
@@ -4231,7 +4240,6 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        shipmentSettingsDetails.setIsAutomaticTransferEnabled(true);
         return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) &&
                 (ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
                 && (consolidationDetails.getTransportMode()!=null &&
@@ -4241,13 +4249,12 @@ public class ConsolidationService implements IConsolidationService {
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded) {
         if(consolidationDetails.getReceivingBranch()!=null){
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), SHIPMENT);
-            if(optionalNetworkTransfer.isPresent() && optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
+            if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
+                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
                 return false;
-            }
         }
         return (isValidforAutomaticTransfer(quartzJobInfo, consolidationDetails, oldEntity, isDocAdded))
-                || (isValidReceivingBranchChange(consolidationDetails, oldEntity))
-                || (isValidDateChange(consolidationDetails, oldEntity));
+                || (isValidReceivingBranchChange(consolidationDetails, oldEntity));
     }
 
     private boolean isValidDateChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
@@ -4280,14 +4287,6 @@ public class ConsolidationService implements IConsolidationService {
             return;
         }
 
-        if(ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
-                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd())){
-            String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-            SendConsoleValidationResponse sendConsoleValidationResponse = SendConsoleValidationResponse.builder().isError(true).consoleErrorMessage(errorMessage).build();
-            commonErrorLogsDao.logConsoleAutomaticTransferErrors(sendConsoleValidationResponse, consolidationDetails.getId(), new ArrayList<>());
-            return;
-        }
-
         LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
                 carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd());
 
@@ -4314,32 +4313,29 @@ public class ConsolidationService implements IConsolidationService {
                 .build();
     }
 
-    private boolean isCarrierDetailsPopulated(CarrierDetails newCarrierDetails, ConsolidationDetails oldEntity) {
-        if (oldEntity == null || oldEntity.getCarrierDetails() == null) {
-            return newCarrierDetails.getEta() != null ||
-                    newCarrierDetails.getEtd() != null ||
-                    newCarrierDetails.getAta() != null ||
-                    newCarrierDetails.getAtd() != null;
-        }
-        return false;
-    }
-
 
     private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isDocAdded) {
+        if (isValidDateChange(consolidationDetails, oldEntity))
+            return true;
+
         if(quartzJobInfo==null ||(quartzJobInfo!=null && quartzJobInfo.getJobStatus() != JobState.ERROR))
             return false;
+
         if(Boolean.TRUE.equals(isDocAdded))
             return true;
+
         CarrierDetails newCarrierDetails = consolidationDetails.getCarrierDetails();
         if (newCarrierDetails == null) {
             return false; // No new details to compare.
         }
 
         // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
-        if (isCarrierDetailsPopulated(newCarrierDetails, oldEntity)) {
-            return true;
+        if (oldEntity == null || oldEntity.getCarrierDetails() == null) {
+            return newCarrierDetails.getEta() != null ||
+                    newCarrierDetails.getEtd() != null ||
+                    newCarrierDetails.getAta() != null ||
+                    newCarrierDetails.getAtd() != null;
         }
-
 
         // Compare individual fields for changes.
         return isAirStandardCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
