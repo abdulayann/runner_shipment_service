@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.azure.core.implementation.util.ObjectsUtil;
 import com.dpw.api.quartz.job.SimpleJob;
 import com.dpw.api.quartz.service.QuartzJobService;
 import com.dpw.messaging.api.response.QuartzJobResponse;
@@ -10,23 +9,19 @@ import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse.FileTransferConfigurations;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
-import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.PrePostTrigger;
 import com.dpw.runner.shipment.services.entity.enums.TimeUnit;
 import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.entity.enums.FileTransferCriteriaFields;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
@@ -148,6 +143,10 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
 
     private ChronoUnit getChronoUnit(String intervalUnit) {
         return "hour".equalsIgnoreCase(intervalUnit) ? ChronoUnit.HOURS : ChronoUnit.DAYS;
+    }
+
+    public boolean isJobWithNamePresent(String jobName){
+        return quartzJobService.isJobWithNamePresent(jobName);
     }
 
 }

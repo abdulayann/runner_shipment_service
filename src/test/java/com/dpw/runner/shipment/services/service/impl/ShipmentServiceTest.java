@@ -9514,7 +9514,8 @@ ShipmentServiceTest extends CommonMocks {
                 carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
                 additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
                 containersList(new ArrayList<>()).triangulationPartner(12L).build();
-
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, false);
 
         verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());

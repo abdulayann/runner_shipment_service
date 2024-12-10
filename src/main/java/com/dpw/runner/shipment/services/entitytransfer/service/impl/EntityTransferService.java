@@ -1451,10 +1451,10 @@ public class EntityTransferService implements IEntityTransferService {
             if(Strings.isNullOrEmpty(shipmentDetails.getCarrierDetails().getFlightNumber())) {
                 missingField.add("Flight number");
             }
-            if(shipmentDetails.getCarrierDetails().getEtd()==null) {
+            if(shipmentDetails.getCarrierDetails().getEta()==null) {
                 missingField.add("Eta");
             }
-            if(shipmentDetails.getCarrierDetails().getEta()==null) {
+            if(shipmentDetails.getCarrierDetails().getEtd()==null) {
                 missingField.add("Etd");
             }
             if (awbs.isEmpty()) {

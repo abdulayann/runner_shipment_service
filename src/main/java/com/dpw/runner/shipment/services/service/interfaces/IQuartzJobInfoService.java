@@ -10,5 +10,6 @@ public interface IQuartzJobInfoService {
     QuartzJobResponse updateSimpleJob(QuartzJobInfo jobInfo);
     QuartzJobResponse deleteJobById(Long jobId);
     LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd);
+    boolean isJobWithNamePresent(String jobName);
 
 }

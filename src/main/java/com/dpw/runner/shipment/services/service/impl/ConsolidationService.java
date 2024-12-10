@@ -38,6 +38,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
+import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -4302,10 +4303,12 @@ public class ConsolidationService implements IConsolidationService {
 
         QuartzJobInfo quartzJobInfo = (existingJob != null) ? existingJob : createNewQuartzJob(consolidationDetails);
         quartzJobInfo.setJobStatus(JobState.QUEUED);
+        quartzJobInfo.setErrorMessage(null);
         quartzJobInfo.setStartTime(jobTime);
 
         QuartzJobInfo newQuartzJobInfo = quartzJobInfoDao.save(quartzJobInfo);
-        if(existingJob!=null){
+
+        if(existingJob!=null && quartzJobInfoService.isJobWithNamePresent(newQuartzJobInfo.getId().toString())){
             quartzJobInfoService.updateSimpleJob(newQuartzJobInfo);
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
@@ -4325,7 +4328,7 @@ public class ConsolidationService implements IConsolidationService {
         if (isValidDateChange(consolidationDetails, oldEntity))
             return true;
 
-        if(quartzJobInfo==null ||(quartzJobInfo!=null && quartzJobInfo.getJobStatus() != JobState.ERROR))
+        if(quartzJobInfo==null ||(quartzJobInfo.getJobStatus() != JobState.ERROR))
             return false;
 
         if(Boolean.TRUE.equals(isDocAdded))

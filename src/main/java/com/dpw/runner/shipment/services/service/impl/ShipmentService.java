@@ -53,6 +53,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmp
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -2708,9 +2709,10 @@ public class ShipmentService implements IShipmentService {
         QuartzJobInfo quartzJobInfo = (existingJob != null) ? existingJob : createNewQuartzJob(shipmentDetails);
         quartzJobInfo.setJobStatus(JobState.QUEUED);
         quartzJobInfo.setStartTime(jobTime);
+        quartzJobInfo.setErrorMessage(null);
         QuartzJobInfo newQuartzJobInfo = quartzJobInfoDao.save(quartzJobInfo);
 
-        if(existingJob!=null){
+        if(existingJob!=null && newQuartzJobInfo.getId()!=null && quartzJobInfoService.isJobWithNamePresent(newQuartzJobInfo.getId().toString())){
             quartzJobInfoService.updateSimpleJob(newQuartzJobInfo);
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
@@ -2722,6 +2724,7 @@ public class ShipmentService implements IShipmentService {
                 .entityId(shipmentDetails.getId())
                 .entityType(SHIPMENT)
                 .tenantId(shipmentDetails.getTenantId())
+                .jobType(JobType.SIMPLE_JOB)
                 .build();
     }
 
@@ -2762,7 +2765,7 @@ public class ShipmentService implements IShipmentService {
         if (isValidDateChange(shipmentDetails, oldEntity))
             return true;
 
-        if(quartzJobInfo==null ||(quartzJobInfo!=null && quartzJobInfo.getJobStatus() != JobState.ERROR))
+        if(quartzJobInfo==null ||( quartzJobInfo.getJobStatus() != JobState.ERROR))
             return false;
 
         if(Boolean.TRUE.equals(isDocAdded))
