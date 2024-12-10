@@ -4331,16 +4331,6 @@ public class ConsolidationService implements IConsolidationService {
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
 
-        // Validation for PUSH_REQUESTED shipment, not allowing listing further consolidation
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("shipmentId", request.getShipId(), "=");
-        listCommonRequest = andCriteria("requestedType", ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.name(), "=", listCommonRequest);
-        Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-        Page<ConsoleShipmentMapping> pushRequestedConsol = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
-
-        if(pushRequestedConsol != null && pushRequestedConsol.getTotalElements() > 0) {
-            throw new ValidationException(PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE);
-        }
-
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
