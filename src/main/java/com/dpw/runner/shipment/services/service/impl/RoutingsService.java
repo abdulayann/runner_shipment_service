@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
@@ -91,8 +92,8 @@ public class RoutingsService implements IRoutingsService {
                 throw new RoutingException(e.getMessage(), e);
             }
         }, executorService);
-        CompletableFuture<Map<String, List<Routings>>> polToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, true), executorService);
-        CompletableFuture<Map<String, List<Routings>>> podToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, false), executorService);
+        CompletableFuture<Map<String, List<Routings>>> polToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, true, RequestAuthContext.getAuthToken()), executorService);
+        CompletableFuture<Map<String, List<Routings>>> podToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, false, RequestAuthContext.getAuthToken()), executorService);
         CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
         TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
         if (trackingServiceApiResponse == null) {
@@ -172,53 +173,62 @@ public class RoutingsService implements IRoutingsService {
                 new ArrayList<>(routingsResponses), 0, routingsResponses.size());
     }
 
-    private Map<String, List<Routings>> createRoutingMap(List<Routings> routings, boolean isPol) {
+    private Map<String, List<Routings>> createRoutingMap(List<Routings> routings, boolean isPol,
+        String authToken) {
         Map<String, List<Routings>> routingMap = new HashMap<>();
+        try {
+            RequestAuthContext.setAuthToken(authToken);
+            log.info("Starting to create routing map. Total routings: {}", routings.size());
+            log.info("Grouping by {} location code.", isPol ? "Pol" : "Pod");
 
-        log.info("Starting to create routing map. Total routings: {}", routings.size());
-        log.info("Grouping by {} location code.", isPol ? "Pol" : "Pod");
-
-        // Collect all unique Pol and Pod locations
-        Set<String> referenceGuids = routings.stream()
+            // Collect all unique Pol and Pod locations
+            Set<String> referenceGuids = routings.stream()
                 .flatMap(routing -> Stream.of(routing.getPol(), routing.getPod()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        log.debug("Collected unique reference GUIDs from Pol and Pod: {}", referenceGuids);
+            log.debug("Collected unique reference GUIDs from Pol and Pod: {}", referenceGuids);
 
-        // Fetch location data for the collected Pol and Pod
-        Map<String, UnlocationsResponse> locationData = masterDataUtils.getLocationData(referenceGuids);
-        log.debug("Fetched location data: {}", locationData);
+            // Fetch location data for the collected Pol and Pod
+            Map<String, UnlocationsResponse> locationData = masterDataUtils.getLocationData(
+                referenceGuids);
+            log.debug("Fetched location data: {}", locationData);
 
-        // Iterate over routings and group them by the appropriate location key
-        for (Routings routing : routings) {
-            String pol = routing.getPol();
-            String pod = routing.getPod();
+            // Iterate over routings and group them by the appropriate location key
+            for (Routings routing : routings) {
+                String pol = routing.getPol();
+                String pod = routing.getPod();
 
-            log.debug("Processing routing: {}", routing);
+                log.debug("Processing routing: {}", routing);
 
-            // Skip processing if both Pol and Pod are null
-            if (pol == null && pod == null) {
-                log.warn("Skipping routing due to both Pol and Pod being null. Routing details: {}", routing);
-                continue;
+                // Skip processing if both Pol and Pod are null
+                if (pol == null && pod == null) {
+                    log.warn(
+                        "Skipping routing due to both Pol and Pod being null. Routing details: {}",
+                        routing);
+                    continue;
+                }
+
+                // Determine the location key
+                String locationKey = getLocationKey(pol, pod, locationData, isPol);
+
+                if (locationKey != null) {
+                    log.debug("Location key for this routing: {}", locationKey);
+                    routingMap.computeIfAbsent(locationKey, key -> {
+                        log.info("Creating new routing list for location key: {}", key);
+                        return new ArrayList<>();
+                    }).add(routing);
+                    log.debug("Added routing to location key '{}': {}", locationKey, routing);
+                } else {
+                    log.warn("Missing location key for routing with Pol: {} and Pod: {}", pol, pod);
+                }
             }
 
-            // Determine the location key
-            String locationKey = getLocationKey(pol, pod, locationData, isPol);
-
-            if (locationKey != null) {
-                log.debug("Location key for this routing: {}", locationKey);
-                routingMap.computeIfAbsent(locationKey, key -> {
-                    log.info("Creating new routing list for location key: {}", key);
-                    return new ArrayList<>();
-                }).add(routing);
-                log.debug("Added routing to location key '{}': {}", locationKey, routing);
-            } else {
-                log.warn("Missing location key for routing with Pol: {} and Pod: {}", pol, pod);
-            }
+            log.info("Finished creating routing map. Total groups created: {}. Routing map: {}",
+                routingMap.size(), routingMap);
+        } finally {
+            RequestAuthContext.removeToken();
         }
-
-        log.info("Finished creating routing map. Total groups created: {}. Routing map: {}", routingMap.size(), routingMap);
         return routingMap;
     }
 
