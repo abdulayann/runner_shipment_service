@@ -706,6 +706,10 @@ public class ReportConstants {
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
     public static final String ORIGINAL_HOUSE_BILL = "Original HBL";
     public static final String DRAFT_HOUSE_BILL = "Draft HBL";
+    public static final String ORIGINAL_HAWB = "Original HAWB";
+    public static final String DRAFT_HAWB = "Draft HAWB";
+    public static final String ORIGINAL_MAWB = "Original MAWB";
+    public static final String DRAFT_MAWB = "Draft MAWB";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
     public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
@@ -1318,5 +1322,6 @@ public class ReportConstants {
     public static final String USER_INITIALS = "UserInitials";
 
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
-    public static final String  ISSUING_AGENT_CITY = "IssuingAgentCity";
+    public static final String ISSUING_AGENT_CITY = "IssuingAgentCity";
+    public static final String RA_CSD = "RA_CSD";
 }

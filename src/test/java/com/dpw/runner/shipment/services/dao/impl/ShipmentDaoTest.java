@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -1260,6 +1261,24 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         when(shipmentRepository.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
         assertEquals(Optional.of(shipmentDetails), shipmentDao.findByGuid(UUID.randomUUID()));
+    }
+
+    @Test
+    void findByGuids() {
+        // Arrange
+        List<UUID> guids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<ShipmentDetails> shipmentDetailsList = List.of(
+                ShipmentDetails.builder().build(),
+                ShipmentDetails.builder().build()
+        );
+        when(shipmentRepository.findAllByGuids(anyList())).thenReturn(shipmentDetailsList);
+
+        // Act
+        List<ShipmentDetails> result = shipmentDao.findByGuids(guids);
+
+        // Assert
+        assertEquals(shipmentDetailsList, result);
+        verify(shipmentRepository, times(1)).findAllByGuids(guids); // Ensures the method was called with the correct argument
     }
 
     @Test

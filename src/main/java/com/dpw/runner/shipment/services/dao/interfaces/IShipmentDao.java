@@ -22,6 +22,9 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
+
+    List<ShipmentDetails> findByGuids(List<UUID> guids);
+
     Optional<ShipmentDetails> findByGuid(UUID id);
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
@@ -44,4 +47,6 @@ public interface IShipmentDao {
 
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
+    void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
+    void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 }

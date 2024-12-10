@@ -14,5 +14,6 @@ public class ImportConsolidationRequest implements IRunnerRequest {
     private Long taskId;
     private String operation;
     private String rejectRemarks;
+    private Boolean isFromNte;
 
 }

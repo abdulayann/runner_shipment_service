@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAirMessagingLogsService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -220,6 +221,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -252,8 +254,6 @@ class AwbServiceTest extends CommonMocks {
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -295,6 +295,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -314,8 +315,6 @@ class AwbServiceTest extends CommonMocks {
                     return objectMapper.convertValue(arg, AwbResponse.class);
                 });
 
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
 
         V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
@@ -395,8 +394,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
         );
 
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
         CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
@@ -881,6 +878,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -941,6 +939,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -1008,6 +1007,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
@@ -1243,8 +1243,6 @@ class AwbServiceTest extends CommonMocks {
 
         when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
 
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         when(masterDataUtils.getCountriesMasterListData(any())).thenReturn(Map.of("IN", "INDIA"));
         V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
@@ -1403,7 +1401,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(new ArrayList<>());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         when(masterDataUtils.consolidationAddressCountryMasterData(any())).thenReturn(Map.of("IN", "India", "EG", "Egypt"));
@@ -1662,8 +1660,6 @@ class AwbServiceTest extends CommonMocks {
                 mockAwbResponse
         );
 
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -1958,6 +1954,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
@@ -2513,7 +2510,7 @@ class AwbServiceTest extends CommonMocks {
 
         AirMessagingLogs statusLog = new AirMessagingLogs();
         statusLog.setStatus(AirMessagingStatus.SUCCESS.name());
-        String responseMessage = "FZB submission is accepted";
+        String responseMessage = "FWB submission is accepted";
         FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(true).response(responseMessage).build();
 
 
@@ -3247,60 +3244,40 @@ class AwbServiceTest extends CommonMocks {
 
     @Test
     void testPopulateCsdInfo() {
-        String expectedCsdInfo = "123/SPX/EDD+ETD+XRY/";
 
-        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
-        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
-        testShipment.setSecurityStatus("SPX");
+        AwbCargoInfo awbCargoInfo = AwbCargoInfo.builder().build();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(1L);
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
 
-        String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(expectedCsdInfo, csdInfo);
+        awbService.populateCsdInfo(awbCargoInfo, tenantModel);
+        verify(v1Service, times(1)).addressList(any(CommonV1ListRequest.class));
     }
 
     @Test
-    void testPopulateCsdInfo_WithoutScreeningStatus() {
-        String expectedCsdInfo = "123/SPX/";
+    void testPopulateCsdInfo1() {
+        AwbCargoInfo awbCargoInfo = AwbCargoInfo.builder().build();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(1L);
+        List<EntityTransferAddress> entityTransferAddresses = new ArrayList<>();
+        entityTransferAddresses.add(EntityTransferAddress.builder().Country("IND").build());
 
-        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
-        testShipment.setSecurityStatus("SPX");
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(entityTransferAddresses);
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
-
-        String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(expectedCsdInfo, csdInfo);
+        awbService.populateCsdInfo(awbCargoInfo, tenantModel);
+        verify(v1Service, times(1)).addressList(any(CommonV1ListRequest.class));
     }
 
     @Test
-    void testPopulateCsdInfo_WithoutSecurityStatus() {
-        String expectedCsdInfo = "123/";
-
-        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
-
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(createOrgAddressResponse());
-
-        String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(expectedCsdInfo, csdInfo);
-    }
-
-    @Test
-    void testPopulateCsdInfo_WithExpiredAgent() {
-        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
-
-        OrgAddressResponse mockOrgAddressResponse = new OrgAddressResponse();
-        mockOrgAddressResponse.setAddresses(Map.ofEntries(
-                Map.entry("org#add", Map.ofEntries(
-                        Map.entry(REGULATED_AGENT, true),
-                        Map.entry(KCRA_NUMBER, 123),
-                        Map.entry(KCRA_EXPIRY, LocalDateTime.now().minusDays(1))
-                ))
-        ));
-
-        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
-
-        String csdInfo = awbService.populateCsdInfo(testShipment);
-        assertEquals(Strings.EMPTY, csdInfo);
+    void testPopulateCsdInfo2() {
+        AwbCargoInfo awbCargoInfo = AwbCargoInfo.builder().build();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultAddressId(null);
+        awbService.populateCsdInfo(awbCargoInfo, tenantModel);
+        verify(v1Service, times(0)).addressList(any(CommonV1ListRequest.class));
     }
 
     private OrgAddressResponse createOrgAddressResponse() {
@@ -3384,6 +3361,7 @@ class AwbServiceTest extends CommonMocks {
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 

@@ -107,7 +107,7 @@ public class HawbReport extends IReport{
         if (companyDetailsList != null && !companyDetailsList.isEmpty()) {
             CompanyDto companyDetails = companyDetailsList.get(0);
             List<String> companyAddress = ReportHelper.getOrgAddress(companyDetails.getAddress1(), companyDetails.getAddress2(), companyDetails.getState(), companyDetails.getCity(), companyDetails.getCountry(), companyDetails.getZipPostCode());
-            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
+            dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
         //TODO- Tenant data
@@ -255,7 +255,7 @@ public class HawbReport extends IReport{
             var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
             dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
             dictionary.put(AWB_ISSUING_AGENT_ADDRESS, getAwbFormattedDetails(shipInfo.getIssuingAgentName(),shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentContactName(), shipInfo.getIssuingAgentPhone(), shipInfo.getIssuingAgentTaxRegistrationNumber()));
-            dictionary.put(ISSUING_AGENT_CITY, shipInfo.getIssuingAgentCity());
+            dictionary.put(ISSUING_AGENT_CITY, StringUtility.toUpperCase(shipInfo.getIssuingAgentCity()));
             AwbCargoInfo cargoInfoRows = hawbModel.getAwb().getAwbCargoInfo();
             String NtrQtyGoods = null;
             EntityTransferMasterLists paymentCodeDetails = null;
@@ -294,11 +294,8 @@ public class HawbReport extends IReport{
                 if(StringUtility.isNotEmpty(cargoInfoRows.getChargeCode()))
                     masterDataQuery.add(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
-                dictionary.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                dictionary.put(CSD_INFO_DATE, StringUtility.convertToString(cargoInfoRows.getCsdInfoDate()).strip());
-                if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()) && StringUtility.isEmpty(cargoInfoRows.getCsdInfoDate())) {
-                    dictionary.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(hawbModel.getAwb().getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
-                }
+                dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
+                dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
                 dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 dictionary.put(SLAC, cargoInfoRows.getSlac());
                 dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
@@ -437,23 +434,23 @@ public class HawbReport extends IReport{
                 String finalFreightAmountText = FreightAmountText;
                 valuesFAT.forEach(value -> {
                     value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
+                    value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
+                    value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
+                    value.put(AWB_DIMS, value.get(DIMENSIONS));
                     if(value.get(ReportConstants.RATE_CLASS) != null){
-                        value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
+                        value.put(ReportConstants.RATE_CLASS, value.get(ReportConstants.RATE_CLASS));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }
+                    if(value.get(GROSS_WT_UNIT) != null){
+                        value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                    }
                     if(value.get(ReportConstants.CHARGEABLE_WT) != null){
                         value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
                     }
-                    if (value.get(ReportConstants.RATE_CHARGE) != null)
-                    {
-                        value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
-                    }
-                    if (value.get(ReportConstants.TOTAL_AMOUNT) != null)
-                    {
-                        value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
-                    }
+                    value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
+                    value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
                 });
                 dictionary.put(ReportConstants.PACKING_LIST_FAT, valuesFAT);
                 awbGoodsDescriptionInfo.forEach(row -> {
@@ -710,7 +707,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.BRANCH_NAME, StringUtility.toUpperCase(otherInfoRows.getBranch()));
                 dictionary.put(ReportConstants.LEGAL_COMPANY_NAME, StringUtility.toUpperCase(otherInfoRows.getLegalCompanyName()));
                 List<String> companyAddress = ReportHelper.getOrgAddressForLesserLines(otherInfoRows.getAddress1(), otherInfoRows.getAddress2(), otherInfoRows.getState(), otherInfoRows.getCity(), otherInfoRows.getCountryCode(), otherInfoRows.getPincode());
-                companyAddress = companyAddress.stream().map(StringUtility::toUpperCase).toList();
+                companyAddress = companyAddress.stream().filter(StringUtility::isNotEmpty).map(StringUtility::toUpperCase).toList();
 
                 dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress);
                 dictionary.put(ReportConstants.ISSUED_BY_NAME, StringUtility.toUpperCase(otherInfoRows.getCarrierName()));

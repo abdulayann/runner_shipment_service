@@ -404,6 +404,7 @@ public class Constants {
     public static final String COUNTRY = "_country";
     public static final String NAME = "_name";
     public static final String CODE = "_code";
+    public static final String DISPLAY_NAME = "_displayName";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
     public static final String SCO = "SCO";
@@ -471,6 +472,10 @@ public class Constants {
     public static final String TASK_STATUS = "TaskStatus";
     public static final String AIR_AUTHORISING_ENTITY = "AirAuthorisingEntity";
     public static final String CONTAINER_PRA_STATUS_ENTITY = "ContainerPraStatus";
+    public static final String REGIONAL_BRANCH_CODE = "Regional_Branch_Code";
+    public static final String REGIONAL_BRANCH_NAME = "Regional_Branch_Name";
+    public static final String HUB_BRANCH_CODE = "Hub_Branch_Code";
+    public static final String HUB_BRANCH_NAME = "Hub_Branch_Name";
 
     public static final String SHIPMENT_CREATE_USER = "Shipment_Create_User";
     public static final String SHIPMENT_ASSIGNED_USER = "Shipment_Assigned_User";
@@ -514,6 +519,7 @@ public class Constants {
     public static final String SHIPMENT_VOLUME_UNIT = "Shipment_Volume_Unit";
     public static final String ACTIONED_USER_NAME = "Actioned_User_name";
     public static final String REJECT_REMARKS = "Reject_remarks";
+    public static final String WITHDRAW_REMARKS = "Withdraw_remarks";
     public static final String REMARKS = "Remarks";
     public static final String AUTO_REJECTION_REMARK = "Target Shipment is attached to another consolidation already.";
     public static final String REQUESTED_USER_NAME = "Requested_User_Name";
@@ -526,6 +532,8 @@ public class Constants {
     public static final String SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE = "Shipment Request Accept";
     public static final String SHIPMENT_PUSH_REJECTED_EMAIL_TYPE = "Shipment Request Reject";
     public static final String SHIPMENT_DETACH_EMAIL_TYPE = "Shipment Detach";
+    public static final String SHIPMENT_PULL_WITHDRAW_EMAIL_TYPE = "Shipment Pull Withdraw";
+    public static final String SHIPMENT_PUSH_WITHDRAW_EMAIL_TYPE = "Shipment Push Withdraw";
     public static final String CONSOLIDATION_IMPORT_EMAIL_TYPE = "CONSOLIDATION_IMPORT";
     public static final String DEFAULT_CONSOLIDATION_RECEIVED_SUBJECT = "Received consolidation {#CONSOLIDATION_NUMBER} with {#NUMBER_OF_SHIPMENTS} shipments from {#SOURCE_BRANCH}";
     public static final String DEFAULT_CONSOLIDATION_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a consolidation with {#NUMBER_OF_SHIPMENTS} shipments has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Consolidation Details:</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Consolidation number:</strong>&nbsp;{#CONSOLIDATION_NUMBER}</p>  <p><strong>BL Numbers</strong>: {#BL_NUMBER}</p>  <p><strong>Shipment numbers:&nbsp;</strong>{#SHIPMENT_NUMBERS}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
@@ -588,6 +596,8 @@ public class Constants {
     public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
     public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
+    public static final String NOTIFICATION_ENTITY = "Notification";
+    public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
     private Constants() {
     }
 

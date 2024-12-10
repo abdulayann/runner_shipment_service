@@ -5,14 +5,13 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -87,7 +86,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
+    private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
     private Long documentationPartner;
@@ -142,4 +142,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String department;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

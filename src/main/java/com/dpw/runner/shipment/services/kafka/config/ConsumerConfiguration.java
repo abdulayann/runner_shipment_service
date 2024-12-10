@@ -27,6 +27,8 @@ public class ConsumerConfiguration {
     private String customServiceContainerEventGroupId;
     @Value("${dps.kafka.group-id}")
     private String dpsKafkaGroupId;
+    @Value("${bill.common-event.kafka.group-id}")
+    private String billCommonEventKafkaGroupId;
 
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
@@ -101,6 +103,26 @@ public class ConsumerConfiguration {
         // Reset the offset to the earliest available offset on the partition if no offset is stored
         // This is useful when a new consumer group is created, and you want to consume all messages from the beginning
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> billingCommonEventKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(billingCommonEventConsumerFactory());
+        factory.setConcurrency(1);
+        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> billingCommonEventConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServerConfig);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, billCommonEventKafkaGroupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
 

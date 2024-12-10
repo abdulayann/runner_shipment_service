@@ -14,10 +14,7 @@ import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -1061,9 +1058,13 @@ public abstract class IReport {
                 if(awb.getAwbCargoInfo() != null) {
                     var cargoInfoRows = awb.getAwbCargoInfo();
                     dict.put(SCI, cargoInfoRows.getSci());
-                    dict.put(CSD_INFO, cargoInfoRows.getCsdInfo());
-                    if(StringUtility.isNotEmpty(cargoInfoRows.getCsdInfo()))
-                        dict.put(ORIGINAL_PRINT_DATE, convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), commonUtils.getCurrentTenantSettings().getDPWDateFormat(), true, true));
+                    dictionary.put(RA_CSD, geteCSDInfo(awb));
+                    dict.put(RA_CSD, geteCSDInfo(awb));
+
+                    dict.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
+                    dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
+                    dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
+                    dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
                 }
             }
             dict.put(WITH_CONSIGNOR, isShipperAndConsignee);
@@ -3655,4 +3656,35 @@ public abstract class IReport {
         return defaultRANumber;
     }
 
+    public String geteCSDInfo(Awb awb) {
+
+        if (StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber()))
+            return StringUtility.getEmptyString();
+
+        List<String> eCsdInfoList = new ArrayList<>();
+        eCsdInfoList.add(awb.getAwbCargoInfo().getCountryCode());
+        eCsdInfoList.add(ReportConstants.RA);
+        eCsdInfoList.add(awb.getAwbCargoInfo().getRaNumber());
+        if (!CommonUtils.listIsNullOrEmpty(awb.getAwbCargoInfo().getScreeningStatus())) {
+            eCsdInfoList.add(String.join("/", awb.getAwbCargoInfo().getScreeningStatus().stream()
+                    .map(c -> Objects.equals(c, Constants.AOM) ? awb.getAwbCargoInfo().getOtherMethod() : c)
+                    .toList()));
+        }
+        eCsdInfoList.add(Objects.equals(awb.getAwbCargoInfo().getSecurityStatus(), AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS) ? AwbConstants.SPX : awb.getAwbCargoInfo().getSecurityStatus());
+        eCsdInfoList.add(awb.getAwbCargoInfo().getExemptionCode());
+
+        eCsdInfoList.add(getPrintOriginalDate(awb));
+
+        eCsdInfoList.add(awb.getAwbCargoInfo().getUserInitials());
+
+        return String.join("/", eCsdInfoList.stream().filter(StringUtility::isNotEmpty).toList());
+    }
+
+    public String getPrintOriginalDate(Awb awb) {
+        if (Objects.nonNull(awb.getAwbCargoInfo().getScreeningTime()))
+            return (StringUtility.toUpperCase(ConvertToDPWDateFormat(awb.getAwbCargoInfo().getScreeningTime(), "ddMMMyy HHmm", true)));
+        else if (Objects.nonNull(awb.getOriginalPrintedAt()))
+            return (StringUtility.toUpperCase(ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), "ddMMMyy HHmm", true)));
+        return StringUtility.getEmptyString();
+    }
 }

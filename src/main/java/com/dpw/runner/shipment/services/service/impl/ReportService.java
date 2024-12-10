@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -54,12 +55,18 @@ import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -82,7 +89,14 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -127,6 +141,9 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IEventDao eventDao;
+
+    @Autowired
+    private IEventService eventService;
 
     @Autowired
     private IHblDao hblDao;
@@ -190,16 +207,12 @@ public class ReportService implements IReportService {
         if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT)) {
             Long shipmentId = Long.valueOf(reportRequest.getReportId());
             var awbList = awbDao.findByShipmentId(shipmentId);
-            if(awbList == null || awbList.isEmpty() || !Objects.equals(PrintType.ORIGINAL_PRINTED, awbList.get(0).getPrintType()))
-                throw new RunnerException("Please print original AWB before proceeding !");
         }
 
         // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
         if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION)) {
             Long consolidationId = Long.valueOf(reportRequest.getReportId());
             var awbList = awbDao.findByConsolidationId(consolidationId);
-            if(awbList == null || awbList.isEmpty() || !Objects.equals(PrintType.ORIGINAL_PRINTED, awbList.get(0).getPrintType()))
-                throw new RunnerException("Please print original AWB before proceeding !");
             if(awbList != null && !awbList.isEmpty()) {
                 List<Awb> linkedHawb = awbDao.getLinkedAwbFromMawb(awbList.get(0).getId());
                 long count = linkedHawb.stream().filter(i -> !Objects.equals(PrintType.ORIGINAL_PRINTED, i.getPrintType())).count();
@@ -239,7 +252,7 @@ public class ReportService implements IReportService {
             }
         }
 
-        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElseGet(null);
+        ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
 
         Boolean isOriginalPrint = false;
         Boolean isSurrenderPrint = false;
@@ -254,7 +267,7 @@ public class ReportService implements IReportService {
         this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
         if(Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
-            awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment());
+            awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
         } else if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
             if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
                 awbDao.updateAirMessageStatusFromConsolidationId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
@@ -333,17 +346,17 @@ public class ReportService implements IReportService {
                 createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             }
         } else if (report instanceof PreAlertReport vPreAlertReport) {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.PRST, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.PRST);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.BOCO, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.BOCO);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -444,6 +457,9 @@ public class ReportService implements IReportService {
             {
                 shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
             }
+
+            addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
             return pdfByte_Content;
         }
         else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB))
@@ -567,6 +583,9 @@ public class ReportService implements IReportService {
             } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
             }
+
+            addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
             //Update shipment issue date
             return pdfByte_Content;
         }
@@ -763,7 +782,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
@@ -826,6 +845,17 @@ public class ReportService implements IReportService {
         }
 
         return pdfByteContent;
+    }
+
+    private void createEvent(ReportRequest reportRequest, String eventCode) {
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setActual(LocalDateTime.now());
+        eventsRequest.setEntityId(Long.parseLong(reportRequest.getReportId()));
+        eventsRequest.setEntityType(Constants.SHIPMENT);
+        eventsRequest.setEventCode(eventCode);
+        eventsRequest.setEventType(EventType.REPORT.name());
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        eventService.saveEvent(eventsRequest);
     }
 
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
@@ -1537,6 +1567,54 @@ public class ReportService implements IReportService {
             }
             hblReleaseTypeMappingDao.save(releaseTypeMapping);
         }
+    }
+
+    public void addDocumentToDocumentMaster(ReportRequest reportRequest,  byte[] pdfByte_Content) {
+        try {
+            Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
+            ShipmentDetails shipmentDetails;
+            if(shipmentsRow.isPresent()) {
+                shipmentDetails = shipmentsRow.get();
+            } else {
+                throw new RunnerException("Shipment Id is Invalid");
+            }
+
+            byte[] finalPdfByte_Content = pdfByte_Content;
+            String documentType = documentTypeFinder(reportRequest);
+
+            DocUploadRequest docUploadRequest = new DocUploadRequest();
+            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
+            docUploadRequest.setType(documentType);
+            docUploadRequest.setReportId(reportRequest.getReportId());
+            String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
+            CompletableFuture.runAsync(masterDataUtils.withMdc(
+                () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
+                    docUploadRequest, StringUtility.convertToString(shipmentDetails.getGuid()))), executorService);
+        }catch(Exception ex){
+            log.error(ex.getMessage());
+        }
+    }
+
+    private String documentTypeFinder(ReportRequest reportRequest){
+        String documentType = ReportConstants.HAWB;
+
+        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
+            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                documentType = ReportConstants.ORIGINAL_HAWB;
+            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                documentType = ReportConstants.DRAFT_HAWB;
+            }
+        }else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)){
+            documentType = ReportConstants.MAWB;
+            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                documentType = ReportConstants.ORIGINAL_MAWB;
+            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                documentType = ReportConstants.DRAFT_MAWB;
+            }
+        }
+
+        return documentType;
     }
 
     public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {

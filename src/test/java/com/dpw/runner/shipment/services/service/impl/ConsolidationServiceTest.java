@@ -66,6 +66,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
@@ -115,23 +116,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -212,8 +197,6 @@ import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
@@ -348,6 +331,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
+    private INotificationDao notificationDao;
 
     @InjectMocks
     private ConsolidationService consolidationService;
@@ -4185,10 +4171,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
-    void testAutoGenerateEvents() {
+    void testGenerateEvents() {
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setEventsList(null);
-        consolidationService.autoGenerateEvents(consolidationDetails);
+        consolidationService.generateEvents(consolidationDetails);
         //verify(eventDao, times(1)).save(any());
     }
 
@@ -5141,7 +5127,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>());
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5149,7 +5135,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         var spyService = Mockito.spy(consolidationService);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForDetachShipments(testConsol, List.of(ShipmentDetails.builder().build()), new HashSet<>(), "remarks");
-        verify(commonUtils, times(0)).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils, times(0)).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5159,7 +5145,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setTenantId(2);
         spyService.sendEmailForDetachShipments(testConsol, List.of(shipmentDetails1), new HashSet<>(), "remarks");
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5611,7 +5597,9 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testRetrieveForNTE() {
-        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder()
+                .triangulationPartner(TenantContext.getCurrentTenant().longValue()).isAccepted(false).build();
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -5633,10 +5621,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false).setIsNetworkTransferEntityEnabled(true);
-
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(12L).build();
         ConsolidationDetails consolidationDetails3 = testConsol;
         testConsol.setReceivingBranch(1L);
-        testConsol.setTriangulationPartnerList(List.of(12L));
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
 
         ConsolidationDetails consolidationDetails2 = testConsol;
 

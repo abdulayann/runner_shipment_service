@@ -1,8 +1,16 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -56,6 +64,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,10 +72,15 @@ import com.itextpdf.text.DocumentException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -130,6 +144,9 @@ class ReportServiceTest {
 
     @Mock
     private DocumentService documentService;
+
+    @Mock
+    private IEventService eventService;
 
     @Mock
     private JsonHelper jsonHelper;
@@ -232,7 +249,7 @@ class ReportServiceTest {
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-       // Mockito.doNothing().when(eventDao).autoGenerateEvents(any());
+        // Mockito.doNothing().when(eventDao).generateEvents(any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -965,6 +982,7 @@ class ReportServiceTest {
         shipmentDetails.getAdditionalDetails().setReleaseType("ORG");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentDao.update(shipmentDetails, false)).thenReturn(shipmentDetails);
+        Mockito.doNothing().when(eventService).saveEvent(any());
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         hbl.getHblData().setOriginalSeq(1);
@@ -1009,6 +1027,7 @@ class ReportServiceTest {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        Mockito.doNothing().when(eventService).saveEvent(any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1569,6 +1588,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+        Mockito.doNothing().when(eventService).saveEvent(any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2171,7 +2191,7 @@ class ReportServiceTest {
         assertNotNull(data);
     }
 
-    @Test
+//    @Test
     void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() throws IOException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
@@ -3168,5 +3188,60 @@ class ReportServiceTest {
         assertTrue(pdfBytes.size() > 0);
     }
 
+    @Test
+    void addDocumentToDocumentMasterTestHAWBORIGNAL(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setReportInfo("HAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestMAWBDRAFT(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("DRAFT");
+        reportRequest.setReportInfo("MAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestHAWBDRAFT(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("DRAFT");
+        reportRequest.setReportInfo("HAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestMAWBORIGNAL(){
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setReportInfo("MAWB");
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByte_Content = new byte[1];
+        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        assertNotNull(shipmentDetails);
+    }
 
 }

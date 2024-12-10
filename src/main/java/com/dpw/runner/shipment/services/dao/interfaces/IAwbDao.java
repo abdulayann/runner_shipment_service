@@ -29,7 +29,7 @@ public interface IAwbDao {
     List<Awb> findByAwbNumber(List<String> awbNumber);
     List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent);
     List<Awb> saveAll(List<Awb> req);
-    void airMessagingIntegration(Long id, String reportType, Boolean fromShipment);
+    void airMessagingIntegration(Long id, String reportType, Boolean fromShipment, boolean includeCSD);
     int updateAirMessageStatus(UUID guid, String airMessageStatus);
     int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
 

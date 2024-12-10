@@ -22,6 +22,7 @@ public class EventsResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String eventCode;
+    private String eventType;
     private Long shipmentId;
     private String shipmentNumber;
     private Long consolidationId;
@@ -40,6 +41,12 @@ public class EventsResponse implements IRunnerResponse {
     private String event_estimate_update_reasons;
     private String flightNumber;
     private String flightName;
+    private String remarks;
+    private String userName;
+    private String userEmail;
+    private String branch;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt; // Generated Date field for UI
 
     // Conditional response from TrackingEvents
     private String containerNumber;
@@ -55,4 +62,6 @@ public class EventsResponse implements IRunnerResponse {
     private LocalDateTime receivedDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime scheduledDate;
+    private String direction;
+    private String referenceNumber;
 }

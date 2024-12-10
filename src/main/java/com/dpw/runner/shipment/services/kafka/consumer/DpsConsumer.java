@@ -54,16 +54,9 @@ public class DpsConsumer {
                 if (dpsDto != null && dpsDto.getData() != null) {
                     DpsDataDto payload = dpsDto.getData();
 
-                    // Check if the entity type is SHIPMENT
-                    if ("SHIPMENT".equalsIgnoreCase(payload.getEntityType())) {
-                        log.info("{} | Processing SHIPMENT entity for ruleExecutionId: {}", LoggerEvent.KAFKA_DPS, payload.getRuleExecutionId());
-
-                        // Save the DPS event
-                        dpsEventService.saveDpsEvent(dpsDto);
-                        log.info("{} | SHIPMENT entity processed successfully", LoggerEvent.KAFKA_DPS);
-                    } else {
-                        log.warn("{} | Ignored entity type: {}", LoggerEvent.KAFKA_DPS, payload.getEntityType());
-                    }
+                    log.info("{} | Processing Dps message entity for rule execution id: {}", LoggerEvent.KAFKA_DPS, payload.getRuleExecutionId());
+                    // Save the DPS event
+                    dpsEventService.saveDpsEvent(dpsDto);
                 } else {
                     log.error("{} | Invalid DPS event: Payload is null or invalid", LoggerEvent.KAFKA_DPS);
                 }

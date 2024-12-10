@@ -262,7 +262,10 @@ public class ShipmentDao implements IShipmentDao {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }
-
+    @Override
+    public List<ShipmentDetails> findByGuids(List<UUID> guids) {
+        return shipmentRepository.findAllByGuids(guids);
+    }
     @Override
     public Optional<ShipmentDetails> findByGuid(UUID id) {
         return shipmentRepository.findByGuid(id);
@@ -718,5 +721,17 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
         return shipmentRepository.save(shipmentDetails);
+    }
+
+    @Override
+    @Transactional
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
+    }
+
+    @Override
+    @Transactional
+    public void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted) {
+        shipmentRepository.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isAccepted);
     }
 }

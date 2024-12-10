@@ -36,6 +36,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
         return findOne(spec);
     }
 
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM shipment_details WHERE guid IN (:guids)", nativeQuery = true)
+    List<ShipmentDetails> findAllByGuids(List<UUID> guids);
+
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findAllByHouseBill(String Hbl);
@@ -94,6 +98,14 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " WHERE house_bill = ?1 "
             + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
+
+    @Modifying @Transactional
+    @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
+    void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
+
+    @Modifying @Transactional
+    @Query(value = "Update triangulation_partner_shipment set is_accepted = ?3 where shipment_id = ?1 AND partner_id = ?2", nativeQuery = true)
+    void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 
     @ExcludeTenantFilter
     default Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {

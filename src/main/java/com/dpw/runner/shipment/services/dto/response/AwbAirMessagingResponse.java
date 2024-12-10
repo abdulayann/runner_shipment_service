@@ -44,6 +44,8 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private Integer currencyDecimalPlaces;
         private Integer weightDecimalPlaces;
         private Integer volumeDecimalPlaces;
+        private Boolean includeCSD;
+        private String additionalSecurityInfo;
     }
 
     @Data
@@ -55,6 +57,8 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String number;
         private String postCode;
         private LocalDateTime expiry;
+        private Boolean isRA;
+        private Boolean isKC;
     }
     @Data
     @Builder

@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import java.util.List;
-import java.util.Set;
 
 public class EventConstants {
 
@@ -69,6 +68,11 @@ public class EventConstants {
     public static final String COCR  = "COCR";
     public static final String COSN  = "COSN";
     public static final String TCOA  = "TCOA";
+    public static final String INGE  = "INGE";
+    public static final String SISC  = "SISC";
+    public static final String VGMS  = "VGMS";
+    public static final String BBCK  = "BBCK";
+    public static final String DORC  = "DORC";
     // ~~~~~~ end runner event short codes
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
@@ -105,5 +109,5 @@ public class EventConstants {
     public static final String DESTINATION = "destination";
     public static final String ORIGIN = "origin";
 
-    public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
+    public static final String SYSTEM_GENERATED = "System Generated";
 }

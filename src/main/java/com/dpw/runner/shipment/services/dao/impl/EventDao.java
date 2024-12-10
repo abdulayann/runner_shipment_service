@@ -16,7 +16,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -369,11 +371,11 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDate.now().atStartOfDay());
+                eventsRow.setActual(LocalDateTime.now());
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
+                eventsRow.setEstimated(LocalDateTime.now());
             }
 
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -513,11 +515,17 @@ public class EventDao implements IEventDao {
                 }
                 // Set shipment number
                 event.setShipmentNumber(shipmentDetails.getShipmentId());
+                event.setEntityId(shipmentDetails.getId());
+                if (event.getDirection() == null) {
+                    event.setDirection(shipmentDetails.getDirection());
+                }
             });
 
         } else if (Constants.CONSOLIDATION.equals(entityType)) {
             event.setConsolidationId(entityId);
         }
+
+        updateUserFieldsInEvent(event);
     }
 
     /**
@@ -543,13 +551,15 @@ public class EventDao implements IEventDao {
                         EventConstants.FHBL, EventConstants.FNMU, EventConstants.PRST, EventConstants.ARDP,
                         EventConstants.DOGE, EventConstants.DOTP, EventConstants.FUGO, EventConstants.CAFS,
                         EventConstants.PRDE, EventConstants.EMCR, EventConstants.ECCC, EventConstants.BLRS,
-                        EventConstants.COOD
+                        EventConstants.COOD, EventConstants.INGE, EventConstants.SISC, EventConstants.VGMS,
+                        EventConstants.BBCK, EventConstants.DORC, EventConstants.DNMU
                 ),
                 TRANSPORT_MODE_AIR, Set.of(
                         EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
                         EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
                         EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS, EventConstants.ECCC,
-                        EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU
+                        EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU, EventConstants.INGE,
+                        EventConstants.DNMU
                 )
         );
 
@@ -561,6 +571,31 @@ public class EventDao implements IEventDao {
                 transportMode, eventCode, shouldSend);
 
         return shouldSend;
+    }
+
+    @Override
+    public void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails) {
+        // update events with consolidation id with condition
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        if(ObjectUtils.isNotEmpty(consolidationList)) {
+            Long consolidationId = consolidationList.get(0).getId();
+            eventsList.stream()
+                    .map(this::updateUserFieldsInEvent)
+                    .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                    .forEach(event -> event.setConsolidationId(consolidationId));
+        }
+    }
+
+
+    private Events updateUserFieldsInEvent(Events event) {
+        event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
+        event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
+        event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+
+        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
+            event.setUserName(EventConstants.SYSTEM_GENERATED);
+        }
+        return event;
     }
 
 

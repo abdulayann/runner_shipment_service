@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -27,7 +28,6 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -61,8 +61,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.TypeMap;
-import org.modelmapper.config.Configuration;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
 
@@ -1062,7 +1060,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                "username");
+                "username", null);
         assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
@@ -1084,7 +1082,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1109,7 +1107,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1149,7 +1147,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1184,7 +1182,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1208,7 +1206,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1230,7 +1228,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1269,7 +1267,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1303,7 +1301,80 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushWithdrawRequest() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .consolidationNumber("1")
+                .sourceTenantId(1L)
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setCreatedBy("CreatedBy");
+        consolidationDetails1.setId(1L);
+        HashMap tenantModelMap = new HashMap<>();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Code");
+        tenantModel.setTenantName("TenantName");
+        tenantModelMap.put(1,tenantModel);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .shipmentId("2")
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                consolidationDetails1,
+                SHIPMENT_PUSH_WITHDRAW,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, tenantModelMap);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullWithdrawRequest() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .consolidationNumber("1")
+                .sourceTenantId(1L)
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setCreatedBy("CreatedBy");
+        consolidationDetails1.setId(1L);
+        HashMap tenantModelMap = new HashMap<>();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Code");
+        tenantModel.setTenantName("TenantName");
+        tenantModelMap.put(1,tenantModel);
+        tenantModelMap.put(null, tenantModel);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .shipmentId("2")
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                consolidationDetails1,
+                SHIPMENT_PULL_WITHDRAW,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, tenantModelMap);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1328,7 +1399,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1350,7 +1421,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1391,7 +1462,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1427,7 +1498,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1452,7 +1523,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1474,7 +1545,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1515,7 +1586,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1551,7 +1622,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1575,7 +1646,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1597,7 +1668,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1637,7 +1708,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1672,7 +1743,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1697,7 +1768,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1732,7 +1803,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1765,7 +1836,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2340,7 +2411,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2362,7 +2433,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2402,7 +2473,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2437,7 +2508,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2780,7 +2851,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testUpdateEventWithMasterDataDescription() {
+    void testUpdateEventWithMasterData() {
         String mockEventCode = "EV1";
         String mockEventDescription = "mock description";
         String mockEventDescription2 = "mock description 2";
@@ -2794,14 +2865,14 @@ class CommonUtilsTest {
                 EntityTransferMasterLists.builder().ItemValue(mockEventCode).ItemDescription(mockEventDescription).build()
         ));
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent1.getDescription());
         assertEquals(mockEventDescription2, mockEvent2.getDescription());
     }
 
     @Test
-    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderDescriptionInCaseOfExceptionFromV1() {
+    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderInCaseOfExceptionFromV1() {
         String mockEventCode = "EV1";
         String mockEventDescription = "older description";
         Events mockEvent = Events.builder().eventCode(mockEventCode).description(mockEventDescription).build();
@@ -2809,7 +2880,7 @@ class CommonUtilsTest {
 
         when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent.getDescription());
     }
@@ -2820,7 +2891,7 @@ class CommonUtilsTest {
         Events mockEvent = Events.builder().description(mockEventDescription).build();
         List<Events> mockEventList = List.of(mockEvent);
 
-        commonUtils.updateEventWithMasterDataDescription(mockEventList);
+        commonUtils.updateEventWithMasterData(mockEventList);
 
         assertEquals(mockEventDescription, mockEvent.getDescription());
     }
@@ -3017,5 +3088,33 @@ class CommonUtilsTest {
     @Test
     void testChangeShipmentDGStatusToReqd() {
         assertFalse(commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().direction(IMP).build(), false));
+    }
+
+    @Test
+    public void testGetTriangulationPartnerList_EmptyInput() {
+        List<TriangulationPartner> partnerList = null;
+
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        assertNotNull(triangulationPartnerIds);
+        assertTrue(triangulationPartnerIds.isEmpty());
+    }
+
+    @Test
+    public void testGetTriangulationPartnerList_NonEmptyInput() {
+        List<TriangulationPartner> partnerList = Arrays.asList(
+                TriangulationPartner.builder().triangulationPartner(1L).isAccepted(true).build(),
+                TriangulationPartner.builder().triangulationPartner(2L).isAccepted(false).build(),
+                null
+        );
+
+        // Act
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        // Assert
+        assertNotNull(triangulationPartnerIds);
+        assertEquals(2, triangulationPartnerIds.size());
+        assertTrue(triangulationPartnerIds.contains(1L));
+        assertTrue(triangulationPartnerIds.contains(2L));
     }
 }

@@ -39,11 +39,17 @@ import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto.BillDto;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -61,6 +67,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,6 +78,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.persistence.criteria.Predicate;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -136,11 +144,11 @@ public class EventService implements IEventService {
         request = (EventsRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for Event create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildFailedResponse("Empty request received");
         }
         Events event = convertRequestToEntity(request);
         try {
-            eventDao.updateEventDetails(event);
-            event = eventDao.save(event);
+            saveEvent(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -190,8 +198,8 @@ public class EventService implements IEventService {
         }
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            eventDao.updateEventDetails(events);
-            events = eventDao.save(events);
+
+            saveEvent(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -1052,6 +1060,64 @@ public class EventService implements IEventService {
         return result;
     }
 
+    @Override
+    @Transactional
+    public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
+        try {
+            InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
+            AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
+            List<BillDto> billDtoList = accountReceivableDto.getBills();
+
+            List<UUID> shipmentGuids = billDtoList.stream()
+                    .map(billDto -> UUID.fromString(billDto.getModuleId())).distinct().toList();
+
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByGuids(shipmentGuids);
+
+            Map<UUID, ShipmentDetails> shipmentMap = shipmentDetailsList.stream().collect(Collectors.toMap(
+                    ShipmentDetails::getGuid,
+                    shipmentDetails -> shipmentDetails,
+                    (existing, replacement) -> replacement));
+
+            List<Events> invoiceEvents = new ArrayList<>();
+
+            billDtoList.forEach(billDto -> {
+                if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                    ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                    List<Events> vInvoiceEvents = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                    invoiceEvents.addAll(vInvoiceEvents);
+                }
+
+            });
+
+            eventDao.saveAll(invoiceEvents);
+        } catch (Exception e) {
+            throw new BillingException(e.getMessage());
+        }
+    }
+
+    public List<Events> prepareEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
+        InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
+        AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
+
+        Events event = new Events();
+        event.setEntityId(shipmentDetails.getId());
+        event.setEntityType(Constants.SHIPMENT);
+        event.setEventCode(EventConstants.INGE);
+        event.setActual(accountReceivableDto.getInvoiceDate());
+        event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        event.setStatus(accountReceivableDto.getFusionInvoiceStatus());
+        event.setShipmentNumber(shipmentDetails.getShipmentId());
+        event.setEventType(EventType.INVOICE);
+        event.setContainerNumber(accountReceivableDto.getInvoiceNumber());
+        event.setReferenceNumber(accountReceivableDto.getId());
+        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())
+                && ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+
+        }
+        commonUtils.updateEventWithMasterData(List.of(event));
+        return List.of(event);
+    }
     /**
      * Persists tracking events to the database and updates the relevant shipment details.
      *
@@ -1097,6 +1163,8 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
+                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
@@ -1199,7 +1267,35 @@ public class EventService implements IEventService {
                 EventsResponse::setDescription
         );
 
-        return ResponseHelper.buildSuccessResponse(allEventResponses);
+        List<EventsResponse> groupedEvents = allEventResponses;
+
+        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
+            return ResponseHelper.buildSuccessResponse(groupedEvents);
+        }
+
+        // Events grouping logic if events revamp feature flag is enabled
+        if (Objects.isNull(request.getSortRequest())) {
+            groupedEvents = allEventResponses.stream()
+                    // Group by eventCode and sort each group by `actual` in descending order
+                    .collect(Collectors.groupingBy(EventsResponse::getEventCode))
+                    .values().stream()
+                    // Sort each group by `actual` in descending order
+                    .map(group -> {
+                        group.sort(
+                                Comparator.comparing(EventsResponse::getShipmentNumber, Comparator.nullsLast(Comparator.naturalOrder()))
+                                .thenComparing(EventsResponse::getActual, Comparator.nullsLast(Comparator.reverseOrder()))
+                        );
+                        return group;
+                    })
+//                     Sort groups by the latest actual date in descending order
+                    .sorted(Comparator.comparing(
+                            group -> group.get(0).getActual(), Comparator.nullsLast(Comparator.reverseOrder())
+                    ))
+                    .flatMap(List::stream)
+                    .toList();
+        }
+
+        return ResponseHelper.buildSuccessResponse(groupedEvents);
     }
 
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest) {
@@ -1215,4 +1311,93 @@ public class EventService implements IEventService {
         log.info("EventsList - fetched {} events", allEvents.size());
         return allEvents;
     }
+
+    /**
+     * Trigger point for creating / updating event
+     * @param eventsRequest
+     */
+    @Override
+    @Transactional
+    public void saveEvent(EventsRequest eventsRequest) {
+        Events entity = convertRequestToEntity(eventsRequest);
+
+        if (Boolean.TRUE.equals(eventsRequest.getSaveFromShipment())) {
+            entity.setEntityType(Constants.SHIPMENT);
+        }
+        // event code and master-data description
+        commonUtils.updateEventWithMasterData(List.of(entity));
+        eventDao.updateEventDetails(entity);
+
+        handleDuplicationForExistingEvents(entity);
+
+        eventDao.save(entity);
+        // auto generate runner events | will remain as it is inside shipment and consolidation
+    }
+
+    public Specification<Events> buildDuplicateEventSpecification(Events event) {
+        return (root, query, cb) -> {
+            Predicate predicate = cb.conjunction();
+
+            if (event.getEventCode() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("eventCode"), event.getEventCode()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("eventCode")));
+            }
+
+            if (event.getShipmentNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("shipmentNumber"), event.getShipmentNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("shipmentNumber")));
+            }
+
+            if (event.getContainerNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("containerNumber"), event.getContainerNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("containerNumber")));
+            }
+
+            if (event.getSource() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("source"), event.getSource()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("source")));
+            }
+
+            if (event.getPlaceName() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("placeName"), event.getPlaceName()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("placeName")));
+            }
+
+            if (event.getEntityId() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("entityId"), event.getEntityId()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("entityId")));
+            }
+
+            if (event.getEntityType() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("entityType"), event.getEntityType()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("entityType")));
+            }
+
+            predicate = cb.and(predicate, cb.equal(root.get("isDeleted"), false));
+
+            return predicate;
+        };
+    }
+
+    private void handleDuplicationForExistingEvents(Events event) {
+
+        Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
+        Page<Events> duplicateEventPage = eventDao.findAll(duplicateEventSpecification, Pageable.unpaged());
+
+        if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
+            // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
+            // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
+            duplicateEventPage.getContent().stream()
+                    .filter(dupEvent -> !dupEvent.getId().equals(event.getId()))
+                    .forEach(dupEvent -> eventDao.delete(dupEvent));
+        }
+    }
+
 }

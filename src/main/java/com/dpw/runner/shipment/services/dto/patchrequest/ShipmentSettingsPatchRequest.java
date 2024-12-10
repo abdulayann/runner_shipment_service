@@ -184,4 +184,6 @@ public class ShipmentSettingsPatchRequest extends CommonRequest implements IRunn
     private JsonNullable<LocalDateTime> isEntityTransferPrerequisiteEnabledDate;
     private JsonNullable<Boolean> isEntityTransferPrerequisiteEnabled;
     private JsonNullable<Boolean> isNetworkTransferEntityEnabled;
+    private JsonNullable<Boolean> eventsRevampEnabled;
+    private JsonNullable<Boolean> isAutomaticTransferEnabled;
 }

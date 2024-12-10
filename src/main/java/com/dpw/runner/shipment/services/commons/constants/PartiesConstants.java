@@ -59,4 +59,7 @@ public class PartiesConstants {
     public static final String API = "API";
     public static final String KC_RA_NUMBER = "KCRANumber";
     public static final String KC_RA_EXPIRY = "KCRAExpiry";
+
+    public static final String REGULATED_AGENT = "RegulatedAgent";
+    public static final String KNOWN_CONSIGNOR = "KnownConsignor";
 }
