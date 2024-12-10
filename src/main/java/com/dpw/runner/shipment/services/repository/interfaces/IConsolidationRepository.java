@@ -88,7 +88,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     Long findIdByGuid (UUID guid);
 
     @Modifying @Transactional
-    @Query(value = "Update triangulation_partner_consolidation set is_accepted = ?3 where consolidation_id = ?1 AND triangulation_partner = ?2", nativeQuery = true)
+    @Query(value = "Update triangulation_partner_consolidation set is_accepted = ?3 where consolidation_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
 
 }

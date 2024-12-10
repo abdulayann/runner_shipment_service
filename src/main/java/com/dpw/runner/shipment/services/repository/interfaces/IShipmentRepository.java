@@ -104,7 +104,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
     @Modifying @Transactional
-    @Query(value = "Update triangulation_partner_shipment set is_accepted = ?3 where shipment_id = ?1 AND triangulation_partner = ?2", nativeQuery = true)
+    @Query(value = "Update triangulation_partner_shipment set is_accepted = ?3 where shipment_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 
     @ExcludeTenantFilter
