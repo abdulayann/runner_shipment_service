@@ -172,39 +172,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
-import com.dpw.runner.shipment.services.entity.ELDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entity.enums.JobState;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -219,6 +188,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.repository.interfaces.IQuartzJobInfoRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
@@ -449,6 +419,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private NetworkTransferDao networkTransferDao;
+
+    @Mock
+    private IQuartzJobInfoRepository quartzJobInfoRepository;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -9467,14 +9440,10 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         shipmentDetails.setReceivingBranch(1L);
+        shipmentDetails.getCarrierDetails().setEta(LocalDateTime.now());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isAutomaticTransferEnabled(true).isNetworkTransferEntityEnabled(true).build());
 
-
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
-        mockShipmentRequest.setEventsList(List.of(EventsRequest.builder()
-                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
-                .eventCode("eventType").build()));
-
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
 
@@ -9496,16 +9465,9 @@ ShipmentServiceTest extends CommonMocks {
         // Test
         mockShipmentSettings();
         mockTenantSettings();
-        V1TenantSettingsResponse.FileTransferConfigurations fileTransferConfiguration= V1TenantSettingsResponse.FileTransferConfigurations.builder().transportMode("AIR").criteriaField(1).triggerType(1).intervalTime(1).intervalTimeUnit(1).isActive(1).build();
 
-
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(
-                V1TenantSettingsResponse.builder().transportModeConfig(true).fileTransferConfigurations(Collections.singletonList(fileTransferConfiguration))
-                        .build());
-
-        when(commonUtils.isTransportModeValid(anyString(), anyString(), any())).thenReturn(true);
+        when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
-
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
@@ -9528,15 +9490,23 @@ ShipmentServiceTest extends CommonMocks {
 
 
         // Mock
-        CarrierDetails carrierDetails = mockShipment.getCarrierDetails();
-        carrierDetails.setEta(LocalDateTime.now());
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(mockShipment.setCarrierDetails(carrierDetails).setConsolidationList(new ArrayList<>())
-                .setContainersList(new ArrayList<>())));
+        ShipmentDetails mockShipment2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+        mockShipment2.setId(shipmentDetails.getId());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(mockShipment2));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
 
-        ShipmentDetails mockShipment2 = mockShipment;
-        mockShipment2.getCarrierDetails().setEta(LocalDateTime.now());
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment2);
+        ShipmentDetails mockShipment3 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment3);
         when(jsonHelper.convertValueToList(any(), eq(RoutingsRequest.class))).thenReturn(List.of(new RoutingsRequest()));
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -9550,8 +9520,10 @@ ShipmentServiceTest extends CommonMocks {
             return mockRunnable;
         });
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
         QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(quartzJobInfo);
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(quartzJobInfo));
         mockShipmentSettings();
         mockTenantSettings();
@@ -9560,6 +9532,125 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void triggerAutomaticTransferTest() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, null, false);
+
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, false);
+
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, false);
+
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest4() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, false);
+
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest5() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, false);
+
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest6() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartnerList(List.of(12L)).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, true);
+
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
     }
 
 }

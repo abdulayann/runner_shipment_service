@@ -2786,6 +2786,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
+        if(optionalNetworkTransfer.isPresent() && optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED)
+            return false;
+
         return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
                 || (isValidReceivingBranchChange(shipmentDetails, oldEntity))
                 || (isValidDateChange(shipmentDetails, oldEntity));
@@ -2877,13 +2881,6 @@ public class ShipmentService implements IShipmentService {
                     || newCarrierDetails.getEtd() != null
                     || newCarrierDetails.getAta() != null
                     || newCarrierDetails.getAtd() != null;
-        }
-
-        if(shipmentDetails.getReceivingBranch()!=null && (oldEntity.getReceivingBranch()!=null && Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch()))){
-            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
-            if(oldOptionalNetworkTransfer.isPresent() && oldOptionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
-                return false;
-            }
         }
 
         CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();

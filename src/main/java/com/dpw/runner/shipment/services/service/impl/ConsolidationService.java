@@ -4265,6 +4265,12 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded) {
+        if(consolidationDetails.getReceivingBranch()!=null){
+            Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), SHIPMENT);
+            if(optionalNetworkTransfer.isPresent() && optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
+                return false;
+            }
+        }
         return (isValidforAutomaticTransfer(quartzJobInfo, consolidationDetails, oldEntity, isDocAdded))
                 || (isValidReceivingBranchChange(consolidationDetails, oldEntity))
                 || (isValidDateChange(consolidationDetails, oldEntity));
@@ -4355,14 +4361,6 @@ public class ConsolidationService implements IConsolidationService {
         // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
         if (isCarrierDetailsPopulated(newCarrierDetails, oldEntity)) {
             return true;
-        }
-
-
-        if(consolidationDetails.getReceivingBranch()!=null && (oldEntity.getReceivingBranch()!=null && Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch()))){
-            Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
-            if(oldOptionalNetworkTransfer.isPresent() && oldOptionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED){
-                return false;
-            }
         }
 
 
