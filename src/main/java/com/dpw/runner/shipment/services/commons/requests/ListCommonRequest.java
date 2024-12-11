@@ -19,7 +19,7 @@ public class ListCommonRequest implements IRunnerRequest{
     @Builder.Default
     private Integer pageSize = Integer.MAX_VALUE;
     private List<String> includeTbls;
-    @Pattern(regexp = "^$|.{3,}", message = "min size is 3 for containsText search criteria")
+    @Pattern(regexp = "^$|.{3,}", message = "Please enter at least 3 characters in the search field")
     private String containsText;
     private String entityId;
     private List<String> includeColumns;
