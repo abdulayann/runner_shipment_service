@@ -683,6 +683,11 @@ public class EventService implements IEventService {
                 .toList();
 
         commonUtils.updateEventWithMasterData(updatedEvents);
+        updatedEvents.forEach(updatedEvent -> {
+            if(ObjectUtils.isEmpty(updatedEvent.getDirection())) {
+                updatedEvent.setDirection(shipmentDetails.getDirection());
+            }
+        });
 
         log.info("Saving updated events to the database.");
         return eventDao.saveAll(updatedEvents);
