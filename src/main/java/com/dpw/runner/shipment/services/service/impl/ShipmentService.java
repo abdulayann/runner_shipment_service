@@ -2173,6 +2173,10 @@ public class ShipmentService implements IShipmentService {
                     throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, shipmentDetails.getTransportMode()));
             }
         }
+
+        if (Boolean.TRUE.equals(shipmentSettingsDetails.getEventsRevampEnabled())) {
+            shipmentDetails.setEventsList(oldEntity.getEventsList());
+        }
         CompletableFuture.allOf(carrierDetailsFuture).join();
         return syncConsole;
     }
