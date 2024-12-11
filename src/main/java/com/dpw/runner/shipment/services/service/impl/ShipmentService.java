@@ -2175,7 +2175,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getEventsRevampEnabled())) {
-            shipmentDetails.setEventsList(oldEntity.getEventsList());
+            shipmentDetails.setEventsList(Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>()));
         }
         CompletableFuture.allOf(carrierDetailsFuture).join();
         return syncConsole;
