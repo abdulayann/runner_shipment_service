@@ -113,6 +113,7 @@ import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
@@ -4214,44 +4215,51 @@ public class ConsolidationService implements IConsolidationService {
 
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
-        if (isInvalidForTransfer(consolidationDetails)) {
-            return;
-        }
+        try {
+            if (isInvalidForTransfer(consolidationDetails)) {
+                return;
+            }
 
-        Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
-                consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
+            Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), CONSOLIDATION);
+            if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
+                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
+                return;
 
-        QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                    consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
 
-        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
-        if(carrierDetails!=null && (ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
-                ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd()))){
-            String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-            SendConsoleValidationResponse sendConsoleValidationResponse = SendConsoleValidationResponse.builder().isError(true).consoleErrorMessage(errorMessage).build();
-            commonErrorLogsDao.logConsoleAutomaticTransferErrors(sendConsoleValidationResponse, consolidationDetails.getId(), new ArrayList<>());
-            return;
-        }
+            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
 
-        if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
-            createOrUpdateQuartzJob(consolidationDetails, null);
-        } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, consolidationDetails, isDocOrHawbNumAdded)) {
-            createOrUpdateQuartzJob(consolidationDetails, quartzJobInfo);
+            CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+            if (carrierDetails==null || (ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                    ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd()))) {
+                if(quartzJobInfo!=null && quartzJobInfo.getJobStatus() == JobState.QUEUED)
+                    quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
+                String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
+                SendConsoleValidationResponse sendConsoleValidationResponse = SendConsoleValidationResponse.builder().isError(true).consoleErrorMessage(errorMessage).build();
+                commonErrorLogsDao.logConsoleAutomaticTransferErrors(sendConsoleValidationResponse, consolidationDetails.getId(), new ArrayList<>());
+                return;
+            }
+
+            if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity == null) {
+                createOrUpdateQuartzJob(consolidationDetails, null);
+            } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, consolidationDetails, isDocOrHawbNumAdded, optionalNetworkTransfer)) {
+                createOrUpdateQuartzJob(consolidationDetails, quartzJobInfo);
+            }
+        } catch (Exception e) {
+            log.error("Exception during creation or updation of Automatic transfer flow for consolidation Id: {} with exception: {}", consolidationDetails.getId(), e.getMessage());
         }
     }
 
     private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) &&
-                (ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
-                && (consolidationDetails.getTransportMode()!=null &&
-                !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))) ;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) ||
+                ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
+                || (consolidationDetails.getTransportMode()!=null &&
+                Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) ;
     }
 
-    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded) {
-            Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), SHIPMENT);
-            if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
-                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
-                return false;
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded, Optional<NetworkTransfer> optionalNetworkTransfer) {
 
         return (isValidforAutomaticTransfer(quartzJobInfo, consolidationDetails, oldEntity, isDocAdded))
                 || (isValidReceivingBranchChange(consolidationDetails, oldEntity, optionalNetworkTransfer));
@@ -4270,8 +4278,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isValidReceivingBranchChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
-        if (optionalNetworkTransfer.isEmpty())
-            return true;
+
         if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
             return false;
         }
@@ -4286,7 +4293,7 @@ public class ConsolidationService implements IConsolidationService {
 
         return oldOptionalNetworkTransfer
                 .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
-                .orElse(false);
+                .orElse(false) || optionalNetworkTransfer.isEmpty();
     }
 
     private void createOrUpdateQuartzJob(ConsolidationDetails consolidationDetails, QuartzJobInfo existingJob) {
@@ -4313,6 +4320,8 @@ public class ConsolidationService implements IConsolidationService {
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
         }
+        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
     }
 
     private QuartzJobInfo createNewQuartzJob(ConsolidationDetails consolidationDetails) {
@@ -4335,9 +4344,6 @@ public class ConsolidationService implements IConsolidationService {
             return true;
 
         CarrierDetails newCarrierDetails = consolidationDetails.getCarrierDetails();
-        if (newCarrierDetails == null) {
-            return false; // No new details to compare.
-        }
 
         // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
         if (oldEntity == null || oldEntity.getCarrierDetails() == null) {

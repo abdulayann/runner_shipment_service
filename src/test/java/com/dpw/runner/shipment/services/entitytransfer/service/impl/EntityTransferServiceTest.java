@@ -623,6 +623,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
@@ -653,7 +654,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetails.setTriangulationPartner(null);
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
     }
@@ -679,7 +680,7 @@ class EntityTransferServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         TenantModel tenantModel = new TenantModel();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(hblDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of());
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -697,7 +698,7 @@ class EntityTransferServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         TenantModel tenantModel = new TenantModel();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(hblDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of(new Hbl()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -727,6 +728,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(masterDataFactory.getMasterDataService().retrieveTenant()).thenReturn(dependentServiceResponse);
         when(modelMapper.map(dependentServiceResponse.getData(), TenantModel.class)).thenReturn(tenantModel);
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
@@ -745,7 +747,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.getCarrierDetails().setShippingLine("Air India");
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
     }
@@ -765,7 +767,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(awbDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of(new Awb()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -789,7 +791,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(awbDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of());
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -813,6 +815,7 @@ class EntityTransferServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
+        mockShipmentSettings();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
 
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
@@ -839,7 +842,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         when(awbDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of());
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -857,7 +860,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         when(hblDao.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(new Hbl()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -895,7 +898,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.setTriangulationPartner(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
     }
@@ -906,7 +909,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.setHouseBill("QWERT324");
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         when(hblDao.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of());
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
@@ -924,7 +927,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         when(awbDao.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(new Awb()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -945,7 +948,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails.setMasterBill(null);
         ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
     }
@@ -962,7 +965,7 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantModel tenantModel = new TenantModel();
         tenantModel.IATAAgent = true;
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(tenantModel).build();
-
+        mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         when(awbDao.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of());
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);

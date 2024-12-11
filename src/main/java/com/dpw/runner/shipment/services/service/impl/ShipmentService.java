@@ -2,27 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -2647,57 +2627,68 @@ public class ShipmentService implements IShipmentService {
     private void triggerConsoleTransfer(ShipmentDetails shipmentDetails){
         if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
             for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
-                if(consolidationDetails!=null && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
-                        ObjectUtils.notEqual(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT)
-                        && ObjectUtils.notEqual(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD))
+                Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                        consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
+
+                QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+                if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR
+                        && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
+                        !Objects.equals(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT) &&
+                        !Objects.equals(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD))
                     consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
             }
         }
     }
 
     public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
-        Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
-                shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
+        try{
+            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                    shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
 
-        QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
 
-        if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
-            CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
-            if(carrierDetails!=null && (ObjectUtils.isEmpty(carrierDetails.getEta()) &&
-                    ObjectUtils.isEmpty(carrierDetails.getEtd()) && ObjectUtils.isEmpty(carrierDetails.getAta()) &&
-                    ObjectUtils.isEmpty(carrierDetails.getAtd()))){
-                String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-                SendShipmentValidationResponse sendShipmentValidationResponse = SendShipmentValidationResponse.builder().isError(true).shipmentErrorMessage(errorMessage).build();
-                commonErrorLogsDao.logShipmentAutomaticTransferErrors(sendShipmentValidationResponse, shipmentDetails.getId());
-                return;
+            if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
+
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                        Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
+                if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
+                        optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
+                    return;
+
+                CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+
+                if(carrierDetails==null || (ObjectUtils.isEmpty(carrierDetails.getEta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getEtd()) && ObjectUtils.isEmpty(carrierDetails.getAta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getAtd()))){
+                    if(quartzJobInfo!=null && quartzJobInfo.getJobStatus() == JobState.QUEUED)
+                        quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
+                    String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
+                    SendShipmentValidationResponse sendShipmentValidationResponse = SendShipmentValidationResponse.builder().isError(true).shipmentErrorMessage(errorMessage).build();
+                    commonErrorLogsDao.logShipmentAutomaticTransferErrors(sendShipmentValidationResponse, shipmentDetails.getId());
+                    return;
+                }
+
+                if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
+                    createOrUpdateQuartzJob(shipmentDetails, null);
+                } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded, optionalNetworkTransfer)) {
+                    createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
+                }
             }
-
-            if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
-                createOrUpdateQuartzJob(shipmentDetails, null);
-            } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
-                createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
+            if (hasHouseBillChange(shipmentDetails, oldEntity)) {
+                triggerConsoleTransfer(shipmentDetails);
             }
-        } else if (quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR &&
-                hasHouseBillChange(shipmentDetails, oldEntity)) {
-            triggerConsoleTransfer(shipmentDetails);
+        } catch (Exception e) {
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
         }
     }
 
-    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
-        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
-        if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
-                optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
-            return false;
-
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded, Optional<NetworkTransfer> optionalNetworkTransfer) {
         return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
                 || (isValidReceivingBranchChange(shipmentDetails, oldEntity, optionalNetworkTransfer));
     }
 
     private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
         CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
-        if (carrierDetails == null) {
-            return;
-        }
 
         LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
                 carrierDetails.getEta(), carrierDetails.getEtd(),
@@ -2717,6 +2708,7 @@ public class ShipmentService implements IShipmentService {
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
         }
+        commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
     }
 
     private QuartzJobInfo createNewQuartzJob(ShipmentDetails shipmentDetails) {
@@ -2729,9 +2721,6 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
-        if (optionalNetworkTransfer.isEmpty())
-            return true;
-
         if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
             return false;
         }
@@ -2746,7 +2735,7 @@ public class ShipmentService implements IShipmentService {
 
         return oldOptionalNetworkTransfer
                 .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
-                .orElse(false);
+                .orElse(false) || optionalNetworkTransfer.isEmpty();
     }
 
     private boolean isValidDateChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
@@ -2772,9 +2761,6 @@ public class ShipmentService implements IShipmentService {
             return true;
 
         CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
-        if (newCarrierDetails == null) {
-            return false; // No new details to compare.
-        }
 
         // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
         if (oldEntity == null || oldEntity.getCarrierDetails()==null) {

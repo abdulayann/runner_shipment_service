@@ -1179,7 +1179,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> errorShipments = new ArrayList<>();
         List<Long> errorShipIds = new ArrayList<>();
         if(Strings.isNullOrEmpty(consolidationDetails.getCarrierDetails().getFlightNumber()))
-            missingField.add("FlightNumber");
+            missingField.add("Flight Number");
         if (consolidationDetails.getCarrierDetails().getEta() == null)
             missingField.add("Eta");
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
@@ -1312,9 +1312,9 @@ public class EntityTransferService implements IEntityTransferService {
     private SendConsoleValidationResponse networkTransferValidationsForOtherTransportConsolidation (ConsolidationDetails consolidationDetails) {
         List<String> missingField = new ArrayList<>();
         if (consolidationDetails.getCarrierDetails().getEta() == null)
-            missingField.add("eta");
+            missingField.add("Eta");
         if (consolidationDetails.getCarrierDetails().getEtd() == null)
-            missingField.add("etd");
+            missingField.add("Etd");
         if(Strings.isNullOrEmpty(consolidationDetails.getSendingAgent().getOrgCode()))
             missingField.add("Origin agent");
         if(Strings.isNullOrEmpty(consolidationDetails.getReceivingAgent().getOrgCode()))

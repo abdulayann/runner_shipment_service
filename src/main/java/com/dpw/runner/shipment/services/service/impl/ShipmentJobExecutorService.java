@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.api.quartz.service.QuartzJobExecutorService;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
@@ -22,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -210,6 +208,8 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                         quartzJobInfo.setErrorMessage("");
                         commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidation.get().getId(), shipmentIds);
                     }
+                }
+                else{
                     quartzJobInfo.setJobStatus(JobState.ERROR);
                     quartzJobInfo.setErrorMessage("Automatic file transfer has failed. " + response.getConsoleErrorMessage());
                     commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
