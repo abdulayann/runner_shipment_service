@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.criteria.*;
+import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -286,9 +289,9 @@ public class DbAccessHelper {
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
                     if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.greaterThan(path.get(fieldName), (LocalDateTime)input.getValue());
+                        return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue()));
                     }
-                    return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD));
+                    return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD)));
                 }
                 return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
 
@@ -301,9 +304,9 @@ public class DbAccessHelper {
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
                     if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.lessThan(path.get(fieldName), (LocalDateTime)input.getValue());
+                        return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue()));
                     }
-                    return criteriaBuilder.lessThan(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD));
+                    return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD)));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
             case ">=":
@@ -315,9 +318,9 @@ public class DbAccessHelper {
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
                     if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (LocalDateTime)input.getValue());
+                        return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue()));
                     }
-                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD));
+                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD)));
                 }
                 return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
 
@@ -330,9 +333,9 @@ public class DbAccessHelper {
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
                     if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (LocalDateTime) input.getValue());
+                        return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue()));
                     }
-                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD));
+                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD)));
                 }
                 return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
 
@@ -400,6 +403,22 @@ public class DbAccessHelper {
             default:
                 throw new RuntimeException("Operation not supported yet");
         }
+    }
+
+    private static LocalDateTime convertFromTenantTimeZone(Path path, String fieldName, LocalDateTime localDateTime) {
+        LocalDateTime res = localDateTime;
+        try {
+            Class<?> clazz = path.getModel().getBindableJavaType();
+            Field field = clazz.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            if(!field.isAnnotationPresent(ExcludeTimeZone.class)) {
+                res = LocalTimeZoneHelper.getDateTimeFromUserTimeZone(localDateTime);
+            }
+        }
+        catch (Exception e) {
+            // do nothing return back the original datetime
+        }
+        return res;
     }
 
     private static <T> Specification<T> getSpecificationFromFiltersWithoutMapping(List<FilterCriteria> filter, SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap) {

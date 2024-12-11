@@ -24,6 +24,16 @@ public class LocalTimeZoneHelper {
         return DateUtils.convertDateToUserTimeZone(value, timeZone, tenantTimeZone, enableTimeZoneFlag);
     }
 
+    public static LocalDateTime getDateTimeFromUserTimeZone(LocalDateTime value) {
+        String timeZone = MDC.get("x-browser-time-zone");
+        if(timeZone == null)
+            timeZone = "UTC";
+        UsersDto userDetails = UserContext.getUser();
+        Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
+        String tenantTimeZone = userDetails.getTimeZoneId();
+        return DateUtils.convertDateFromUserTimeZone(value, timeZone, tenantTimeZone, enableTimeZoneFlag);
+    }
+
     public static void transformTimeZone(Object obj) throws IllegalAccessException {
         if(obj == null)
             return;
