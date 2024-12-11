@@ -11,6 +11,9 @@ import com.dpw.runner.shipment.services.repository.interfaces.ICommonErrorLogsRe
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -37,6 +40,15 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     @Override
     public Optional<CommonErrorLogs> findById(Long id) {
         return commonErrorLogsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<CommonErrorLogs> findByGuid(UUID guid) {
+        return commonErrorLogsRepository.findByGuid(guid);
+    }
+    @Override
+    public Page<CommonErrorLogs> findAll(Specification<CommonErrorLogs> spec, Pageable pageable) {
+        return commonErrorLogsRepository.findAll(spec, pageable);
     }
 
     @Override

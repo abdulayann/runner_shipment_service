@@ -593,6 +593,7 @@ public class Constants {
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
+    public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
     public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
     public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
