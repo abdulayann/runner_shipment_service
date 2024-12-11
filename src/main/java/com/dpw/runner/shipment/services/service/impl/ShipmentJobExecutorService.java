@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerEntityFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -36,6 +37,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -107,7 +109,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
                     .shipId(quartzJobInfo.getEntityId())
                     .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
-                    .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.Shipments))  // Document service logic
+                    .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.Shipments))
                     .isAutomaticTransfer(Boolean.TRUE)
                     .build();
             ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
@@ -152,6 +154,34 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         return Collections.emptyList();
     }
 
+    private void fetchConsoleAndShipmentDocs(ConsolidationDetails consolidationDetails, SendConsolidationRequest sendConsolidationRequest) {
+        DocumentManagerMultipleEntityFileRequest multipleEntityFileRequest = new DocumentManagerMultipleEntityFileRequest();
+        DocumentManagerEntityFileRequest documentManagerEntityFileRequest = DocumentManagerEntityFileRequest.builder()
+                .entityKey(consolidationDetails.getGuid().toString())
+                .entityType(Constants.Consolidations)
+                .tenantId((long) consolidationDetails.getTenantId())
+                .build();
+        List<DocumentManagerEntityFileRequest> docListRequest = new ArrayList<>(Collections.singletonList(documentManagerEntityFileRequest));
+        consolidationDetails.getShipmentsList().forEach(ship -> {
+            DocumentManagerEntityFileRequest documentShipRequest = DocumentManagerEntityFileRequest.builder()
+                    .entityKey(ship.getGuid().toString())
+                    .entityType(Constants.Shipments)
+                    .tenantId((long) ship.getTenantId())
+                    .build();
+            docListRequest.add(documentShipRequest);
+        });
+        multipleEntityFileRequest.setEntities(docListRequest);
+        var response = documentManagerRestClient.multipleEntityFilesWithTenant(multipleEntityFileRequest);
+        if(!CommonUtils.listIsNullOrEmpty(response.getData())) {
+            sendConsolidationRequest.setAdditionalDocs(response.getData().stream()
+                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Consolidations)).map(DocumentManagerEntityFileResponse::getGuid).toList());
+            Map<String, List<String>> shipDocs = response.getData().stream()
+                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Shipments))
+                    .collect(Collectors.groupingBy(DocumentManagerEntityFileResponse::getEntityId, Collectors.mapping(DocumentManagerEntityFileResponse::getGuid, Collectors.toList())));
+            sendConsolidationRequest.setShipAdditionalDocs(shipDocs);
+        }
+    }
+
     public void processSendConsolidation(QuartzJobInfo quartzJobInfo) {
         var consolidation = consolidationDao.findById(quartzJobInfo.getEntityId());
         if(consolidation.isPresent()) {
@@ -164,10 +194,9 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
                     .consolId(quartzJobInfo.getEntityId())
                     .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
-                    .additionalDocs(fetchDocs(consolidation.get().getGuid(), consolidation.get().getTenantId(), Constants.Consolidations)) // Document Service logic
                     .isAutomaticTransfer(Boolean.TRUE)
                     .build();
-
+            fetchConsoleAndShipmentDocs(consolidation.get(), sendConsolidationRequest);
             ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
             try {
                 List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
