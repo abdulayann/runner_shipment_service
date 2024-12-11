@@ -76,4 +76,13 @@ class QuartzJobInfoDaoTest {
         assertEquals(List.of(quartzJobInfo), quartzJobInfoList);
     }
 
+    @Test
+    void testFindByIdQuery(){
+        Long quartzId = 21L;
+        when(quartzJobInfoRepository.findByIdQuery(quartzId)).thenReturn(Optional.of(quartzJobInfo));
+        Optional<QuartzJobInfo> quartzJobInfo1 = quartzJobInfoDao.findByIdQuery(quartzId);
+        verify(quartzJobInfoRepository, times(1)).findByIdQuery(quartzId);
+        assert(Objects.equals(quartzId, quartzJobInfo1.get().getId()));
+    }
+
 }

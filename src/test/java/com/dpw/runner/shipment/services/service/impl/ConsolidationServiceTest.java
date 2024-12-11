@@ -5724,10 +5724,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
 
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newJob = new QuartzJobInfo();
+        newJob.setId(1L);
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
-        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(new QuartzJobInfo());
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(newJob);
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
@@ -5785,6 +5788,34 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
+    void triggerAutomaticTransfer_oldCarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(CarrierDetails.builder().atd(LocalDateTime.now()).build());
+        consolidationDetails.setCarrierDetails(null);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+    }
+
+
+    @Test
     void triggerAutomaticTransfer_isAirNonStandardCase() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
                 .isAutomaticTransferEnabled(true)
@@ -5819,7 +5850,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consolidationDetails1.setReceivingBranch(100L);
         consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
         consolidationDetails.setReceivingAgent(new Parties());
-        consolidationDetails.setSendingAgent(new Parties());
+        consolidationDetails.setSendingAgent(consolidationDetails1.getSendingAgent());
 
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
 
