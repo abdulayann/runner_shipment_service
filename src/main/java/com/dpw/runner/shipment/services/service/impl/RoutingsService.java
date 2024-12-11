@@ -92,8 +92,14 @@ public class RoutingsService implements IRoutingsService {
                 throw new RoutingException(e.getMessage(), e);
             }
         }, executorService);
-        CompletableFuture<Map<String, List<Routings>>> polToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, true, RequestAuthContext.getAuthToken()), executorService);
-        CompletableFuture<Map<String, List<Routings>>> podToRoutingMapFuture = CompletableFuture.supplyAsync(() -> createRoutingMap(routings, false, RequestAuthContext.getAuthToken()), executorService);
+        Map<String, List<Routings>> polToRoutingMap = new HashMap<>();
+        Map<String, List<Routings>> podToRoutingMap = new HashMap<>();
+        CompletableFuture<Void> polToRoutingMapFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> createRoutingMap(routings, true, polToRoutingMap)),
+            executorService);
+        CompletableFuture<Void> podToRoutingMapFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> createRoutingMap(routings, false, podToRoutingMap)),
+            executorService);
         CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
         TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
         if (trackingServiceApiResponse == null) {
@@ -103,9 +109,6 @@ public class RoutingsService implements IRoutingsService {
         log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
 
         // Create routing maps for POL and POD
-
-        Map<String, List<Routings>> polToRoutingMap = polToRoutingMapFuture.get();
-        Map<String, List<Routings>> podToRoutingMap = podToRoutingMapFuture.get();
 
         log.info("Routing maps created for shipment ID: {}. POL size: {}, POD size: {}",
                 shipmentId, polToRoutingMap.size(), podToRoutingMap.size());
@@ -173,11 +176,8 @@ public class RoutingsService implements IRoutingsService {
                 new ArrayList<>(routingsResponses), 0, routingsResponses.size());
     }
 
-    private Map<String, List<Routings>> createRoutingMap(List<Routings> routings, boolean isPol,
-        String authToken) {
-        Map<String, List<Routings>> routingMap = new HashMap<>();
-        try {
-            RequestAuthContext.setAuthToken(authToken);
+    private void createRoutingMap(List<Routings> routings, boolean isPol,
+        Map<String, List<Routings>> routingMap) {
             log.info("Starting to create routing map. Total routings: {}", routings.size());
             log.info("Grouping by {} location code.", isPol ? "Pol" : "Pod");
 
@@ -226,10 +226,6 @@ public class RoutingsService implements IRoutingsService {
 
             log.info("Finished creating routing map. Total groups created: {}. Routing map: {}",
                 routingMap.size(), routingMap);
-        } finally {
-            RequestAuthContext.removeToken();
-        }
-        return routingMap;
     }
 
     private String getLocationKey(String pol, String pod, Map<String, UnlocationsResponse> locationData, boolean isPol) {
