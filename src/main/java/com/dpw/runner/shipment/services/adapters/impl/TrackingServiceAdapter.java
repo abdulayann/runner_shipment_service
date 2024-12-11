@@ -727,7 +727,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
                 trackingEvents.addAll(eventsRows.stream().toList());
             }
-            commonUtils.updateEventWithMasterData(trackingEvents);
         } finally {
             customThreadPool.shutdown();
         }
