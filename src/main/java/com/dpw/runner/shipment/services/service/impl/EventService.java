@@ -682,11 +682,12 @@ public class EventService implements IEventService {
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId()))
                 .toList();
 
-        setEventCodesMasterData(
-                updatedEvents,
-                Events::getEventCode,
-                Events::setDescription
-        );
+        commonUtils.updateEventWithMasterData(updatedEvents);
+        updatedEvents.forEach(updatedEvent -> {
+            if(ObjectUtils.isEmpty(updatedEvent.getDirection())) {
+                updatedEvent.setDirection(shipmentDetails.getDirection());
+            }
+        });
 
         log.info("Saving updated events to the database.");
         return eventDao.saveAll(updatedEvents);
@@ -1066,6 +1067,7 @@ public class EventService implements IEventService {
     @Transactional
     public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
         try {
+            v1Service.setAuthContext();
             InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
             AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
             List<BillDto> billDtoList = accountReceivableDto.getBills();
@@ -1163,8 +1165,6 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
-                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
