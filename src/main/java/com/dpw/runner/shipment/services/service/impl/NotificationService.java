@@ -327,6 +327,7 @@ public class NotificationService implements INotificationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NotificationConstants.REASSIGN_BRANCH_ERROR;
             log.error(responseMsg, e);
+            throw new RuntimeException(responseMsg);
         }
     }
 
