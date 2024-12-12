@@ -944,7 +944,7 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), LocalDateTime.now());
+        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 
@@ -2970,9 +2970,9 @@ public class ShipmentService implements IShipmentService {
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
                         events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW,
-                                shipmentDetails.getShipmentGateInDate(), LocalDateTime.now()));
+                                shipmentDetails.getShipmentGateInDate(), null));
                     } else if (shipmentDetails.getDateType() == ESTIMATED) {
-                        events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, LocalDateTime.now(),
+                        events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, null,
                                 shipmentDetails.getShipmentGateInDate()));
                     }
                 }
@@ -5789,7 +5789,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), LocalDateTime.now());
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), null);
 
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
@@ -7756,7 +7756,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
-            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), LocalDateTime.now());
+            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {
