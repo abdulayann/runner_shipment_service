@@ -242,12 +242,29 @@ public class DpsEventService implements IDpsEventService {
                     .status(dpsEvent.getStatus())
                     .text(dpsEvent.getText())
                     .matchingCondition(dpsEvent.getMatchingCondition())
-                    .implicationList(dpsEvent.getImplicationList() != null ? new ArrayList<>(dpsEvent.getImplicationList()) : new ArrayList<>())
-                    .conditionMessageList(dpsEvent.getConditionMessageList() != null ? new ArrayList<>(dpsEvent.getConditionMessageList()) : new ArrayList<>())
+                    .implicationList(
+                            ObjectUtils.isNotEmpty(dpsEvent.getImplicationList()) ?
+                                    new ArrayList<>(dpsEvent.getImplicationList()) :
+                                    new ArrayList<>())
+                    .conditionMessageList(
+                            ObjectUtils.isNotEmpty(dpsEvent.getConditionMessageList()) ?
+                                    new ArrayList<>(dpsEvent.getConditionMessageList()) :
+                                    new ArrayList<>())
+                    .ruleMatchedFieldList(
+                            ObjectUtils.isNotEmpty(dpsEvent.getRuleMatchedFieldList()) ?
+                                    new ArrayList<>(dpsEvent.getRuleMatchedFieldList()) :
+                                    new ArrayList<>())
                     .dpsFieldData(dpsFieldDataResponseList)
-                    .usernameList(dpsEvent.getUsernameList() != null ? new ArrayList<>(dpsEvent.getUsernameList()) : new ArrayList<>())
+                    .usernameList(
+                            ObjectUtils.isNotEmpty(dpsEvent.getUsernameList()) ?
+                            new ArrayList<>(dpsEvent.getUsernameList()) :
+                            new ArrayList<>())
                     .eventTimestamp(dpsEvent.getEventTimestamp())
-                    .tasks(dpsEvent.getTasks() != null ? new ArrayList<>(dpsEvent.getTasks()) : new ArrayList<>()).build();
+                    .tasks(
+                            ObjectUtils.isNotEmpty(dpsEvent.getTasks()) ?
+                            new ArrayList<>(dpsEvent.getTasks()) :
+                                    new ArrayList<>())
+                    .build();
         } catch (Exception e) {
             throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
         }
