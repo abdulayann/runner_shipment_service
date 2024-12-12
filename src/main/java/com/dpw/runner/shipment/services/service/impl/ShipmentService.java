@@ -2119,8 +2119,7 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
             shipmentDetails.setReceivingBranch(null);
         if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartnerList())
-                && shipmentDetails.getTriangulationPartnerList().size() == 1
-                && Long.valueOf(0).equals(shipmentDetails.getTriangulationPartnerList().get(0))) {
+                && shipmentDetails.getTriangulationPartnerList().size() == 1) {
             TriangulationPartner triangulationPartner = shipmentDetails.getTriangulationPartnerList().get(0);
             if (triangulationPartner != null
                     && Long.valueOf(0).equals(triangulationPartner.getTriangulationPartner())) {
