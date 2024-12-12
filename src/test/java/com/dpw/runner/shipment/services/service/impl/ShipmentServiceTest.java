@@ -8981,7 +8981,7 @@ ShipmentServiceTest extends CommonMocks {
         // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(ShipmentStatus.Cancelled.getValue(), shipment.getStatus());
-        verify(shipmentDao).save(shipment, false);
+        verify(shipmentDao).update(shipment, false);
         verify(shipmentSync).sync(any(), any(), any(), any(), anyBoolean());
         verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(anyLong());
     }
