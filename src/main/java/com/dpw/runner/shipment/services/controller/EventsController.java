@@ -156,6 +156,7 @@ public class EventsController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping("/push-tracking-events")
+    @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(@RequestBody @Valid TrackingServiceApiResponse.Container request) {
         String responseMsg;
         try {
