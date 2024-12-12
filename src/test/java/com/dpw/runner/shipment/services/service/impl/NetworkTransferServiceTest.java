@@ -120,6 +120,14 @@ class NetworkTransferServiceTest {
     }
 
     @Test
+    void requestForTransfer_Already_REQUESTED_TO_TRANSFER() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REQUESTED_TO_TRANSFER).build()));
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForTransfer(request));
+    }
+
+    @Test
     void requestForReassign() {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
@@ -134,6 +142,14 @@ class NetworkTransferServiceTest {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void requestForReassign_Already_REASSIGNED() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
     }
 
