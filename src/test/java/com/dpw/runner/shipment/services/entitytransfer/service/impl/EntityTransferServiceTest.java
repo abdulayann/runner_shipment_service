@@ -629,6 +629,21 @@ class EntityTransferServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendConsolidationValidation_Success_NetworkTransfer() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        ValidationResponse response = ValidationResponse.builder().success(true).build();
+
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(hblDao.findByShipmentId(consolidationDetails.getShipmentsList().get(0).getId())).thenReturn(List.of(new Hbl()));
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidationValidation(CommonRequestModel.buildRequest(request));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
+    }
+
+    @Test
     void testSendConsolidationValidation_Failure_DataRetrievalException() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
@@ -656,6 +671,184 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+    }
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldsException() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setBol(null);
+        consolidationDetails.getCarrierDetails().setVoyage(null);
+        consolidationDetails.getCarrierDetails().setVessel(null);
+        consolidationDetails.getCarrierDetails().setEta(null);
+        consolidationDetails.getCarrierDetails().setEtd(null);
+        consolidationDetails.getCarrierDetails().setShippingLine(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartnerList(null);
+        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please enter the MBL, Eta, Etd, Shipping line, Vessel, Voyage, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldsException1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setBol("23459876");
+        consolidationDetails.getCarrierDetails().setVoyage("34432");
+        consolidationDetails.getCarrierDetails().setVessel("ABC");
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setShippingLine("QWERTY");
+        consolidationDetails.setReceivingBranch(2L);
+        consolidationDetails.setSendingAgent(Parties.builder().orgCode("ORG").build());
+        consolidationDetails.setReceivingAgent(Parties.builder().orgCode("ORG").build());
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldsException2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.getCarrierDetails().setFlightNumber(null);
+        consolidationDetails.getCarrierDetails().setEta(null);
+        consolidationDetails.getCarrierDetails().setEtd(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section and print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldsException_AIR() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.getCarrierDetails().setFlightNumber("123");
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        consolidationDetails.setReceivingBranch(3L);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferShipmentException_AIR2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.getCarrierDetails().setFlightNumber("123");
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        consolidationDetails.setReceivingBranch(3L);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(awbDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>(List.of(new Awb())));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+    @Test
+    void testSendConsolidationValidation_Success_NetworkTransfer_AIR() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails.getCarrierDetails().setFlightNumber("123");
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        consolidationDetails.setReceivingBranch(3L);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        when(awbDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>(List.of(new Awb())));
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(new ArrayList<>(List.of(new Awb())));
+        var response = entityTransferService.sendConsolidationValidation(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldsException3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.getShipmentsList().get(0).setJobType(Constants.CONSOLIDATION_TYPE_AGT);
+        consolidationDetails.getShipmentsList().get(0).setHouseBill(null);
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.CONSOLIDATION_TYPE_AGT);
+        consolidationDetails.setBol(null);
+        consolidationDetails.getCarrierDetails().setFlightNumber(null);
+        consolidationDetails.getCarrierDetails().setEta(null);
+        consolidationDetails.getCarrierDetails().setEtd(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section, MAWB Number for the consolidation and enter the HAWB number for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Success_NetworkTransfer_ROA() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        consolidationDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        consolidationDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        consolidationDetails.setReceivingBranch(3L);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        var response = entityTransferService.sendConsolidationValidation(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendConsolidationValidation_Failure_NetworkTransferConsoleFieldError_ROA() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        consolidationDetails.getCarrierDetails().setEta(null);
+        consolidationDetails.getCarrierDetails().setEtd(null);
+        consolidationDetails.setSendingAgent(null);
+        consolidationDetails.setReceivingAgent(null);
+        consolidationDetails.setReceivingBranch(null);
+        consolidationDetails.setTriangulationPartner(null);
+        consolidationDetails.setTriangulationPartnerList(null);
+        ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(consolidationDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
+        assertEquals("Please enter the Eta, Etd, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation", exception.getMessage());
     }
 
     @Test
@@ -901,6 +1094,88 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
         assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
     }
+
+    @Test
+    void testSendShipmentValidation_Failure_NetworkTransferShipmentFieldsException() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+        shipmentDetails.getCarrierDetails().setEta(null);
+        shipmentDetails.getCarrierDetails().setEtd(null);
+        shipmentDetails.setReceivingBranch(null);
+        shipmentDetails.setTriangulationPartnerList(null);
+        shipmentDetails.setTriangulationPartner(null);
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
+        assertEquals("Please enter the Flight number,Eta,Etd,one of the branches in the entity transfer details section and print original MAWB to retrigger the transfer.", exception.getMessage());
+    }
+    @Test
+    void testSendShipmentValidation_Failure_NetworkTransferShipmentFieldsException1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+        shipmentDetails.getCarrierDetails().setEta(null);
+        shipmentDetails.getCarrierDetails().setEtd(null);
+        shipmentDetails.setReceivingBranch(null);
+        shipmentDetails.setTriangulationPartnerList(null);
+        shipmentDetails.setTriangulationPartner(null);
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
+        assertEquals("Entity Transfer not allowed for this shipment.", exception.getMessage());
+    }
+
+    @Test
+    void testSendShipmentValidation_Failure_NetworkTransferShipmentFieldsException2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+        shipmentDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        shipmentDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        shipmentDetails.getCarrierDetails().setFlightNumber("123");
+        shipmentDetails.setReceivingBranch(23L);
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
+        Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
+        assertEquals("Please print original MAWB to retrigger the transfer.", exception.getMessage());
+    }
+    @Test
+    void testSendShipmentValidation_Success_NetworkTransferShipmentFieldsException3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getCompleteShipment();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setHouseBill(null);
+        shipmentDetails.setMasterBill(null);
+        shipmentDetails.getCarrierDetails().setEta(LocalDateTime.now());
+        shipmentDetails.getCarrierDetails().setEtd(LocalDateTime.now());
+        shipmentDetails.getCarrierDetails().setFlightNumber("123");
+        shipmentDetails.setReceivingBranch(23L);
+        ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(shipmentDetails.getId()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        mockShipmentSettings();
+        when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails));
+        when(awbDao.findByShipmentId(shipmentDetails.getId())).thenReturn(new ArrayList<>(List.of(new Awb())));
+        var response = entityTransferService.sendShipmentValidation(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
 
     @Test
     void testSendShipmentValidation_Failure_HblError() {
