@@ -1,6 +1,12 @@
 package com.dpw.runner.shipment.services.filters;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
@@ -13,6 +19,18 @@ import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.interfaces.IUserService;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +44,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.filter.OncePerRequestFilter;
-
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
 //@Order(1)
@@ -63,6 +71,7 @@ public class AuthFilter extends OncePerRequestFilter {
             "/swagger-ui.html",
             "/webjars/**",
             "/api/v2/enums/**",
+            "/api/v2/events/push-tracking-events",
             "/api/v2/cache/**"};
 
     @Override
