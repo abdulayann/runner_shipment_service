@@ -599,6 +599,9 @@ public class Constants {
     public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
     public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
+    public static final String HOUR = "hour";
+    public static final String MINUTE = "minute";
+    public static final String SECOND = "second";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
     private Constants() {
