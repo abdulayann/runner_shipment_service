@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
+import javax.validation.Valid;
 import org.springframework.http.ResponseEntity;
 
 public interface IEventService extends ICommonService {
@@ -18,4 +19,5 @@ public interface IEventService extends ICommonService {
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
     boolean processUpstreamTrackingMessage(Container container, String messageId);
     ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> pushTrackingEvents(@Valid Container request);
 }
