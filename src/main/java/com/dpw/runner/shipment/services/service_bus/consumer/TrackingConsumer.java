@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.service_bus.consumer;
 
-import com.azure.messaging.servicebus.*;
+import com.azure.messaging.servicebus.ServiceBusErrorContext;
+import com.azure.messaging.servicebus.ServiceBusException;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
@@ -9,11 +13,9 @@ import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,16 +63,18 @@ public class TrackingConsumer {
     @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
+        String messageId = receivedMessage.getMessageId();
+
+        log.info("Tracking Consumer - Started processing message with id : {}", messageId);
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
-        log.info("Tracking Consumer - container payload {}", jsonHelper.convertToJson(container));
+        log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         v1Service.setAuthContext();
-        boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
+        boolean processSuccess = eventService.processUpstreamTrackingMessage(container, messageId);
 
         if(processSuccess) {
             context.complete();
-            log.info("Tracking Consumer - Finished processing message with id : {}", receivedMessage.getMessageId());
+            log.info("Tracking Consumer - Finished processing message with id : {}", messageId);
         }
         v1Service.clearAuthContext();
     }
