@@ -90,6 +90,7 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events save(Events events) {
+        updateUserFieldsInEvent(events);
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
