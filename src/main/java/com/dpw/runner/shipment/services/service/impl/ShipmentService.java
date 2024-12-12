@@ -3079,6 +3079,8 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
             ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
+            if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)
+                shipmentRequest.setShipmentStatus(ShipmentStatus.values()[shipmentDetails.getStatus()].toString());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
             kafkaResponse.setTransactionId(UUID.randomUUID().toString());
             log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
