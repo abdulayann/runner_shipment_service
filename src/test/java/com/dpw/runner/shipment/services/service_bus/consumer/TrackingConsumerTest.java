@@ -82,7 +82,7 @@ class TrackingConsumerTest {
         // Happy flow
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is a valid message"));
-        when(eventService.processUpstreamTrackingMessage(any(), "messageId")).thenReturn(true);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(true);
 
         trackingConsumer.processMessage(contextMock);
 
@@ -96,7 +96,7 @@ class TrackingConsumerTest {
         // Given an invalid message
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is an invalid message"));
-        when(eventService.processUpstreamTrackingMessage(any(), "messageId")).thenReturn(true);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(true);
 
         trackingConsumer.processMessage(contextMock);
 
@@ -110,7 +110,7 @@ class TrackingConsumerTest {
         // Given an invalid message
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is a valid message"));
-        when(eventService.processUpstreamTrackingMessage(any(), "messageId")).thenReturn(false);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(false);
 
         trackingConsumer.processMessage(contextMock);
 
