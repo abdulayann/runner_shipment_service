@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.QuartzJobInfoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
 import com.dpw.runner.shipment.services.entity.CommonErrorLogs;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -68,11 +69,11 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
                         .entityId(consoleId)
                         .entityType(Constants.CONSOLIDATION)
                         .errorType(CommonErrorType.AUTOMATIC_TRANSFER)
-                        .errorMessage("Automatic file transfer has failed. " + sendConsoleValidationResponse.getConsoleErrorMessage())
+                        .errorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + sendConsoleValidationResponse.getConsoleErrorMessage())
                         .build();
             } else {
                 commonErrorLogs = commonErrors.get(0);
-                commonErrorLogs.setErrorMessage("Automatic file transfer has failed. " + sendConsoleValidationResponse.getConsoleErrorMessage());
+                commonErrorLogs.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + sendConsoleValidationResponse.getConsoleErrorMessage());
             }
 
             // Logged console related error
@@ -142,11 +143,11 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
                     .entityId(shipmentId)
                     .entityType(Constants.SHIPMENT)
                     .errorType(CommonErrorType.AUTOMATIC_TRANSFER)
-                    .errorMessage("Automatic file transfer has failed. " + sendShipmentValidationResponse.getShipmentErrorMessage())
+                    .errorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + sendShipmentValidationResponse.getShipmentErrorMessage())
                     .build();
         } else {
             commonErrorLogs = commonErrors.get(0);
-            commonErrorLogs.setErrorMessage("Automatic file transfer has failed. " + sendShipmentValidationResponse.getShipmentErrorMessage());
+            commonErrorLogs.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + sendShipmentValidationResponse.getShipmentErrorMessage());
         }
 
         // Logged shipment related error

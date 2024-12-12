@@ -4164,6 +4164,25 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
+    public boolean isNotAllowedToViewShipment(List<TriangulationPartner> triangulationPartners,
+                                              ShipmentDetails shipmentDetails, Long currentTenant) {
+        if ((triangulationPartners == null
+                || triangulationPartners.stream()
+                .filter(Objects::nonNull)
+                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                && !Objects.equals(shipmentDetails.getReceivingBranch(), currentTenant)) {
+            return true;
+        }
+
+        if (triangulationPartners == null
+                && !Objects.equals(shipmentDetails.getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                && !Objects.equals(shipmentDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+            return true;
+        }
+
+        return false;
+    }
+
     public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -4182,17 +4201,9 @@ public class ShipmentService implements IShipmentService {
 
             List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            if ((triangulationPartners == null
-                    || triangulationPartners.stream().filter(Objects::nonNull)
-                        .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
-                    && !Objects.equals(shipmentDetails.get().getReceivingBranch(), currentTenant)) {
-                throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
-            } else if (triangulationPartners == null
-                    && !Objects.equals(shipmentDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
-                    && !Objects.equals(shipmentDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+            if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }
-
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
             double current = System.currentTimeMillis();
             log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);

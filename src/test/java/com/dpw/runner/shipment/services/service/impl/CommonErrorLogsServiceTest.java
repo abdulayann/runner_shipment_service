@@ -50,7 +50,7 @@ class CommonErrorLogsServiceTest {
     private CommonErrorLogs commonErrorLogs;
 
     @BeforeAll
-    static void init() throws IOException {
+    static void init() {
         objectMapper = JsonTestUtility.getMapper();
     }
 

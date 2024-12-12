@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsg
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
+import com.dpw.runner.shipment.services.exception.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -327,7 +328,7 @@ public class NotificationService implements INotificationService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NotificationConstants.REASSIGN_BRANCH_ERROR;
             log.error(responseMsg, e);
-            throw new RuntimeException(responseMsg);
+            throw new NotificationServiceException(responseMsg);
         }
     }
 

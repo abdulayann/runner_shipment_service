@@ -663,7 +663,8 @@ class NotificationServiceTest {
 
     @Test
     void testGetReassignType_Error() {
-        assertThrows(InputMismatchException.class, () -> notificationService.getReassignType(1L, 2L, List.of(3L, 4L)));
+        List<Long> triangulationPartners = List.of(3L, 4L);
+        assertThrows(InputMismatchException.class, () -> notificationService.getReassignType(1L, 2L, triangulationPartners));
     }
 
     @Test

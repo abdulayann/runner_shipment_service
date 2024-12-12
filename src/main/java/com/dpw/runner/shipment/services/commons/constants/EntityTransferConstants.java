@@ -48,5 +48,6 @@ public class EntityTransferConstants {
     public static final String MISSING_FIELD_FLIGHT_NUMBER = "Flight Number";
     public static final String PLEASE_ENTER_THE = "Please enter the ";
     public static final String FOR_THE_CONSOLIDATION = " for the consolidation";
-    public static final String TO_RETRIGGER_THE_TRANSFER = " to retrigger the transfer.";
+    public static final String TO_RE_TRIGGER_THE_TRANSFER = " to retrigger the transfer.";
+    public static final String SELECT_BRANCH_FOR_ET = "one of the branches in the entity transfer details section";
 }

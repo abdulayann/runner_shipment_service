@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -181,7 +182,7 @@ public class DocumentManagerRestClient {
             return responseEntity.getBody();
         } catch (Exception ex) {
             log.error("Error in MultipleEntityFilesWithTenant Api from Document Service: {}", ex.getMessage());
-            throw new RuntimeException(ex);
+            throw new DocumentClientException(ex.getMessage());
         }
     }
 }

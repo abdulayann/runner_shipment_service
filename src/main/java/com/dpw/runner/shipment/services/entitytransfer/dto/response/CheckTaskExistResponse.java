@@ -12,6 +12,6 @@ import java.util.Set;
 @Builder
 @ToString
 public class CheckTaskExistResponse implements IRunnerResponse {
-    public Set<Integer> sendToBranch;
+    private Set<Integer> sendToBranch;
     private List<String> sendToOrg;
 }

@@ -1009,7 +1009,7 @@ public class EntityTransferService implements IEntityTransferService {
                 response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails.get(), false);
             else
                 response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails.get(), false);
-            if(response.getIsError()) {
+            if(Boolean.TRUE.equals(response.getIsError())) {
                 throw new ValidationException(response.getConsoleErrorMessage());
             }
         }
@@ -1023,7 +1023,8 @@ public class EntityTransferService implements IEntityTransferService {
                     flightNumber = consolidationDetails.get().getCarrierDetails().getVessel();
                     voyage = consolidationDetails.get().getCarrierDetails().getVoyage();
                     bol = consolidationDetails.get().getBol();
-                } else if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                } else {
+                    consolidationDetails.get();
                     flightNumber = consolidationDetails.get().getCarrierDetails().getFlightNumber();
                     voyage = consolidationDetails.get().getCarrierDetails().getShippingLine();
                     bol = consolidationDetails.get().getBol();
@@ -1194,7 +1195,7 @@ public class EntityTransferService implements IEntityTransferService {
                 entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
             }
             if (entityTransferDetails){
-                missingField.add("one of the branches in the entity transfer details section");
+                missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
             }
         }
         if(Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)) {
@@ -1236,17 +1237,17 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHawbError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please print the Original HAWB to retrigger the transfer.";
         }
         if(isHawbNumberError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please enter the HAWB number to retrigger the transfer.";
         }
@@ -1290,7 +1291,7 @@ public class EntityTransferService implements IEntityTransferService {
                 entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
             }
             if (entityTransferDetails){
-                missingField.add("one of the branches in the entity transfer details section");
+                missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
             }
         }
 
@@ -1312,9 +1313,9 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
+                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please print the Original HAWB to retrigger the transfer.";
         }
@@ -1347,7 +1348,7 @@ public class EntityTransferService implements IEntityTransferService {
                 entityTransferDetails = ObjectUtils.isEmpty(consolidationDetails.getTriangulationPartnerList());
             }
             if (entityTransferDetails){
-                missingField.add("one of the branches in the entity transfer details section");
+                missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
             }
         }
 
@@ -1496,7 +1497,7 @@ public class EntityTransferService implements IEntityTransferService {
                     entityTransferDetails = ObjectUtils.isEmpty(shipmentDetails.getTriangulationPartnerList());
                 }
                 if(entityTransferDetails) {
-                    missingField.add("one of the branches in the entity transfer details section");
+                    missingField.add(EntityTransferConstants.SELECT_BRANCH_FOR_ET);
                 }
             }
             if (awbs.isEmpty()) {

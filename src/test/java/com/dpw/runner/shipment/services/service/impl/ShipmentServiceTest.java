@@ -325,6 +325,9 @@ ShipmentServiceTest extends CommonMocks {
     private IQuartzJobInfoRepository quartzJobInfoRepository;
 
     @Mock
+    private ICommonErrorLogsDao commonErrorLogsDao;
+
+    @Mock
     private INotificationDao notificationDao;
 
 
@@ -9316,7 +9319,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer() {
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer() {
         TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(1L).build();
         TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(2L).build();
         TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(3L).build();
@@ -9333,10 +9336,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails oldEntity = new ShipmentDetails();
         oldEntity.setReceivingBranch(1L);
         oldEntity.setTriangulationPartnerList(List.of(triangulationPartner2, triangulationPartner3));
-        when(commonUtils.getTriangulationPartnerList(eq(shipmentDetails.getTriangulationPartnerList())))
-                .thenReturn(List.of(1L, 2L, 3L));
-        when(commonUtils.getTriangulationPartnerList(eq(oldEntity.getTriangulationPartnerList())))
-                .thenReturn(List.of(3L, 4L));
+        when(commonUtils.getTriangulationPartnerList(shipmentDetails.getTriangulationPartnerList())).thenReturn(List.of(1L, 2L, 3L));
+        when(commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())).thenReturn(List.of(3L, 4L));
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
 
@@ -9616,7 +9617,6 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
                 transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
                 direction(Constants.DIRECTION_EXP).receivingBranch(1L).
-                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
                 additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
                 containersList(new ArrayList<>()).triangulationPartner(12L).build();
 
@@ -9627,7 +9627,7 @@ ShipmentServiceTest extends CommonMocks {
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, true);
 
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
     }
 
 }
