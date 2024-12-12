@@ -5182,7 +5182,6 @@ public class ConsolidationService implements IConsolidationService {
         Events events = new Events();
         // Set event fields from consolidation
         events.setActual(LocalDateTime.now());
-        events.setEstimated(LocalDateTime.now());
         events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         events.setIsPublicTrackingEvent(true);
         events.setEntityType(Constants.CONSOLIDATION);
