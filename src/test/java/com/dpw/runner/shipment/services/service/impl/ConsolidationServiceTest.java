@@ -5691,7 +5691,15 @@ import java.util.stream.Collectors;
         consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
         consolidationDetails1.setReceivingBranch(100L);
-        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+        consolidationDetails1.getCarrierDetails().setFlightNumber("1424");
+        CarrierDetails carrierDetails = consolidationDetails1.getCarrierDetails();
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.getCarrierDetails().setFlightNumber("1224");
+        consolidationDetails.getCarrierDetails().setEta(carrierDetails.getEta());
+        consolidationDetails.getCarrierDetails().setEtd(carrierDetails.getEtd());
+        consolidationDetails.getCarrierDetails().setAta(carrierDetails.getAta());
+        consolidationDetails.getCarrierDetails().setAtd(carrierDetails.getAtd());
+
 
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
 

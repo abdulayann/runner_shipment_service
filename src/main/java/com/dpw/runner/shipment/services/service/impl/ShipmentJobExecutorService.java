@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.api.quartz.service.QuartzJobExecutorService;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.QuartzJobInfoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
@@ -130,14 +131,14 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     }
                 } else {
                     quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage("Automatic file transfer has failed. " + validationResponse.getShipmentErrorMessage());
+                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
                     commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
             } catch (ValidationException ex) {
-                log.info("Validation exception for Automatic transfer: " + ex.getMessage());
+                log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
                 quartzJobInfo.setJobStatus(JobState.ERROR);
-                quartzJobInfo.setErrorMessage("Automatic file transfer has failed. "+ ex.getMessage());
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
             }
         }
@@ -217,14 +218,14 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 }
                 else{
                     quartzJobInfo.setJobStatus(JobState.ERROR);
-                    quartzJobInfo.setErrorMessage("Automatic file transfer has failed. " + response.getConsoleErrorMessage());
+                    quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
                     commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
             } catch (ValidationException ex) {
-                log.info("Validation exception for Automatic transfer: " + ex.getMessage());
+                log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
                 quartzJobInfo.setJobStatus(JobState.ERROR);
-                quartzJobInfo.setErrorMessage("Automatic file transfer has failed. " + ex.getMessage());
+                quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
             }
         }

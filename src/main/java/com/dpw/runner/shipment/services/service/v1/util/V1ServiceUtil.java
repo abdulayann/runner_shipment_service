@@ -425,11 +425,11 @@ public class V1ServiceUtil {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
+        List<Object> field1List = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1List, "=", value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
+        List<Object> field2List = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2List, "=", value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }

@@ -9609,4 +9609,25 @@ ShipmentServiceTest extends CommonMocks {
         verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
     }
 
+    @Test
+    void triggerAutomaticTransferTest7() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType(Constants.SHIPMENT_TYPE_DRT).
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).
+                carrierDetails(CarrierDetails.builder().eta(LocalDateTime.now().plusHours(4)).build()).
+                additionalDetails(new AdditionalDetails()).consolidationList(new ArrayList<>()).
+                containersList(new ArrayList<>()).triangulationPartner(12L).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, true);
+
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
 }

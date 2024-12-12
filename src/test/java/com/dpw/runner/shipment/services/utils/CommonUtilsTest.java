@@ -3091,17 +3091,15 @@ class CommonUtilsTest {
     }
 
     @Test
-    public void testGetTriangulationPartnerList_EmptyInput() {
-        List<TriangulationPartner> partnerList = null;
-
-        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+    void testGetTriangulationPartnerList_EmptyInput() {
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(null);
 
         assertNotNull(triangulationPartnerIds);
         assertTrue(triangulationPartnerIds.isEmpty());
     }
 
     @Test
-    public void testGetTriangulationPartnerList_NonEmptyInput() {
+    void testGetTriangulationPartnerList_NonEmptyInput() {
         List<TriangulationPartner> partnerList = Arrays.asList(
                 TriangulationPartner.builder().triangulationPartner(1L).isAccepted(true).build(),
                 TriangulationPartner.builder().triangulationPartner(2L).isAccepted(false).build(),

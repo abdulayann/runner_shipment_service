@@ -19,7 +19,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPOR
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_DRT;
@@ -38,7 +37,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
-import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -4360,22 +4358,27 @@ public class ConsolidationService implements IConsolidationService {
                     newCarrierDetails.getAtd() != null;
         }
 
+        if (isAirStandardCase(consolidationDetails)) {
+            return isAirStandardCaseChanged(oldEntity, newCarrierDetails);
+        }
+        if (isAirNonStandardNonDrtCase(consolidationDetails)) {
+            return isAirNonStandardNonDrtCaseChanged(consolidationDetails, oldEntity, newCarrierDetails);
+        }
+
+        if (isSeaCase(consolidationDetails)) {
+            return isSeaCaseChanged(consolidationDetails, oldEntity, newCarrierDetails);
+        }
+
         // Compare individual fields for changes.
-        return isAirStandardCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
-                isAirNonStandardNonDrtCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
-                isSeaCaseChanged(consolidationDetails, oldEntity, newCarrierDetails) ||
-                isDefaultCaseChanged(consolidationDetails, oldEntity, newCarrierDetails);
+        return isDefaultCaseChanged(consolidationDetails, oldEntity, newCarrierDetails);
     }
 
 
-    private boolean isAirStandardCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
-        if (isAirStandardCase(consolidationDetails)) {
-            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
-            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
-                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
-                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd());
-        }
-        return false;
+    private boolean isAirStandardCaseChanged(ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd());
     }
 
     private boolean isAirStandardCase(ConsolidationDetails consolidationDetails) {
@@ -4384,14 +4387,11 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isAirNonStandardNonDrtCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
-        if (isAirNonStandardNonDrtCase(consolidationDetails)) {
-            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
-            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
-                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
-                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
-                    isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
-        }
-        return false;
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
+                isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
     }
 
     private boolean isAirNonStandardNonDrtCase(ConsolidationDetails consolidationDetails) {
@@ -4401,18 +4401,15 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isSeaCaseChanged(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, CarrierDetails newCarrierDetails) {
-        if (isSeaCase(consolidationDetails)) {
-            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
-            return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
-                    isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
-                    isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
-                    isValueChanged(newCarrierDetails.getVessel(), oldCarrierDetails.getVessel()) ||
-                    isValueChanged(newCarrierDetails.getShippingLine(), oldCarrierDetails.getShippingLine()) ||
-                    isValueChanged(newCarrierDetails.getVoyage(), oldCarrierDetails.getVoyage()) ||
-                    isAgentChanged(consolidationDetails, oldEntity) ||
-                    isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
-        }
-        return false;
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber()) ||
+                isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta()) ||
+                isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd()) ||
+                isValueChanged(newCarrierDetails.getVessel(), oldCarrierDetails.getVessel()) ||
+                isValueChanged(newCarrierDetails.getShippingLine(), oldCarrierDetails.getShippingLine()) ||
+                isValueChanged(newCarrierDetails.getVoyage(), oldCarrierDetails.getVoyage()) ||
+                isAgentChanged(consolidationDetails, oldEntity) ||
+                isValueChanged(consolidationDetails.getBol(), oldEntity.getBol());
     }
 
     private boolean isSeaCase(ConsolidationDetails consolidationDetails) {

@@ -319,6 +319,16 @@ public class EntityTransferService implements IEntityTransferService {
         return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
     }
 
+    private boolean isTriangulationPartner(Integer tenant, ConsolidationDetails consol) {
+        Long tenantId = Long.valueOf(tenant);
+        return (ObjectUtils.isNotEmpty(consol.getTriangulationPartnerList())
+                && consol.getTriangulationPartnerList().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
+                || (consol.getTriangulationPartnerList() == null
+                && tenantId.equals(consol.getTriangulationPartner()));
+    }
+
 
     @Override
     @Transactional
@@ -363,15 +373,7 @@ public class EntityTransferService implements IEntityTransferService {
                 consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
                 reverseDirection = true;
             }
-            else if (ObjectUtils.isNotEmpty(consol.getTriangulationPartnerList())
-                    && consol.getTriangulationPartnerList().stream()
-                        .filter(Objects::nonNull)
-                        .anyMatch(tp -> Objects.equals(Long.valueOf(tenant), tp.getTriangulationPartner()))
-            ) {
-                consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
-                sendingToTriangulationPartner = true;
-            } else if (consol.getTriangulationPartnerList() == null
-                    && Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
+            else if (isTriangulationPartner(tenant, consol)) {
                 consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
                 sendingToTriangulationPartner = true;
             }
@@ -1047,11 +1049,11 @@ public class EntityTransferService implements IEntityTransferService {
                     if (Strings.isNullOrEmpty(voyage) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                         missingField.add("Flight Carrier");
                     if (Strings.isNullOrEmpty(flightNumber) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                        missingField.add("Flight Number");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_FLIGHT_NUMBER);
                     if (Strings.isNullOrEmpty(voyage) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
-                        missingField.add("Voyage");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_VOYAGE);
                     if (Strings.isNullOrEmpty(flightNumber) && consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
-                        missingField.add("Vessel");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_VESSEL);
                     if (eta == null)
                         missingField.add("Eta");
                     if (etd == null)
@@ -1218,24 +1220,24 @@ public class EntityTransferService implements IEntityTransferService {
             String missingFieldString = String.join(", ", missingField);
             if(isPrintMawbError)
                 missingFieldString = missingFieldString + " and print the original MAWB";
-            errorMsg = "Please enter the " + missingFieldString + " for the consolidation";
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
         } else if (isPrintMawbError) {
             errorMsg = "Please print the original MAWB for the consolidation";
         }
         String shipErrorMsg = "";
         if(isPrintHawbError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + "and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +" to retrigger the transfer.";
+                errorMsg = errorMsg + "and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please print the original HAWB for the shipment/s " + String.join(", " ,errorShipments) + " to retrigger the transfer.";
+                errorMsg = "Please print the original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please print the original HAWB to retrigger the transfer.";
         }
         if(isHawbNumberError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + "and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments) +" to retrigger the transfer.";
+                errorMsg = errorMsg + "and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments) + " to retrigger the transfer.";
+                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please enter the HAWB number to retrigger the transfer.";
         }
@@ -1287,14 +1289,14 @@ public class EntityTransferService implements IEntityTransferService {
         String errorMsg = "";
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
-            errorMsg = "Please enter the " + missingFieldString + " for the consolidation";
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
         }
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + "and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +" to retrigger the transfer.";
+                errorMsg = errorMsg + "and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             } else {
-                errorMsg = "Please print the original HAWB for the shipment/s " + String.join(", " ,errorShipments) + " to retrigger the transfer.";
+                errorMsg = "Please print the original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RETRIGGER_THE_TRANSFER;
             }
             shipErrorMsg = "Please print the original HAWB to retrigger the transfer.";
         }
@@ -1325,7 +1327,7 @@ public class EntityTransferService implements IEntityTransferService {
         String errorMsg = "";
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
-            errorMsg = "Please enter the " + missingFieldString + " for the consolidation";
+            errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
         }
         if(!errorMsg.isEmpty()){
             return SendConsoleValidationResponse.builder()
@@ -1381,11 +1383,11 @@ public class EntityTransferService implements IEntityTransferService {
                     if (Strings.isNullOrEmpty(voyage) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
                         missingField.add("Flight Carrier");
                     if (Strings.isNullOrEmpty(flightNumber) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                        missingField.add("Flight Number");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_FLIGHT_NUMBER);
                     if (Strings.isNullOrEmpty(voyage) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
-                        missingField.add("Voyage");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_VOYAGE);
                     if (Strings.isNullOrEmpty(flightNumber) && shipmentDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
-                        missingField.add("Vessel");
+                        missingField.add(EntityTransferConstants.MISSING_FIELD_VESSEL);
                     if (eta == null)
                         missingField.add("Eta");
                     if (etd == null)
@@ -1469,9 +1471,9 @@ public class EntityTransferService implements IEntityTransferService {
             if(!missingField.isEmpty()) {
                 String missingFieldString = String.join(",", missingField);
                 if(isAwbPrintError)
-                    responseErrorMsg = "Please enter the " + missingFieldString + " and print original MAWB to retrigger the transfer.";
+                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + " and print original MAWB to retrigger the transfer.";
                 else
-                    responseErrorMsg = "Please enter the "+ missingFieldString + "to retrigger the transfer.";
+                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE+ missingFieldString + "to retrigger the transfer.";
             } else if (isAwbPrintError) {
                 responseErrorMsg = "Please print original MAWB to retrigger the transfer.";
             }
@@ -1547,6 +1549,22 @@ public class EntityTransferService implements IEntityTransferService {
         return Collections.emptyList();
     }
 
+    private boolean shouldAddShipmentToGuidList(List<TriangulationPartner> triangulationPartnerList,
+                                                Long triangulationPartner,
+                                                Long receivingAgent,
+                                                ShipmentDetails shipmentDetails) {
+        return (ObjectUtils.isNotEmpty(triangulationPartnerList)
+                && triangulationPartnerList.stream()
+                .filter(Objects::nonNull)
+                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), receivingAgent)
+                        || Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue())))
+                || (triangulationPartnerList == null
+                && triangulationPartner != null
+                && !Objects.equals(triangulationPartner, receivingAgent)
+                && !shipmentDetails.getTenantId().equals(triangulationPartner.intValue()));
+    }
+
+
     @Override
     public ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException {
         PostArValidationRequest request =  (PostArValidationRequest)commonRequestModel.getData();
@@ -1593,16 +1611,7 @@ public class EntityTransferService implements IEntityTransferService {
                                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
                             shipmentGuids.add(shipmentDetails.getGuid());
                         }
-                        if (ObjectUtils.isNotEmpty(triangulationPartnerList)
-                                && triangulationPartnerList.stream()
-                                    .filter(Objects::nonNull)
-                                    .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), receivingAgent)
-                                || Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))
-                        ) {
-                            shipmentGuids.add(shipmentDetails.getGuid());
-                        } else if (triangulationPartnerList == null
-                                && triangulationPartner != null
-                                && !Objects.equals(triangulationPartner, receivingAgent) && !shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
+                        if (shouldAddShipmentToGuidList(triangulationPartnerList, triangulationPartner, receivingAgent, shipmentDetails)) {
                             shipmentGuids.add(shipmentDetails.getGuid());
                         }
                     }

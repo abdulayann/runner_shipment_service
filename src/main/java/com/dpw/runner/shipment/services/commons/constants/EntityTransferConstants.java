@@ -42,4 +42,11 @@ public class EntityTransferConstants {
 
     public static final String TRANSFERRED_ENTITY_ALREADY_PRESENT = "%s already exists, do you want to update the entry?";
     public static final String ALREADY_ACCEPTED_NETWORK_TRANSFER = "One or more network transfer requests are already in the ACCEPTED status: ";
+
+    public static final String MISSING_FIELD_VESSEL = "Vessel";
+    public static final String MISSING_FIELD_VOYAGE = "Voyage";
+    public static final String MISSING_FIELD_FLIGHT_NUMBER = "Flight Number";
+    public static final String PLEASE_ENTER_THE = "Please enter the ";
+    public static final String FOR_THE_CONSOLIDATION = " for the consolidation";
+    public static final String TO_RETRIGGER_THE_TRANSFER = " to retrigger the transfer.";
 }
