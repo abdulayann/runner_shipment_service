@@ -182,15 +182,15 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void saveDpsStateTest() {
+    void saveStatusTest() {
         Long shipmentId = 1L;
-        String dpsState = "ACTIVE";
+        Integer status = 1;
 
-        doNothing().when(shipmentRepository).saveDpsState(shipmentId, dpsState);
+        doNothing().when(shipmentRepository).saveStatus(shipmentId, status);
 
-        shipmentDao.saveDpsState(shipmentId, dpsState);
+        shipmentDao.saveStatus(shipmentId, status);
 
-        verify(shipmentRepository, times(1)).saveDpsState(shipmentId, dpsState);
+        verify(shipmentRepository, times(1)).saveStatus(shipmentId, status);
     }
 
     @Test

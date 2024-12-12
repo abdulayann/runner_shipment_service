@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -23,6 +20,9 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
@@ -50,11 +50,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -629,6 +627,7 @@ class AwbDaoTest {
         ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
         shipmentDetails.getAdditionalDetails().setSci("T1");
         shipmentDetails.getAdditionalDetails().setEfreightStatus("new");
+        shipmentDetails.setSecurityStatus("SPX");
 
         when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(new ArrayList<>());
@@ -662,6 +661,7 @@ class AwbDaoTest {
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setSci("T1");
         consolidationDetails.setEfreightStatus("new");
+        consolidationDetails.setSecurityStatus(Constants.EXEMPTION_CARGO);
         var mock = Mockito.spy(awbDao);
 
         when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));

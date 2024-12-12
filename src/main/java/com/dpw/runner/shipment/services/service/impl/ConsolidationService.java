@@ -75,6 +75,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -480,9 +481,14 @@ public class ConsolidationService implements IConsolidationService {
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        List<ConsolidationListResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationListResponses(
+            lst);
+        Map<Long, ConsolidationListResponse> responseMap = listResponses.stream()
+            .collect(Collectors.toMap(ConsolidationListResponse::getId, response -> response));
+
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(consolidationIdList, CONSOLIDATION);
         lst.forEach(consolidationDetails -> {
-            var res = (modelMapper.map(consolidationDetails, ConsolidationListResponse.class));
+            ConsolidationListResponse res = responseMap.get(consolidationDetails.getId());
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
@@ -3214,6 +3220,7 @@ public class ConsolidationService implements IConsolidationService {
             }
             else {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COUNTRIES, masterDataResponse, cacheMap);
             }
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
@@ -4657,16 +4664,6 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
         AutoAttachConsolidationResponse response = new AutoAttachConsolidationResponse();
-
-        // Validation for PUSH_REQUESTED shipment, not allowing listing further consolidation
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("shipmentId", request.getShipId(), "=");
-        listCommonRequest = andCriteria("requestedType", ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.name(), "=", listCommonRequest);
-        Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-        Page<ConsoleShipmentMapping> pushRequestedConsol = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight());
-
-        if(pushRequestedConsol != null && pushRequestedConsol.getTotalElements() > 0) {
-            throw new ValidationException(PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE);
-        }
 
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)

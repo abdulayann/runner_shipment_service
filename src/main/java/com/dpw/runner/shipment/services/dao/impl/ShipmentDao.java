@@ -644,8 +644,8 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Transactional
-    public void saveDpsState(Long id, String dpsState) {
-        shipmentRepository.saveDpsState(id, dpsState);
+    public void saveStatus(Long id, Integer status) {
+        shipmentRepository.saveStatus(id, status);
     }
 
     @Transactional

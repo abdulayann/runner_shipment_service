@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
@@ -68,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -680,11 +682,12 @@ public class EventService implements IEventService {
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId()))
                 .toList();
 
-        setEventCodesMasterData(
-                updatedEvents,
-                Events::getEventCode,
-                Events::setDescription
-        );
+        commonUtils.updateEventWithMasterData(updatedEvents);
+        updatedEvents.forEach(updatedEvent -> {
+            if(ObjectUtils.isEmpty(updatedEvent.getDirection())) {
+                updatedEvent.setDirection(shipmentDetails.getDirection());
+            }
+        });
 
         log.info("Saving updated events to the database.");
         return eventDao.saveAll(updatedEvents);
@@ -1064,6 +1067,7 @@ public class EventService implements IEventService {
     @Transactional
     public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
         try {
+            v1Service.setAuthContext();
             InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
             AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
             List<BillDto> billDtoList = accountReceivableDto.getBills();
@@ -1078,45 +1082,43 @@ public class EventService implements IEventService {
                     shipmentDetails -> shipmentDetails,
                     (existing, replacement) -> replacement));
 
-            List<Events> invoiceEvents = new ArrayList<>();
-
             billDtoList.forEach(billDto -> {
                 if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
                     ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
-                    List<Events> vInvoiceEvents = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
-                    invoiceEvents.addAll(vInvoiceEvents);
+
+                    TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+                    UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+
+                    List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                    eventsRequests.forEach(this::saveEvent);
+
+                    TenantContext.removeTenant();
+                    UserContext.removeUser();
                 }
 
             });
-
-            eventDao.saveAll(invoiceEvents);
         } catch (Exception e) {
             throw new BillingException(e.getMessage());
         }
     }
 
-    public List<Events> prepareEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
+    public List<EventsRequest> prepareEventsFromBillingCommonEvent(BillingInvoiceDto billingInvoiceDto, ShipmentDetails shipmentDetails) {
         InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
         AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
 
-        Events event = new Events();
-        event.setEntityId(shipmentDetails.getId());
-        event.setEntityType(Constants.SHIPMENT);
-        event.setEventCode(EventConstants.INGE);
-        event.setActual(accountReceivableDto.getInvoiceDate());
-        event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        event.setStatus(accountReceivableDto.getFusionInvoiceStatus());
-        event.setShipmentNumber(shipmentDetails.getShipmentId());
-        event.setEventType(EventType.INVOICE);
-        event.setContainerNumber(accountReceivableDto.getInvoiceNumber());
-        event.setReferenceNumber(accountReceivableDto.getId());
-        if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())
-                && ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
-            event.setConsolidationId(shipmentDetails.getConsolidationList().get(0).getId());
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setEntityId(shipmentDetails.getId());
+        eventsRequest.setEntityType(Constants.SHIPMENT);
+        eventsRequest.setEventCode(EventConstants.INGE);
+        eventsRequest.setActual(accountReceivableDto.getInvoiceDate());
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        eventsRequest.setStatus(accountReceivableDto.getFusionInvoiceStatus());
+        eventsRequest.setShipmentNumber(shipmentDetails.getShipmentId());
+        eventsRequest.setEventType(EventType.INVOICE.name());
+        eventsRequest.setContainerNumber(accountReceivableDto.getInvoiceNumber());
+        eventsRequest.setReferenceNumber(accountReceivableDto.getId());
 
-        }
-        commonUtils.updateEventWithMasterData(List.of(event));
-        return List.of(event);
+        return List.of(eventsRequest);
     }
     /**
      * Persists tracking events to the database and updates the relevant shipment details.
@@ -1163,8 +1165,6 @@ public class EventService implements IEventService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             log.info("Processing shipment details: {}", shipmentDetails);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-            trackingEvents.forEach(events -> events.setDirection(events.getDirection() == null ?
-                    shipmentDetails.getDirection() : events.getDirection()));
             boolean updateSuccess = updateShipmentWithTrackingEvents(trackingEvents, shipmentDetails, container);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {}", shipmentDetails.getShipmentId(), updateSuccess);
@@ -1321,9 +1321,6 @@ public class EventService implements IEventService {
     public void saveEvent(EventsRequest eventsRequest) {
         Events entity = convertRequestToEntity(eventsRequest);
 
-        if (Boolean.TRUE.equals(eventsRequest.getSaveFromShipment())) {
-            entity.setEntityType(Constants.SHIPMENT);
-        }
         // event code and master-data description
         commonUtils.updateEventWithMasterData(List.of(entity));
         eventDao.updateEventDetails(entity);

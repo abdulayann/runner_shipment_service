@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @Builder
@@ -30,8 +29,6 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String invoiceDate;
 
     private String goodsDescription;
-    private String buyerCode;
-    private String supplierCode;
     private String incoTerm;
 
     private String serviceMode;
@@ -51,19 +48,6 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String destinationPort;
     private String houseBillId;
     private String masterBillId;
-    private String buyerAddressCode;
-    private Map<String, Object> buyerAddress;
-    private String supplierAddressCode;
-    private Map<String, Object> supplierAddress;
-    private String notifyPartyCode;
-    private String sendingAgentCode;
-    private String receivingAgentCode;
-    private String notifyPartyAddressCode;
-    private Map<String, Object> notifyPartyAddress;
-    private String sendingAgentAddressCode;
-    private Map<String, Object> sendingAgentAddress;
-    private String receivingAgentAddressCode;
-    private Map<String, Object> receivingAgentAddress;
     private String voyageId;
     private String carrierId;
     private QuantityPair currencyAmount;
@@ -90,5 +74,7 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String destinationPortName;
     private String buyerName;
     private String supplierName;
+
+    private List<OrderPartiesResponse> parties;
     
 }
