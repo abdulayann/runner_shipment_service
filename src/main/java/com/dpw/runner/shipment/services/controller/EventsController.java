@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -13,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
@@ -20,14 +25,21 @@ import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.List;
+import java.util.Optional;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
-import java.util.List;
-import java.util.Optional;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @SuppressWarnings("ALL")
 @RestController
@@ -35,14 +47,16 @@ import java.util.Optional;
 @Slf4j
 public class EventsController {
     private final IEventService eventService;
+    private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
     private class MyResponseClass extends RunnerResponse<EventsResponse> {}
     private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
-    public EventsController(IEventService eventService, IEventsSync eventsSync) {
+    public EventsController(IEventService eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
         this.eventService = eventService;
         this.eventsSync = eventsSync;
+        this.authenticationService = authenticationService;
     }
 
     @ApiResponses(value = {
@@ -157,9 +171,11 @@ public class EventsController {
     })
     @PostMapping("/push-tracking-events")
     @ExcludeTimeZone
-    public ResponseEntity<IRunnerResponse> pushTrackingEvents(@RequestBody @Valid TrackingServiceApiResponse.Container request) {
+    public ResponseEntity<IRunnerResponse> pushTrackingEvents(@RequestHeader(ApiConstants.X_API_KEY) String xApiKey,
+            @RequestBody @Valid TrackingServiceApiResponse.Container request) {
         String responseMsg;
         try {
+            authenticationService.authenticate(Constants.TRACKING_PUSH_API, xApiKey);
             return eventService.pushTrackingEvents(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
