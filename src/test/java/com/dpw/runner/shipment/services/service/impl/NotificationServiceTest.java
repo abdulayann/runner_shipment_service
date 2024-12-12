@@ -47,10 +47,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -151,6 +148,16 @@ class NotificationServiceTest {
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertFalse(((RunnerListResponse) Objects.requireNonNull(responseEntity.getBody())).getData().isEmpty());
+    }
+
+    @Test
+    void testListWithErrorFromWithMdc() {
+        when(notificationDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(notification)));
+        when(modelMapper.map(any(), eq(NotificationListResponse.class))).thenReturn(objectMapper.convertValue(notification, NotificationListResponse.class));
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenThrow(new RuntimeException("Simulated exception"));
+
+        var responseEntity = notificationService.list(CommonRequestModel.buildRequest(ListCommonRequest.builder().build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -437,6 +444,40 @@ class NotificationServiceTest {
     }
 
     @Test
+    void testAcceptNotification_ShipmentEntity_ReassignBranch_ThrowsRunnerException() throws RunnerException {
+        Long id = 11L;
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
+        notification.setEntityType(Constants.SHIPMENT);
+        notification.setEntityId(10L);
+        notification.setRequestedBranchId(1);
+        notification.setReassignedToBranchId(2);
+        Integer tenantId = 2;
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(100L);
+        tenantModel.setDefaultAddressId(200L);
+        PartiesRequest partiesRequest = new PartiesRequest();
+
+        CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        ShipmentRequest shipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentRequest.class);
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
+        when(shipmentService.retrieveById(requestModel)).thenReturn(getResponse(shipmentDetailsResponse, HttpStatus.OK));
+        when(jsonHelper.convertValue(shipmentDetailsResponse, ShipmentRequest.class)).thenReturn(shipmentRequest);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(Map.of(tenantId, new Object()));
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(100L, 200L)).thenReturn(partiesRequest);
+        when(shipmentService.completeUpdate(any(CommonRequestModel.class))).thenThrow(new RunnerException());
+
+        var response = notificationService.acceptNotification(id);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(notificationDao).findById(id);
+    }
+
+    @Test
     void testAcceptNotification_ShipmentEntity_ReassignBranch_ThrowsException() throws RunnerException {
         Long id = 11L;
         notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
@@ -618,6 +659,18 @@ class NotificationServiceTest {
         verify(v1ServiceUtil).getTenantDetails(anyList());
         verify(jsonHelper).convertValue(any(), eq(TenantModel.class));
         verifyNoMoreInteractions(v1ServiceUtil);
+    }
+
+    @Test
+    void testGetReassignType_Error() {
+        assertThrows(InputMismatchException.class, () -> notificationService.getReassignType(1L, 2L, List.of(3L, 4L)));
+    }
+
+    @Test
+    void testProcessTriangulationPartners_EmptyList() {
+        var result = notificationService.processTriangulationPartners(Collections.emptyList(), 1L, 2L);
+
+        assertEquals(Collections.emptyList(), result);
     }
 
     public ResponseEntity<IRunnerResponse> getResponse(IRunnerResponse data, HttpStatus status) {
