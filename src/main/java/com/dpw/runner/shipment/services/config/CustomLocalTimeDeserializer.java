@@ -21,8 +21,12 @@ public class CustomLocalTimeDeserializer extends JsonDeserializer<LocalTime> {
             return null;
         }
         try {
-            int hour = node.get("hour").asInt();
-            int minute = node.get("minute").asInt();
+            if((node.get("hour") == null || node.get("hour").isNull()) &&
+                    (node.get("minute") == null || node.get("minute").isNull()) &&
+                    (node.get("second") == null || node.get("second").isNull()))
+                return null;
+            int hour = node.get("hour") == null ? 0 : node.get("hour").asInt();
+            int minute = node.get("minute") == null ? 0 : node.get("minute").asInt();
             int second = node.get("second") == null ? 0 : node.get("second").asInt();
             return LocalTime.of(hour, minute, second);
         } catch (Exception e) {
