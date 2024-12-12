@@ -1947,12 +1947,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void deletePendingRequestsOnConsoleAttach(ShipmentDetails shipmentDetails, boolean isCreate) {
-        if(!isCreate && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+        if(!isCreate) {
             ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipmentDetails.getId(), "=", null);
             listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
             Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
             List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
-            if(!consoleShipmentMappingsForEmails.isEmpty()) {
+            if(!listIsNullOrEmpty(consoleShipmentMappingsForEmails)) {
                 consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
                 List<Long> otherConsoleIds = consoleShipmentMappingsForEmails.stream().map(e -> e.getConsolidationId()).toList();
                 List<ConsolidationDetails> otherConsolidationDetails = consolidationDetailsDao.findConsolidationsByIds(new HashSet<>(otherConsoleIds));
