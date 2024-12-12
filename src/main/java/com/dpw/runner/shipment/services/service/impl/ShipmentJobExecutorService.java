@@ -85,13 +85,19 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             }
         }
 
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCompletion(int status) {
-                v1Service.clearAuthContext();
-                log.info("Job Finished: {}", jobId);
-            }
-        });
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCompletion(int status) {
+                    v1Service.clearAuthContext();
+                    log.info("Job Finished: {}", jobId);
+                }
+            });
+        } else {
+            log.info("Transaction synchronization is not active. Clearing auth context manually.");
+            v1Service.clearAuthContext();
+            log.info("Job Finished: {}", jobId);
+        }
 
     }
 

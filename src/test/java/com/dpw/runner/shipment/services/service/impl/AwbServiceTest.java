@@ -203,6 +203,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setSecurityStatus(Constants.SHR);
         addShipmentDataForAwbGeneration(testShipment);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
 //        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
@@ -256,6 +257,13 @@ class AwbServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         mockTenantSettings();
+
+        ShipmentDetails shipmentDetails = testShipment;
+        addDataForAutomaticTransfer(shipmentDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentService).triggerAutomaticTransfer(any(), any(), anyBoolean());
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), anyBoolean());
+
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -868,6 +876,7 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
@@ -910,6 +919,8 @@ class AwbServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockMawbResponse);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(Map.of("Air Transat", EntityTransferCarrier.builder().HeadQuartersDetails("test").build()));
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), anyBoolean());
+
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createMawb(commonRequestModel);
@@ -3477,6 +3488,17 @@ class AwbServiceTest extends CommonMocks {
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    private void addDataForAutomaticTransfer(ShipmentDetails shipment) {
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipment.setMasterBill("098-2343234");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+
+        shipment.setConsolidationList(List.of(consolidationDetails));
     }
 
 }
