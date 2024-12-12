@@ -7,5 +7,6 @@ public enum ContainerPraStatus {
     ACCEPTED,
     FAILED,
     SUCCESS,
-    REJECTED
+    REJECTED,
+    FILED
 }
