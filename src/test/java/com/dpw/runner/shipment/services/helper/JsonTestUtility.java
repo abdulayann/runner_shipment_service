@@ -374,6 +374,10 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
     }
 
+    public NetworkTransfer getNetworkTransfer() {
+        return objectMapper.convertValue(payload.get("NETWORK_TRANSFER_RESPONSE"), NetworkTransfer.class);
+    }
+
     public PlatformToRunnerCustomerBookingRequest getPlatformCreateUpdateRequest() {
         return objectMapper.convertValue(payload.get("PLATFORM_CREATE_UPDATE"), PlatformToRunnerCustomerBookingRequest.class);
     }

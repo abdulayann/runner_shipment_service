@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -85,6 +86,8 @@ public class ShipmentController {
     IConsolidationService consolidationService;
     @Autowired
     IDateTimeChangeLogService dateTimeChangeLogService;
+    @Autowired
+    IDpsEventService dpsEventService;
 
     private static class HblCheckResponseClass extends RunnerResponse<HblCheckResponse> {}
 
@@ -174,6 +177,15 @@ public class ShipmentController {
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN)
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        log.info("Received Shipment NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
@@ -692,10 +704,10 @@ public class ShipmentController {
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.REQUEST_INTER_BRANCH_CONSOLE)
-    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId) {
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId, @RequestParam(required = false) String rejectRemarks) {
         log.info("Request received for interBrnach console request");
         try {
-            return shipmentService.requestInterBranchConsole(shipId, consoleId);
+            return shipmentService.requestInterBranchConsole(shipId, consoleId, rejectRemarks);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
@@ -802,5 +814,11 @@ public class ShipmentController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.MATCHING_RULES_BY_GUID)
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String shipmentGuid) {
+        return dpsEventService.getShipmentMatchingRulesByGuid(shipmentGuid);
     }
 }

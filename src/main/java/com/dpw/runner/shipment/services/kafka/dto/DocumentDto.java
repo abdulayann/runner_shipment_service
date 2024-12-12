@@ -30,6 +30,20 @@ public class DocumentDto {
         private String secureDownloadLink;
         private String fileType;
         private String uploadedBy;
+        private String eventCode;
+        private String childId;
+        private String childType;
+        private String validFrom;
+        private String validTo;
+        private String dateReceived;
+        private String createdAt;
+        private String updatedAt;
+        private String updatedBy;
+        private String physicalDocWith;
+        private String fileSource;
+        private Long fileSize;
+        private Long createdBy;
+        private Long tenantId;
     }
 }
 

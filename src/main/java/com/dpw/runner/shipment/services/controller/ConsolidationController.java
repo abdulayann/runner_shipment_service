@@ -106,7 +106,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
             if(Boolean.TRUE.equals(getFullConsolidation)) {
@@ -116,6 +116,15 @@ public class ConsolidationController {
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage(), HttpStatus.FORBIDDEN);
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ConsolidationConstants.API_CONSOLIDATION_RETRIEVE_FOR_NTE_SCREEN)
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Optional<Long> id) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        log.info("Received Consolidation NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})

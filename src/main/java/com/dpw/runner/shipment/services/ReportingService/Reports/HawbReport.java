@@ -443,17 +443,14 @@ public class HawbReport extends IReport{
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }
+                    if(value.get(GROSS_WT_UNIT) != null){
+                        value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                    }
                     if(value.get(ReportConstants.CHARGEABLE_WT) != null){
                         value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
                     }
-                    if (value.get(ReportConstants.RATE_CHARGE) != null)
-                    {
-                        value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
-                    }
-                    if (value.get(ReportConstants.TOTAL_AMOUNT) != null)
-                    {
-                        value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
-                    }
+                    value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
+                    value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
                 });
                 dictionary.put(ReportConstants.PACKING_LIST_FAT, valuesFAT);
                 awbGoodsDescriptionInfo.forEach(row -> {

@@ -1,0 +1,92 @@
+{
+  "event": "SHIPMENT_RESPONSE_EVENT",
+  "timestamp": 1731939112427,
+  "transactionId": "243b0aaf-2f49-44c2-8f35-4e68f926fb3a",
+  "data": {
+    "ruleExecutionId": "b0272e7a-e1f1-40fc-aebe-b2d340158cd2",
+    "actionExecutionId": "cbe62ff9-16e4-468c-9714-23fd053af5f7",
+    "entityId": "1594ca8f-f812-4b47-b628-dddb08cbbc18",
+    "workflowType": "HOLD",
+    "state": "UN_HOLD",
+    "ruleStatus": "ACTIVE",
+    "entityType": "SHIPMENT",
+    "fieldsDetected": [
+      "$.additionalDetails.notifyParty.orgData.Country",
+      "$.client.addressData.Country",
+      "$.consignee.addressData.Country",
+      "$.carrierDetails.unlocationData.originPort_country",
+      "$.carrierDetails.unlocationData.originPort_code",
+      "$.consignee.orgData.Country",
+      "$.transportMode",
+      "$.consigner.addressData.Country",
+      "$.carrierDetails.unlocationData.origin_country",
+      "$.consigner.orgData.Country",
+      "$.packingList[0].origin_country",
+      "$.client.orgData.Country",
+      "$.additionalDetails.notifyParty.addressData.Country",
+      "$.packingList[0].countryCode"
+    ],
+    "text": "Alert Text",
+    "implications": [
+      "HBL_GENERATION"
+    ],
+    "username": [
+      "dpwaususer"
+    ],
+    "fieldsDetectedValues": [
+      {
+        "key": "Notify Party",
+        "value": "Agri OM Australia"
+      },
+      {
+        "key": "Client Address",
+        "value": "360DEGREE SUPPLY CHAIN MANAGEMENT PRIVATE LIMITED, Food Box, 4TH, OFFICE NO B-401,, mumbai suburban, MH, ARE"
+      },
+      {
+        "key": "Consignee Address",
+        "value": "360DEGREE SUPPLY CHAIN MANAGEMENT PRIVATE LIMITED, Food Box, 4TH, OFFICE NO B-401,, mumbai suburban, MH, ARE"
+      },
+      {
+        "key": "Origin Port",
+        "value": "dubai"
+      },
+      {
+        "key": "Consignee",
+        "value": "Agri OM Australia"
+      },
+      {
+        "key": "Transport Mode",
+        "value": "SEA"
+      },
+      {
+        "key": "Consignor Address",
+        "value": "Vietnam Airlines, 8345Test default, VNM, SG, ARE"
+      },
+      {
+        "key": "Origin",
+        "value": "dubai"
+      },
+      {
+        "key": "Consignor",
+        "value": "Test Shipper"
+      },
+      {
+        "key": "Package Origin",
+        "value": "ARE"
+      },
+      {
+        "key": "Client",
+        "value": "Agri OM Australia"
+      },
+      {
+        "key": "Consignor Address",
+        "value": "360DEGREE SUPPLY CHAIN MANAGEMENT PRIVATE LIMITED, Food Box, 4TH, OFFICE NO B-401,, mumbai suburban, MH, ARE"
+      },
+      {
+        "key": "Package Country",
+        "value": "United Arab Emirates"
+      }
+    ],
+    "eventTimestamp": "2024-11-18T14:11:45.165147"
+  }
+}

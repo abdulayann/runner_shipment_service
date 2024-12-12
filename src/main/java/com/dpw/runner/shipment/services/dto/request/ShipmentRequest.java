@@ -103,6 +103,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long sourceTenantId;
     private Integer status;
     private String transportMode;
+    private List<Long> triangulationPartnerList;
     private Long triangulationPartner;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private BigDecimal volume;
@@ -181,4 +182,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
+    private String shipmentStatus;
 }

@@ -19,7 +19,7 @@ public interface IShipmentsContainersMappingDao {
     void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1);
 
     void detachShipments(Long containerId, List<Long> shipIds, boolean fromV1);
-
+    void detachListShipments(List<Long> containerId, List<Long> shipIds, boolean fromV1);
     void updateShipmentsMappings(Long containerId, List<Long> shipIds);
 
 }

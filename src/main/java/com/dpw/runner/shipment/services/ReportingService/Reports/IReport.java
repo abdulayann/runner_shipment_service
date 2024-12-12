@@ -630,6 +630,7 @@ public abstract class IReport {
         List<String> consignorFreeText = null, consigneeFreeText = null, notifyPartyFreeText = null;
         if ((Objects.equals(shipment.getTransportMode(), "SEA") || Objects.equals(shipment.getTransportMode(), "ROA") || Objects.equals(shipment.getTransportMode(), "RF") || Objects.equals(shipment.getTransportMode(), "AIR"))) {
             List<String> consigner = null;
+            List<String> consignerWoCont = null;
             final String email = "Email";
             if(shipmentConsigner != null)
             {
@@ -640,6 +641,17 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
                             getValueFromMap(consignerAddress, email), getValueFromMap(consignerAddress, CONTACT_PHONE),
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
+
+                    consignerWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
+                        getValueFromMap(consignerAddress, COMPANY_NAME),
+                        getValueFromMap(consignerAddress, ADDRESS1),
+                        getValueFromMap(consignerAddress, ADDRESS2),
+                        getValueFromMap(consignerAddress, CITY),
+                        getValueFromMap(consignerAddress, STATE),
+                        getValueFromMap(consignerAddress, ZIP_POST_CODE),
+                        getValueFromMap(consignerAddress, COUNTRY)
+                    );
+
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_COMPANY_NAME, consignerAddress.get(COMPANY_NAME));
                     dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON_ALIAS));
@@ -664,6 +676,7 @@ public abstract class IReport {
             }
             List<String> consignee = populateConsigneeData(dictionary, shipmentConsignee);
             List<String> notify = null;
+            List<String> notifyWoCont = null;
             if(shipmentNotify != null)
             {
                 Map<String, Object> notifyAddress = shipmentNotify.getAddressData();
@@ -673,8 +686,18 @@ public abstract class IReport {
                             getValueFromMap(notifyAddress, ADDRESS2),
                             ReportHelper.getCityCountry(getValueFromMap(notifyAddress, CITY), getValueFromMap(notifyAddress, COUNTRY)),
                             getValueFromMap(notifyAddress, email), getValueFromMap(notifyAddress, CONTACT_PHONE),
-                            getValueFromMap(notifyAddress,ZIP_POST_CODE)
-                                                                     );
+                            getValueFromMap(notifyAddress,ZIP_POST_CODE));
+
+                    notifyWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
+                        getValueFromMap(notifyAddress, COMPANY_NAME),
+                        getValueFromMap(notifyAddress, ADDRESS1),
+                        getValueFromMap(notifyAddress, ADDRESS2),
+                        getValueFromMap(notifyAddress, CITY),
+                        getValueFromMap(notifyAddress, STATE),
+                        getValueFromMap(notifyAddress, ZIP_POST_CODE),
+                        getValueFromMap(notifyAddress, COUNTRY)
+                    );
+
                     dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.NOTIFY_PARTY_CONTACT_PERSON,getValueFromMap(notifyAddress, CONTACT_PERSON_ALIAS));
                 }
@@ -692,6 +715,7 @@ public abstract class IReport {
 
             }
             List<String> client = null;
+            List<String> clientWoCont = null;
             if(shipmentClient != null)
             {
                 Map<String, Object> clientAddress = shipmentClient.getAddressData();
@@ -701,6 +725,12 @@ public abstract class IReport {
                             ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
                             getValueFromMap(clientAddress, email), getValueFromMap(clientAddress, CONTACT_PHONE),
                             getValueFromMap(clientAddress, ZIP_POST_CODE));
+
+                    clientWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
+                        getValueFromMap(clientAddress, ADDRESS2),
+                        getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, STATE), getValueFromMap(clientAddress, ZIP_POST_CODE),
+                        getValueFromMap(clientAddress, COUNTRY));
+
                     dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
                     dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, COUNTRY));
@@ -715,6 +745,9 @@ public abstract class IReport {
             dictionary.put(ReportConstants.CONSIGNEE,consignee);
             dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
             dictionary.put(ReportConstants.CLIENT, client);
+            dictionary.put(CONSIGNER_ADD_WITHOUT_CONTACT,consignerWoCont);
+            dictionary.put(NOTIFY_PARTY_ADD_WITHOUT_CONTACT, notifyWoCont);
+            dictionary.put(CLIENT_ADD_WITHOUT_CONTACT, clientWoCont);
             populateShipmentCargoManifestParty(shipment, dictionary);
 
             PartiesModel notifyParty1 = null;
@@ -1118,6 +1151,7 @@ public abstract class IReport {
 
     public List<String> populateConsigneeData(Map<String, Object> dictionary, PartiesModel shipmentConsignee) {
         List<String> consignee = null;
+        List<String> consigneeWoCont = null;
         if(shipmentConsignee != null)
         {
             Map<String, Object> consigneeAddress = shipmentConsignee.getAddressData();
@@ -1128,6 +1162,18 @@ public abstract class IReport {
                         ReportHelper.getCityCountry(getValueFromMap(consigneeAddress, CITY), getValueFromMap(consigneeAddress, COUNTRY)),
                         getValueFromMap(consigneeAddress, "Email"), getValueFromMap(consigneeAddress, CONTACT_PHONE),
                         getValueFromMap(consigneeAddress,ZIP_POST_CODE));
+
+                consigneeWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
+                    getValueFromMap(consigneeAddress, COMPANY_NAME),
+                    getValueFromMap(consigneeAddress, ADDRESS1),
+                    getValueFromMap(consigneeAddress, ADDRESS2),
+                    getValueFromMap(consigneeAddress, CITY),
+                    getValueFromMap(consigneeAddress, STATE),
+                    getValueFromMap(consigneeAddress, ZIP_POST_CODE),
+                    getValueFromMap(consigneeAddress, COUNTRY)
+                );
+
+                dictionary.put(CONSIGNEE_ADD_WITHOUT_CONTACT, consigneeWoCont);
                 dictionary.put(ReportConstants.CONSIGNEE_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(CONSIGNEE_COMPANY_NAME, getValueFromMap(consigneeAddress, COMPANY_NAME));
                 dictionary.put(ReportConstants.CONSIGNEE_CONTACT_PERSON,getValueFromMap(consigneeAddress, CONTACT_PERSON_ALIAS));
@@ -3035,6 +3081,7 @@ public abstract class IReport {
                 AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
                 dictionary.put(CLIENT_LL, address.getOrgName());
                 dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+                dictionary.put(CLIENT_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
 //                throw new ValidationException("Translation not available for Client Organization");
                 orgWithoutTranslation.add("Client");
@@ -3047,6 +3094,7 @@ public abstract class IReport {
                 AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
                 dictionary.put(CONSIGNER_LL, address.getOrgName());
                 dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+                dictionary.put(CONSIGNER_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
 //                throw new ValidationException("Translation not available for Consigner Organization");
                 orgWithoutTranslation.add("Consigner");
@@ -3059,6 +3107,7 @@ public abstract class IReport {
                 AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
                 dictionary.put(CONSIGNEE_LL, address.getOrgName());
                 dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+                dictionary.put(CONSIGNEE_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
 //                throw new ValidationException("Translation not available for Consignee Organization");
                 orgWithoutTranslation.add("Consignee");
@@ -3071,6 +3120,7 @@ public abstract class IReport {
                 AddressTranslationListResponse.AddressTranslationResponse address = orgVsAddressTranslationMap.get(orgCode + "_" + addressCode);
                 dictionary.put(NOTIFY_PARTY_LL, address.getOrgName());
                 dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
+                dictionary.put(NOTIFY_PART_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
 //                throw new ValidationException("Translation not available for Notify Party Organization");
                 orgWithoutTranslation.add("Notify Party");
@@ -3471,7 +3521,8 @@ public abstract class IReport {
 
     private void validateOceanDGCheck(ShipmentModel shipmentModel) {
         if(shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus())) {
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentModel.getOceanDGStatus()) &&
+                    !Constants.IMP.equals(shipmentModel.getDirection())) {
                 throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before printing.");
             }
             boolean dgContainer = false;

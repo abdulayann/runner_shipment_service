@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS events
+    ADD COLUMN IF NOT EXISTS reference_number VARCHAR(255);

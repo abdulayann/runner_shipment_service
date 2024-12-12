@@ -88,6 +88,7 @@ public class ShipmentConstants {
     public static final String GET_DATETIME_CHANGES = "/get/dateTimeChanges";
     public static final String GET_CONTAINERS = "/get/ts/containers";
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
+    public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
 
     public static final String SHIPMENT_CREATION = "SHPCR";
@@ -125,5 +126,8 @@ public class ShipmentConstants {
     public static final String REQUIRED_PARAMETER_MISSING_ERROR = "Required parameter missing: {} for Request Id {} ";
     public static final String SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR = "Shipment Details is not present for Guid {} with Request Id {}";
     public static final String TENANT_DATA_RETRIEVAL = "Successful Tenant Data Retrieval";
+    public static final String SHIPMENT_RETRIEVE_NULL_REQUEST =  "Request Id is null for Shipment retrieve with Request Id {}";
+
+    public static final String FETCH_MATCHING_RULES_SUCCESS = "Matching Rules Fetched Successfully";
 
 }

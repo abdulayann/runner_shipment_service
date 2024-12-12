@@ -35,6 +35,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
         return findOne(spec);
     }
 
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM shipment_details WHERE guid IN ?1", nativeQuery = true)
+    List<ShipmentDetails> findAllByGuids(List<UUID> guids);
+
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findAllByHouseBill(String Hbl);
@@ -47,6 +51,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying @Transactional
     @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
     void saveJobStatus(Long id, String jobStatus);
+
+    @Modifying @Transactional @ExcludeTenantFilter
+    @Query(value = "Update shipment_details set status = ?2 Where id = ?1", nativeQuery = true)
+    void saveStatus(Long id, Integer status);
 
     @Modifying @Transactional
     @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
@@ -70,6 +78,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> findShipmentsByIds(Set<Long> id);
+
+    @Query(value = "SELECT * FROM shipment_details WHERE id = ?1", nativeQuery = true)
+    Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id);
 
     List<ShipmentDetails> findBySourceGuid(UUID guid);
 

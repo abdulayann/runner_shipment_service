@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
 import com.dpw.runner.shipment.services.utils.Generated;
-import java.util.TimeZone;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
@@ -13,12 +12,12 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.web.client.RestTemplate;
-import springfox.documentation.swagger2.annotations.EnableSwagger2;
+
+import java.util.TimeZone;
 
 
 @SpringBootApplication(scanBasePackages = "com.dpw.runner.shipment.services")
 @Slf4j
-@EnableSwagger2
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
 @Generated

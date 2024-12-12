@@ -1,12 +1,15 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -43,6 +46,10 @@ public class Events extends MultiTenancy {
     @Size(max=210, message = "max size is 210 for event_code")
     @MasterData(type = MasterDataType.ORDER_EVENTS)
     private String eventCode;
+
+    @Column(name = "event_type")
+    @Enumerated(EnumType.STRING)
+    private EventType eventType;
 
     @Column(name = "description")
     @Size(max=512, message = "max size is 512 for description")
@@ -122,4 +129,23 @@ public class Events extends MultiTenancy {
 
     @Column(name = "shipment_number")
     private String shipmentNumber;
+
+    @Column(name = "direction")
+    private String direction;
+
+    @Column(name = "remarks")
+    private String remarks;
+
+    @Column(name = "user_name")
+    private String userName;
+
+    @Column(name = "user_email")
+    private String userEmail;
+
+    @Column(name = "branch")
+    private String branch;
+
+    @Column(name = "reference_number")
+    private String referenceNumber;
+
 }
