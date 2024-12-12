@@ -1024,7 +1024,6 @@ public class EntityTransferService implements IEntityTransferService {
                     voyage = consolidationDetails.get().getCarrierDetails().getVoyage();
                     bol = consolidationDetails.get().getBol();
                 } else {
-                    consolidationDetails.get();
                     flightNumber = consolidationDetails.get().getCarrierDetails().getFlightNumber();
                     voyage = consolidationDetails.get().getCarrierDetails().getShippingLine();
                     bol = consolidationDetails.get().getBol();

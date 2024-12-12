@@ -25,7 +25,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
-import java.io.IOException;
+
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;

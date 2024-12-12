@@ -2864,8 +2864,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
-        if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
+        if (oldEntity == null) {
             return false;
+        }
+
+        if (oldEntity.getReceivingBranch()==null) {
+            return true;
         }
 
         boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
@@ -4166,22 +4170,15 @@ public class ShipmentService implements IShipmentService {
 
     public boolean isNotAllowedToViewShipment(List<TriangulationPartner> triangulationPartners,
                                               ShipmentDetails shipmentDetails, Long currentTenant) {
-        if ((triangulationPartners == null
-                || triangulationPartners.stream()
-                .filter(Objects::nonNull)
+        return ((triangulationPartners == null
+                || triangulationPartners.stream().filter(Objects::nonNull)
                 .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
-                && !Objects.equals(shipmentDetails.getReceivingBranch(), currentTenant)) {
-            return true;
-        }
-
-        if (triangulationPartners == null
+                && !Objects.equals(shipmentDetails.getReceivingBranch(), currentTenant))
+                || (triangulationPartners == null
                 && !Objects.equals(shipmentDetails.getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
-                && !Objects.equals(shipmentDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
-            return true;
-        }
-
-        return false;
+                && !Objects.equals(shipmentDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue()));
     }
+
 
     public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel) {
         String responseMsg;

@@ -4284,8 +4284,12 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isValidReceivingBranchChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
 
-        if (oldEntity == null || oldEntity.getReceivingBranch() == null) {
+        if (oldEntity == null) {
             return false;
+        }
+
+        if (oldEntity.getReceivingBranch()==null) {
+            return true;
         }
 
         boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), consolidationDetails.getReceivingBranch());
