@@ -437,6 +437,40 @@ class NotificationServiceTest {
     }
 
     @Test
+    void testAcceptNotification_ShipmentEntity_ReassignBranch_ThrowsException() throws RunnerException {
+        Long id = 11L;
+        notification.setNotificationRequestType(NotificationRequestType.REASSIGN);
+        notification.setEntityType(Constants.SHIPMENT);
+        notification.setEntityId(10L);
+        notification.setRequestedBranchId(1);
+        notification.setReassignedToBranchId(2);
+        Integer tenantId = 2;
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(100L);
+        tenantModel.setDefaultAddressId(200L);
+        PartiesRequest partiesRequest = new PartiesRequest();
+
+        CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        ShipmentRequest shipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentRequest.class);
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
+        when(shipmentService.retrieveById(requestModel)).thenReturn(getResponse(shipmentDetailsResponse, HttpStatus.OK));
+        when(jsonHelper.convertValue(shipmentDetailsResponse, ShipmentRequest.class)).thenReturn(shipmentRequest);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(Map.of(tenantId, new Object()));
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(100L, 200L)).thenReturn(partiesRequest);
+        when(shipmentService.completeUpdate(any(CommonRequestModel.class))).thenThrow(new RuntimeException("Error"));
+
+        var response = notificationService.acceptNotification(id);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        verify(notificationDao).findById(id);
+    }
+
+    @Test
     void testAcceptNotification_ConsolidationEntity_ReassignBranch() throws RunnerException {
         Long id = 11L;
         notification.setNotificationRequestType(NotificationRequestType.REASSIGN);

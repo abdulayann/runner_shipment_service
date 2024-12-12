@@ -3673,6 +3673,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
+        when(notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(anyList(), anyString())).thenReturn(Map.of(1L, 5));
 
         when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
         when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
@@ -5670,10 +5671,13 @@ ShipmentServiceTest extends CommonMocks {
 
         shipmentDetails.setContainersList(containersList);
         when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappings);
+        when(consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(anyList(), anyInt())).thenReturn(Map.of(2L, 5));
+        when(notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(anyList(), anyString())).thenReturn(Map.of(2L, 5));
 
+        shipmentDetails.setId(1L);
         List<ShipmentDetails> shipments = List.of(shipmentDetails);
         List<IRunnerResponse> shipmentResponse = convertEntityListToDtoList(shipments);
-        PageImpl page = new PageImpl(List.of(shipmentDetails));
+        PageImpl<ShipmentDetails> page = new PageImpl<>(List.of(shipmentDetails));
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildListSuccessResponse(
                 shipmentResponse,
