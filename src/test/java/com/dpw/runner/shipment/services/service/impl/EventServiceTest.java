@@ -29,7 +29,6 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.ContainerBase;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -940,7 +939,7 @@ class EventServiceTest extends CommonMocks {
 
     @Test
     void processUpstreamTrackingMessageReturnsTrueIfInputIsNull() {
-        var response = eventService.processUpstreamTrackingMessage(null);
+        var response = eventService.processUpstreamTrackingMessage(null, "messageId");
         assertTrue(response);
     }
 
@@ -952,7 +951,7 @@ class EventServiceTest extends CommonMocks {
 
         when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -960,7 +959,7 @@ class EventServiceTest extends CommonMocks {
     void processUpstreamTrackingMessageReturnsTrueIfTrackingEventsIsNullorEmpty() {
         var container = new TrackingServiceApiResponse.Container();
         when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(Collections.emptyList());
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -982,7 +981,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -1006,7 +1005,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
         when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -1030,7 +1029,7 @@ class EventServiceTest extends CommonMocks {
 
         when(shipmentDao.saveWithoutValidation(any())).thenThrow(new RuntimeException());
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "");
         assertFalse(response);
     }
 
