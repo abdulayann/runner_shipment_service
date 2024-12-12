@@ -300,7 +300,7 @@ public class HblService implements IHblService {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
-                if(shipmentDetails.isPresent()){
+                if(shipmentDetails.isPresent() && !CommonUtils.listIsNullOrEmpty(shipmentDetails.get().getConsolidationList())){
                     for(ConsolidationDetails consolidationDetails: shipmentDetails.get().getConsolidationList()){
                         if (consolidationDetails!=null  &&
                                 (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&

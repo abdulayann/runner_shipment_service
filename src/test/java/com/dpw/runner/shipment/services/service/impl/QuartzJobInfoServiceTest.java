@@ -135,36 +135,6 @@ class QuartzJobInfoServiceTest {
         verify(quartzJobService).updateOneTimeJob(anyString(), any());
     }
 
-//    @Test
-    void testDeleteJobById_Success() {
-        Long jobId = 1L;
-        QuartzJobResponse mockResponse = new QuartzJobResponse();
-        when(quartzJobService.deleteJob(anyString())).thenReturn(mockResponse);
-        doNothing().when(quartzJobInfoDao).deleteById(any());
-
-        QuartzJobResponse actualResponse = quartzJobInfoService.deleteJobById(jobId);
-
-        assertNotNull(actualResponse);
-        assertEquals(mockResponse, actualResponse);
-
-        verify(quartzJobInfoDao).deleteById(1L);
-        verify(quartzJobService).deleteJob(jobId.toString());
-    }
-
-//    @Test
-    void testDeleteJobById_NullResponse() {
-        Long jobId = 1L;
-        when(quartzJobService.deleteJob(anyString())).thenReturn(null);
-        doNothing().when(quartzJobInfoDao).deleteById(any());
-
-        QuartzJobResponse actualResponse = quartzJobInfoService.deleteJobById(jobId);
-
-        assertNull(actualResponse);
-
-        verify(quartzJobInfoDao).deleteById(jobId);
-        verify(quartzJobService).deleteJob(jobId.toString());
-    }
-
     @Test
     void testGetQuartzJobTime_NoActiveConfigurations() {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
@@ -264,6 +234,35 @@ class QuartzJobInfoServiceTest {
     }
 
     @Test
+    void testGetQuartzJobTime_DuplicateConfigurations() {
+        FileTransferConfigurations config1 = new FileTransferConfigurations();
+        config1.setIsActive(1);
+        config1.setTransportMode("AIR");
+        config1.setCriteriaField(FileTransferCriteriaFields.ETA.getId());
+        config1.setTriggerType(PrePostTrigger.PRE.getId());
+        config1.setIntervalTime(1);
+        config1.setIntervalTimeUnit(TimeUnit.HOUR.getId());
+
+        FileTransferConfigurations config2 = new FileTransferConfigurations();
+        config2.setIsActive(1);
+        config2.setTransportMode("AIR");
+        config2.setCriteriaField(FileTransferCriteriaFields.ATD.getId());
+        config2.setTriggerType(PrePostTrigger.POST.getId());
+        config2.setIntervalTime(2);
+        config2.setIntervalTimeUnit(TimeUnit.DAY.getId());
+
+        fileTransferConfigurations.add(config1);
+        fileTransferConfigurations.add(config2);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+
+        assertNotNull(result);
+        assertEquals(eta.minusHours(1), result);
+        verify(commonUtils).getCurrentTenantSettings();
+    }
+
+    @Test
     void testGetQuartzJobTime_NullTransportMode() {
         FileTransferConfigurations config = new FileTransferConfigurations();
         config.setIsActive(1);
@@ -281,5 +280,14 @@ class QuartzJobInfoServiceTest {
         assertNotNull(result);
         assertEquals(eta.minusHours(3), result);
         verify(commonUtils).getCurrentTenantSettings();
+    }
+
+    @Test
+    void testIsJobWithNamePresent() {
+        when(quartzJobService.isJobWithNamePresent(anyString())).thenReturn(true);
+
+        quartzJobInfoService.isJobWithNamePresent("Job");
+
+        verify(quartzJobService, times(1)).isJobWithNamePresent(anyString());
     }
 }
