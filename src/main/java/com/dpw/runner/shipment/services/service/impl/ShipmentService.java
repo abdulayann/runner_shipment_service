@@ -7837,7 +7837,7 @@ public class ShipmentService implements IShipmentService {
 
         // update shipment status by calling a dao method
         shipment.setStatus(ShipmentStatus.Cancelled.getValue());
-        shipmentDao.save(shipment, false);
+        shipmentDao.update(shipment, false);
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
