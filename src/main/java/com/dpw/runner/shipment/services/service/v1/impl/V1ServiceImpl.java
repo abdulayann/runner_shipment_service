@@ -1272,6 +1272,7 @@ public class V1ServiceImpl implements IV1Service {
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.error(ex.getStatusCode().value() + StringUtility.getEmptyString() + ex.getRawStatusCode() + ex.getResponseBodyAsString());
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());

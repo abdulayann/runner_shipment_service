@@ -34,7 +34,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +43,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
@@ -577,13 +577,14 @@ public class EventDao implements IEventDao {
     public void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails) {
         // update events with consolidation id with condition
         List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        AtomicReference<Long> consolidationId = new AtomicReference<>(null);
         if(ObjectUtils.isNotEmpty(consolidationList)) {
-            Long consolidationId = consolidationList.get(0).getId();
-            eventsList.stream()
-                    .map(this::updateUserFieldsInEvent)
-                    .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
-                    .forEach(event -> event.setConsolidationId(consolidationId));
+             consolidationId.set(consolidationList.get(0).getId());
         }
+        eventsList.stream()
+                .map(this::updateUserFieldsInEvent)
+                .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                .forEach(event -> event.setConsolidationId(consolidationId.get()));
     }
 
 
@@ -594,6 +595,8 @@ public class EventDao implements IEventDao {
 
         if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
             event.setUserName(EventConstants.SYSTEM_GENERATED);
+            event.setUserEmail(null);
+            event.setBranch(null);
         }
         return event;
     }

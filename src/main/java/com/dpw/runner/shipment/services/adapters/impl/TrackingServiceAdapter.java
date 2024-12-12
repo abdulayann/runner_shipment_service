@@ -714,7 +714,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .filter(transport -> transport != null && transportId.equals(transport.getId()))
                                                         .findFirst())
                                                 .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
-                                                        .flightName(String.valueOf(transport.getOperatorName())));
+                                                        .flightName(StringUtility.convertToString(transport.getOperatorName())));
 
                                         // Build and return the event
                                         return eventBuilder.build();
@@ -727,7 +727,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
                 trackingEvents.addAll(eventsRows.stream().toList());
             }
-            commonUtils.updateEventWithMasterData(trackingEvents);
         } finally {
             customThreadPool.shutdown();
         }

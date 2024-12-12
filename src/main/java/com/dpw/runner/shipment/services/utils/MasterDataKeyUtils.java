@@ -108,6 +108,10 @@ public class MasterDataKeyUtils {
                                 EntityTransferDGSubstance object12 = (EntityTransferDGSubstance) cache;
                                 response.put(value, object12.getProperShippingName());
                                 break;
+                            case CacheConstants.COUNTRIES:
+                                EntityTransferUnLocations obj13 = (EntityTransferUnLocations) cache;
+                                response.put(value, obj13.Country);
+                                break;
                             default:
                         }
                     }

@@ -106,7 +106,7 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
             if(Boolean.TRUE.equals(getFullConsolidation)) {

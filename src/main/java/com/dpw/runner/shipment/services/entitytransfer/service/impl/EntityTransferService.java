@@ -1023,8 +1023,11 @@ public class EntityTransferService implements IEntityTransferService {
             List<TriangulationPartner> triangulationPartnerList = consolidationDetails.get().getTriangulationPartnerList();
             Long triangulationBranch = consolidationDetails.get().getTriangulationPartner();
             List<String> missingField = new ArrayList<>();
-            boolean entityTransferDetails = Objects.isNull(receivingBranch)
-                    && (ObjectUtils.isEmpty(triangulationPartnerList) || Objects.isNull(triangulationBranch));
+
+            boolean entityTransferDetails = false;
+            if (Objects.isNull(receivingBranch) && Objects.isNull(triangulationBranch)) {
+                entityTransferDetails = ObjectUtils.isEmpty(triangulationPartnerList);
+            }
 
             if(Strings.isNullOrEmpty(bol) || Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||
                     eta == null || etd == null || Strings.isNullOrEmpty(polId) || Strings.isNullOrEmpty(podId) || entityTransferDetails) {
@@ -1167,8 +1170,10 @@ public class EntityTransferService implements IEntityTransferService {
             String polId = shipmentDetails.get().getCarrierDetails().getOriginPort();
             String podId = shipmentDetails.get().getCarrierDetails().getDestinationPort();
 
-            boolean entityTransferDetails = Objects.isNull(shipmentDetails.get().getReceivingBranch())
-                    && (ObjectUtils.isEmpty(shipmentDetails.get().getTriangulationPartnerList()) || Objects.isNull(shipmentDetails.get().getTriangulationPartner()));
+            boolean entityTransferDetails = false;
+            if (Objects.isNull(shipmentDetails.get().getReceivingBranch()) && Objects.isNull(shipmentDetails.get().getTriangulationPartner())) {
+                entityTransferDetails = ObjectUtils.isEmpty(shipmentDetails.get().getTriangulationPartnerList());
+            }
 
             List<String> missingField = new ArrayList<>();
             if(Strings.isNullOrEmpty(voyage) || Strings.isNullOrEmpty(flightNumber) ||

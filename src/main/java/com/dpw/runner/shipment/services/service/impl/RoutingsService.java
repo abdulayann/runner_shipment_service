@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
@@ -32,6 +33,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,9 +61,12 @@ public class RoutingsService implements IRoutingsService {
     public MasterDataUtils masterDataUtils;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    ExecutorService executorService;
 
     @Override
-    public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException {
+    public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings)
+        throws RunnerException, ExecutionException, InterruptedException {
         if (shipmentId == null) {
             log.warn("Received null shipment ID. Aborting routing update.");
             return;
@@ -78,7 +85,23 @@ public class RoutingsService implements IRoutingsService {
             return;
         }
 
-        TrackingServiceApiResponse trackingServiceApiResponse = getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+        CompletableFuture<TrackingServiceApiResponse> trackingServiceApiResponseFuture =  CompletableFuture.supplyAsync(() -> {
+            try {
+                return getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+            } catch (RunnerException e) {
+                throw new RoutingException(e.getMessage(), e);
+            }
+        }, executorService);
+        Map<String, List<Routings>> polToRoutingMap = new HashMap<>();
+        Map<String, List<Routings>> podToRoutingMap = new HashMap<>();
+        CompletableFuture<Void> polToRoutingMapFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> createRoutingMap(routings, true, polToRoutingMap)),
+            executorService);
+        CompletableFuture<Void> podToRoutingMapFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> createRoutingMap(routings, false, podToRoutingMap)),
+            executorService);
+        CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
+        TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
         if (trackingServiceApiResponse == null) {
             return;
         }
@@ -86,8 +109,6 @@ public class RoutingsService implements IRoutingsService {
         log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
 
         // Create routing maps for POL and POD
-        Map<String, List<Routings>> polToRoutingMap = createRoutingMap(routings, true);
-        Map<String, List<Routings>> podToRoutingMap = createRoutingMap(routings, false);
 
         log.info("Routing maps created for shipment ID: {}. POL size: {}, POD size: {}",
                 shipmentId, polToRoutingMap.size(), podToRoutingMap.size());
@@ -137,7 +158,7 @@ public class RoutingsService implements IRoutingsService {
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
-        } catch (RuntimeException | RunnerException e) {
+        } catch (RuntimeException | RunnerException | ExecutionException | InterruptedException e) {
             log.error("Error updating routings: {}", e.getMessage(), e);
             throw new RoutingException("Failed to update routings", e);
         }
@@ -155,54 +176,56 @@ public class RoutingsService implements IRoutingsService {
                 new ArrayList<>(routingsResponses), 0, routingsResponses.size());
     }
 
-    private Map<String, List<Routings>> createRoutingMap(List<Routings> routings, boolean isPol) {
-        Map<String, List<Routings>> routingMap = new HashMap<>();
+    private void createRoutingMap(List<Routings> routings, boolean isPol,
+        Map<String, List<Routings>> routingMap) {
+            log.info("Starting to create routing map. Total routings: {}", routings.size());
+            log.info("Grouping by {} location code.", isPol ? "Pol" : "Pod");
 
-        log.info("Starting to create routing map. Total routings: {}", routings.size());
-        log.info("Grouping by {} location code.", isPol ? "Pol" : "Pod");
-
-        // Collect all unique Pol and Pod locations
-        Set<String> referenceGuids = routings.stream()
+            // Collect all unique Pol and Pod locations
+            Set<String> referenceGuids = routings.stream()
                 .flatMap(routing -> Stream.of(routing.getPol(), routing.getPod()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        log.debug("Collected unique reference GUIDs from Pol and Pod: {}", referenceGuids);
+            log.debug("Collected unique reference GUIDs from Pol and Pod: {}", referenceGuids);
 
-        // Fetch location data for the collected Pol and Pod
-        Map<String, UnlocationsResponse> locationData = masterDataUtils.getLocationData(referenceGuids);
-        log.debug("Fetched location data: {}", locationData);
+            // Fetch location data for the collected Pol and Pod
+            Map<String, UnlocationsResponse> locationData = masterDataUtils.getLocationData(
+                referenceGuids);
+            log.debug("Fetched location data: {}", locationData);
 
-        // Iterate over routings and group them by the appropriate location key
-        for (Routings routing : routings) {
-            String pol = routing.getPol();
-            String pod = routing.getPod();
+            // Iterate over routings and group them by the appropriate location key
+            for (Routings routing : routings) {
+                String pol = routing.getPol();
+                String pod = routing.getPod();
 
-            log.debug("Processing routing: {}", routing);
+                log.debug("Processing routing: {}", routing);
 
-            // Skip processing if both Pol and Pod are null
-            if (pol == null && pod == null) {
-                log.warn("Skipping routing due to both Pol and Pod being null. Routing details: {}", routing);
-                continue;
+                // Skip processing if both Pol and Pod are null
+                if (pol == null && pod == null) {
+                    log.warn(
+                        "Skipping routing due to both Pol and Pod being null. Routing details: {}",
+                        routing);
+                    continue;
+                }
+
+                // Determine the location key
+                String locationKey = getLocationKey(pol, pod, locationData, isPol);
+
+                if (locationKey != null) {
+                    log.debug("Location key for this routing: {}", locationKey);
+                    routingMap.computeIfAbsent(locationKey, key -> {
+                        log.info("Creating new routing list for location key: {}", key);
+                        return new ArrayList<>();
+                    }).add(routing);
+                    log.debug("Added routing to location key '{}': {}", locationKey, routing);
+                } else {
+                    log.warn("Missing location key for routing with Pol: {} and Pod: {}", pol, pod);
+                }
             }
 
-            // Determine the location key
-            String locationKey = getLocationKey(pol, pod, locationData, isPol);
-
-            if (locationKey != null) {
-                log.debug("Location key for this routing: {}", locationKey);
-                routingMap.computeIfAbsent(locationKey, key -> {
-                    log.info("Creating new routing list for location key: {}", key);
-                    return new ArrayList<>();
-                }).add(routing);
-                log.debug("Added routing to location key '{}': {}", locationKey, routing);
-            } else {
-                log.warn("Missing location key for routing with Pol: {} and Pod: {}", pol, pod);
-            }
-        }
-
-        log.info("Finished creating routing map. Total groups created: {}. Routing map: {}", routingMap.size(), routingMap);
-        return routingMap;
+            log.info("Finished creating routing map. Total groups created: {}. Routing map: {}",
+                routingMap.size(), routingMap);
     }
 
     private String getLocationKey(String pol, String pod, Map<String, UnlocationsResponse> locationData, boolean isPol) {

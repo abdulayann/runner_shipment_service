@@ -6,11 +6,13 @@ import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import org.springframework.http.ResponseEntity;
 
 public interface IRoutingsService {
 
-    void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings) throws RunnerException;
+    void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings)
+        throws RunnerException, ExecutionException, InterruptedException;
 
     ResponseEntity<IRunnerResponse> updateRoutings(RoutingsUpdateRequest routingsUpdateRequest);
 
