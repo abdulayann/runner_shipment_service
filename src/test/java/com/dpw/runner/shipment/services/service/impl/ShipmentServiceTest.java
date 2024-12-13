@@ -2564,14 +2564,17 @@ ShipmentServiceTest extends CommonMocks {
 
         shipmentDetailsList.add(ShipmentDetails.builder().status(1).carrierDetails(carrierDetails).build());
 
+        List<ShipmentExcelExportResponse> shipmentExcelExportResponseList = new ArrayList<>();
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+            .origin("origin_name")
+            .originPort("originPort_name")
+            .destination("destination_name")
+            .destinationPort("destinationPort_name")
+            .build();
+        shipmentExcelExportResponseList.add(ShipmentExcelExportResponse.builder().status(1).carrierDetails(carrierDetailResponse).build());
+
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
-        var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
-                shipmentDetailsPage.getTotalPages(),
-                shipmentDetailsPage.getTotalElements()
-        );
 
         HttpServletResponse response = mock(HttpServletResponse.class);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -2593,6 +2596,8 @@ ShipmentServiceTest extends CommonMocks {
 
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
+        ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         shipmentService.exportExcel(response, commonRequestModel);
 
         verify(response, times(1)).setContentType(anyString());
@@ -4187,6 +4192,14 @@ ShipmentServiceTest extends CommonMocks {
 
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+            .origin("origin_name")
+            .originPort("originPort_name")
+            .destination("destination_name")
+            .destinationPort("destinationPort_name")
+            .build();
+        ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
+        when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
         shipmentService.exportExcel(response, commonRequestModel);
 
         verify(response, times(1)).setContentType(anyString());
