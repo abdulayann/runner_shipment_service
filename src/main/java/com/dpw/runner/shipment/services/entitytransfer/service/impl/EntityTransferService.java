@@ -504,10 +504,7 @@ public class EntityTransferService implements IEntityTransferService {
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
-            approvalRoleTenantValidation(tenantIds);
-        }
+        this.validateApprovalRoleForImport();
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
 
         // Update task status rejected
@@ -561,6 +558,13 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
+    private void validateApprovalRoleForImport() {
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
+            approvalRoleTenantValidation(tenantIds);
+        }
+    }
+
     private void pushImportShipmentDataToDependantService(Long shipmentId, boolean isCreateShip) {
         try {
             Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
@@ -573,10 +577,7 @@ public class EntityTransferService implements IEntityTransferService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException {
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
-            approvalRoleTenantValidation(tenantIds);
-        }
+        this.validateApprovalRoleForImport();
         ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
 
         // Update task status rejected

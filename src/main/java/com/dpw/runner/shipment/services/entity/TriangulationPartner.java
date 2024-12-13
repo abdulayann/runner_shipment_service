@@ -8,13 +8,14 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Embeddable
-public class TriangulationPartner {
+public class TriangulationPartner implements Serializable {
 
     @Column(name = "partner_id")
     @TenantIdData

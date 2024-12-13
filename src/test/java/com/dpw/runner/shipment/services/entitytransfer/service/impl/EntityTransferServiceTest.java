@@ -2127,7 +2127,7 @@ class EntityTransferServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulation_ErrorLog() throws RunnerException {
+    void testImportConsolidation_UpdateTriangulation_ErrorLog(){
         UserContext.getUser().setTenantId(728);
         EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -2168,8 +2168,9 @@ class EntityTransferServiceTest extends CommonMocks {
         doNothing().when(consolidationDetailsDao).updateIsAcceptedTriangulationPartner(anyLong(), anyLong(), anyBoolean());
         when(consolidationDetailsDao.findById(3L)).thenReturn(Optional.empty());
         mockShipmentSettings();
+        var commonRequest = CommonRequestModel.buildRequest(importConsolidationRequest);
 
-        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest)));
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.importConsolidation(commonRequest));
     }
 
     @Test

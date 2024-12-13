@@ -437,8 +437,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartnerList")
-    private List<TriangulationPartnerRequest> TriangulationPartnerList;
 
 
 

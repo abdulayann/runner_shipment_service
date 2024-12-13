@@ -77,44 +77,46 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
             }
 
             // Logged console related error
-            save(commonErrorLogs);
+            this.save(commonErrorLogs);
 
             // All shipment related Errors Handled
-            List<Long> failedShipIds = sendConsoleValidationResponse.getShipmentIds();
-            List<CommonErrorLogs> shipCommonErrorList = new ArrayList<>();
-            if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
-                var shipCommonErrors = commonErrorLogsRepository.findByEntityIdListAndEntityTypeAndErrorType(shipmentIds, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER.name());
-                Map<Long, CommonErrorLogs> shipCommonErrorsMap = shipCommonErrors.stream().collect(Collectors.toMap(CommonErrorLogs::getEntityId, x -> x));
-                for (Long shipId : failedShipIds) {
-                    if (shipCommonErrorsMap.containsKey(shipId)) {
-                        shipCommonErrorsMap.get(shipId).setErrorMessage(sendConsoleValidationResponse.getShipmentErrorMessage());
-                        shipCommonErrorList.add(shipCommonErrorsMap.get(shipId));
-                        shipCommonErrorsMap.remove(shipId);
-                    } else {
-                        shipCommonErrorList.add(CommonErrorLogs.builder()
-                                .entityId(shipId)
-                                .entityType(Constants.SHIPMENT)
-                                .errorType(CommonErrorType.AUTOMATIC_TRANSFER)
-                                .errorMessage(sendConsoleValidationResponse.getShipmentErrorMessage())
-                                .build());
-                    }
-                }
-
-                // Deleted older failed scenarios
-                if (!shipCommonErrorsMap.isEmpty()) {
-                    Set<Long> deleteErrorIds = shipCommonErrorsMap.values().stream().map(BaseEntity::getId).collect(Collectors.toSet());
-                    deleteAllById(deleteErrorIds.stream().toList());
-                }
-            }
-            // Logged all shipment related errors
-            if (!shipCommonErrorList.isEmpty()) {
-                commonErrorLogsRepository.saveAll(shipCommonErrorList);
-            }
+            this.logAllShipmentError(sendConsoleValidationResponse, shipmentIds);
 
             log.info("Logged Console and corresponding shipment errors in common error logs successfully.");
         }
+    }
 
+    private void logAllShipmentError(SendConsoleValidationResponse sendConsoleValidationResponse, List<Long> shipmentIds) {
+        List<Long> failedShipIds = sendConsoleValidationResponse.getShipmentIds();
+        List<CommonErrorLogs> shipCommonErrorList = new ArrayList<>();
+        if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+            var shipCommonErrors = commonErrorLogsRepository.findByEntityIdListAndEntityTypeAndErrorType(shipmentIds, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER.name());
+            Map<Long, CommonErrorLogs> shipCommonErrorsMap = shipCommonErrors.stream().collect(Collectors.toMap(CommonErrorLogs::getEntityId, x -> x));
+            for (Long shipId : failedShipIds) {
+                if (shipCommonErrorsMap.containsKey(shipId)) {
+                    shipCommonErrorsMap.get(shipId).setErrorMessage(sendConsoleValidationResponse.getShipmentErrorMessage());
+                    shipCommonErrorList.add(shipCommonErrorsMap.get(shipId));
+                    shipCommonErrorsMap.remove(shipId);
+                } else {
+                    shipCommonErrorList.add(CommonErrorLogs.builder()
+                            .entityId(shipId)
+                            .entityType(Constants.SHIPMENT)
+                            .errorType(CommonErrorType.AUTOMATIC_TRANSFER)
+                            .errorMessage(sendConsoleValidationResponse.getShipmentErrorMessage())
+                            .build());
+                }
+            }
 
+            // Deleted older failed scenarios
+            if (!shipCommonErrorsMap.isEmpty()) {
+                Set<Long> deleteErrorIds = shipCommonErrorsMap.values().stream().map(BaseEntity::getId).collect(Collectors.toSet());
+                this.deleteAllById(deleteErrorIds.stream().toList());
+            }
+        }
+        // Logged all shipment related errors
+        if (!shipCommonErrorList.isEmpty()) {
+            commonErrorLogsRepository.saveAll(shipCommonErrorList);
+        }
     }
 
     @Override
