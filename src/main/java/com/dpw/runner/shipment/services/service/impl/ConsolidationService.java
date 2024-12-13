@@ -4307,9 +4307,6 @@ public class ConsolidationService implements IConsolidationService {
 
     private void createOrUpdateQuartzJob(ConsolidationDetails consolidationDetails, QuartzJobInfo existingJob) {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
-        if (carrierDetails == null) {
-            return;
-        }
 
         LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
                 carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd());

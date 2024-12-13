@@ -15,6 +15,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -96,6 +97,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
+import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapperImpl;
 import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
@@ -1240,6 +1242,10 @@ import java.util.stream.Collectors;
 
         commonRequestModel.setData(copy);
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setDocumentationPartner(null);
+        List<TriangulationPartner> triangulationPartnerList = List.of(TriangulationPartner.builder().triangulationPartner(0L).build(),
+                TriangulationPartner.builder().triangulationPartner(1L).build());
+        consolidationDetails.setTriangulationPartnerList(triangulationPartnerList);
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
@@ -1292,6 +1298,50 @@ import java.util.stream.Collectors;
         commonRequestModel.setData(copy);
         ConsolidationDetails consolidationDetails = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         consolidationDetails.setContainersList(null);
+        consolidationDetails.setReceivingBranch(0L);
+        consolidationDetails.setDocumentationPartner(0L);
+        consolidationDetails.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(0L).build()));
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    void testUpdate_ContainerListNull_TriangulationPartnerList() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        copy.setContainersList(null);
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+        Cache cache = mock(Cache.class);
+
+        commonRequestModel.setData(copy);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+        consolidationDetails.setContainersList(null);
+        consolidationDetails.setReceivingBranch(0L);
+        consolidationDetails.setDocumentationPartner(1L);
+        consolidationDetails.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(1L).build()));
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
@@ -5657,6 +5707,190 @@ import java.util.stream.Collectors;
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
         verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_AlreadyAccepted() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verifyNoInteractions(quartzJobInfoDao);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(null);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(new QuartzJobInfo());
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(false);
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoService.updateSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).updateSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
     }
 
     @Test
