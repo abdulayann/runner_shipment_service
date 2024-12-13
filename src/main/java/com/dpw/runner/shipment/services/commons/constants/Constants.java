@@ -601,6 +601,9 @@ public class Constants {
     public static final String HOUR = "hour";
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
+
+    public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+
     private Constants() {
     }
 

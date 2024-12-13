@@ -26,8 +26,6 @@ public class TrackingConsumer {
     private final IEventService eventService;
     private ServiceBusProcessorClient processorClient;
     private final IV1Service v1Service;
-    @Value("${thread.sleep.time.ms}")
-    private long TIMEOUT_MS;
 
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
@@ -63,16 +61,18 @@ public class TrackingConsumer {
     @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
+        String messageId = receivedMessage.getMessageId();
+
+        log.info("Tracking Consumer - Started processing message with id : {}", messageId);
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
-        log.info("Tracking Consumer - container payload {}", jsonHelper.convertToJson(container));
+        log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         v1Service.setAuthContext();
-        boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
+        boolean processSuccess = eventService.processUpstreamTrackingMessage(container, messageId);
 
         if(processSuccess) {
             context.complete();
-            log.info("Tracking Consumer - Finished processing message with id : {}", receivedMessage.getMessageId());
+            log.info("Tracking Consumer - Finished processing message with id : {}", messageId);
         }
         v1Service.clearAuthContext();
     }
