@@ -18,7 +18,7 @@ public class BillingPaginatedRequest implements Serializable {
 	@Min(value = 1, message = "Page number must be greater than 0 ")
 	private Integer pageNumber = 1;
 	@Min(value = 1, message = "Page size must be greater than 1 ")
-	private Integer pageSize = 10;
+	private Integer pageSize = 250;
 	private String sortField;
 	private String sortDirection;
 	private boolean isPaginationRequired = true;

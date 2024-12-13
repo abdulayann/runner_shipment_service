@@ -1332,7 +1332,6 @@ public abstract class IReport {
 
             BillChargesFilterRequest request = new BillChargesFilterRequest();
             request.setBillId(billIds);
-            request.setPageSize(billIds.size());
 
             List<BillChargesBaseResponse> billChargesFromBilling = billingServiceAdapter.fetchBillCharges(request);
             return this.convertBillingBillChargeToRunnerBillCharge(billChargesFromBilling);
@@ -1465,7 +1464,6 @@ public abstract class IReport {
 
             ChargeTypeFilterRequest request = new ChargeTypeFilterRequest();
             request.setGuidList(List.of(billChargesResponse.getBillingChargeTypeGuid()));
-            request.setPageSize(1);
 
             List<ChargeTypeBaseResponse> chargeTypesFromBilling = billingServiceAdapter.fetchChargeTypes(request);
             ChargeTypeBaseResponse chargeTypeFromBilling = chargeTypesFromBilling.stream().findFirst().orElse(null);
