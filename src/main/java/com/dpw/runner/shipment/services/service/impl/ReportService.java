@@ -1571,26 +1571,42 @@ public class ReportService implements IReportService {
 
     public void addDocumentToDocumentMaster(ReportRequest reportRequest,  byte[] pdfByte_Content) {
         try {
+            boolean isShipment = reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB);
+            String guid = null;
             Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
             ShipmentDetails shipmentDetails;
             if(shipmentsRow.isPresent()) {
                 shipmentDetails = shipmentsRow.get();
-            } else {
-                throw new RunnerException("Shipment Id is Invalid");
+                isShipment = true; // DRT shipment , printing MAWB from shipment
+                guid = StringUtility.convertToString(shipmentDetails.getGuid());
+            }
+
+            if(!isShipment){
+                Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.parseLong(reportRequest.getReportId()));
+                ConsolidationDetails consolidationDetails;
+                if(optionalConsolidationDetails.isPresent()){
+                    consolidationDetails = optionalConsolidationDetails.get();
+                    guid = StringUtility.convertToString(consolidationDetails.getGuid());
+                }
+            }
+
+            if(guid == null) {
+                throw new RunnerException("Report Id is Invalid");
             }
 
             byte[] finalPdfByte_Content = pdfByte_Content;
             String documentType = documentTypeFinder(reportRequest);
 
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setEntityType(isShipment ? Constants.Shipments : Constants.Consolidations);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
             String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
+            String finalGuid = guid;
             CompletableFuture.runAsync(masterDataUtils.withMdc(
                 () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
-                    docUploadRequest, StringUtility.convertToString(shipmentDetails.getGuid()))), executorService);
+                    docUploadRequest, finalGuid)), executorService);
         }catch(Exception ex){
             log.error(ex.getMessage());
         }
