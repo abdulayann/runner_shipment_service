@@ -59,6 +59,7 @@ import java.util.concurrent.ForkJoinPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -88,6 +89,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Autowired
     private MasterDataFactory masterDataFactory;
     @Autowired
+    @Qualifier("restTemplateForTrackingService")
     private RestTemplate restTemplate;
     @Autowired
     private ISBUtils sbUtils;
