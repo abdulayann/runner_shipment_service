@@ -955,7 +955,7 @@ class EventServiceTest extends CommonMocks {
 
     @Test
     void processUpstreamTrackingMessageReturnsTrueIfInputIsNull() {
-        var response = eventService.processUpstreamTrackingMessage(null);
+        var response = eventService.processUpstreamTrackingMessage(null, "messageId");
         assertTrue(response);
     }
 
@@ -967,7 +967,7 @@ class EventServiceTest extends CommonMocks {
 
         when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -975,7 +975,7 @@ class EventServiceTest extends CommonMocks {
     void processUpstreamTrackingMessageReturnsTrueIfTrackingEventsIsNullorEmpty() {
         var container = new TrackingServiceApiResponse.Container();
         when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(Collections.emptyList());
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -996,8 +996,9 @@ class EventServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -1020,8 +1021,9 @@ class EventServiceTest extends CommonMocks {
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
         when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
         assertTrue(response);
     }
 
@@ -1042,10 +1044,10 @@ class EventServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
-
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
         when(shipmentDao.saveWithoutValidation(any())).thenThrow(new RuntimeException());
 
-        var response = eventService.processUpstreamTrackingMessage(container);
+        var response = eventService.processUpstreamTrackingMessage(container, "");
         assertFalse(response);
     }
 
