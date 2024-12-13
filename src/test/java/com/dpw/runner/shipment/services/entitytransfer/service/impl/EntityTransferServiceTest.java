@@ -2,11 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -2043,6 +2039,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .operation(TaskStatus.APPROVED.getDescription())
                 .taskId(2L)
                 .entityData(entityTransferConsolidationDetails)
+                .isFromNte(true)
                 .build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = entityTransferConsolidationDetails.getShipmentsList().get(0);
         entityTransferShipmentDetails.setSendToBranch(720);
@@ -2069,10 +2066,110 @@ class EntityTransferServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails2));
+        doNothing().when(networkTransferDao).updateStatusAndCreatedEntityId(anyLong(), anyString(), anyLong());
+        doNothing().when(shipmentDao).saveIsTransferredToReceivingBranch(anyLong(), anyBoolean());
+        doNothing().when(consolidationDetailsDao).saveIsTransferredToReceivingBranch(anyLong(), anyBoolean());
+        doNothing().when(shipmentDao).updateIsAcceptedTriangulationPartner(anyLong(), anyLong(), anyBoolean());
+        doNothing().when(consolidationDetailsDao).updateIsAcceptedTriangulationPartner(anyLong(), anyLong(), anyBoolean());
         mockShipmentSettings();
 
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testImportConsolidation_UpdateTriangulation_TenantNotMatching() throws RunnerException {
+        UserContext.getUser().setTenantId(937);
+        EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getImportConsolidationAir();
+        ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getTestShipment();
+        shipmentDetails1.setId(2L);
+        shipmentDetails1.setReceivingBranch(728L);
+        shipmentDetails1.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(728L).build()));
+        consolidationDetails2.setShipmentsList(List.of(shipmentDetails1));
+
+        ImportConsolidationRequest importConsolidationRequest = ImportConsolidationRequest.builder()
+                .operation(TaskStatus.APPROVED.getDescription())
+                .taskId(2L)
+                .entityData(entityTransferConsolidationDetails)
+                .isFromNte(true)
+                .build();
+        EntityTransferShipmentDetails entityTransferShipmentDetails = entityTransferConsolidationDetails.getShipmentsList().get(0);
+        entityTransferShipmentDetails.setSendToBranch(720);
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setId(2L);
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+        shipmentDetailsResponse.setTenantId(entityTransferShipmentDetails.getSendToBranch());
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = objectMapperTest.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
+        ConsolidationDetailsResponse consolidationDetailsResponse1 = new ConsolidationDetailsResponse();
+        consolidationDetailsResponse1.setId(3L);
+        consolidationDetailsResponse1.setGuid(UUID.randomUUID());
+        consolidationDetailsResponse1.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
+        consolidationDetailsResponse1.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
+        consolidationDetailsResponse1.setReceivingBranch(728L);
+        consolidationDetailsResponse1.setTriangulationPartnerList(List.of(TriangulationPartnerResponse.builder().triangulationPartner(728L).build()));
+
+        when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
+        when(modelMapper.map(any(), eq(ShipmentRequest.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentRequest.class));
+        when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
+        when(shipmentService.createShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
+        when(modelMapper.map(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse1);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails2));
+        doNothing().when(networkTransferDao).updateStatusAndCreatedEntityId(anyLong(), anyString(), anyLong());
+        mockShipmentSettings();
+
+        var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testImportConsolidation_UpdateTriangulation_ErrorLog() throws RunnerException {
+        UserContext.getUser().setTenantId(728);
+        EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getImportConsolidationAir();
+        ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
+
+        ImportConsolidationRequest importConsolidationRequest = ImportConsolidationRequest.builder()
+                .operation(TaskStatus.APPROVED.getDescription())
+                .taskId(2L)
+                .entityData(entityTransferConsolidationDetails)
+                .isFromNte(true)
+                .build();
+        EntityTransferShipmentDetails entityTransferShipmentDetails = entityTransferConsolidationDetails.getShipmentsList().get(0);
+        entityTransferShipmentDetails.setSendToBranch(720);
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        shipmentDetailsResponse.setId(2L);
+        shipmentDetailsResponse.setGuid(UUID.randomUUID());
+        shipmentDetailsResponse.setTenantId(entityTransferShipmentDetails.getSendToBranch());
+
+        ConsolidationDetailsRequest consolidationDetailsRequest = objectMapperTest.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
+        ConsolidationDetailsResponse consolidationDetailsResponse1 = new ConsolidationDetailsResponse();
+        consolidationDetailsResponse1.setId(3L);
+        consolidationDetailsResponse1.setGuid(UUID.randomUUID());
+        consolidationDetailsResponse1.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
+        consolidationDetailsResponse1.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
+        consolidationDetailsResponse1.setReceivingBranch(728L);
+        consolidationDetailsResponse1.setTriangulationPartnerList(List.of(TriangulationPartnerResponse.builder().triangulationPartner(728L).build()));
+
+        when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
+        when(modelMapper.map(any(), eq(ShipmentRequest.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentRequest.class));
+        when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
+        when(shipmentService.createShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
+        when(modelMapper.map(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
+        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse1);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails2));
+        doNothing().when(networkTransferDao).updateStatusAndCreatedEntityId(anyLong(), anyString(), anyLong());
+        doNothing().when(consolidationDetailsDao).saveIsTransferredToReceivingBranch(anyLong(), anyBoolean());
+        doNothing().when(consolidationDetailsDao).updateIsAcceptedTriangulationPartner(anyLong(), anyLong(), anyBoolean());
+        when(consolidationDetailsDao.findById(3L)).thenReturn(Optional.empty());
+        mockShipmentSettings();
+
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest)));
     }
 
     @Test
@@ -2450,6 +2547,133 @@ class EntityTransferServiceTest extends CommonMocks {
 
         assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidation(commonRequestModel));
     }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WhenConsolidationDetailsNotFound() {
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.automaticTransferConsoleValidation(commonRequestModel));
+
+        verify(consolidationDetailsDao).findById(anyLong());
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WhenTransportModeIsRail() {
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_RAI);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails1));
+
+        assertThrows(ValidationException.class, () -> entityTransferService.automaticTransferConsoleValidation(commonRequestModel));
+
+        verify(consolidationDetailsDao).findById(anyLong());
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WhenInterBranchConsoleIsTrue() {
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails1));
+        doNothing().when(commonUtils).setInterBranchContextForHub();
+
+        var response = entityTransferService.automaticTransferConsoleValidation(commonRequestModel);
+
+        assertNotNull(response);
+        verify(commonUtils).setInterBranchContextForHub();
+        verify(consolidationDetailsDao).findById(1L);
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WhenTransportModeIsAir() {
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails1));
+
+        var response = entityTransferService.automaticTransferConsoleValidation(commonRequestModel);
+
+        assertNotNull(response);
+        verify(consolidationDetailsDao).findById(1L);
+    }
+
+    @Test
+    void testAutomaticTransferConsoleValidation_WhenTransportModeIsSea() {
+        ValidateSendConsolidationRequest request = new ValidateSendConsolidationRequest();
+        request.setConsoleId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails1));
+
+        var response = entityTransferService.automaticTransferConsoleValidation(commonRequestModel);
+
+        assertNotNull(response);
+        verify(consolidationDetailsDao).findById(1L);
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_ValidationException() {
+        ValidateSendShipmentRequest request = new ValidateSendShipmentRequest();
+        request.setShipId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+
+        assertThrows(ValidationException.class, () -> entityTransferService.automaticTransferShipmentValidation(commonRequestModel));
+
+        verify(shipmentDao).findById(1L);
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation_EmptyShipment() {
+        ValidateSendShipmentRequest request = new ValidateSendShipmentRequest();
+        request.setShipId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.automaticTransferShipmentValidation(commonRequestModel));
+
+        verify(shipmentDao).findById(1L);
+    }
+
+    @Test
+    void testAutomaticTransferShipmentValidation() {
+        ValidateSendShipmentRequest request = new ValidateSendShipmentRequest();
+        request.setShipId(1L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails1.setJobType(Constants.SHIPMENT_TYPE_DRT);
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
+
+        var response = entityTransferService.automaticTransferShipmentValidation(commonRequestModel);
+
+        assertNotNull(response);
+        verify(shipmentDao).findById(1L);
+    }
+
 
 
     private Runnable mockRunnable() {
