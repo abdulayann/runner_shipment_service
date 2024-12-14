@@ -5,15 +5,16 @@ import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.utils.Generated;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.http.auth.AuthenticationException;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.Objects;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
 import javax.persistence.PreUpdate;
-import java.util.Map;
-import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthenticationException;
 
 @Generated
 @Slf4j
@@ -77,10 +78,19 @@ public class TenantEntityListener {
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
             log.debug("InterBranchContext during PreUpdate: {}", interBranchDto);
+            ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
+
+                    try {
+                        String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
+                        log.debug("InterBranchContext during PreUpdate (JSON): {}", interBranchDtoJson);
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to convert InterBranchDto to JSON during PreUpdate", e);
+                    }
+
                     log.error("TenantId validation failed for InterBranchContext. TenantId: {}", tenantId);
                     throw new AuthenticationException(AUTH_DENIED);
                 }
@@ -114,11 +124,19 @@ public class TenantEntityListener {
             }
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            log.debug("InterBranchContext during PreRemove: {}", interBranchDto);
+            ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
+
+                    try {
+                        String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
+                        log.debug("InterBranchContext during PreRemove (JSON): {}", interBranchDtoJson);
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to convert InterBranchDto to JSON during PreRemove", e);
+                    }
+
                     log.error("TenantId validation failed for InterBranchContext. TenantId: {}", tenantId);
                     throw new AuthenticationException(AUTH_DENIED);
                 }
@@ -134,7 +152,7 @@ public class TenantEntityListener {
 
     private boolean isValidTenantId(Integer tenantId) {
         boolean valid = (!Objects.isNull(tenantId) && tenantId > 0);
-        log.debug("TenantId validation result for {}: {}", tenantId, valid);
+        log.info("TenantId validation result for {}: {}", tenantId, valid);
         return valid;
     }
 }

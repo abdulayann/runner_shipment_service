@@ -1214,7 +1214,7 @@ public class EventService implements IEventService {
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(Container container) {
         String messageId = UUID.randomUUID().toString();
         log.info("Tracking API - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
-
+        MDC.put(LoggingConstants.TS_ID, messageId);
         v1Service.setAuthContext();
         boolean processSuccess = processUpstreamTrackingMessage(container, messageId);
         v1Service.clearAuthContext();
