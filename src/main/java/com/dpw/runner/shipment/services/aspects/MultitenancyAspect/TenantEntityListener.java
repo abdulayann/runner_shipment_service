@@ -31,7 +31,7 @@ public class TenantEntityListener {
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
 
-            log.debug("Initial TenantId: {}, Permissions: {}, InterBranchContext: {}", tenantId, permissions, interBranchData);
+            log.info("Initial TenantId: {}, Permissions: {}, InterBranchContext: {}", tenantId, permissions, interBranchData);
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
@@ -53,7 +53,7 @@ public class TenantEntityListener {
                 log.info("Overriding TenantId for sync operation. New TenantId: {}", syncTenantId);
             }
 
-            log.debug("Final TenantId after PrePersist: {}", multiTenancy.getTenantId());
+            log.info("Final TenantId after PrePersist: {}", multiTenancy.getTenantId());
         }
     }
 
@@ -65,7 +65,7 @@ public class TenantEntityListener {
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
-            log.debug("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
+            log.info("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
@@ -77,7 +77,7 @@ public class TenantEntityListener {
             }
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            log.debug("InterBranchContext during PreUpdate: {}", interBranchDto);
+            log.info("InterBranchContext during PreUpdate: {}", interBranchDto);
             ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
@@ -86,7 +86,7 @@ public class TenantEntityListener {
 
                     try {
                         String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
-                        log.debug("InterBranchContext during PreUpdate (JSON): {}", interBranchDtoJson);
+                        log.info("InterBranchContext during PreUpdate (JSON): {}", interBranchDtoJson);
                     } catch (JsonProcessingException e) {
                         log.error("Failed to convert InterBranchDto to JSON during PreUpdate", e);
                     }
@@ -101,7 +101,7 @@ public class TenantEntityListener {
                 throw new AuthenticationException(AUTH_DENIED);
             }
 
-            log.debug("Final TenantId after PreUpdate: {}", multiTenancy.getTenantId());
+            log.info("Final TenantId after PreUpdate: {}", multiTenancy.getTenantId());
         }
     }
 
@@ -112,7 +112,7 @@ public class TenantEntityListener {
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
-            log.debug("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
+            log.info("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
@@ -132,7 +132,7 @@ public class TenantEntityListener {
 
                     try {
                         String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
-                        log.debug("InterBranchContext during PreRemove (JSON): {}", interBranchDtoJson);
+                        log.info("InterBranchContext during PreRemove (JSON): {}", interBranchDtoJson);
                     } catch (JsonProcessingException e) {
                         log.error("Failed to convert InterBranchDto to JSON during PreRemove", e);
                     }
@@ -146,7 +146,7 @@ public class TenantEntityListener {
                 throw new EntityNotFoundException();
             }
 
-            log.debug("Final TenantId after PreRemove: {}", multiTenancy.getTenantId());
+            log.info("Final TenantId after PreRemove: {}", multiTenancy.getTenantId());
         }
     }
 

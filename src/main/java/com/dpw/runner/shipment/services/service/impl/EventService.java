@@ -663,7 +663,7 @@ public class EventService implements IEventService {
                                 event.getPlaceName()),
                         Function.identity(),
                         (existingEvent, newEvent) -> {
-                            log.debug("Duplicate key detected. Replacing existing event with new event: {} messageId {}", newEvent, messageId);
+                            log.info("Duplicate key detected. Replacing existing event with new event: {} messageId {}", newEvent, messageId);
                             return newEvent;
                         }
                 ));
@@ -712,34 +712,34 @@ public class EventService implements IEventService {
         log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.VSDP.equalsIgnoreCase(eventCode) &&
                 (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
-            log.debug("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.ARDP.equalsIgnoreCase(eventCode) &&
                 (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
-            log.debug("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
@@ -1134,7 +1134,7 @@ public class EventService implements IEventService {
 
         boolean isSuccess = true;
         Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
-        log.debug("Fetched identifier-to-location-role map: {} messageId {}", identifier2ToLocationRoleMap, messageId);
+        log.info("Fetched identifier-to-location-role map: {} messageId {}", identifier2ToLocationRoleMap, messageId);
 
         log.info("Saving tracking events to EventsDump for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
         saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT, messageId);
