@@ -87,7 +87,7 @@ public class TenantEntityListener {
             } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin)
                     && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)
                     && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                log.error("Unauthorized TenantId update attempt. TenantId: {}", tenantId);
+                log.error("Unauthorized TenantId update attempt. Current Tenant Id: {} TenantId: {}", TenantContext.getCurrentTenant(), tenantId);
                 throw new AuthenticationException(AUTH_DENIED);
             }
 
