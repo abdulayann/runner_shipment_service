@@ -5,16 +5,19 @@ import com.azure.messaging.servicebus.ServiceBusException;
 import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
+import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -63,9 +66,10 @@ public class TrackingConsumer {
     @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        String messageId = receivedMessage.getMessageId();
+        String messageId = UUID.randomUUID().toString();
+        MDC.put(LoggingConstants.TS_ID, messageId);
 
-        log.info("Tracking Consumer - Started processing message with id : {}", messageId);
+        log.info("Tracking Consumer - Started processing Bus id: {} message with id : {}", receivedMessage.getMessageId(), messageId);
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
         log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);

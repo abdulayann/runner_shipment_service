@@ -435,7 +435,7 @@ public class EventService implements IEventService {
                         EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
                         res.add(eventsResponse);
                     }
-                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType);
+                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, MDC.get(LoggingConstants.REQUEST_ID));
                     List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap,
                             MDC.get(LoggingConstants.REQUEST_ID));
                     res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
@@ -663,7 +663,7 @@ public class EventService implements IEventService {
                                 event.getPlaceName()),
                         Function.identity(),
                         (existingEvent, newEvent) -> {
-                            log.debug("Duplicate key detected. Replacing existing event with new event: {} messageId {}", newEvent, messageId);
+                            log.info("Duplicate key detected. Replacing existing event with new event: {} messageId {}", newEvent, messageId);
                             return newEvent;
                         }
                 ));
@@ -681,8 +681,11 @@ public class EventService implements IEventService {
                 Events::setDescription
         );
 
-        log.info("Saving updated events {} to the database. messageId {}", updatedEvents, messageId);
-        return eventDao.saveAll(updatedEvents);
+        List<Events> events = eventDao.saveAll(updatedEvents);
+        for (Events event : events) {
+            log.info("Saving the tracking events for Events: {} messageId: {}", jsonHelper.convertToJson(event), messageId);
+        }
+        return events;
     }
 
     /**
@@ -709,34 +712,34 @@ public class EventService implements IEventService {
         log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.VSDP.equalsIgnoreCase(eventCode) &&
                 (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
-            log.debug("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.ARDP.equalsIgnoreCase(eventCode) &&
                 (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
-            log.debug("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
         if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.debug("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
@@ -852,25 +855,25 @@ public class EventService implements IEventService {
     }
 
     private boolean updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
-            LocalDateTime shipmentAta, LocalDateTime shipmentAtd, Container container) {
+            LocalDateTime shipmentAta, LocalDateTime shipmentAtd, Container container, String messageId) {
         boolean isShipmentUpdateRequired = false;
         // Try to update carrier details
         try {
             isShipmentUpdateRequired |= updateCarrierDetails(shipment, shipmentAta, shipmentAtd);
         } catch (Exception e) {
-            log.error("Failed to update carrier details for shipment ID {}: {}", shipment.getShipmentId(), e.getMessage());
+            log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
         // Try to update empty container returned status
         try {
             isShipmentUpdateRequired |= updateEmptyContainerReturnedStatus(shipment, events);
         } catch (Exception e) {
-            log.error("Failed to update empty container returned status for shipment ID {}: {}", shipment.getShipmentId(), e.getMessage());
+            log.error("Failed to update empty container returned status for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
         // Try to update actual event times
         try {
             isShipmentUpdateRequired |= updateActual(shipment, container);
         } catch (Exception e) {
-            log.error("Failed to update actual event times for shipment ID {}: {}", shipment.getShipmentId(), e.getMessage());
+            log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
         return isShipmentUpdateRequired;
     }
@@ -997,7 +1000,7 @@ public class EventService implements IEventService {
      * @param entityType
      * save tracking response events into separate table and update if any existing event that's already saved
      */
-    private void saveTrackingEventsToEventsDump(List<Events> trackingEvents, Long entityId, String entityType) {
+    private void saveTrackingEventsToEventsDump(List<Events> trackingEvents, Long entityId, String entityType, String messageId) {
         if (trackingEvents == null || trackingEvents.isEmpty())
             return;
 
@@ -1021,7 +1024,10 @@ public class EventService implements IEventService {
             updatedEvents.add(event);
         });
 
-        eventDumpDao.saveAll(updatedEvents);
+        List<EventsDump> eventsDumps = eventDumpDao.saveAll(updatedEvents);
+        for (EventsDump eventsDump : eventsDumps) {
+            log.info("Saving the tracking events for Events dump: {} messageId {}", jsonHelper.convertToJson(eventsDump), messageId);
+        }
     }
 
     /**
@@ -1097,8 +1103,8 @@ public class EventService implements IEventService {
         log.info("Found {} shipment details for shipment number: {} messageId {}", shipmentDetailsList.size(), shipmentNumber, messageId);
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            log.info("Processing shipment details: {} messageId {}", shipmentDetails, messageId);
             TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            log.info("Processing shipment details id: {} messageId {} Current tenant id as: {}", shipmentDetails.getId(), messageId, TenantContext.getCurrentTenant());
             boolean updateSuccess = updateShipmentWithTrackingEvents(jsonHelper.convertValueToList(trackingEvents, Events.class), shipmentDetails, container, messageId);
             isSuccess &= updateSuccess;
             log.info("Updated shipment: {} with tracking events. Success: {} messageId {}", shipmentDetails.getShipmentId(), updateSuccess, messageId);
@@ -1128,11 +1134,12 @@ public class EventService implements IEventService {
 
         boolean isSuccess = true;
         Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap = getIdentifier2ToLocationRoleMap();
-        log.debug("Fetched identifier-to-location-role map: {} messageId {}", identifier2ToLocationRoleMap, messageId);
+        log.info("Fetched identifier-to-location-role map: {} messageId {}", identifier2ToLocationRoleMap, messageId);
 
         log.info("Saving tracking events to EventsDump for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
-        saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT);
+        saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT, messageId);
 
+        log.info("Saving tracking events to Events for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
         List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
                 Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap, messageId);
         log.info("Saved {} events to Events table for shipment: {} messageId {}", eventSaved, shipmentDetails.getShipmentId(), messageId);
@@ -1150,12 +1157,12 @@ public class EventService implements IEventService {
 
         log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId(), messageId);
 
-        boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container);
+        boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
         log.info("Shipment update required: {} messageId {}", isShipmentUpdateRequired, messageId);
 
         if (isShipmentUpdateRequired) {
             try {
-                saveAndSyncShipment(shipmentDetails);
+                saveAndSyncShipment(shipmentDetails, messageId);
                 log.info("Successfully saved and synced shipment: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
             } catch (Exception e) {
                 isSuccess = false;
@@ -1167,8 +1174,8 @@ public class EventService implements IEventService {
         return isSuccess;
     }
 
-    private void saveAndSyncShipment(ShipmentDetails shipmentDetails) throws RunnerException {
-        log.info("Saving shipment entity: {}", shipmentDetails.getShipmentId());
+    private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
+        log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
 //        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
 //        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
@@ -1207,7 +1214,7 @@ public class EventService implements IEventService {
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(Container container) {
         String messageId = UUID.randomUUID().toString();
         log.info("Tracking API - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
-
+        MDC.put(LoggingConstants.TS_ID, messageId);
         v1Service.setAuthContext();
         boolean processSuccess = processUpstreamTrackingMessage(container, messageId);
         v1Service.clearAuthContext();
