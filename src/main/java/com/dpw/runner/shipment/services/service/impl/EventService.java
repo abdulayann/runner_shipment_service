@@ -1103,10 +1103,16 @@ public class EventService implements IEventService {
         log.info("Found {} shipment details for shipment number: {} messageId {}", shipmentDetailsList.size(), shipmentNumber, messageId);
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-            log.info("Processing shipment details id: {} messageId {} Current tenant id as: {}", shipmentDetails.getId(), messageId, TenantContext.getCurrentTenant());
-            boolean updateSuccess = updateShipmentWithTrackingEvents(jsonHelper.convertValueToList(trackingEvents, Events.class), shipmentDetails, container, messageId);
-            isSuccess &= updateSuccess;
+            boolean updateSuccess = true;
+            try {
+                TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+                log.info("Processing shipment details id: {} messageId {} Current tenant id as: {}", shipmentDetails.getId(), messageId, TenantContext.getCurrentTenant());
+                updateSuccess = updateShipmentWithTrackingEvents(jsonHelper.convertValueToList(trackingEvents, Events.class), shipmentDetails, container, messageId);
+                isSuccess &= updateSuccess;
+            } finally {
+                log.info("Clearing tenant context. Removing tenant {}", TenantContext.getCurrentTenant());
+                TenantContext.removeTenant();
+            }
             log.info("Updated shipment: {} with tracking events. Success: {} messageId {}", shipmentDetails.getShipmentId(), updateSuccess, messageId);
         }
 
