@@ -15,6 +15,11 @@ public class CarrierDetailsDao implements ICarrierDetailsDao {
     private ICarrierRepository carrierRepository;
 
     @Override
+    public CarrierDetails save(CarrierDetails carrierDetails) {
+        return carrierRepository.save(carrierDetails);
+    }
+
+    @Override
     public void saveUnLocCodes(CarrierDetails carrierDetails) {
         carrierRepository.saveUnLocCodes(carrierDetails.getId(), carrierDetails.getOriginLocCode(), carrierDetails.getOriginPortLocCode(),
                 carrierDetails.getDestinationLocCode(), carrierDetails.getDestinationPortLocCode());

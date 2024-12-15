@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
@@ -109,11 +110,12 @@ public class EventService implements IEventService {
     private IEventDumpDao eventDumpDao;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
+    private ICarrierDetailsDao carrierDetailsDao;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
-            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils) {
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, ICarrierDetailsDao carrierDetailsDao) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -129,6 +131,7 @@ public class EventService implements IEventService {
         this.eventDumpDao = eventDumpDao;
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
+        this.carrierDetailsDao = carrierDetailsDao;
     }
 
     @Transactional
@@ -435,8 +438,8 @@ public class EventService implements IEventService {
                         EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
                         res.add(eventsResponse);
                     }
-                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, MDC.get(LoggingConstants.REQUEST_ID));
-                    List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityId, entityType, shipmentDetails, identifier2ToLocationRoleMap,
+                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), shipmentDetails, entityType, MDC.get(LoggingConstants.REQUEST_ID));
+                    List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityType, shipmentDetails, identifier2ToLocationRoleMap,
                             MDC.get(LoggingConstants.REQUEST_ID));
                     res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
                 }
@@ -632,14 +635,13 @@ public class EventService implements IEventService {
      * relevant information at various stages of processing for debugging and tracking purposes.
      *
      * @param trackingEvents               the list of original tracking events to process
-     * @param entityId                     the ID of the entity associated with the events
      * @param entityType                   the type of the entity associated with the events
      * @param shipmentDetails              the shipment details used for filtering and processing events
      * @param identifier2ToLocationRoleMap a map of identifiers to location roles used for mapping
      * @param messageId
      * @return a list of saved events
      */
-    private List<Events> saveTrackingEventsToEvents(List<Events> trackingEvents, Long entityId, String entityType,
+    private List<Events> saveTrackingEventsToEvents(List<Events> trackingEvents, String entityType,
             ShipmentDetails shipmentDetails, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, String messageId) {
 
         if (ObjectUtils.isEmpty(trackingEvents) || shipmentDetails == null) {
@@ -647,7 +649,7 @@ public class EventService implements IEventService {
             return trackingEvents;
         }
         // Construct list criteria and fetch existing events based on entity
-        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
+        var listCriteria = CommonUtils.constructListRequestFromEntityId(shipmentDetails.getId(), entityType);
         Pair<Specification<Events>, Pageable> pair = fetchData(listCriteria, Events.class);
         log.info("Fetching existing events from the database using criteria: {} messageId {}", listCriteria, messageId);
         List<Events> eventsFromDb = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
@@ -672,7 +674,8 @@ public class EventService implements IEventService {
         // Filter, map, and collect relevant tracking events based on custom logic
         List<Events> updatedEvents = trackingEvents.stream()
                 .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails, messageId))
-                .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, entityId, entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId(), messageId))
+                .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, shipmentDetails.getId(), entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId(),
+                        messageId))
                 .toList();
 
         setEventCodesMasterData(
@@ -802,6 +805,7 @@ public class EventService implements IEventService {
             // Update ID and GUID if the event already exists
             event.setId(existingEvent.getId());
             event.setGuid(existingEvent.getGuid());
+            event.setTenantId(existingEvent.getTenantId());
             log.info("Event already exists. Updated ID and GUID from existing event. messageId {}", messageId);
         } else {
             log.info("Event is new. No existing event found. messageId {}", messageId);
@@ -883,6 +887,7 @@ public class EventService implements IEventService {
             log.warn("No trackingContainer or events available for shipment ID {}", shipmentDetails.getShipmentId());
             return false;
         }
+
         List<Events> shipmentEvents = shipmentDetails.getEventsList();
         Map<String, Event> containerEventMapFromTracking = trackingContainer.getEvents().stream()
                 .filter(Objects::nonNull)
@@ -964,7 +969,8 @@ public class EventService implements IEventService {
         }
 
         if (isShipmentUpdateRequired) {
-            shipment.setCarrierDetails(carrierDetails);
+            CarrierDetails savedCarrierDetails = carrierDetailsDao.save(carrierDetails);
+            shipment.setCarrierDetails(savedCarrierDetails);
         }
 
         return isShipmentUpdateRequired;
@@ -996,15 +1002,15 @@ public class EventService implements IEventService {
 
     /**
      * @param trackingEvents
-     * @param entityId
+     * @param shipmentDetails
      * @param entityType
      * save tracking response events into separate table and update if any existing event that's already saved
      */
-    private void saveTrackingEventsToEventsDump(List<Events> trackingEvents, Long entityId, String entityType, String messageId) {
+    private void saveTrackingEventsToEventsDump(List<Events> trackingEvents, ShipmentDetails shipmentDetails, String entityType, String messageId) {
         if (trackingEvents == null || trackingEvents.isEmpty())
             return;
 
-        var listCriteria = CommonUtils.constructListRequestFromEntityId(entityId, entityType);
+        var listCriteria = CommonUtils.constructListRequestFromEntityId(shipmentDetails.getId(), entityType);
         Pair<Specification<EventsDump>, Pageable> pair = fetchData(listCriteria, EventsDump.class);
         Page<EventsDump> eventsDumpPage = eventDumpDao.findAll(pair.getLeft(), pair.getRight());
 
@@ -1017,8 +1023,9 @@ public class EventService implements IEventService {
             if (existingEvents.containsKey(e.getEventCode())) {
                 event.setId(existingEvents.get(e.getEventCode()).getId());
                 event.setGuid(existingEvents.get(e.getEventCode()).getGuid());
+                event.setTenantId(shipmentDetails.getTenantId());
             }
-            event.setEntityId(entityId);
+            event.setEntityId(shipmentDetails.getId());
             event.setEntityType(entityType);
             event.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING);
             updatedEvents.add(event);
@@ -1143,10 +1150,10 @@ public class EventService implements IEventService {
         log.info("Fetched identifier-to-location-role map: {} messageId {}", identifier2ToLocationRoleMap, messageId);
 
         log.info("Saving tracking events to EventsDump for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
-        saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails.getId(), Constants.SHIPMENT, messageId);
+        saveTrackingEventsToEventsDump(trackingEvents, shipmentDetails, Constants.SHIPMENT, messageId);
 
         log.info("Saving tracking events to Events for shipment ID: {} messageId {}", shipmentDetails.getId(), messageId);
-        List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents, shipmentDetails.getId(),
+        List<Events> eventSaved = saveTrackingEventsToEvents(trackingEvents,
                 Constants.SHIPMENT, shipmentDetails, identifier2ToLocationRoleMap, messageId);
         log.info("Saved {} events to Events table for shipment: {} messageId {}", eventSaved, shipmentDetails.getShipmentId(), messageId);
 
