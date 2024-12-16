@@ -5,6 +5,7 @@ import com.azure.messaging.servicebus.ServiceBusException;
 import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.IgnoreAutoTenantPopulationContext;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -74,6 +75,7 @@ public class TrackingConsumer {
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
         log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         v1Service.setAuthContext();
+        IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
         boolean processSuccess = eventService.processUpstreamTrackingMessage(container, messageId);
 
         if(processSuccess) {
@@ -81,6 +83,7 @@ public class TrackingConsumer {
             log.info("Tracking Consumer - Finished processing message with id : {}", messageId);
         }
         v1Service.clearAuthContext();
+        IgnoreAutoTenantPopulationContext.clearContext();
     }
 
     public void processError(ServiceBusErrorContext context) {
