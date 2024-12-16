@@ -37,7 +37,7 @@ public class DocumentDto {
         private String validTo;
         private String dateReceived;
         private String createdAt;
-        private String updatedAt;
+        private Object updatedAt; // getting this field as int[] in case of update actions
         private String updatedBy;
         private String physicalDocWith;
         private String fileSource;
