@@ -2150,9 +2150,8 @@ public class ShipmentService implements IShipmentService {
 
     }
 
-    public void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException {
+    public void validateRaKcDetails(ShipmentDetails shipmentDetails, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException {
         Parties consignor = shipmentDetails.getConsigner();
-        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
             if(consignor != null) {

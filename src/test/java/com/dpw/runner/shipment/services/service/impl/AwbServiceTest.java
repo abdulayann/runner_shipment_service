@@ -350,7 +350,7 @@ class AwbServiceTest extends CommonMocks {
         mockTenantModel.DefaultOrgId = 1L;
 
         mockTenantSettings();
-        doThrow(new RunnerException("Error while validating RaKC details")).when(shipmentService).validateRaKcDetails(any());
+        doThrow(new RunnerException("Error while validating RaKC details")).when(shipmentService).validateRaKcDetails(any(), any());
         var response = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
@@ -1250,9 +1250,6 @@ class AwbServiceTest extends CommonMocks {
         List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         mockShipmentSettings();
         mockTenantSettings();
@@ -1283,11 +1280,7 @@ class AwbServiceTest extends CommonMocks {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).shipmentId(1L).awbType("DMAWB")
                 .resetType(AwbReset.AWB_NOTIFY_PARTY_INFO).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         testShipment.setHouseBill("custom-house-bill");
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
@@ -1432,7 +1425,7 @@ class AwbServiceTest extends CommonMocks {
         mockTenantModel.DefaultOrgId = 1L;
         when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
 
-        doThrow(new RunnerException()).when(consolidationService).validateRaKcForConsol(any());
+        doThrow(new RunnerException()).when(consolidationService).validateRaKcForConsol(any(),any());
         assertThrows(RunnerException.class, () -> awbService.reset(commonRequestModel));
     }
 
