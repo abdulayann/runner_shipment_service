@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
@@ -69,7 +70,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -858,37 +858,36 @@ public class EventService implements IEventService {
         return isShipmentUpdateRequired;
     }
 
-    private boolean updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
+    private void updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
             LocalDateTime shipmentAta, LocalDateTime shipmentAtd, Container container, String messageId) {
-        boolean isShipmentUpdateRequired = false;
         // Try to update carrier details
         try {
-            isShipmentUpdateRequired |= updateCarrierDetails(shipment, shipmentAta, shipmentAtd);
+            updateCarrierDetails(shipment, shipmentAta, shipmentAtd);
         } catch (Exception e) {
             log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
         // Try to update empty container returned status
         try {
-            isShipmentUpdateRequired |= updateEmptyContainerReturnedStatus(shipment, events);
+            updateEmptyContainerReturnedStatus(shipment, events);
         } catch (Exception e) {
             log.error("Failed to update empty container returned status for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
         // Try to update actual event times
         try {
-            isShipmentUpdateRequired |= updateActual(shipment, container);
+            updateActual(shipment, container);
         } catch (Exception e) {
             log.error("Failed to update actual event times for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
-        return isShipmentUpdateRequired;
     }
-    private boolean updateActual(ShipmentDetails shipmentDetails, Container trackingContainer) {
-        AtomicBoolean isShipmentUpdateRequired = new AtomicBoolean(false);
+
+    private void updateActual(ShipmentDetails shipmentDetails, Container trackingContainer) {
         if (trackingContainer == null || trackingContainer.getEvents() == null) {
             log.warn("No trackingContainer or events available for shipment ID {}", shipmentDetails.getShipmentId());
-            return false;
+            return;
         }
 
         List<Events> shipmentEvents = shipmentDetails.getEventsList();
+
         Map<String, Event> containerEventMapFromTracking = trackingContainer.getEvents().stream()
                 .filter(Objects::nonNull)
                 .map(event -> {
@@ -922,7 +921,6 @@ public class EventService implements IEventService {
                 Event eventFromTracking = containerEventMapFromTracking.get(key);
                 if (eventFromTracking != null && eventFromTracking.getActualEventTime() != null) {
                     shipmentEvent.setActual(eventFromTracking.getActualEventTime().getDateTime());
-                    isShipmentUpdateRequired.set(true);
                     log.info("Updated actual event time for event code {} in trackingContainer {}",
                             shipmentEventsResponse.getEventCode(), shipmentEventsResponse.getContainerNumber());
                 } else {
@@ -930,51 +928,44 @@ public class EventService implements IEventService {
                 }
             }
         });
-        return isShipmentUpdateRequired.get();
-    }
-    private boolean updateEmptyContainerReturnedStatus(ShipmentDetails shipment, List<Events> events) {
-        boolean isShipmentUpdateRequired = false;
 
+        eventDao.updateEventsList(shipmentEvents);
+    }
+
+    private void updateEmptyContainerReturnedStatus(ShipmentDetails shipment, List<Events> events) {
         // Check for empty container returned event
         boolean isEmptyContainerReturnedEvent = events.stream()
                 .anyMatch(event -> EventConstants.EMCR.equals(event.getEventCode()));
 
+        AdditionalDetails additionalDetails = shipment.getAdditionalDetails();
         // Update empty container returned status if conditions are met
         if (isEmptyContainerReturnedEvent
-                && shipment.getAdditionalDetails() != null
-                && !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned())
+                && additionalDetails != null
+                && !Boolean.TRUE.equals(additionalDetails.getEmptyContainerReturned())
                 && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                 && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
-
-            shipment.getAdditionalDetails().setEmptyContainerReturned(true);
-            isShipmentUpdateRequired = true;
+            shipmentDao.updateAdditionalDetailsByShipmentId(shipment.getId(), true);
         }
-
-        return isShipmentUpdateRequired;
     }
 
-    private boolean updateCarrierDetails(ShipmentDetails shipment, LocalDateTime shipmentAta, LocalDateTime shipmentAtd) {
+    private void updateCarrierDetails(ShipmentDetails shipment, LocalDateTime shipmentAta, LocalDateTime shipmentAtd) {
         // Update carrier details with ATA and ATD if present
-        CarrierDetails carrierDetails = Optional.ofNullable(shipment.getCarrierDetails()).orElse(new CarrierDetails());
-        boolean isShipmentUpdateRequired = false;
-        if (shipmentAta != null) {
-            carrierDetails.setAta(shipmentAta);
-            createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
-            isShipmentUpdateRequired = true;
-        }
-        if (shipmentAtd != null) {
-            carrierDetails.setAtd(shipmentAtd);
-            createDateTimeChangeLog(DateType.ATA, shipmentAtd, shipment.getId());
-            isShipmentUpdateRequired = true;
-        }
+        CarrierDetails carrierDetails = shipment.getCarrierDetails();
 
-        if (isShipmentUpdateRequired) {
-            CarrierDetails savedCarrierDetails = carrierDetailsDao.save(carrierDetails);
-            shipment.setCarrierDetails(savedCarrierDetails);
+        if (carrierDetails != null) {
+            if (shipmentAta != null) {
+                carrierDetails.setAta(shipmentAta);
+                createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
+                carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
+            }
+            if (shipmentAtd != null) {
+                carrierDetails.setAtd(shipmentAtd);
+                createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
+                carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
+            }
         }
-
-        return isShipmentUpdateRequired;
     }
+
 
     @Override
     public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
@@ -1170,19 +1161,7 @@ public class EventService implements IEventService {
 
         log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId(), messageId);
 
-        boolean isShipmentUpdateRequired = updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
-        log.info("Shipment update required: {} messageId {}", isShipmentUpdateRequired, messageId);
-
-        if (isShipmentUpdateRequired) {
-            try {
-                saveAndSyncShipment(shipmentDetails, messageId);
-                log.info("Successfully saved and synced shipment: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
-            } catch (Exception e) {
-                isSuccess = false;
-                log.error("Error performing sync on shipment entity: {} messageId {}", shipmentDetails.getShipmentId(),messageId, e);
-            }
-        }
-
+        updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
         log.info("Finished updating shipment with tracking events. Success: {} messageId {}", isSuccess, messageId);
         return isSuccess;
     }

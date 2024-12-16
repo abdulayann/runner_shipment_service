@@ -3,15 +3,14 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 public interface IEventDao {
     Events save(Events events);
@@ -42,4 +41,6 @@ public interface IEventDao {
     void updateEventDetails(Events event);
 
     boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode);
+
+    List<Events> updateEventsList(List<Events> shipmentEvents);
 }
