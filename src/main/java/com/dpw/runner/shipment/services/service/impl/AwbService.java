@@ -933,8 +933,11 @@ public class AwbService implements IAwbService {
 //        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails(), false, false);
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
-        if(consolidationDetails.getSendingAgent().getAddressId()!=null && consolidationDetails.getReceivingAgent().getAddressId()!=null){
-            addressIdList.addAll(List.of(consolidationDetails.getSendingAgent().getAddressId(), consolidationDetails.getReceivingAgent().getAddressId()));
+        if(consolidationDetails.getSendingAgent().getAddressId()!=null){
+            addressIdList.add(consolidationDetails.getSendingAgent().getAddressId());
+        }
+        if(consolidationDetails.getReceivingAgent().getAddressId()!=null){
+            addressIdList.add(consolidationDetails.getReceivingAgent().getAddressId());
         }
         if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
@@ -3552,12 +3555,16 @@ public class AwbService implements IAwbService {
 
     private void populateTaxRegistrationNumber(Awb awb, ShipmentDetails shipmentDetails) {
         ArrayList<String> addressIdList = new ArrayList<>();
-        if (shipmentDetails.getConsigner().getAddressId() != null && shipmentDetails.getConsignee().getAddressId() != null && shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
-            addressIdList.addAll(List.of(
-                    shipmentDetails.getConsigner().getAddressId(),
-                    shipmentDetails.getConsignee().getAddressId(),
-                    shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId()
-            ));
+        if (shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsigner().getAddressId());
+        }
+        if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsignee().getAddressId());
+        }
+        if (shipmentDetails.getAdditionalDetails() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
         }
         if (!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
