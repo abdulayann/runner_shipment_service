@@ -4434,7 +4434,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isValueChanged(Object newValue, Object oldValue) {
-        return newValue != null && !newValue.equals(oldValue);
+        return (oldValue != null && newValue==null) || (newValue != null && !newValue.equals(oldValue));
     }
 
     private String reverseDirection(String direction) {

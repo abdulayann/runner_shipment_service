@@ -242,7 +242,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<Integer> successTenantIds = new ArrayList<>();
 
         Set<Integer> uniqueDestinationTenants = new HashSet<>(sendShipmentRequest.getSendToBranch());
-        approvalRoleTenantValidation(uniqueDestinationTenants);
+        if(!Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()))
+            approvalRoleTenantValidation(uniqueDestinationTenants);
         var tenantMap = getTenantMap(List.of(shipment.getTenantId()));
 
         List<Integer> destinationTenantList = uniqueDestinationTenants.stream().toList();
@@ -345,7 +346,8 @@ public class EntityTransferService implements IEntityTransferService {
         }
         // Validation for importer role in receiving branch only for consolidation
         Set<Integer> tenantIds = new HashSet<>(sendConsolidationRequest.getSendToBranch());
-        approvalRoleTenantValidation(tenantIds);
+        if(!Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()))
+            approvalRoleTenantValidation(tenantIds);
 
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
         if (!consolidationDetails.isPresent()) {

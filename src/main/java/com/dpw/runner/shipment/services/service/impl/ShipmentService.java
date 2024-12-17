@@ -2694,9 +2694,67 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private boolean hasHouseBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        return (oldEntity == null && shipmentDetails.getHouseBill() != null)
-                || (oldEntity != null && isValueChanged(shipmentDetails.getHouseBill(), oldEntity.getHouseBill()));
+    public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        try{
+            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                    shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
+
+            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+
+            if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
+
+                if (isInvalidNetworkTransfer(shipmentDetails))
+                    return;
+
+                if (isCarrierDetailsInvalid(shipmentDetails)) {
+                    handleInvalidCarrierDetails(quartzJobInfo, shipmentDetails);
+                    return;
+                }
+
+                if (shouldCreateOrUpdateQuartzJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
+                    createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
+                }
+            }
+            if (hasHouseBillChange(shipmentDetails, oldEntity)) {
+                triggerConsoleTransfer(shipmentDetails);
+            }
+        } catch (Exception e) {
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
+        }
+    }
+
+    private boolean isInvalidNetworkTransfer(ShipmentDetails shipmentDetails) {
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
+        return optionalNetworkTransfer.isPresent() &&
+                (optionalNetworkTransfer.get().getStatus() == NetworkTransferStatus.TRANSFERRED ||
+                        optionalNetworkTransfer.get().getStatus() == NetworkTransferStatus.ACCEPTED);
+    }
+
+    private boolean isCarrierDetailsInvalid(ShipmentDetails shipmentDetails) {
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+        return carrierDetails == null || (
+                ObjectUtils.isEmpty(carrierDetails.getEta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getAta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getAtd()));
+    }
+
+    private void handleInvalidCarrierDetails(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails) {
+        if (quartzJobInfo != null && quartzJobInfo.getJobStatus() == JobState.QUEUED) {
+            quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
+        }
+        String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
+        SendShipmentValidationResponse response = SendShipmentValidationResponse.builder()
+                .isError(true)
+                .shipmentErrorMessage(errorMessage)
+                .build();
+        commonErrorLogsDao.logShipmentAutomaticTransferErrors(response, shipmentDetails.getId());
+    }
+
+    private boolean shouldCreateOrUpdateQuartzJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        return (quartzJobInfo == null && oldEntity == null) ||
+                shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded);
     }
 
     private void triggerConsoleTransfer(ShipmentDetails shipmentDetails){
@@ -2715,51 +2773,14 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
-        try{
-            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
-                    shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
-
-            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
-
-            if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
-
-                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
-                        Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
-                if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
-                        optionalNetworkTransfer.get().getStatus()== NetworkTransferStatus.ACCEPTED))
-                    return;
-
-                CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
-
-                if(carrierDetails==null || (ObjectUtils.isEmpty(carrierDetails.getEta()) &&
-                        ObjectUtils.isEmpty(carrierDetails.getEtd()) && ObjectUtils.isEmpty(carrierDetails.getAta()) &&
-                        ObjectUtils.isEmpty(carrierDetails.getAtd()))){
-                    if(quartzJobInfo!=null && quartzJobInfo.getJobStatus() == JobState.QUEUED)
-                        quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
-                    String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-                    SendShipmentValidationResponse sendShipmentValidationResponse = SendShipmentValidationResponse.builder().isError(true).shipmentErrorMessage(errorMessage).build();
-                    commonErrorLogsDao.logShipmentAutomaticTransferErrors(sendShipmentValidationResponse, shipmentDetails.getId());
-                    return;
-                }
-
-                if (ObjectUtils.isEmpty(quartzJobInfo) && oldEntity==null) {
-                    createOrUpdateQuartzJob(shipmentDetails, null);
-                } else if (shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded, optionalNetworkTransfer)) {
-                    createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
-                }
-            }
-            if (hasHouseBillChange(shipmentDetails, oldEntity)) {
-                triggerConsoleTransfer(shipmentDetails);
-            }
-        } catch (Exception e) {
-            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
-        }
+    private boolean hasHouseBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return (oldEntity == null && shipmentDetails.getHouseBill() != null)
+                || (oldEntity != null && isValueChanged(shipmentDetails.getHouseBill(), oldEntity.getHouseBill()));
     }
 
-    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded, Optional<NetworkTransfer> optionalNetworkTransfer) {
-        return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
-                || (isValidReceivingBranchChange(shipmentDetails, oldEntity, optionalNetworkTransfer));
+
+    private boolean isValueChanged(Object newValue, Object oldValue) {
+        return (oldValue != null && newValue==null) || (newValue != null && !newValue.equals(oldValue));
     }
 
     private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
@@ -2795,38 +2816,9 @@ public class ShipmentService implements IShipmentService {
                 .build();
     }
 
-    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Optional<NetworkTransfer> optionalNetworkTransfer) {
-        if (oldEntity == null) {
-            return false;
-        }
-
-        if (oldEntity.getReceivingBranch()==null) {
-            return true;
-        }
-
-        boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
-        if (!isBranchChanged) {
-            return false;
-        }
-
-        Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
-                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
-
-        return oldOptionalNetworkTransfer
-                .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
-                .orElse(false) || optionalNetworkTransfer.isEmpty();
-    }
-
-    private boolean isValidDateChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
-        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
-        if(oldEntity!=null && oldEntity.getCarrierDetails()!=null && newCarrierDetails!=null){
-            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
-            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
-                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
-                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
-                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
-        }
-        return false;
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
+                || (isValidReceivingBranchChange(shipmentDetails, oldEntity));
     }
 
     private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
@@ -2854,8 +2846,38 @@ public class ShipmentService implements IShipmentService {
         return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber());
     }
 
-    private boolean isValueChanged(Object newValue, Object oldValue) {
-        return newValue != null && !newValue.equals(oldValue);
+    private boolean isValidDateChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
+        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
+        if(oldEntity!=null && oldEntity.getCarrierDetails()!=null && newCarrierDetails!=null){
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
+                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
+                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
+                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
+        }
+        return false;
+    }
+
+    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (oldEntity == null) {
+            return false;
+        }
+
+        if (oldEntity.getReceivingBranch()==null) {
+            return true;
+        }
+
+        boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
+        if (!isBranchChanged) {
+            return false;
+        }
+
+        Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
+
+        return oldOptionalNetworkTransfer
+                .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
+                .orElse(false);
     }
 
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
