@@ -884,7 +884,7 @@ public class AwbService implements IAwbService {
                 .consolidationId(consolidationDetails.getId())
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
-        awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel, packSummary));
+        awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
         awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
         return awb;
     }
@@ -1195,7 +1195,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel, PackSummaryResponse packSummary) throws RunnerException {
+    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel) {
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
         }
@@ -1241,7 +1241,7 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, PackSummaryResponse packSummary) throws RunnerException {
+    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, PackSummaryResponse packSummary) {
         String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(consolidationDetails.getId());
@@ -3621,8 +3621,8 @@ public class AwbService implements IAwbService {
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                     Long defaultAddressId = tenantModel.getDefaultAddressId();
 
-                    if(issuingAgentAddressIdToEntityMap.containsKey(tenantModel.getDefaultAddressId())) {
-                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()!=null ? StringUtility.toUpperCase(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()):null);
+                    if(issuingAgentAddressIdToEntityMap.containsKey(defaultAddressId)) {
+                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(defaultAddressId).getTaxRegNumber()!=null ? StringUtility.toUpperCase(issuingAgentAddressIdToEntityMap.get(defaultAddressId).getTaxRegNumber()):null);
                     }
                     awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                     awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
