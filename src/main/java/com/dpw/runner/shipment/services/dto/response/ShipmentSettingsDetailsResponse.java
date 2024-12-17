@@ -174,4 +174,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
     private Boolean eventsRevampEnabled;
+    private Boolean alwaysUtilization;
+    private Boolean utilizationForContainerQuoted;
+    private Boolean noUtilization;
 }
