@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.IgnoreAutoTenantPopulationContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -675,7 +676,7 @@ public class EventService implements IEventService {
         List<Events> updatedEvents = trackingEvents.stream()
                 .filter(trackingEvent -> shouldProcessEvent(trackingEvent, shipmentDetails, messageId))
                 .map(trackingEvent -> mapToUpdatedEvent(trackingEvent, existingEventsMap, shipmentDetails.getId(), entityType, identifier2ToLocationRoleMap, shipmentDetails.getShipmentId(),
-                        messageId))
+                        messageId, shipmentDetails.getTenantId()))
                 .toList();
 
         setEventCodesMasterData(
@@ -781,10 +782,11 @@ public class EventService implements IEventService {
      * @param identifier2ToLocationRoleMap A map of identifiers to location roles for conversion.
      * @param shipmentId
      * @param messageId
+     * @param tenantId
      * @return The updated event with additional details.
      */
     private Events mapToUpdatedEvent(Events trackingEvent, Map<String, Events> existingEventsMap,
-            Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, String shipmentId, String messageId) {
+            Long entityId, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, String shipmentId, String messageId, Integer tenantId) {
         // Log the start of mapping
         log.info("Mapping tracking event with container number {} and event code {}. messageId {}",
                 trackingEvent.getContainerNumber(), trackingEvent.getEventCode(), messageId);
@@ -808,6 +810,7 @@ public class EventService implements IEventService {
             event.setTenantId(existingEvent.getTenantId());
             log.info("Event already exists. Updated ID and GUID from existing event. messageId {}", messageId);
         } else {
+            event.setTenantId(tenantId);
             log.info("Event is new. No existing event found. messageId {}", messageId);
         }
 
@@ -1208,8 +1211,10 @@ public class EventService implements IEventService {
         log.info("Tracking API - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         MDC.put(LoggingConstants.TS_ID, messageId);
         v1Service.setAuthContext();
+        IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
         boolean processSuccess = processUpstreamTrackingMessage(container, messageId);
         v1Service.clearAuthContext();
+        IgnoreAutoTenantPopulationContext.clearContext();
 
         return ResponseHelper.buildSuccessResponse(processSuccess);
     }

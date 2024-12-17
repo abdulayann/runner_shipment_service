@@ -26,6 +26,10 @@ public class TenantEntityListener {
     public void prePersist(Object object) {
         if (object instanceof MultiTenancy multiTenancy) {
             log.info("PrePersist invoked for object: {}", object);
+            if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
+                log.info("Ignore the prePersist call for object: {}", object);
+                return;
+            }
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
@@ -62,6 +66,10 @@ public class TenantEntityListener {
     public void preUpdate(Object object) throws AuthenticationException {
         if (object instanceof MultiTenancy multiTenancy) {
             log.info("PreUpdate invoked for object: {}", object);
+            if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
+                log.info("Ignore the PreUpdate call for object: {}", object);
+                return;
+            }
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
@@ -109,6 +117,10 @@ public class TenantEntityListener {
     public void preRemove(Object object) throws AuthenticationException {
         if (object instanceof MultiTenancy multiTenancy) {
             log.info("PreRemove invoked for object: {}", object);
+            if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
+                log.info("Ignore the preRemove call for object: {}", object);
+                return;
+            }
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
