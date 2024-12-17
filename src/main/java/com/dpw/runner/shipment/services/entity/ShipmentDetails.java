@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -585,10 +584,6 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
-
-    @Column(name = "dps_state")
-    @Enumerated(EnumType.STRING)
-    private DpsWorkflowState dpsState;
 
     @Column(name = "is_transferred_to_receiving_branch")
     private Boolean isTransferredToReceivingBranch;

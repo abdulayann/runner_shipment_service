@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -183,7 +182,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
-    private DpsWorkflowState dpsState;
     private Boolean isTransferredToReceivingBranch;
     private String shipmentStatus;
 }

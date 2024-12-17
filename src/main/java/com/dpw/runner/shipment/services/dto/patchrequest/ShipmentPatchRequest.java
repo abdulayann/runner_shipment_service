@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.patchrequest;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.dto.request.AdditionalDetailRequest;
 import com.dpw.runner.shipment.services.dto.request.BookingCarriageRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
@@ -129,6 +128,5 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private List<ShipmentOrderRequest> shipmentOrders;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
-    private JsonNullable<DpsWorkflowState> dpsState;
     private JsonNullable<Boolean> isTransferredToReceivingBranch;
 }

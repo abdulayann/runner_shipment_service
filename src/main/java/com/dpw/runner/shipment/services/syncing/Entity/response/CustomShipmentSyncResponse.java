@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.Entity.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;

@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -145,7 +144,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Integer ordersCount;
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
-    private DpsWorkflowState dpsState;
     private Boolean isTransferredToReceivingBranch;
     @JsonIgnore
     private List<EventsResponse> eventsList;

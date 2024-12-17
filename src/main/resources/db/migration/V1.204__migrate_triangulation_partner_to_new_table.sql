@@ -4,7 +4,6 @@
 CREATE TABLE IF NOT EXISTS triangulation_partner_shipment (
     shipment_id BIGINT NOT NULL,
     partner_id BIGINT NOT NULL,
-    is_accepted BOOLEAN,
     PRIMARY KEY (shipment_id, partner_id),
     CONSTRAINT fk_triangulation_partner_shipment
       FOREIGN KEY (shipment_id) REFERENCES shipment_details(id)
@@ -23,7 +22,6 @@ CREATE TABLE IF NOT EXISTS triangulation_partner_shipment (
 CREATE TABLE IF NOT EXISTS triangulation_partner_consolidation (
     consolidation_id BIGINT NOT NULL,
     partner_id BIGINT NOT NULL,
-    is_accepted BOOLEAN,
     PRIMARY KEY (consolidation_id, partner_id),
     CONSTRAINT fk_triangulation_partner_consolidation
       FOREIGN KEY (consolidation_id) REFERENCES consolidation_details(id)
