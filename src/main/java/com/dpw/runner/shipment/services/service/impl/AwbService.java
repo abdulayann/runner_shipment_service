@@ -937,10 +937,10 @@ public class AwbService implements IAwbService {
 //        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails(), false, false);
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
-        if(consolidationDetails.getSendingAgent().getAddressId()!=null){
+        if(consolidationDetails.getSendingAgent()!=null && consolidationDetails.getSendingAgent().getAddressId()!=null){
             addressIdList.add(consolidationDetails.getSendingAgent().getAddressId());
         }
-        if(consolidationDetails.getReceivingAgent().getAddressId()!=null){
+        if(consolidationDetails.getReceivingAgent()!=null && consolidationDetails.getReceivingAgent().getAddressId()!=null){
             addressIdList.add(consolidationDetails.getReceivingAgent().getAddressId());
         }
         if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
