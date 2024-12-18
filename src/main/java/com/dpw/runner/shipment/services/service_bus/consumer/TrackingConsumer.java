@@ -5,6 +5,8 @@ import com.azure.messaging.servicebus.ServiceBusException;
 import com.azure.messaging.servicebus.ServiceBusProcessorClient;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.IgnoreAutoTenantPopulationContext;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
@@ -18,7 +20,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service

@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.utils.Generated;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
 import java.util.Objects;
@@ -36,26 +35,20 @@ public class TenantEntityListener {
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
 
-            log.info("Initial TenantId: {}, Permissions: {}, InterBranchContext: {}", tenantId, permissions, interBranchData);
-
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
-                log.info("Setting TenantId from permissions: {}", tenantId);
             } else if (Objects.nonNull(interBranchData)
                     && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
                     && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
-                log.info("Setting TenantId from InterBranchContext: {}", tenantId);
             } else {
                 tenantId = TenantContext.getCurrentTenant();
                 multiTenancy.setTenantId(tenantId);
-                log.warn("Invalid TenantId. Defaulting to current tenant: {}", tenantId);
             }
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && UserContext.getUser().getSyncTenantId() != null) {
                 Integer syncTenantId = UserContext.getUser().getSyncTenantId();
                 multiTenancy.setTenantId(syncTenantId);
-                log.info("Overriding TenantId for sync operation. New TenantId: {}", syncTenantId);
             }
 
             log.info("Final TenantId after PrePersist: {}", multiTenancy.getTenantId());
@@ -74,33 +67,20 @@ public class TenantEntityListener {
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
-            log.info("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
-                log.info("Updating TenantId based on permissions: {}", tenantId);
             } else if (!isValidTenantId(tenantId)) {
                 tenantId = TenantContext.getCurrentTenant();
                 multiTenancy.setTenantId(tenantId);
-                log.warn("Invalid TenantId. Defaulting to current tenant: {}", tenantId);
             }
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            log.info("InterBranchContext during PreUpdate: {}", interBranchDto);
             ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
-
-                    try {
-                        String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
-                        log.info("InterBranchContext during PreUpdate (JSON): {}", interBranchDtoJson);
-                    } catch (JsonProcessingException e) {
-                        log.error("Failed to convert InterBranchDto to JSON during PreUpdate", e);
-                    }
-
-                    log.error("TenantId validation failed for InterBranchContext. TenantId: {}", tenantId);
                     throw new AuthenticationException(AUTH_DENIED);
                 }
             } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin)
@@ -125,15 +105,12 @@ public class TenantEntityListener {
 
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
-            log.info("Initial TenantId: {}, Permissions: {}", tenantId, permissions);
 
             if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
-                log.info("Setting TenantId for super admin: {}", tenantId);
             } else if (Objects.isNull(tenantId)) {
                 tenantId = TenantContext.getCurrentTenant();
                 multiTenancy.setTenantId(tenantId);
-                log.warn("TenantId is null. Defaulting to current tenant: {}", tenantId);
             }
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
@@ -142,20 +119,11 @@ public class TenantEntityListener {
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
-
-                    try {
-                        String interBranchDtoJson = objectMapper.writeValueAsString(interBranchDto);
-                        log.info("InterBranchContext during PreRemove (JSON): {}", interBranchDtoJson);
-                    } catch (JsonProcessingException e) {
-                        log.error("Failed to convert InterBranchDto to JSON during PreRemove", e);
-                    }
-
-                    log.error("TenantId validation failed for InterBranchContext. TenantId: {}", tenantId);
                     throw new AuthenticationException(AUTH_DENIED);
                 }
             } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin)
                     && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
-                log.error("Unauthorized TenantId removal attempt. TenantId: {}", tenantId);
+                log.error("Unauthorized TenantId update attempt. Current Tenant Id: {} TenantId: {}", TenantContext.getCurrentTenant(), tenantId);
                 throw new EntityNotFoundException();
             }
 
@@ -164,9 +132,7 @@ public class TenantEntityListener {
     }
 
     private boolean isValidTenantId(Integer tenantId) {
-        boolean valid = (!Objects.isNull(tenantId) && tenantId > 0);
-        log.info("TenantId validation result for {}: {}", tenantId, valid);
-        return valid;
+        return (Objects.nonNull(tenantId) && tenantId > 0);
     }
 
     public Boolean byPassMultiTenancyFilter(Object object){
