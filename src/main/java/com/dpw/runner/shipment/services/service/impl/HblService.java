@@ -276,7 +276,8 @@ public class HblService implements IHblService {
             }
         }
         if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) &&
+                    !Constants.IMP.equals(shipmentDetails.getDirection()))
                 throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before generating Hbl.");
             if(shipmentDetails.getContainersList() == null ||
                     shipmentDetails.getContainersList().stream().filter(c -> Boolean.TRUE.equals(c.getHazardous())).toList().isEmpty())

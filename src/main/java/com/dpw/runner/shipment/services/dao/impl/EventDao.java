@@ -16,7 +16,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -33,7 +35,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,6 +44,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
@@ -89,6 +91,7 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events save(Events events) {
+        updateUserFieldsInEvent(events);
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
@@ -370,11 +373,11 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDate.now().atStartOfDay());
+                eventsRow.setActual(LocalDateTime.now());
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
+                eventsRow.setEstimated(LocalDateTime.now());
             }
 
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -514,11 +517,17 @@ public class EventDao implements IEventDao {
                 }
                 // Set shipment number
                 event.setShipmentNumber(shipmentDetails.getShipmentId());
+                event.setEntityId(shipmentDetails.getId());
+                if (event.getDirection() == null) {
+                    event.setDirection(shipmentDetails.getDirection());
+                }
             });
 
         } else if (Constants.CONSOLIDATION.equals(entityType)) {
             event.setConsolidationId(entityId);
         }
+
+        updateUserFieldsInEvent(event);
     }
 
     /**
@@ -543,12 +552,16 @@ public class EventDao implements IEventDao {
                         EventConstants.BOCO, EventConstants.ECPK, EventConstants.FCGI, EventConstants.VSDP,
                         EventConstants.FHBL, EventConstants.FNMU, EventConstants.PRST, EventConstants.ARDP,
                         EventConstants.DOGE, EventConstants.DOTP, EventConstants.FUGO, EventConstants.CAFS,
-                        EventConstants.PRDE, EventConstants.EMCR
+                        EventConstants.PRDE, EventConstants.EMCR, EventConstants.ECCC, EventConstants.BLRS,
+                        EventConstants.COOD, EventConstants.INGE, EventConstants.SISC, EventConstants.VGMS,
+                        EventConstants.BBCK, EventConstants.DORC, EventConstants.DNMU
                 ),
                 TRANSPORT_MODE_AIR, Set.of(
                         EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
                         EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
-                        EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS
+                        EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS, EventConstants.ECCC,
+                        EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU, EventConstants.INGE,
+                        EventConstants.DNMU
                 )
         );
 
@@ -560,6 +573,34 @@ public class EventDao implements IEventDao {
                 transportMode, eventCode, shouldSend);
 
         return shouldSend;
+    }
+
+    @Override
+    public void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails) {
+        // update events with consolidation id with condition
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        AtomicReference<Long> consolidationId = new AtomicReference<>(null);
+        if(ObjectUtils.isNotEmpty(consolidationList)) {
+             consolidationId.set(consolidationList.get(0).getId());
+        }
+        eventsList.stream()
+                .map(this::updateUserFieldsInEvent)
+                .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                .forEach(event -> event.setConsolidationId(consolidationId.get()));
+    }
+
+
+    private Events updateUserFieldsInEvent(Events event) {
+        event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
+        event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
+        event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+
+        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
+            event.setUserName(EventConstants.SYSTEM_GENERATED);
+            event.setUserEmail(null);
+            event.setBranch(null);
+        }
+        return event;
     }
 
     @Override

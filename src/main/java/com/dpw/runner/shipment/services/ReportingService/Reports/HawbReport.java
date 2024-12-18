@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -124,10 +125,10 @@ public class HawbReport extends IReport{
             List<String> awbConsignee = getAwbFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(),shipmentInfo.getConsigneeAddress2(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeContactName(), shipmentInfo.getConsigneePhone(), shipmentInfo.getConsigneeTaxRegistrationNumber());
             List<String> shipper = getFormattedDetails(shipmentInfo.getShipperName(), shipmentInfo.getShipperAddress(),shipmentInfo.getShipperAddress2(), shipmentInfo.getShipperCountry(), shipmentInfo.getShipperState(), shipmentInfo.getShipperCity(), shipmentInfo.getShipperZipCode(), shipmentInfo.getShipperPhone());
             List<String> consignee = getFormattedDetails(shipmentInfo.getConsigneeName(), shipmentInfo.getConsigneeAddress(),shipmentInfo.getConsigneeAddress2(), shipmentInfo.getConsigneeCountry(), shipmentInfo.getConsigneeState(), shipmentInfo.getConsigneeCity(), shipmentInfo.getConsigneeZipCode(), shipmentInfo.getConsigneePhone());
-            dictionary.put(ReportConstants.AWB_SHIPPER_ADDRESS, awbShipper);
-            dictionary.put(ReportConstants.AWB_CONSIGNEE_ADDRESS, awbConsignee);
-            dictionary.put(ReportConstants.SHIPPER_ADDRESS, shipper);
-            dictionary.put(ReportConstants.CONSIGNEE_ADDRESS,  consignee);
+            dictionary.put(ReportConstants.AWB_SHIPPER_ADDRESS, CommonUtils.listIsNullOrEmpty(awbShipper) ? awbShipper : awbShipper.stream().map(StringUtility::toUpperCase).toList());
+            dictionary.put(ReportConstants.AWB_CONSIGNEE_ADDRESS, CommonUtils.listIsNullOrEmpty(awbConsignee) ? awbConsignee : awbConsignee.stream().map(StringUtility::toUpperCase).toList());
+            dictionary.put(ReportConstants.SHIPPER_ADDRESS, CommonUtils.listIsNullOrEmpty(shipper) ? shipper : shipper.stream().map(StringUtility::toUpperCase).toList());
+            dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, CommonUtils.listIsNullOrEmpty(consignee) ? consignee : consignee.stream().map(StringUtility::toUpperCase).toList());
             dictionary.put(ReportConstants.ISSUING_CARRIER_AGENT_NAME, StringUtility.toUpperCase(shipmentInfo.getIssuingAgentName()));
             dictionary.put(ReportConstants.ISSUiNG_CARRIER_CITY, cityFromOrganizations(shipmentInfo.getIssuingAgentName()).toUpperCase());
             dictionary.put(ReportConstants.AGENT_IATA_CODE , upperCase(shipmentInfo.getIataCode()));
@@ -438,22 +439,19 @@ public class HawbReport extends IReport{
                     value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
                     value.put(AWB_DIMS, value.get(DIMENSIONS));
                     if(value.get(ReportConstants.RATE_CLASS) != null){
-                        value.put(ReportConstants.RATE_CLASS, value.get(ReportConstants.RATE_CLASS));
+                        value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                     }
+                    if(value.get(GROSS_WT_UNIT) != null){
+                        value.put(GROSS_WT_UNIT, convertToSingleCharWeightFormat((String) value.get(GROSS_WT_UNIT)));
+                    }
                     if(value.get(ReportConstants.CHARGEABLE_WT) != null){
                         value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
                     }
-                    if (value.get(ReportConstants.RATE_CHARGE) != null)
-                    {
-                        value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
-                    }
-                    if (value.get(ReportConstants.TOTAL_AMOUNT) != null)
-                    {
-                        value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
-                    }
+                    value.put(ReportConstants.TOTAL_AMOUNT, finalFreightAmountText);
+                    value.put(ReportConstants.RATE_CHARGE, finalFreightAmountText);
                 });
                 dictionary.put(ReportConstants.PACKING_LIST_FAT, valuesFAT);
                 awbGoodsDescriptionInfo.forEach(row -> {

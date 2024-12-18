@@ -271,7 +271,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
-        log.info("Sending request to URL: {}", url);
+        log.info("Sending request to URL: {} request: {}", url, jsonHelper.convertToJson(httpEntity));
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
         double start = System.currentTimeMillis();
         try {
@@ -280,7 +280,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             R response = responseEntity.getBody();
             log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
             log.info("Received response with status: {}", responseEntity.getStatusCode());
-            log.debug("Response body: {}", response);
+            log.info("Response body: {}", response);
 
             if (Objects.nonNull(response) && response instanceof BillingBaseResponse billingBaseResponse) {
                 if (ObjectUtils.isNotEmpty(billingBaseResponse.getErrors())) {

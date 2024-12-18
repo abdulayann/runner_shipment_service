@@ -40,7 +40,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,21 +48,15 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.NoTransactionException;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -1210,6 +1203,17 @@ class HblServiceTest extends CommonMocks {
         var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
         // Test
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void generateHblSuccess1() {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainsHazardous(true);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        assertThrows(ValidationException.class, () -> hblService.generateHBL(commonRequestModel));
     }
 
 }

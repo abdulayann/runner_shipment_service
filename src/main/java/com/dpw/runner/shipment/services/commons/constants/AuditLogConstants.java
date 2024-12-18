@@ -88,7 +88,8 @@ public class AuditLogConstants {
                 put("route", "Route");
                 put("sourceTenantId", "Source Tenant Id");
                 put("documentationPartner", "Documentation Partner");
-                put("triangulationPartner", "Triangulation Partner");
+                put("triangulationPartnerList", "Triangulation Partner List");
+            put("triangulationPartner", "Triangulation Partner");
                 put("receivingBranch", "Receiving Branch");
                 put("intraBranch", "Intra Branch");
                 put("prevShipmentStatus", "Prev Shipment Status");

@@ -1,5 +1,23 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -12,7 +30,17 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.MawbStocks;
+import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -25,6 +53,17 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import javax.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -41,17 +80,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
-import javax.persistence.EntityManager;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -151,6 +179,18 @@ class ShipmentDaoTest extends CommonMocks {
         //when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveStatusTest() {
+        Long shipmentId = 1L;
+        Integer status = 1;
+
+        doNothing().when(shipmentRepository).saveStatus(shipmentId, status);
+
+        shipmentDao.saveStatus(shipmentId, status);
+
+        verify(shipmentRepository, times(1)).saveStatus(shipmentId, status);
     }
 
     @Test
@@ -1224,6 +1264,24 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void findByGuids() {
+        // Arrange
+        List<UUID> guids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<ShipmentDetails> shipmentDetailsList = List.of(
+                ShipmentDetails.builder().build(),
+                ShipmentDetails.builder().build()
+        );
+        when(shipmentRepository.findAllByGuids(anyList())).thenReturn(shipmentDetailsList);
+
+        // Act
+        List<ShipmentDetails> result = shipmentDao.findByGuids(guids);
+
+        // Assert
+        assertEquals(shipmentDetailsList, result);
+        verify(shipmentRepository, times(1)).findAllByGuids(guids); // Ensures the method was called with the correct argument
+    }
+
+    @Test
     void findByBookingReference() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         List<ShipmentDetails> shipmentDetailsList = Arrays.asList(shipmentDetails);
@@ -1677,5 +1735,14 @@ class ShipmentDaoTest extends CommonMocks {
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
         assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void findShipmentByIdWithQuery() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findShipmentByIdWithQuery(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> responseEntity = shipmentDao.findShipmentByIdWithQuery(shipmentDetails.getId());
+        assertEquals(Optional.of(shipmentDetails), responseEntity);
     }
 }

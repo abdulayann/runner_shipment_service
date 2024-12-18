@@ -3,20 +3,40 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
+import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
+import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import lombok.*;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.annotations.WhereJoinTable;
-
-import javax.persistence.*;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Entity
 @Table(name = "consolidation_details")
@@ -247,6 +267,14 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "edi_transaction_id")
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
+
+    @Column(name = "partner_id")
+    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
+    @CollectionTable(
+            name = "triangulation_partner_consolidation",
+            joinColumns = @JoinColumn(name = "consolidation_id"))
+    @BatchSize(size = 50)
+    private List<Long> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")
     @TenantIdData

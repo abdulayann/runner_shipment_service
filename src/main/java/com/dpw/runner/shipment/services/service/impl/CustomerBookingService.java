@@ -1084,27 +1084,33 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (idVsContainerMap.isEmpty()) {
             // Only current operation, no comparison
-            current.getContainersList().forEach(cont -> {
-                loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
-            });
+            if(current.getContainersList() != null)
+            {
+                current.getContainersList().forEach(cont -> {
+                    loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
+                });
+            }
         }  else {
             // Find delta
             Map<String, Containers> finalIdVsContainerMap = idVsContainerMap;
-            current.getContainersList().forEach(cont -> {
-                String key = cont.getId() + "-" + cont.getContainerCode() + "-" + cont.getCommodityGroup();
-                if (finalIdVsContainerMap.containsKey(key)) {
-                    // existing container with probably quantity change
-                    if (finalIdVsContainerMap.get(key).getContainerCount() != cont.getContainerCount()) {
-                        Long _diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
-                        loadInfoRequestList.add(containerLoadConstruct(cont, _diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(_diff)));
+            if(current.getContainersList() != null)
+            {
+                current.getContainersList().forEach(cont -> {
+                    String key = cont.getId() + "-" + cont.getContainerCode() + "-" + cont.getCommodityGroup();
+                    if (finalIdVsContainerMap.containsKey(key)) {
+                        // existing container with probably quantity change
+                        if (finalIdVsContainerMap.get(key).getContainerCount() != cont.getContainerCount()) {
+                            Long _diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
+                            loadInfoRequestList.add(containerLoadConstruct(cont, _diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(_diff)));
+                        }
+                        finalIdVsContainerMap.remove(key);
                     }
-                    finalIdVsContainerMap.remove(key);
-                }
-                else {
-                    // New Container
-                    loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
-                }
-            });
+                    else {
+                        // New Container
+                        loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
+                    }
+                });
+            }
             // Release all the remaining loads
             finalIdVsContainerMap.forEach((k,v) -> loadInfoRequestList.add(containerLoadConstruct(v, CustomerBookingConstants.ADD, v.getContainerCount())));
         }

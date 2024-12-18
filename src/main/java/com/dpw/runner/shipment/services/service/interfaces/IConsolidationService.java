@@ -11,9 +11,6 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.http.ResponseEntity;
-
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> fetchConsolidations(CommonRequestModel commonRequestModel);
@@ -55,7 +54,8 @@ public interface IConsolidationService extends ICommonService{
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, List<Containers> oldContainers);
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
-    void autoGenerateEvents(ConsolidationDetails consolidationDetails);
+
+    void generateEvents(ConsolidationDetails consolidationDetails);
 
     ResponseEntity<IRunnerResponse> getConsolFromShipment(Long shipmentId);
 
@@ -97,4 +97,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
 }

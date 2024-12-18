@@ -262,7 +262,10 @@ public class ShipmentDao implements IShipmentDao {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }
-
+    @Override
+    public List<ShipmentDetails> findByGuids(List<UUID> guids) {
+        return shipmentRepository.findAllByGuids(guids);
+    }
     @Override
     public Optional<ShipmentDetails> findByGuid(UUID id) {
         return shipmentRepository.findByGuid(id);
@@ -641,6 +644,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Transactional
+    public void saveStatus(Long id, Integer status) {
+        shipmentRepository.saveStatus(id, status);
+    }
+
+    @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {shipmentRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
     @Override
@@ -675,6 +683,12 @@ public class ShipmentDao implements IShipmentDao {
     @Transactional
     public List<ShipmentDetails> findShipmentsByIds(Set<Long> ids) {
         return shipmentRepository.findShipmentsByIds(ids);
+    }
+
+    @Override
+    @Transactional
+    public Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id) {
+        return shipmentRepository.findShipmentByIdWithQuery(id);
     }
 
     @Override

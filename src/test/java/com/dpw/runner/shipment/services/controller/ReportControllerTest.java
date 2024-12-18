@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -36,7 +37,8 @@ class ReportControllerTest {
     private ReportController reportController;
 
     @Test
-    void createReport() throws DocumentException, RunnerException, IOException {
+    void createReport()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenReturn(StringUtility.getRandomString(100).getBytes());
         // Test
@@ -46,7 +48,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport2() throws DocumentException, RunnerException, IOException {
+    void createReport2()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new TranslationException("TranslationException"));
         // Test
@@ -56,7 +59,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport3() throws DocumentException, RunnerException, IOException {
+    void createReport3()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new RunnerException("RunnerException"));
         // Test
@@ -66,7 +70,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport4() throws DocumentException, RunnerException, IOException {
+    void createReport4()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new RunnerException(""));
         // Test

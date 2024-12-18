@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +25,7 @@ public class TenantEntityListener {
 
     @PrePersist
     public void prePersist(Object object) {
-        if (object instanceof MultiTenancy multiTenancy) {
+        if (object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             log.info("PrePersist invoked for object: {}", object);
             if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
                 log.info("Ignore the prePersist call for object: {}", object);
@@ -64,7 +65,7 @@ public class TenantEntityListener {
 
     @PreUpdate
     public void preUpdate(Object object) throws AuthenticationException {
-        if (object instanceof MultiTenancy multiTenancy) {
+        if (object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             log.info("PreUpdate invoked for object: {}", object);
             if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
                 log.info("Ignore the PreUpdate call for object: {}", object);
@@ -115,7 +116,7 @@ public class TenantEntityListener {
 
     @PreRemove
     public void preRemove(Object object) throws AuthenticationException {
-        if (object instanceof MultiTenancy multiTenancy) {
+        if (object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
             log.info("PreRemove invoked for object: {}", object);
             if (Boolean.TRUE.equals(IgnoreAutoTenantPopulationContext.getContext())) {
                 log.info("Ignore the preRemove call for object: {}", object);
@@ -166,6 +167,12 @@ public class TenantEntityListener {
         boolean valid = (!Objects.isNull(tenantId) && tenantId > 0);
         log.info("TenantId validation result for {}: {}", tenantId, valid);
         return valid;
+    }
+
+    public Boolean byPassMultiTenancyFilter(Object object){
+        if(object instanceof NetworkTransfer)
+            return Boolean.TRUE;
+        return Boolean.FALSE;
     }
 }
 

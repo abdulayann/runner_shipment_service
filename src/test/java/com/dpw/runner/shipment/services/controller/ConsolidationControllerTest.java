@@ -147,6 +147,17 @@ class ConsolidationControllerTest {
     }
 
     @Test
+    void retrieveForNTE() {
+        // Mock
+        when(consolidationService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        // Test
+        var responseEntity = consolidationController.retrieveForNTE(Optional.of(1L));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void retrieveById() {
         // Mock
         when(consolidationService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());

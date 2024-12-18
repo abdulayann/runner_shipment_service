@@ -7,15 +7,14 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @NoArgsConstructor
@@ -90,6 +89,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
+    private List<Long> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;

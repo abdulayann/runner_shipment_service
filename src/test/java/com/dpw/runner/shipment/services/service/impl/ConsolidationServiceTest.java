@@ -1,46 +1,17 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -50,92 +21,24 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackSummaryDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerShipmentADInConsoleRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
-import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -161,39 +64,12 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -212,6 +88,23 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -739,7 +632,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any() , any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        when(modelMapper.map(any() , any())).thenReturn(response);
         Runnable mockRunnable = mock(Runnable.class);
         mockShipmentSettings();
 
@@ -1952,6 +1844,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_disabled_consolsplitflag() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -1974,7 +1872,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -1983,6 +1880,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -2006,7 +1909,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -2015,6 +1917,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2047,6 +1955,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase_NoShipment() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2083,6 +1997,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2126,6 +2046,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Air_DgCase_NoShipment_DgFlagFalse() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -2205,6 +2131,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Sync_Failure() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Packing packing = new Packing();
@@ -3443,7 +3375,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         consolidationDetails.setShipmentsList(Arrays.asList(shipmentDetails));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(shipmentLevelContainer);
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
@@ -3464,7 +3395,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         responseMap.put("consolidationNumber", "CONS000231188");
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -3487,7 +3417,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Page<Long> consolIdPage = new PageImpl<>(List.of(1L));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         when(consolidationDetailsDao.getIdWithPendingActions(any(), any())).thenReturn(consolIdPage);
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.list(CommonRequestModel.buildRequest(sampleRequest));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -3503,7 +3432,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         resp.setGuidsList(List.of(UUID.randomUUID()));
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         when(v1Service.fetchBookingIdFilterGuids(any())).thenReturn(resp);
         mockShipmentSettings();
 
@@ -3525,7 +3453,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(response);
         mockShipmentSettings();
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = consolidationService.listAsync(CommonRequestModel.buildRequest(sampleRequest));
@@ -3652,7 +3579,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        when(modelMapper.map(consolidationDetails, ConsolidationListResponse.class)).thenReturn(consolidationListResponse);
         mockShipmentSettings();
 
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
@@ -3989,7 +3915,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             return mockRunnable;
         });
         mockShipmentSettings();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(null);
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -4016,7 +3941,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(masterLists).build();
 
         mockShipmentSettings();
-        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferMasterLists.class)).thenReturn(masterLists);
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
@@ -4127,10 +4051,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
-    void testAutoGenerateEvents() {
+    void testGenerateEvents() {
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setEventsList(null);
-        consolidationService.autoGenerateEvents(consolidationDetails);
+        consolidationService.generateEvents(consolidationDetails);
         //verify(eventDao, times(1)).save(any());
     }
 
@@ -5083,7 +5007,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>());
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5091,7 +5015,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         var spyService = Mockito.spy(consolidationService);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         spyService.sendEmailForDetachShipments(testConsol, List.of(ShipmentDetails.builder().build()), new HashSet<>(), "remarks");
-        verify(commonUtils, times(0)).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils, times(0)).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5101,7 +5025,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setTenantId(2);
         spyService.sendEmailForDetachShipments(testConsol, List.of(shipmentDetails1), new HashSet<>(), "remarks");
-        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5289,33 +5213,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
-    void testGetAutoAttachConsolidationDetailsThrowsExceptionForExistingPushRequestedShipment() {
-        AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
-        request.setShipId(1L);
-
-        ConsoleShipmentMapping consoleShipmentMapping1 = ConsoleShipmentMapping.builder()
-                .shipmentId(1L)
-                .consolidationId(1L)
-                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
-                .isAttachmentDone(false)
-                .build();
-
-        ConsoleShipmentMapping consoleShipmentMapping2 = ConsoleShipmentMapping.builder()
-                .shipmentId(1L)
-                .consolidationId(2L)
-                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
-                .isAttachmentDone(false)
-                .build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        when(consoleShipmentMappingDao.findAll(any(), any() )).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping1,consoleShipmentMapping2)));
-        Exception e = assertThrows(RuntimeException.class, () -> {
-           consolidationService.getAutoAttachConsolidationDetails(commonRequestModel);
-        });
-        assertEquals(ConsolidationConstants.PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE, e.getMessage());
-    }
-
-    @Test
     void completeUpdateReverseSyncsMainCarriageRoutingsInShipment() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(new ConsolidationDetailsRequest()).build();
 
@@ -5445,6 +5342,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea1() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+          Runnable argument = invocation.getArgument(0);
+          argument.run();
+          return mockRunnable;
+        });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -5473,7 +5376,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
@@ -5482,6 +5384,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
     @Test
     void testDetachShipments_Success_Sea1_FCL() throws RunnerException {
+      Runnable mockRunnable = mock(Runnable.class);
+      when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+        Runnable argument = invocation.getArgument(0);
+        argument.run();
+        return mockRunnable;
+      });
         List<Long> shipmentIds = List.of(1L);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         Containers containers = new Containers();
@@ -5511,11 +5419,103 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
-        doNothing().when(shipmentsContainersMappingDao).detachShipments(anyLong(), any(), anyBoolean());
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTEAuthError() {
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTERetrievalError() {
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.empty());
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTEIdNullError() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE() {
+        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE1() {
+        testConsol.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testCreateForNTESuccess() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        commonRequestModel.setData(copy);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false).setIsNetworkTransferEntityEnabled(true);
+
+        ConsolidationDetails consolidationDetails3 = testConsol;
+        testConsol.setReceivingBranch(1L);
+        testConsol.setTriangulationPartnerList(List.of(12L));
+
+        ConsolidationDetails consolidationDetails2 = testConsol;
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails3);
+        consolidationDetailsList.add(consolidationDetails2);
+
+        for (ConsolidationDetails consolidationDetails : consolidationDetailsList) {
+            ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+            ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+            var spyService = Mockito.spy(consolidationService);
+
+            when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+            when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
+            when(commonUtils.convertToEntityList(anyList(), any(), eq(true))).thenReturn(List.of());
+            when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
+            when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
+            when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
+            when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
+            when(truckDriverDetailsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(List.of());
+            when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
+            when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+            when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+            Runnable mockRunnable = mock(Runnable.class);
+            when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+                // Get the argument passed to the withMdc method
+                Runnable argument = invocation.getArgument(0);
+                // Call the run method of the argument
+                argument.run();
+                // Add any additional behavior or return value as needed
+                return mockRunnable;
+            });
+            when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+            mockShipmentSettings();
+            ResponseEntity<IRunnerResponse> response = spyService.create(commonRequestModel);
+            assertEquals(expectedEntity, response);
+
+        }
     }
 
 }

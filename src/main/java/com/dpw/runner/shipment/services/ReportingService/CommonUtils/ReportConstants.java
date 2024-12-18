@@ -543,6 +543,10 @@ public class ReportConstants {
     public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
+    public static final String CLIENT_ADD_WITHOUT_CONTACT = "ClientAddwoCont";
+    public static final String CONSIGNER_ADD_WITHOUT_CONTACT = "CsgnrAddwoCont";
+    public static final String CONSIGNEE_ADD_WITHOUT_CONTACT = "CneesAddwoCont";
+    public static final String NOTIFY_PARTY_ADD_WITHOUT_CONTACT = "NPAddwoCont";
     public static final String NOTIFY_ADDRESS = "NotifyAddress";
     public static final String ISSUING_CARRIER_AGENT_NAME = "IssuingCarrierAgentName";
     public static final String ISSUiNG_CARRIER_CITY = "IssuingCarrierCity";
@@ -702,6 +706,10 @@ public class ReportConstants {
     public static final String SHIPMENT_HOUSE_BILL = "HouseBill";
     public static final String ORIGINAL_HOUSE_BILL = "Original HBL";
     public static final String DRAFT_HOUSE_BILL = "Draft HBL";
+    public static final String ORIGINAL_HAWB = "Original HAWB";
+    public static final String DRAFT_HAWB = "Draft HAWB";
+    public static final String ORIGINAL_MAWB = "Original MAWB";
+    public static final String DRAFT_MAWB = "Draft MAWB";
     public static final String FREIGHT_CERTIFICATION = "FreightCertification";
     public static final String PRE_ALERT = "PreAlert";
     public static final String PROOF_OF_DELIVERY = "ProofOfDelivery";
@@ -967,6 +975,10 @@ public class ReportConstants {
 
     public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
     // Local Language Tags
+    public static final String CLIENT_ADDWO_CONT_LL = "ClientAddwoContLL";
+    public static final String CONSIGNER_ADDWO_CONT_LL = "CsgnrAddwoContLL";
+    public static final String CONSIGNEE_ADDWO_CONT_LL = "CneesAddwoContLL";
+    public static final String NOTIFY_PART_ADDWO_CONT_LL = "NPAddwoContLL";
     public static final String CLIENT_LL = "ClientLL";
     public static final String CLIENT_ADDRESS_LL = "ClientAddressLL";
     public static final String CONSIGNER_LL = "ConsignerLL";
