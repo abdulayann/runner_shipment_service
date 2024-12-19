@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -55,4 +56,5 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     @JsonProperty(value = "is_hazardous")
     private Boolean isDg;
     private String source;
+    private List<Map<String, Object>> addresses;
 }
