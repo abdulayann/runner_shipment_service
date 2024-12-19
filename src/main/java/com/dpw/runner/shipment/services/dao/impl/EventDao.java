@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -600,6 +601,12 @@ public class EventDao implements IEventDao {
             event.setBranch(null);
         }
         return event;
+    }
+
+    @Override
+    @ExcludeTenantFilter
+    public List<Events> updateEventsList(List<Events> shipmentEvents) {
+        return eventRepository.saveAll(shipmentEvents);
     }
 
 
