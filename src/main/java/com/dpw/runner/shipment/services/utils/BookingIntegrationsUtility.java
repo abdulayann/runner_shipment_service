@@ -63,8 +63,9 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.FULLNAME;
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 
 /**
@@ -697,24 +698,24 @@ public class BookingIntegrationsUtility {
 
     private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map organizationRow, PartiesRequest party,
                                             List<Long> orgIds) {
-        if(requestMap.containsKey(partyType) && requestMap.get(partyType).getOrgCode().equals(organizationRow.get("OrganizationCode"))) {
-            party.setOrgCode(organizationRow.get("OrganizationCode").toString());
+        if(requestMap.containsKey(partyType) && requestMap.get(partyType).getOrgCode().equals(organizationRow.get(PartiesConstants.ORGANIZATION_CODE))) {
+            party.setOrgCode(organizationRow.get(PartiesConstants.ORGANIZATION_CODE).toString());
             party.setOrgData(organizationRow);
-            if(organizationRow.containsKey("Id")) {
-                party.setOrgId(String.valueOf(organizationRow.get("Id")));
-                orgIds.add(Long.valueOf(organizationRow.get("Id").toString()));
+            if(organizationRow.containsKey(PartiesConstants.ID)) {
+                party.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
+                orgIds.add(Long.valueOf(organizationRow.get(PartiesConstants.ID).toString()));
             }
         }
     }
 
     private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map addressRow, PartiesRequest party) {
-        if(addressRow.containsKey("OrgId") && party.getOrgId() != null && requestMap.containsKey(partyType) &&
-                Objects.equals(Long.valueOf(addressRow.get("OrgId").toString()), Long.valueOf(party.getOrgId())) &&
-                Objects.equals(requestMap.get(partyType).getAddressCode(), addressRow.get("AddressShortCode"))) {
-            party.setAddressCode(addressRow.get("AddressShortCode").toString());
+        if(addressRow.containsKey(ORG_ID) && party.getOrgId() != null && requestMap.containsKey(partyType) &&
+                Objects.equals(Long.valueOf(addressRow.get(ORG_ID).toString()), Long.valueOf(party.getOrgId())) &&
+                Objects.equals(requestMap.get(partyType).getAddressCode(), addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE))) {
+            party.setAddressCode(addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE).toString());
             party.setAddressData(addressRow);
-            if(addressRow.containsKey("Id")) {
-                party.setAddressId(String.valueOf(addressRow.get("Id")));
+            if(addressRow.containsKey(PartiesConstants.ID)) {
+                party.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
             }
         }
     }
@@ -729,7 +730,7 @@ public class BookingIntegrationsUtility {
                 orgCodes.add(entry.getValue().getOrgCode());
                 addressCodes.add(entry.getValue().getAddressCode());
             }
-            CommonV1ListRequest orgRequest = createCriteriaForTwoFields("OrganizationCode", "in", List.of(orgCodes), "ActiveClient", "=", Boolean.TRUE);
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "in", List.of(orgCodes), ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCodes: {}", LoggerHelper.getRequestIdFromMDC() ,orgCodes);
@@ -743,15 +744,15 @@ public class BookingIntegrationsUtility {
             List<Long> orgIds = new ArrayList<>();
             for(Object orgRow: orgRows) {
                 Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
-                setOrgDataInPartiesRequest("Customer Request", requestMap, organizationRow, client, orgIds);
-                setOrgDataInPartiesRequest("Consignor Request", requestMap, organizationRow, consignor, orgIds);
-                setOrgDataInPartiesRequest("Consignee Request", requestMap, organizationRow, consignee, orgIds);
-                setOrgDataInPartiesRequest("Notify Party Request", requestMap, organizationRow, notifyParty, orgIds);
+                setOrgDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, organizationRow, client, orgIds);
+                setOrgDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, organizationRow, consignor, orgIds);
+                setOrgDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, organizationRow, consignee, orgIds);
+                setOrgDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, organizationRow, notifyParty, orgIds);
             }
 
             CommonV1ListRequest addressRequest = createCriteriaForThreeFields(
-                    "OrgId", "in", List.of(orgIds),
-                    "AddressShortCode", "in", List.of(addressCodes),
+                    ORG_ID, "in", List.of(orgIds),
+                    PartiesConstants.ADDRESS_SHORT_CODE, "in", List.of(addressCodes),
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
@@ -761,10 +762,10 @@ public class BookingIntegrationsUtility {
             List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
             for(Object addressRow: addressRows) {
                 Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
-                setAddressDataInPartiesRequest("Customer Request", requestMap, addressRowMap, client);
-                setAddressDataInPartiesRequest("Consignor Request", requestMap, addressRowMap, consignor);
-                setAddressDataInPartiesRequest("Consignee Request", requestMap, addressRowMap, consignee);
-                setAddressDataInPartiesRequest("Notify Party Request", requestMap, addressRowMap, notifyParty);
+                setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
+                setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
+                setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
+                setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
             }
             if(client.getOrgId() != null && client.getAddressId() != null) {
                 requestMap.put("Customer", client);
@@ -788,20 +789,20 @@ public class BookingIntegrationsUtility {
 
     public void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
         try {
-            CommonV1ListRequest orgRequest = createCriteriaForTwoFields("OrganizationCode", "=", orgCode, "ActiveClient", "=", Boolean.TRUE);
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
-            if(organizationRow.containsKey("Id"))
-                request.setOrgId(String.valueOf(organizationRow.get("Id")));
+            if(organizationRow.containsKey(PartiesConstants.ID))
+                request.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
             request.setOrgData(organizationRow);
 
             CommonV1ListRequest addressRequest = createCriteriaForThreeFields(
-                    "OrgId", "=", organizationRow.get("Id"),
-                    "AddressShortCode", "=", addressCode,
+                    ORG_ID, "=", organizationRow.get(PartiesConstants.ID),
+                    PartiesConstants.ADDRESS_SHORT_CODE, "=", addressCode,
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
@@ -809,8 +810,8 @@ public class BookingIntegrationsUtility {
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
-            if(addressRow.containsKey("Id"))
-                request.setAddressId(String.valueOf(addressRow.get("Id")));
+            if(addressRow.containsKey(PartiesConstants.ID))
+                request.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
             request.setAddressData(addressRow);
         }
         catch (Exception ex) {
