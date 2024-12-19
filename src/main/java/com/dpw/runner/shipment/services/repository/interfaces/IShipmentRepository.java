@@ -105,4 +105,14 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @ExcludeTenantFilter
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
+
+    @Modifying
+    @Transactional
+    @ExcludeTenantFilter
+    @Query(value = "UPDATE shipment_additional_details a " +
+            "SET empty_container_returned = ?2 " +
+            "FROM shipment_details s " +
+            "WHERE s.additional_details_id = a.id AND s.id = ?1", nativeQuery = true)
+    void updateAdditionalDetailsByShipmentId(Long id, Boolean emptyContainerReturned);
+
 }
