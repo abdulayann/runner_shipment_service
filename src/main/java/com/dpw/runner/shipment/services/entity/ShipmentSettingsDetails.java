@@ -566,11 +566,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean eventsRevampEnabled;
 
     @Column(name = "always_utilization")
-    private Boolean alwaysUtilization = false;
+    private Boolean alwaysUtilization;
 
     @Column(name = "utilization_for_container_quoted")
-    private Boolean utilizationForContainerQuoted = false;
+    private Boolean utilizationForContainerQuoted;
 
     @Column(name = "no_utilization")
-    private Boolean noUtilization = true;
+    private Boolean noUtilization;
 }

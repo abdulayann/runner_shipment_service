@@ -253,6 +253,20 @@ class ShipmentSettingsServiceTest extends CommonMocks {
     }
 
     @Test
+    void completeSettingsUpdateCreateV1_Update2() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setAlwaysUtilization(false);
+        shipmentSettingRequest.setUtilizationForContainerQuoted(false);
+        shipmentSettingRequest.setNoUtilization(false);
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testCompleteSettingsUpdateCreateV1_RequestNull() throws RunnerException{
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
