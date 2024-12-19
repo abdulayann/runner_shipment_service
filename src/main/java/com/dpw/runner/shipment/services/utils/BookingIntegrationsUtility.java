@@ -166,9 +166,6 @@ public class BookingIntegrationsUtility {
         try {
             if (!Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_RAI)) {
                 platformServiceAdapter.createAtPlatform(request);
-                int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
-                if (count == 0)
-                    throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
                 this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
             }
         } catch (Exception ex) {
@@ -178,6 +175,7 @@ public class BookingIntegrationsUtility {
         }
     }
 
+    //Not to be used now
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
         var request = createPlatformUpdateRequest(customerBooking);
         try {
@@ -195,9 +193,9 @@ public class BookingIntegrationsUtility {
             var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
             try {
                 if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
-                    platformServiceAdapter.updateAtPlaform(request);
+                    platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
-                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
+                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
@@ -312,6 +310,8 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
                 .source("RUNNER")
+                .status(platformStatusMap.get(customerBooking.getBookingStatus()))
+                .referenceNumbers(new ArrayList<>())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -580,25 +580,23 @@ public class BookingIntegrationsUtility {
 
     private CommonRequestModel createPlatformUpdateRequestFromShipment(@NonNull final ShipmentDetails shipmentDetails) {
         var carrierDetails = shipmentDetails.getCarrierDetails();
-        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
-                .booking_reference_code(StringUtility.getNullIfEmpty(shipmentDetails.getBookingReference()))
+        PlatformCreateRequest platformUpdateRequest = PlatformCreateRequest.builder()
+                .booking_ref_code(StringUtility.getNullIfEmpty(shipmentDetails.getBookingReference()))
                 .origin_code(StringUtility.getNullIfEmpty(carrierDetails.getOrigin()))
                 .destination_code(StringUtility.getNullIfEmpty(carrierDetails.getDestination()))
                 .load(createLoad(shipmentDetails))
                 .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
                 .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
-                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
-                .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
-                .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
-                .air_carrier_details(null)
+                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
+                .carrierDisplayName(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
+                .vesselName(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 .status(mapBookingStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())))
-                .pickup_date(null)
                 .eta(carrierDetails.getEta())
                 .ets(carrierDetails.getEtd())
                 .ata(carrierDetails.getAta())
                 .ats(carrierDetails.getAtd())
-                .contractId(shipmentDetails.getContractId())
-                .parentContractId(shipmentDetails.getParentContractId())
+                .contract_id(shipmentDetails.getContractId())
+                .parent_contract_id(shipmentDetails.getParentContractId())
                 .voyage(StringUtility.getNullIfEmpty(carrierDetails.getVoyage()))
                 .transportMode(shipmentDetails.getTransportMode())
                 .isDg(shipmentDetails.getContainsHazardous())
@@ -606,6 +604,15 @@ public class BookingIntegrationsUtility {
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
                 .source("RUNNER")
+                .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
+                .customer_org_id(shipmentDetails.getClient().getOrgCode())
+                .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
+                .branch_info(ListContractResponse.BranchInfo.builder().
+                        id(shipmentDetails.getSalesBranch()).
+                        sales_agent_primary_email(shipmentDetails.getPrimarySalesAgentEmail()).
+                        sales_agent_secondary_email(shipmentDetails.getSecondarySalesAgentEmail()).
+                        build())
+                .created_at(shipmentDetails.getBookingCreatedDate())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
