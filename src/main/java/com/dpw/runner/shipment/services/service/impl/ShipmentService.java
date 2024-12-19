@@ -4108,6 +4108,8 @@ public class ShipmentService implements IShipmentService {
             pushShipmentDataToDependentService(newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(newShipmentDetails);
             ShipmentDetails newShipment = newShipmentDetails;
+            if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(newShipment)), executorService);
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(newShipment, oldEntity)), executorService);
             return ResponseHelper.buildSuccessResponse(response);

@@ -310,12 +310,9 @@ public class CustomerBookingService implements ICustomerBookingService {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
-                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())) && !isCreatedInPlatform) {
+                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
                 CustomerBooking finalCustomerBooking = customerBooking;
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
-            } else if (isCreatedInPlatform) {
-                CustomerBooking finalCustomerBooking = customerBooking;
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(finalCustomerBooking)), executorService);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
