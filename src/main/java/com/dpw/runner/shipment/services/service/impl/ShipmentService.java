@@ -2875,9 +2875,9 @@ public class ShipmentService implements IShipmentService {
         Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
                 Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
 
-        return oldOptionalNetworkTransfer
+        return ((oldOptionalNetworkTransfer.isEmpty()) || oldOptionalNetworkTransfer
                 .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
-                .orElse(false);
+                .orElse(false));
     }
 
     private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
