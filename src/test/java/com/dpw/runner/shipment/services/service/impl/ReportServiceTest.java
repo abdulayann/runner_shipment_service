@@ -982,7 +982,7 @@ class ReportServiceTest {
         shipmentDetails.getAdditionalDetails().setReleaseType("ORG");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentDao.update(shipmentDetails, false)).thenReturn(shipmentDetails);
-        Mockito.doNothing().when(eventService).saveEvent(any());
+//        Mockito.doNothing().when(eventService).saveEvent(any());
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         hbl.getHblData().setOriginalSeq(1);
@@ -1027,7 +1027,7 @@ class ReportServiceTest {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        Mockito.doNothing().when(eventService).saveEvent(any());
+//        Mockito.doNothing().when(eventService).saveEvent(any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
