@@ -74,6 +74,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 @Service
 @Slf4j
@@ -867,12 +868,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void setOrgAndAddressToParties(PlatformToRunnerCustomerBookingRequest request) {
         Map<String, PartiesRequest> requestMap = new HashMap<>();
         if (request.getCustomer() != null) {
-            requestMap.put("Customer Request", request.getCustomer());
+            requestMap.put(CUSTOMER_REQUEST, request.getCustomer());
         }
         if(request.getConsignor() != null && !Boolean.TRUE.equals(request.getIsConsignorFreeText()) &&
                 !IsStringNullOrEmpty(request.getConsignor().getOrgCode()) &&
                 !IsStringNullOrEmpty(request.getConsignor().getAddressCode())) {
-            requestMap.put("Consignor Request", request.getConsignor());
+            requestMap.put(CONSIGNOR_REQUEST, request.getConsignor());
         }
         else {
             transformOrgAndAddressToRawData(request.getConsignor());
@@ -880,7 +881,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(request.getConsignee() != null && !Boolean.TRUE.equals(request.getIsConsigneeFreeText()) &&
                 !IsStringNullOrEmpty(request.getConsignee().getOrgCode()) &&
                 !IsStringNullOrEmpty(request.getConsignee().getAddressCode())) {
-            requestMap.put("Consignee Request", request.getConsignee());
+            requestMap.put(CONSIGNEE_REQUEST, request.getConsignee());
         }
         else {
             transformOrgAndAddressToRawData(request.getConsignee());
@@ -888,7 +889,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(request.getNotifyParty() != null && !Boolean.TRUE.equals(request.getIsNotifyPartyFreeText()) &&
                 !IsStringNullOrEmpty(request.getNotifyParty().getOrgCode()) &&
                 !IsStringNullOrEmpty(request.getNotifyParty().getAddressCode())) {
-            requestMap.put("Notify Party Request", request.getNotifyParty());
+            requestMap.put(NOTIFY_PARTY_REQUEST, request.getNotifyParty());
         }
         else {
             transformOrgAndAddressToRawData(request.getNotifyParty());
