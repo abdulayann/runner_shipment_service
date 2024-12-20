@@ -608,9 +608,9 @@ public class BookingIntegrationsUtility {
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
                 .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
                 .branch_info(ListContractResponse.BranchInfo.builder().
-                        id(shipmentDetails.getSalesBranch()).
-                        sales_agent_primary_email(shipmentDetails.getPrimarySalesAgentEmail()).
-                        sales_agent_secondary_email(shipmentDetails.getSecondarySalesAgentEmail()).
+                        id(StringUtility.isEmpty(shipmentDetails.getSalesBranch()) ? null : shipmentDetails.getSalesBranch()).
+                        sales_agent_primary_email(StringUtility.isEmpty(shipmentDetails.getPrimarySalesAgentEmail()) ? null : shipmentDetails.getPrimarySalesAgentEmail()).
+                        sales_agent_secondary_email(StringUtility.isEmpty(shipmentDetails.getSecondarySalesAgentEmail()) ? null : shipmentDetails.getSecondarySalesAgentEmail()).
                         build())
                 .created_at(shipmentDetails.getBookingCreatedDate())
                 .build();
