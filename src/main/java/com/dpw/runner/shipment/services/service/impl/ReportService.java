@@ -347,6 +347,8 @@ public class ReportService implements IReportService {
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
                 createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+            } else {
+                dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
             }
         } else if (report instanceof PreAlertReport vPreAlertReport) {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
