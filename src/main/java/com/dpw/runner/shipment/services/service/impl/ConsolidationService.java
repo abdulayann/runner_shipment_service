@@ -393,19 +393,54 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
+        this.getMasterDataForList(lst, responseList, getMasterData, true);
+        return responseList;
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ConsolidationDetails> lst) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        List<ConsolidationListResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationListResponses(
+            lst);
+        Map<Long, ConsolidationListResponse> responseMap = listResponses.stream()
+            .collect(Collectors.toMap(ConsolidationListResponse::getId, response -> response));
+
+        lst.forEach(consolidationDetails -> {
+            ConsolidationListResponse res = responseMap.get(consolidationDetails.getId());
+            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
+                res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
+            updateHouseBillsShippingIds(consolidationDetails, res);
+            containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
+            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).orElse(null));
+            consolidationListResponses.add(res);
+        });
+        consolidationListResponses.forEach(consolidationDetails -> {
+            responseList.add(consolidationDetails);
+        });
+        this.getMasterDataForList(lst, responseList, true, false);
+        return responseList;
+    }
+
+    private void getMasterDataForList(List<ConsolidationDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData) {
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
+                double _start = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
                 var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-                var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+                CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
+                if (Boolean.TRUE.equals(includeTenantData))
+                    tenantDataFuture =CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
                 CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
             }
         }
-        return responseList;
     }
 
     private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationListResponse response, boolean isShipmentLevelContainer) {
@@ -3679,7 +3714,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-        List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
+        List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsPage.getContent());
         log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
