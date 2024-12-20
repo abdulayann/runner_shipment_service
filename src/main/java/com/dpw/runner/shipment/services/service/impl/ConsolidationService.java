@@ -401,8 +401,6 @@ public class ConsolidationService implements IConsolidationService {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationExcelExportResponse> consolidationListResponses = new ArrayList<>();
-        List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         List<ConsolidationExcelExportResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationExportListResponses(lst);
         Map<Long, ConsolidationExcelExportResponse> responseMap = listResponses.stream()
             .collect(Collectors.toMap(ConsolidationExcelExportResponse::getId, response -> response));
