@@ -1415,6 +1415,36 @@ public class MasterDataUtils{
         return unLocationsList.isEmpty() ? null : unLocationsList.get(0);
     }
 
+    public Map<String, EntityTransferMasterLists> getCommodityGroupDataFromCache(Set<String> commodityGroups) {
+        if(Objects.isNull(commodityGroups))
+            return new HashMap<>();
+        Map<String, EntityTransferMasterLists> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> commodityGroupCodesFetchFromV1 = new HashSet<>();
+        for(String commodityGroup: commodityGroups) {
+            String key = commodityGroup + "#" + MasterDataType.COMMODITY_GROUP;
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+            if(Objects.isNull(value))
+                commodityGroupCodesFetchFromV1.add(commodityGroup);
+            else
+                responseMap.put(key, (EntityTransferMasterLists) value.get());
+        }
+        if(!commodityGroupCodesFetchFromV1.isEmpty()) {
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            List<MasterListRequest> masterListRequestV2s = new ArrayList<>();
+            commodityGroupCodesFetchFromV1.forEach(e -> masterListRequestV2s.add(MasterListRequest.builder().ItemType(MasterDataType.COMMODITY_GROUP.getDescription()).ItemValue(e).build()));
+            masterListRequestV2.setMasterListRequests(masterListRequestV2s);
+            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
+            Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(masterListRequestV2);
+            responseMap.putAll(masterListsMap);
+            commodityGroupCodesFetchFromV1 = new HashSet<>();
+            commonUtils.createMasterDataKeysList(new HashSet<>(masterListRequestV2s), commodityGroupCodesFetchFromV1);
+            pushToCache(masterListsMap, CacheConstants.MASTER_LIST, commodityGroupCodesFetchFromV1, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
+    }
+
     public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes) {
         if(Objects.isNull(locCodes))
             return new HashMap<>();

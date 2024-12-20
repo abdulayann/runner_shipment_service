@@ -24,7 +24,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -32,7 +31,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -238,13 +236,27 @@ public class HawbReport extends IReport{
                     var values = shipmentRow.getPackingList().stream()
                         .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                         .toList();
+                    Map<String, List<Map<String, Object>>> commodityMap = new HashMap<>();
+                    Set<String> commodityGrpCodes = new HashSet<>();
                     values.forEach(v -> {
                         if(v.containsKey(COMMODITY_GROUP) && v.get(COMMODITY_GROUP) != null){
-                            MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
-                            if(!Objects.isNull(commodity))
-                                v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
+                            String key = v.get(COMMODITY_GROUP).toString() + "#" + MasterDataType.COMMODITY_GROUP;
+                            if(!commodityMap.containsKey(key)) {
+                                commodityMap.put(key, new ArrayList<>());
+                            }
+                            commodityMap.get(key).add(v);
+                            commodityGrpCodes.add(v.get(COMMODITY_GROUP).toString());
                         }
                     });
+                    Map<String, EntityTransferMasterLists> commodityResponse = masterDataUtils.getCommodityGroupDataFromCache(commodityGrpCodes);
+                    for(Map.Entry<String, EntityTransferMasterLists> entry: commodityResponse.entrySet()) {
+                        if(!Objects.isNull(entry.getValue()) && commodityMap.containsKey(entry.getKey())) {
+                            List<Map<String, Object>> vals = commodityMap.get(entry.getKey());
+                            for(Map<String, Object> val: vals) {
+                                val.put(PACKS_COMMODITY_GROUP, entry.getValue().getItemDescription());
+                            }
+                        }
+                    }
                     dictionary.put(SHIPMENT_PACKS, values);
                 }
             }
