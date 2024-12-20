@@ -3923,11 +3923,18 @@ public class AwbService implements IAwbService {
             String errorString = String.join(", ", emptyFieldsError);
             throw new ValidationException("Please add " + errorString + " and retry");
         }
-        List<String> unlocoRequests = new ArrayList<>(List.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
-        Set<String> carrierRequests = new HashSet<>(List.of(iataFetchRateRequest.getFlightCarrier()));
-
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-        Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+        CompletableFuture<Map<String, UnlocationsResponse>> unlocationsFuture = CompletableFuture.supplyAsync(() ->
+                masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()))
+        );
+        CompletableFuture<Map<String, EntityTransferCarrier>> carriersFuture = CompletableFuture.supplyAsync(() ->
+                masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier()))
+        );
+        CompletableFuture.allOf(unlocationsFuture, carriersFuture).join();
+        Map<String, UnlocationsResponse> unlocationsMap = unlocationsFuture.join();
+        Map<String, EntityTransferCarrier> carriersMap = carriersFuture.join();
+        if (unlocationsMap.isEmpty() || carriersMap.isEmpty()) {
+            throw new ValidationException("Invalid data fetched for location or carriers.");
+        }
         String origin = unlocationsMap.containsKey(iataFetchRateRequest.getOriginPort())? unlocationsMap.get(iataFetchRateRequest.getOriginPort()).getIataCode() : null;
         String destination = unlocationsMap.containsKey(iataFetchRateRequest.getDestinationPort())? unlocationsMap.get(iataFetchRateRequest.getDestinationPort()).getIataCode(): null;
         String carrier = carriersMap.containsKey(iataFetchRateRequest.getFlightCarrier())? carriersMap.get(iataFetchRateRequest.getFlightCarrier()).IATACode : null;
@@ -3994,15 +4001,8 @@ public class AwbService implements IAwbService {
                 }
                 int size = weightList.size();
                 for(int i = 0; i < size; i++) {
-                    if(i == (size-1) && chargeableWeight.compareTo(weightList.get(i)) >= 0){
-                        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                                .rateClass(RateClass.Q.getId())
-                                .rateCharge(weightBreakMap.get(weightList.get(i)))
-                                .build();
-                        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
-                    }
-                    if(chargeableWeight.compareTo(weightList.get(i)) >= 0 &&
-                            chargeableWeight.compareTo(weightList.get(i + 1)) < 0){
+                    BigDecimal currentWeight = weightList.get(i);
+                    if (chargeableWeight.compareTo(currentWeight) >= 0 && (i== (size-1) || chargeableWeight.compareTo(weightList.get(i + 1)) < 0)) {
                         IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
                                 .rateClass(RateClass.Q.getId())
                                 .rateCharge(weightBreakMap.get(weightList.get(i)))
