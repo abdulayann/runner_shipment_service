@@ -400,21 +400,20 @@ public class ConsolidationService implements IConsolidationService {
     private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ConsolidationDetails> lst) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         List<IRunnerResponse> responseList = new ArrayList<>();
-        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        List<ConsolidationExcelExportResponse> consolidationListResponses = new ArrayList<>();
         List<Long> consolidationIdList = lst.stream().map(ConsolidationDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(consolidationIdList, ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-        List<ConsolidationListResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationListResponses(
-            lst);
-        Map<Long, ConsolidationListResponse> responseMap = listResponses.stream()
-            .collect(Collectors.toMap(ConsolidationListResponse::getId, response -> response));
+        List<ConsolidationExcelExportResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationExportListResponses(lst);
+        Map<Long, ConsolidationExcelExportResponse> responseMap = listResponses.stream()
+            .collect(Collectors.toMap(ConsolidationExcelExportResponse::getId, response -> response));
 
         lst.forEach(consolidationDetails -> {
-            ConsolidationListResponse res = responseMap.get(consolidationDetails.getId());
+            ConsolidationExcelExportResponse res = responseMap.get(consolidationDetails.getId());
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             updateHouseBillsShippingIds(consolidationDetails, res);
             containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
-            res.setPendingActionCount(Optional.ofNullable(map.get(consolidationDetails.getId())).orElse(null));
+
             consolidationListResponses.add(res);
         });
         consolidationListResponses.forEach(consolidationDetails -> {
@@ -502,6 +501,65 @@ public class ConsolidationService implements IConsolidationService {
         response.setContainerNumbers(containerNumber);
     }
 
+    private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationExcelExportResponse response, boolean isShipmentLevelContainer) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Long containerCount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        List<Containers> containersList = new ArrayList<>();
+        containersList = consolidationDetails.getContainersList();
+        if(isShipmentLevelContainer) {
+            List<ShipmentDetails> shipmentDetails = consolidationDetails.getShipmentsList();
+            if(shipmentDetails != null && shipmentDetails.size() > 0) {
+                containersList = new ArrayList<>();
+                for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+                    if(shipmentDetails1.getContainersList() != null && shipmentDetails1.getContainersList().size() > 0) {
+                        containersList.addAll(shipmentDetails1.getContainersList());
+                    }
+                }
+            }
+        } else {
+            containersList = consolidationDetails.getContainersList();
+        }
+        if (containersList != null && containersList.size() > 0) {
+            for (Containers container : containersList) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    }
+
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                ++containerCount;
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerCount(containerCount);
+        response.setContainerNumbers(containerNumber);
+    }
+
     private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationListResponse consolidationRes) {
         var shipments = consol.getShipmentsList();
         List<String> shipmentIds = null;
@@ -514,6 +572,17 @@ public class ConsolidationService implements IConsolidationService {
         consolidationRes.setShipmentIds(shipmentIds);
     }
 
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationExcelExportResponse consolidationRes) {
+        var shipments = consol.getShipmentsList();
+        List<String> shipmentIds = null;
+        List<String> houseBills = null;
+        if (shipments != null)
+            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
+        if (shipmentIds != null)
+            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
+        consolidationRes.setHouseBills(houseBills);
+        consolidationRes.setShipmentIds(shipmentIds);
+    }
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -3726,7 +3795,7 @@ public class ConsolidationService implements IConsolidationService {
 
             for (int i = 0; i < consoleResponse.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
-                ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+                ConsolidationExcelExportResponse consol = (ConsolidationExcelExportResponse) consoleResponse.get(i);
                 LocalTimeZoneHelper.transformTimeZone(consol);
                 itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(consol.getConsolidationType() != null ? consol.getConsolidationType() : "");
                 itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(consol.getConsolidationNumber() != null ? consol.getConsolidationNumber() : "");
