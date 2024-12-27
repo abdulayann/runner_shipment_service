@@ -1570,118 +1570,93 @@ public class MasterDataUtils{
     }
 
     public Map<String, Object> getPartiesOrgInfoFromCache(List<Parties> partiesList) {
-        if(Objects.isNull(partiesList))
-            return new HashMap<>();
-        Map<String, Object> responseMap = new HashMap<>();
+        if (Objects.isNull(partiesList)) {
+            return Collections.emptyMap();
+        }
+
         Map<String, Map<String, Object>> organizationAddressMap = new HashMap<>();
-        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        assert !Objects.isNull(cache);
-        List<Parties> partiesOrgInfoFetchFromV1 = new ArrayList<>();
-        Set<String> partiesOrgIdFetchFromV1 = new HashSet<>();
+        List<Parties> partiesToFetch = new ArrayList<>();
+        Set<String> partiesOrgIdsToFetch = new HashSet<>();
+        Cache cache = Objects.requireNonNull(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
         String customCacheKey = CacheConstants.ORGANIZATIONS_WITH_ADDRESSES;
 
-        for(Parties parties: partiesList) {
-            if(Objects.isNull(parties) || parties.getOrgCode()==null)
-                continue;
-            String key = parties.getOrgCode();
-            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ORGANIZATIONS_WITH_ADDRESSES, key));
-            if(Objects.isNull(value)){
-                partiesOrgInfoFetchFromV1.add(parties);
-                partiesOrgIdFetchFromV1.add(parties.getOrgCode());
-            }
-            else{
+        for (Parties party : partiesList) {
+            if (party == null || party.getOrgCode() == null) continue;
+            String key = party.getOrgCode();
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, key));
+
+            if (value == null) {
+                partiesToFetch.add(party);
+                partiesOrgIdsToFetch.add(key);
+            } else {
                 Map<String, Object> cacheResponse = (Map<String, Object>) value.get();
-                boolean fetchPartiesInfoFromV1 = true;
-                organizationAddressMap.put(parties.getOrgCode(), cacheResponse);
+                organizationAddressMap.put(key, cacheResponse);
 
-                Object orgAddressObj = cacheResponse.get("orgAddress");
-                if(orgAddressObj instanceof List<?>){
-                    List<Map<String, Object>> addressMapList = (List<Map<String, Object>>)  orgAddressObj;
-                    for(Map<String, Object> address: addressMapList){
-                        if(Objects.equals(address.get("AddressShortCode"), parties.getAddressCode())){
-                            fetchPartiesInfoFromV1 = false;
-                        }
-                    }
-                }
-                if(fetchPartiesInfoFromV1){
-                    partiesOrgInfoFetchFromV1.add(parties);
-                    partiesOrgIdFetchFromV1.add(parties.getOrgCode());
+                assert cacheResponse != null;
+                if (isAddressAbsent(cacheResponse, party.getAddressCode())) {
+                    partiesToFetch.add(party);
+                    partiesOrgIdsToFetch.add(key);
                 }
             }
         }
 
-        if(!partiesOrgInfoFetchFromV1.isEmpty()) {
-            OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(partiesOrgInfoFetchFromV1);
-            Map<String, Map<String, Object>> organizationMap = orgAddressResponse.getOrganizations();
-            Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
-
-            for (Map.Entry<String, Map<String, Object>> entry : addressMap.entrySet()) {
-                String orgCode = entry.getKey().split("#")[0];
-
-                if (!organizationMap.get(orgCode).isEmpty()) {
-                    if (organizationAddressMap.get(orgCode)==null) {
-                        List<Map<String, Object>> orgAddress = Collections.singletonList(entry.getValue());
-                        organizationMap.get(orgCode).put("orgAddress", orgAddress);
-                        organizationAddressMap.put(orgCode, organizationMap.get(orgCode));
-                    } else {
-                        Object existingAddresses = organizationAddressMap.get(orgCode).get("orgAddress");
-                        if (existingAddresses instanceof List<?>) {
-                            List<Map<String, Object>> addressList = new ArrayList<>((List<Map<String, Object>>) existingAddresses);
-
-                            boolean isAddressPresent = addressList.stream().anyMatch(
-                                    address -> Objects.equals(address.get("AddressShortCode"), entry.getValue().get("AddressShortCode"))
-                            );
-                            if (!isAddressPresent) {
-                                addressList.add(entry.getValue());
-                            }
-                            organizationAddressMap.get(orgCode).put("orgAddress", addressList);
-                        }
-                    }
-                }
-            }
-            pushToCache(organizationAddressMap, customCacheKey, partiesOrgIdFetchFromV1, new HashMap<>(), null);
+        if (!partiesToFetch.isEmpty()) {
+            fetchAndUpdateOrganizationsFromV1(partiesToFetch, organizationAddressMap, customCacheKey, partiesOrgIdsToFetch);
         }
 
-        for(Parties parties: partiesList) {
-            String orgCode = parties.getOrgCode();
-            if(organizationAddressMap.get(orgCode)==null)
-                continue;
-            Map<String, Object> orgAddress = organizationAddressMap.get(orgCode);
-            if(orgAddress==null)
-                continue;
-            responseMap.put(orgCode, orgAddress);
-        }
-        return responseMap;
+        return buildResponseMap(partiesList, organizationAddressMap);
     }
 
 
-    public List<EntityTransferOrganizations> getOrganisationDataFromCache(Object field, String fieldValue) {
-        if(Objects.isNull(fieldValue))
-            return new ArrayList<>();
-        List<EntityTransferOrganizations> responseMap = new ArrayList<>();
-        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        assert !Objects.isNull(cache);
-        Set<String> orgNamesFetchFromV1 = new HashSet<>();
-        String customCacheKey = CacheConstants.ORGANIZATIONS;
-        Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, fieldValue));
-        if(Objects.isNull(value))
-            orgNamesFetchFromV1.add(fieldValue);
-        else{
-            Object cachedObject = value.get();
-            if(!Objects.isNull(cachedObject)){
-                List<?> cacheValueList = (List<?>) cachedObject;
-                for (Object cacheValue : cacheValueList) {
-                    EntityTransferOrganizations newValue = jsonHelper.convertValue(cacheValue, EntityTransferOrganizations.class);
-                    responseMap.add(newValue);
+    private boolean isAddressAbsent(Map<String, Object> cacheResponse, String addressCode) {
+        Object orgAddressObj = cacheResponse.get(Constants.ORG_ADDRESS);
+        if (orgAddressObj instanceof List<?>) {
+            return ((List<Map<String, Object>>) orgAddressObj).stream()
+                    .noneMatch(address -> Objects.equals(address.get(Constants.ADDRESS_SHORT_CODE), addressCode));
+        }
+        return true;
+    }
+
+    private void fetchAndUpdateOrganizationsFromV1(
+            List<Parties> partiesToFetch,
+            Map<String, Map<String, Object>> organizationAddressMap,
+            String customCacheKey,
+            Set<String> partiesOrgIdsToFetch
+    ) {
+        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(partiesToFetch);
+        Map<String, Map<String, Object>> organizationMap = orgAddressResponse.getOrganizations();
+        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+
+        if(addressMap!=null){
+            for (Map.Entry<String, Map<String, Object>> entry : addressMap.entrySet()) {
+                String orgCode = entry.getKey().split("#")[0];
+                Map<String, Object> orgDetails = organizationMap.get(orgCode);
+                if (orgDetails != null && !orgDetails.isEmpty()) {
+                    organizationAddressMap.computeIfAbsent(orgCode, k -> orgDetails)
+                            .compute(Constants.ORG_ADDRESS, (k, v) -> mergeAddresses(v, entry.getValue()));
                 }
             }
         }
+        pushToCache(organizationAddressMap, customCacheKey, partiesOrgIdsToFetch, new HashMap<>(), null);
+    }
 
-        if(!orgNamesFetchFromV1.isEmpty()) {
-            responseMap = fetchOrganizations(field, fieldValue);
-            Map<String, List<EntityTransferOrganizations>> organizationMap = new HashMap<>();
-            organizationMap.put(fieldValue, responseMap);
-            pushToCache(organizationMap, customCacheKey, orgNamesFetchFromV1, new EntityTransferOrganizations(), null);
+    private Object mergeAddresses(Object existingAddresses, Map<String, Object> newAddress) {
+        List<Map<String, Object>> addressList = existingAddresses instanceof List<?>
+                ? new ArrayList<>((List<Map<String, Object>>) existingAddresses)
+                : new ArrayList<>();
+        if (addressList.stream().noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
+            addressList.add(newAddress);
+        }
+        return addressList;
+    }
+
+    private Map<String, Object> buildResponseMap(List<Parties> partiesList, Map<String, Map<String, Object>> organizationAddressMap) {
+        Map<String, Object> responseMap = new HashMap<>();
+        for (Parties party : partiesList) {
+            String orgCode = party.getOrgCode();
+            if (orgCode != null && organizationAddressMap.containsKey(orgCode)) {
+                responseMap.put(orgCode, organizationAddressMap.get(orgCode));
+            }
         }
         return responseMap;
     }

@@ -3352,9 +3352,9 @@ public abstract class IReport {
         if(partiesModelSendingAgent != null) {
             Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(partiesModelSendingAgent.getOrgCode());
             if(partiesOrgData!=null){
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get("orgAddress");
+                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
                 for(Map<String, Object> addressData: partiesAddressData){
-                    if(Objects.equals(addressData.get("AddressShortCode"), partiesModelSendingAgent.getAddressCode())){
+                    if(Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), partiesModelSendingAgent.getAddressCode())){
                         addressSendingAgent = addressData;
                         break;
                     }
@@ -3364,9 +3364,9 @@ public abstract class IReport {
         if(partiesModelReceivingAgent != null) {
             Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(partiesModelReceivingAgent.getOrgCode());
             if(partiesOrgData!=null) {
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get("orgAddress");
+                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
                 for (Map<String, Object> addressData : partiesAddressData) {
-                    if (Objects.equals(addressData.get("AddressShortCode"), partiesModelReceivingAgent.getAddressCode())) {
+                    if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), partiesModelReceivingAgent.getAddressCode())) {
                         addressReceivingAgent = addressData;
                         break;
                     }
@@ -3376,9 +3376,9 @@ public abstract class IReport {
         if(consignor != null) {
             Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(consignor.getOrgCode());
             if(partiesOrgData!=null) {
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get("orgAddress");
+                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
                 for (Map<String, Object> addressData : partiesAddressData) {
-                    if (Objects.equals(addressData.get("AddressShortCode"), consignor.getAddressCode())) {
+                    if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), consignor.getAddressCode())) {
                         addressConsignorAgent = addressData;
                         break;
                     }

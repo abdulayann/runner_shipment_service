@@ -306,7 +306,6 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
-//        mockTenantSettings();
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 

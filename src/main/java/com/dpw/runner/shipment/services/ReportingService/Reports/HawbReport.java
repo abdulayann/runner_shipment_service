@@ -1110,8 +1110,13 @@ public class HawbReport extends IReport{
 
     private String cityFromOrganizations (String orgName) {
         if(orgName != null){
-            List<EntityTransferOrganizations> orgList = masterDataUtils.getOrganisationDataFromCache("FullName", orgName);
-            if(orgList != null && !orgList.isEmpty()) {
+            CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+            List<Object> orgField = new ArrayList<>(List.of("FullName"));
+            List<Object> orgCriteria = new ArrayList<>(List.of(orgField, "=", orgName));
+            orgRequest.setCriteriaRequests(orgCriteria);
+            V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+            List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+            if(orgList != null && orgList.size() > 0) {
                 return Objects.equals(null, orgList.get(0).City) ? "" : orgList.get(0).City;
             }
         }
