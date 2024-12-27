@@ -277,7 +277,7 @@ class PickupOrderReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -306,7 +306,7 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
-        mockTenantSettings();
+//        mockTenantSettings();
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 

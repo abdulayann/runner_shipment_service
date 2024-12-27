@@ -426,7 +426,7 @@ class HawbReportTest extends CommonMocks {
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         doReturn(Arrays.asList(new HashMap<>(packingValueMap))).when(jsonHelper).convertValue(eq(dataMap), any(TypeReference.class));
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
@@ -691,7 +691,7 @@ class HawbReportTest extends CommonMocks {
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         doReturn(Arrays.asList(new HashMap<>(packingValueMap))).when(jsonHelper).convertValue(eq(dataMap), any(TypeReference.class));
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
@@ -961,7 +961,7 @@ class HawbReportTest extends CommonMocks {
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         doReturn(Arrays.asList(new HashMap<>(packingValueMap))).when(jsonHelper).convertValue(eq(dataMap), any(TypeReference.class));
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
@@ -1219,7 +1219,7 @@ class HawbReportTest extends CommonMocks {
         doReturn(dataMap).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         doReturn(Arrays.asList(new HashMap<>(packingValueMap))).when(jsonHelper).convertValue(eq(dataMap), any(TypeReference.class));
 
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
@@ -1625,7 +1625,7 @@ class HawbReportTest extends CommonMocks {
 //        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         doReturn(new ArrayList<>()).when(jsonHelper).convertValue(any(), any(TypeReference.class));
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
+//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
