@@ -3334,6 +3334,25 @@ public abstract class IReport {
         dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
     }
 
+    private Map<String, Object> getAddressForParty(Parties party, Map<String, Object> partiesOrgInfoFromCache) {
+        if (party == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(party.getOrgCode());
+        if (partiesOrgData == null) {
+            return Collections.emptyMap();
+        }
+        List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
+        if (partiesAddressData != null) {
+            for (Map<String, Object> addressData : partiesAddressData) {
+                if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
+                    return addressData;
+                }
+            }
+        }
+        return Collections.emptyMap();
+    }
+
     public void populateRaKcData(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
         Parties partiesModelSendingAgent = shipmentModel.getAdditionalDetails().getExportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class) : null;
         Parties partiesModelReceivingAgent = shipmentModel.getAdditionalDetails().getImportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class) : null;
@@ -3345,46 +3364,10 @@ public abstract class IReport {
                 consignor
         );
         Map<String, Object> partiesOrgInfoFromCache = masterDataUtils.getPartiesOrgInfoFromCache(parties);
-        Map<String, Object> addressSendingAgent = null;
-        Map<String, Object> addressReceivingAgent = null;
-        Map<String, Object> addressConsignorAgent = null;
 
-        if(partiesModelSendingAgent != null) {
-            Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(partiesModelSendingAgent.getOrgCode());
-            if(partiesOrgData!=null){
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
-                for(Map<String, Object> addressData: partiesAddressData){
-                    if(Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), partiesModelSendingAgent.getAddressCode())){
-                        addressSendingAgent = addressData;
-                        break;
-                    }
-                }
-            }
-        }
-        if(partiesModelReceivingAgent != null) {
-            Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(partiesModelReceivingAgent.getOrgCode());
-            if(partiesOrgData!=null) {
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
-                for (Map<String, Object> addressData : partiesAddressData) {
-                    if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), partiesModelReceivingAgent.getAddressCode())) {
-                        addressReceivingAgent = addressData;
-                        break;
-                    }
-                }
-            }
-        }
-        if(consignor != null) {
-            Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(consignor.getOrgCode());
-            if(partiesOrgData!=null) {
-                List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
-                for (Map<String, Object> addressData : partiesAddressData) {
-                    if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), consignor.getAddressCode())) {
-                        addressConsignorAgent = addressData;
-                        break;
-                    }
-                }
-            }
-        }
+        Map<String, Object> addressSendingAgent = getAddressForParty(partiesModelSendingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressReceivingAgent = getAddressForParty(partiesModelReceivingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressConsignorAgent = getAddressForParty(consignor, partiesOrgInfoFromCache);
 
         processAgent(addressSendingAgent, dictionary, ONE, ORIGIN_AGENT);
         processAgent(addressReceivingAgent, dictionary, ONE, DESTINATION_AGENT);
