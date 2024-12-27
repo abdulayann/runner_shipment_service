@@ -1679,6 +1679,13 @@ class HawbReportTest extends CommonMocks {
         partiesOrgInfoFromCache.put("org1", addressData);
         when(modelMapper.map(any(), eq(Parties.class))).thenReturn(Parties.builder().orgCode("org1").addressCode("address1").build());
         when(masterDataUtils.getPartiesOrgInfoFromCache(anyList())).thenReturn(partiesOrgInfoFromCache);
+
+        Map<String, Object> a = new HashMap<>();
+        a.put("CommodityGroup", "CommodityGroup");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(a);
+        Map<String, EntityTransferMasterLists> commodityResponse = new HashMap<>();
+        commodityResponse.put("CommodityGroup#COMMODITY_GROUP", EntityTransferMasterLists.builder().ItemDescription("abcd").build());
+        when( masterDataUtils.getCommodityGroupDataFromCache(any())).thenReturn(commodityResponse);
         assertNotNull(hawbReport.populateDictionary(hawbModel));
     }
 
