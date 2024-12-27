@@ -306,8 +306,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
@@ -409,8 +407,6 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         Map<String,Object> packingValueMap = new HashMap<>();
         packingValueMap.put(ReportConstants.RATE_CLASS, 1);
@@ -434,15 +430,11 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
@@ -581,9 +573,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
-
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
         when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
@@ -684,9 +673,6 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
-
         Map<String,Object> packingValueMap = new HashMap<>();
         packingValueMap.put(ReportConstants.RATE_CLASS, 1);
         packingValueMap.put(ReportConstants.GROSS_WT, 0);
@@ -709,15 +695,11 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
@@ -859,8 +841,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
@@ -962,8 +942,6 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         Map<String,Object> packingValueMap = new HashMap<>();
         packingValueMap.put(ReportConstants.RATE_CLASS, 1);
@@ -987,15 +965,11 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
@@ -1125,8 +1099,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
@@ -1228,8 +1200,6 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         Map<String,Object> packingValueMap = new HashMap<>();
         packingValueMap.put(ReportConstants.RATE_CLASS, 1);
@@ -1253,15 +1223,11 @@ class HawbReportTest extends CommonMocks {
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
@@ -1353,8 +1319,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
@@ -1444,19 +1408,11 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         doReturn(new ArrayList<>()).when(jsonHelper).convertValue(any(), any(TypeReference.class));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         mockTenantSettings();
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
@@ -1582,8 +1538,6 @@ class HawbReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
@@ -1667,23 +1621,19 @@ class HawbReportTest extends CommonMocks {
         entityTransferCarrier.setItemValue("Turkish Airlines");
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferCarrier());
-        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
+//        when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(v1DataResponse);
+//        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferCarrier.class)).thenReturn(Arrays.asList(entityTransferCarrier));
 
         doReturn(new ArrayList<>()).when(jsonHelper).convertValue(any(), any(TypeReference.class));
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(new OrgAddressResponse());
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(new CarrierMasterData())).build();
-        when(v1MasterData.retrieveTenant()).thenReturn(dependentServiceResponse);
-        when(modelMapper.map(any(),eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(Arrays.asList(new CarrierMasterData()));
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new EntityTransferOrganizations());
-        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Arrays.asList(new EntityTransferOrganizations()));
         UserContext.getUser().setEnableTimeZone(false);
         UserContext.getUser().setTimeZoneId("12");
         mockTenantSettings();

@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +60,9 @@ class PickupOrderReportTest extends CommonMocks {
 
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
 
     @Mock
     private HblReport hblReport;

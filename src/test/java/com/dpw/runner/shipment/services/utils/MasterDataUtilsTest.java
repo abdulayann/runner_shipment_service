@@ -1308,7 +1308,7 @@ class MasterDataUtilsTest {
 
     @Test
     void getLocationDataFromCache() {
-        var response = masterDataUtils.getLocationDataFromCache(null);
+        var response = masterDataUtils.getLocationDataFromCache(null, EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1317,7 +1317,7 @@ class MasterDataUtilsTest {
     void getLocationDataFromCache2() {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        var response = masterDataUtils.getLocationDataFromCache(Set.of());
+        var response = masterDataUtils.getLocationDataFromCache(Set.of(), EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1330,7 +1330,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        var response = spyService.getLocationDataFromCache(Set.of(locationGuid));
+        var response = spyService.getLocationDataFromCache(Set.of(locationGuid), EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
     }
 

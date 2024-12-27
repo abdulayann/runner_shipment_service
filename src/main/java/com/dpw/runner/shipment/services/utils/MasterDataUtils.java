@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -63,6 +64,8 @@ public class MasterDataUtils{
     private ModelMapper modelMapper;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     @Value("${v1service.take}")
     private int take;
@@ -611,8 +614,12 @@ public class MasterDataUtils{
             List<EntityTransferUnLocations> unLocationsList = jsonHelper.convertValueToList(response.entities, EntityTransferUnLocations.class);
 
             if (!Objects.isNull(unLocationsList)) {
-
-                unLocationsList.forEach(location -> keyMasterDataMap.put(onField.equals(EntityTransferConstants.UNLOCATION_CODE) ? location.LocCode : location.LocationsReferenceGUID, location));
+                if(onField.equals(EntityTransferConstants.UNLOCATION_CODE))
+                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getLocCode(), location));
+                else if(onField.equals(EntityTransferConstants.NAME))
+                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getName(), location));
+                else
+                    unLocationsList.forEach(location -> keyMasterDataMap.put(location.getLocationsReferenceGUID(), location));
             }
         }
 
@@ -1445,24 +1452,48 @@ public class MasterDataUtils{
         return responseMap;
     }
 
-    public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes) {
+    public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes, String fieldName) {
         if(Objects.isNull(locCodes))
             return new HashMap<>();
         Map<String, EntityTransferUnLocations> responseMap = new HashMap<>();
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
         assert !Objects.isNull(cache);
         Set<String> locCodesFetchFromV1 = new HashSet<>();
+        String customCacheKey = Objects.equals(fieldName, EntityTransferConstants.NAME)?CacheConstants.UNLOCATIONS_AWB:CacheConstants.UNLOCATIONS;
         for(String locCode: locCodes) {
-            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.UNLOCATIONS, locCode));
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, locCode));
             if(Objects.isNull(value))
                 locCodesFetchFromV1.add(locCode);
             else
                 responseMap.put(locCode, (EntityTransferUnLocations) value.get());
         }
         if(!locCodesFetchFromV1.isEmpty()) {
-            Map<String, EntityTransferUnLocations> unLocationsMap = fetchInBulkUnlocations(locCodesFetchFromV1, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            Map<String, EntityTransferUnLocations> unLocationsMap = fetchInBulkUnlocations(locCodesFetchFromV1, fieldName);
             responseMap.putAll(unLocationsMap);
-            pushToCache(unLocationsMap, CacheConstants.UNLOCATIONS, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
+            pushToCache(unLocationsMap, customCacheKey, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
+    }
+
+    public Map<String, EntityTransferCarrier> getCarrierDataFromCache(Set<String> carrierSet) {
+        if(Objects.isNull(carrierSet))
+            return new HashMap<>();
+        Map<String, EntityTransferCarrier> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> fetchCarrierFromV1 = new HashSet<>();
+        String customCacheKey = CacheConstants.CARRIER;
+        for(String carrier: carrierSet) {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, carrier));
+            if(Objects.isNull(value))
+                fetchCarrierFromV1.add(carrier);
+            else
+                responseMap.put(carrier, (EntityTransferCarrier) value.get());
+        }
+        if(!fetchCarrierFromV1.isEmpty()) {
+            Map<String, EntityTransferCarrier> unLocationsMap = fetchInBulkCarriers(fetchCarrierFromV1);
+            responseMap.putAll(unLocationsMap);
+            pushToCache(unLocationsMap, customCacheKey, fetchCarrierFromV1, new EntityTransferCarrier(), null);
         }
         return responseMap;
     }
@@ -1536,6 +1567,123 @@ public class MasterDataUtils{
         }
 
         return dgSubstanceRow;
+    }
+
+    public Map<String, Object> getPartiesOrgInfoFromCache(List<Parties> partiesList) {
+        if(Objects.isNull(partiesList))
+            return new HashMap<>();
+        Map<String, Object> responseMap = new HashMap<>();
+        Map<String, Map<String, Object>> organizationAddressMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        List<Parties> partiesOrgInfoFetchFromV1 = new ArrayList<>();
+        Set<String> partiesOrgIdFetchFromV1 = new HashSet<>();
+        String customCacheKey = CacheConstants.ORGANIZATIONS_WITH_ADDRESSES;
+
+        for(Parties parties: partiesList) {
+            if(Objects.isNull(parties) || parties.getOrgCode()==null)
+                continue;
+            String key = parties.getOrgCode();
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ORGANIZATIONS_WITH_ADDRESSES, key));
+            if(Objects.isNull(value)){
+                partiesOrgInfoFetchFromV1.add(parties);
+                partiesOrgIdFetchFromV1.add(parties.getOrgCode());
+            }
+            else{
+                Map<String, Object> cacheResponse = (Map<String, Object>) value.get();
+                boolean fetchPartiesInfoFromV1 = true;
+                organizationAddressMap.put(parties.getOrgCode(), cacheResponse);
+
+                Object orgAddressObj = cacheResponse.get("orgAddress");
+                if(orgAddressObj instanceof List<?>){
+                    List<Map<String, Object>> addressMapList = (List<Map<String, Object>>)  orgAddressObj;
+                    for(Map<String, Object> address: addressMapList){
+                        if(Objects.equals(address.get("AddressShortCode"), parties.getAddressCode())){
+                            fetchPartiesInfoFromV1 = false;
+                        }
+                    }
+                }
+                if(fetchPartiesInfoFromV1){
+                    partiesOrgInfoFetchFromV1.add(parties);
+                    partiesOrgIdFetchFromV1.add(parties.getOrgCode());
+                }
+            }
+        }
+
+        if(!partiesOrgInfoFetchFromV1.isEmpty()) {
+            OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(partiesOrgInfoFetchFromV1);
+            Map<String, Map<String, Object>> organizationMap = orgAddressResponse.getOrganizations();
+            Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
+
+            for (Map.Entry<String, Map<String, Object>> entry : addressMap.entrySet()) {
+                String orgCode = entry.getKey().split("#")[0];
+
+                if (!organizationMap.get(orgCode).isEmpty()) {
+                    if (organizationAddressMap.get(orgCode)==null) {
+                        List<Map<String, Object>> orgAddress = Collections.singletonList(entry.getValue());
+                        organizationMap.get(orgCode).put("orgAddress", orgAddress);
+                        organizationAddressMap.put(orgCode, organizationMap.get(orgCode));
+                    } else {
+                        Object existingAddresses = organizationAddressMap.get(orgCode).get("orgAddress");
+                        if (existingAddresses instanceof List<?>) {
+                            List<Map<String, Object>> addressList = new ArrayList<>((List<Map<String, Object>>) existingAddresses);
+
+                            boolean isAddressPresent = addressList.stream().anyMatch(
+                                    address -> Objects.equals(address.get("AddressShortCode"), entry.getValue().get("AddressShortCode"))
+                            );
+                            if (!isAddressPresent) {
+                                addressList.add(entry.getValue());
+                            }
+                            organizationAddressMap.get(orgCode).put("orgAddress", addressList);
+                        }
+                    }
+                }
+            }
+            pushToCache(organizationAddressMap, customCacheKey, partiesOrgIdFetchFromV1, new HashMap<>(), null);
+        }
+
+        for(Parties parties: partiesList) {
+            String orgCode = parties.getOrgCode();
+            if(organizationAddressMap.get(orgCode)==null)
+                continue;
+            Map<String, Object> orgAddress = organizationAddressMap.get(orgCode);
+            if(orgAddress==null)
+                continue;
+            responseMap.put(orgCode, orgAddress);
+        }
+        return responseMap;
+    }
+
+
+    public List<EntityTransferOrganizations> getOrganisationDataFromCache(Object field, String fieldValue) {
+        if(Objects.isNull(fieldValue))
+            return new ArrayList<>();
+        List<EntityTransferOrganizations> responseMap = new ArrayList<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> orgNamesFetchFromV1 = new HashSet<>();
+        String customCacheKey = CacheConstants.ORGANIZATIONS;
+        Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, fieldValue));
+        if(Objects.isNull(value))
+            orgNamesFetchFromV1.add(fieldValue);
+        else{
+            Object cachedObject = value.get();
+            if(!Objects.isNull(cachedObject)){
+                List<?> cacheValueList = (List<?>) cachedObject;
+                for (Object cacheValue : cacheValueList) {
+                    EntityTransferOrganizations newValue = jsonHelper.convertValue(cacheValue, EntityTransferOrganizations.class);
+                    responseMap.add(newValue);
+                }
+            }
+        }
+
+        if(!orgNamesFetchFromV1.isEmpty()) {
+            responseMap = fetchOrganizations(field, fieldValue);
+            Map<String, List<EntityTransferOrganizations>> organizationMap = new HashMap<>();
+            organizationMap.put(fieldValue, responseMap);
+            pushToCache(organizationMap, customCacheKey, orgNamesFetchFromV1, new EntityTransferOrganizations(), null);
+        }
+        return responseMap;
     }
 
     public List<EntityTransferOrganizations> fetchOrganizations(Object field, Object value) {
