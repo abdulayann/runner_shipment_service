@@ -351,7 +351,13 @@ public abstract class IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> masterDataUtils.convertToUnlocationResponse(entry.getValue()) // Conversion function
+                ));
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
@@ -2131,9 +2137,8 @@ public abstract class IReport {
         return customDecimalFormat.format(value);
     }
 
-    public DateTimeFormatter GetDPWDateFormatOrDefault()
+    public DateTimeFormatter GetDPWDateFormatOrDefault(V1TenantSettingsResponse v1TenantSettingsResponse)
     {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString());
@@ -2165,12 +2170,13 @@ public abstract class IReport {
     public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
     {
         String strDate = "";
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (date != null)
         {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
                 strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
             else
-                strDate = date.format(GetDPWDateFormatOrDefault());
+                strDate = date.format(GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
         return strDate;
     }
@@ -2198,6 +2204,7 @@ public abstract class IReport {
     {
         String strDate = "";
         LocalDateTime formatedDate;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (date != null)
         {
             formatedDate = date;
@@ -2207,7 +2214,7 @@ public abstract class IReport {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
                 strDate = formatedDate.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
             else
-                strDate = formatedDate.format(GetDPWDateFormatOrDefault());
+                strDate = formatedDate.format(GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
         return strDate;
     }
@@ -2749,6 +2756,46 @@ public abstract class IReport {
         }
         return dataMap;
     }
+
+    public Map<Integer, Map<String, MasterData>> fetchMasterListFromCache(MasterListRequestV2 requests) {
+        Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
+        if(Objects.isNull(requests)||Objects.isNull(requests.getMasterListRequests())||requests.getMasterListRequests().isEmpty()){
+            return new HashMap<>();
+        }
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        List<MasterListRequest> fetchMasterListFromV1 = new ArrayList<>();
+        for (MasterListRequest masterListRequest : requests.getMasterListRequests()) {
+            String key = masterListRequest.getItemType() + "#" + masterListRequest.getItemValue();
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+            if(Objects.isNull(value)) {
+                fetchMasterListFromV1.add(masterListRequest);
+            } else {
+                MasterData cachedData = (MasterData) value.get();
+                dataMap.putIfAbsent(cachedData.getItemType(), new HashMap<>());
+                dataMap.get(cachedData.getItemType()).put(cachedData.getItemValue(), cachedData);
+            }
+        }
+        if (!fetchMasterListFromV1.isEmpty()) {
+            MasterListRequestV2 missingRequestV2 = new MasterListRequestV2();
+            missingRequestV2.setMasterListRequests(fetchMasterListFromV1);
+            missingRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
+
+            V1DataResponse response = v1Service.fetchMultipleMasterData(missingRequestV2);
+            List<MasterData> fetchedData = jsonHelper.convertValueToList(response.entities, MasterData.class);
+            fetchedData.forEach(masterData -> {
+                dataMap.putIfAbsent(masterData.getItemType(), new HashMap<>());
+                dataMap.get(masterData.getItemType()).put(masterData.getItemValue(), masterData);
+                String cacheKey = keyGenerator.customCacheKeyForMasterData(
+                        CacheConstants.MASTER_LIST,
+                        masterData.getItemType() + "#" + masterData.getItemValue()
+                ).toString();
+                cache.put(cacheKey, masterData);
+            });
+        }
+        return dataMap;
+    }
+
 
     public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if ((!dictionary.containsKey(SHIPMENT_CONTAINERS) || dictionary.get(SHIPMENT_CONTAINERS) == null) && shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {

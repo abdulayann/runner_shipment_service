@@ -1690,4 +1690,23 @@ public class MasterDataUtils{
         }
         return BigDecimal.ZERO;
     }
+
+    public UnlocationsResponse convertToUnlocationResponse(EntityTransferUnLocations entity){
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setCountry(entity.getCountry() != null ? entity.getCountry() : "");
+        unlocationsResponse.setLocCode(entity.getLocCode() != null ? entity.getLocCode() : "");
+        unlocationsResponse.setName(entity.getName() != null ? entity.getName() : "");
+        unlocationsResponse.setPortName(entity.getPortName() != null ? entity.getPortName() : "");
+        unlocationsResponse.setAirPortName(entity.getAirPortName() != null ? entity.getAirPortName() : "");
+        unlocationsResponse.setNameWoDiacritics(entity.getNameWoDiacritics() != null ? entity.getNameWoDiacritics() : "");
+        unlocationsResponse.setIataCode(entity.getIATACode() != null ? entity.getIATACode() : "");
+        unlocationsResponse.setLocationsReferenceGUID(entity.getLocationsReferenceGUID() != null ? entity.getLocationsReferenceGUID() : "");
+        unlocationsResponse.setLookupDescAir(entity.getLookupDescAir() != null ? entity.getLookupDescAir() : "");
+        unlocationsResponse.setLookupDescSea(entity.getLookupDescSea() != null ? entity.getLookupDescSea() : "");
+        unlocationsResponse.setCountryName(entity.getCountryName() != null ? entity.getCountryName() : "");
+        unlocationsResponse.setCountryThreeDigitCode(entity.getCountryThreeDigitCode() != null ? entity.getCountryThreeDigitCode() : "");
+        unlocationsResponse.setHasSeaPort(entity.getHasSeaPort() != null ? entity.getHasSeaPort() : false);
+        unlocationsResponse.setHasAirport(entity.getHasAirport() != null ? entity.getHasAirport() : false);
+        return unlocationsResponse;
+    }
 }

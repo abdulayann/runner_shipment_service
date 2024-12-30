@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -364,7 +365,6 @@ class BookingOrderReportTest extends CommonMocks {
         masterDataMock();
         mockCarrier();
         mockUnloc();
-        mockUnlocation();
         mockShipmentSettings();
         mockTenantSettings();
         assertNotNull(bookingOrderReport.populateDictionary(bookingOrderModel));
@@ -449,18 +449,6 @@ class BookingOrderReportTest extends CommonMocks {
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
 //        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
 //        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
-    }
-
-    private void mockUnlocation() {
-        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
-        unlocationsResponse.setIataCode("Test");
-        unlocationsResponse.setName("Test");
-        unlocationsResponse.setCountry("IND");
-        unlocationsResponse.setPortName("Test");
-        unlocationsResponse.setAirPortName("Test");
-        Map<String, UnlocationsResponse>  locationMap = new HashMap<>();
-        locationMap.put(LOC_CODE, unlocationsResponse);
-        when(masterDataUtils.getLocationData(any())).thenReturn(new HashMap<>(locationMap));
     }
 
     @Test

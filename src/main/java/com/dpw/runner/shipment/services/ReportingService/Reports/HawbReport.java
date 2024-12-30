@@ -91,15 +91,15 @@ public class HawbReport extends IReport{
         String json;
         CarrierDetailModel carrierDetailModel;
         String tenantName = getTenant().getTenantName();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(hawbModel.shipmentDetails != null ) {
-            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
+            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
         } else {
-            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault());
+            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         Integer companyId = ((HawbModel) documentModel).usersDto.getCompanyId();
         List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
