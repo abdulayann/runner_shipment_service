@@ -1592,8 +1592,7 @@ public class MasterDataUtils{
                 Map<String, Object> cacheResponse = (Map<String, Object>) value.get();
                 organizationAddressMap.put(key, cacheResponse);
 
-                assert cacheResponse != null;
-                if (isAddressAbsent(cacheResponse, party.getAddressCode())) {
+                if (cacheResponse == null || isAddressAbsent(cacheResponse, party.getAddressCode())) {
                     partiesToFetch.add(party);
                     partiesOrgIdsToFetch.add(key);
                 }
