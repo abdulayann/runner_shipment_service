@@ -1626,7 +1626,7 @@ public class MasterDataUtils{
         Map<String, Map<String, Object>> organizationMap = orgAddressResponse.getOrganizations();
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
 
-        if(addressMap!=null){
+        if(addressMap!=null && !addressMap.isEmpty()){
             for (Map.Entry<String, Map<String, Object>> entry : addressMap.entrySet()) {
                 String orgCode = entry.getKey().split("#")[0];
                 Map<String, Object> orgDetails = organizationMap.get(orgCode);
@@ -1652,8 +1652,9 @@ public class MasterDataUtils{
     private Map<String, Object> buildResponseMap(List<Parties> partiesList, Map<String, Map<String, Object>> organizationAddressMap) {
         Map<String, Object> responseMap = new HashMap<>();
         for (Parties party : partiesList) {
+            if (party == null || party.getOrgCode() == null) continue;
             String orgCode = party.getOrgCode();
-            if (orgCode != null && organizationAddressMap.containsKey(orgCode)) {
+            if (!organizationAddressMap.isEmpty() && organizationAddressMap.containsKey(orgCode)) {
                 responseMap.put(orgCode, organizationAddressMap.get(orgCode));
             }
         }
