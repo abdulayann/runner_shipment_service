@@ -525,10 +525,11 @@ public class RoutingsDao implements IRoutingsDao {
                 String mode = transportMode;
                 RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
 
-                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
-                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
-                    carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
-                }
+//                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
+//                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
+//                    //todo: remove pre_carriage and on_carriage
+//                    carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
+//                }
                 String flightNumber = "";
                 String flightCarrier = "";
                 if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
