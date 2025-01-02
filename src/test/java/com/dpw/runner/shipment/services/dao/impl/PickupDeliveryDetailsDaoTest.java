@@ -116,7 +116,6 @@ class PickupDeliveryDetailsDaoTest {
         List<PickupDeliveryDetails> pickupDeliveryDetailsList = Collections.singletonList(testPickupDeliveryDetails);
 
         var spyService = Mockito.spy(pickupDeliveryDetailsDao);
-        doReturn(new PageImpl<>(pickupDeliveryDetailsList)).when(spyService).findAll(any(), any());
         doReturn(pickupDeliveryDetailsList).when(spyService).saveEntityFromShipment(anyList(), anyLong());
 
         List<PickupDeliveryDetails> pickupDeliveryDetails = spyService.updateEntityFromShipment(pickupDeliveryDetailsList, 1L);
@@ -128,8 +127,6 @@ class PickupDeliveryDetailsDaoTest {
     void testUpdateEntityFromShipment_Failure1() throws RunnerException {
         List<PickupDeliveryDetails> pickupDeliveryDetailsList = Collections.singletonList(testPickupDeliveryDetails);
         var spyService = Mockito.spy(pickupDeliveryDetailsDao);
-        doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
-
         assertThrows(RunnerException.class, ()-> spyService.updateEntityFromShipment(pickupDeliveryDetailsList, 1L));
     }
 
@@ -141,9 +138,7 @@ class PickupDeliveryDetailsDaoTest {
         pickupDeliveryDetails.setId(2L);
         pickupDeliveryDetailsListOld.add(pickupDeliveryDetails);
         var spyService = Mockito.spy(pickupDeliveryDetailsDao);
-        doReturn(new PageImpl<>(pickupDeliveryDetailsListOld)).when(spyService).findAll(any(), any());
         doReturn(pickupDeliveryDetailsList).when(spyService).saveEntityFromShipment(anyList(), anyLong());
-        doThrow(new RuntimeException()).when(spyService).delete(any());
 
         List<PickupDeliveryDetails> pickupDeliveryDetailsResponse = spyService.updateEntityFromShipment(pickupDeliveryDetailsList, 1L);
         assertNotNull(pickupDeliveryDetailsResponse);

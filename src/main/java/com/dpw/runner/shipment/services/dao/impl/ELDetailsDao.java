@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -13,7 +12,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -26,9 +24,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -79,14 +74,9 @@ public class ELDetailsDao implements IELDetailsDao {
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ELDetails> hashMap;
-//            if(!Objects.isNull(elDetailsIdList) && !elDetailsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<ELDetails>, Pageable> pair = fetchData(listCommonRequest, ELDetails.class);
-                Page<ELDetails> elDetails = findAll(pair.getLeft(), pair.getRight());
-                hashMap = elDetails.stream()
+            List<ELDetails> elDetails = findByShipmentId(shipmentId);
+            Map<Long, ELDetails> hashMap = elDetails.stream()
                         .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
-//            }
             Map<Long, ELDetails> copyHashMap = new HashMap<>(hashMap);
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
             if (elDetailsList != null && elDetailsList.size() != 0) {
@@ -107,6 +97,10 @@ public class ELDetailsDao implements IELDetailsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<ELDetails> findByShipmentId(Long shipmentId) {
+        return elDetailsRepository.findByShipmentId(shipmentId);
     }
 
     public List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId) {

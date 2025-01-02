@@ -793,7 +793,6 @@ class ServiceDetailsDaoTest {
                 .updateEntityFromShipment(new ArrayList<>(), 1L);
 
         // Assert
-        verify(iServiceDetailsRepository).findAll(isA(Specification.class), isA(Pageable.class));
         assertTrue(actualUpdateEntityFromShipmentResult.isEmpty());
     }
 
@@ -890,10 +889,9 @@ class ServiceDetailsDaoTest {
 
         ArrayList<ServiceDetails> content = new ArrayList<>();
         content.add(serviceDetails2);
-        PageImpl<ServiceDetails> pageImpl = new PageImpl<>(content);
         doNothing().when(iServiceDetailsRepository).delete(Mockito.<ServiceDetails>any());
-        when(iServiceDetailsRepository.findAll(Mockito.<Specification<ServiceDetails>>any(), Mockito.<Pageable>any()))
-                .thenReturn(pageImpl);
+        when(iServiceDetailsRepository.findByShipmentId(any()))
+                .thenReturn(content);
 
         // Act
         List<ServiceDetails> actualUpdateEntityFromShipmentResult = serviceDetailsDao
@@ -902,7 +900,7 @@ class ServiceDetailsDaoTest {
         // Assert
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
         verify(jsonHelper).readFromJson(any(), isA(Class.class));
-        verify(iServiceDetailsRepository).findAll(isA(Specification.class), isA(Pageable.class));
+        verify(iServiceDetailsRepository).findByShipmentId(isA(Long.class));
         verify(iAuditLogService).addAuditLog(isA(AuditLogMetaData.class));
         verify(iServiceDetailsRepository).delete(isA(ServiceDetails.class));
         assertTrue(actualUpdateEntityFromShipmentResult.isEmpty());
@@ -998,11 +996,10 @@ class ServiceDetailsDaoTest {
 
         ArrayList<ServiceDetails> content = new ArrayList<>();
         content.add(serviceDetails2);
-        PageImpl<ServiceDetails> pageImpl = new PageImpl<>(content);
         doThrow(new ValidationException("shipmentId")).when(iServiceDetailsRepository)
                 .delete(Mockito.<ServiceDetails>any());
-        when(iServiceDetailsRepository.findAll(Mockito.<Specification<ServiceDetails>>any(), Mockito.<Pageable>any()))
-                .thenReturn(pageImpl);
+        when(iServiceDetailsRepository.findByShipmentId(any()))
+                .thenReturn(content);
 
         // Act
         List<ServiceDetails> actualUpdateEntityFromShipmentResult = serviceDetailsDao
@@ -1010,7 +1007,7 @@ class ServiceDetailsDaoTest {
 
         // Assert
         verify(jsonHelper).convertToJson(isA(ServiceDetails.class));
-        verify(iServiceDetailsRepository).findAll(isA(Specification.class), isA(Pageable.class));
+        verify(iServiceDetailsRepository).findByShipmentId(isA(Long.class));
         verify(iServiceDetailsRepository).delete(isA(ServiceDetails.class));
         assertTrue(actualUpdateEntityFromShipmentResult.isEmpty());
     }
@@ -1964,9 +1961,8 @@ class ServiceDetailsDaoTest {
     void updateEntityFromShipmentWithExtraServicesAdded() throws RunnerException {
         var inputServices = completeShipment.getServicesList();
         inputServices.add(new ServiceDetails());
-        PageImpl<ServiceDetails> pageImpl = new PageImpl<>(completeShipment.getServicesList());
-        when(iServiceDetailsRepository.findAll(Mockito.<Specification<ServiceDetails>>any(), Mockito.<Pageable>any()))
-                .thenReturn(pageImpl);
+        when(iServiceDetailsRepository.findByShipmentId(any()))
+                .thenReturn(completeShipment.getServicesList());
         var servicesResponse = serviceDetailsDao.updateEntityFromShipment(inputServices, completeShipment.getId());
         assertNotNull(servicesResponse);
     }

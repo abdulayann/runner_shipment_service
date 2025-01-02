@@ -222,8 +222,7 @@ public class ShipmentController {
         log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
-            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            var response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(req));
+            var response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
             log.info("{} | end shipment completeUpdate.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
             return response;
         } catch (Exception e) {

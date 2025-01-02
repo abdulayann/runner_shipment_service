@@ -727,4 +727,15 @@ public class ShipmentDao implements IShipmentDao {
     public void updateAdditionalDetailsByShipmentId(Long id, boolean emptyContainerReturned) {
         shipmentRepository.updateAdditionalDetailsByShipmentId(id, emptyContainerReturned);
     }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList,
+        boolean containsHazardous) {
+       return shipmentRepository.findByShipmentIdInAndContainsHazardous(shipmentIdList, containsHazardous);
+    }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds) {
+        return shipmentRepository.findByShipmentIdIn(shipmentIds);
+    }
 }

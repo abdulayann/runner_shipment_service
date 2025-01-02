@@ -3113,9 +3113,7 @@ ShipmentServiceTest extends CommonMocks {
         doNothing().when(shipmentDetailsMapper).update(any(), any());
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
-
-        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(Arrays.asList(ShipmentDetails.builder().build()));
-        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(shipmentDao.findByShipmentIdIn(any())).thenReturn(List.of(shipmentDetails));
         mockTenantSettings();
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.partialUpdate(commonRequestModel, true);
@@ -3148,10 +3146,7 @@ ShipmentServiceTest extends CommonMocks {
         ArrayList<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         shipmentDetailsList.add(shipmentDetails);
         shipmentDetailsList.add(shipmentDetails);
-
-        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
-        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-
+        when(shipmentDao.findByShipmentIdIn(anyList())).thenReturn(shipmentDetailsList);
         String errorMessage = "Multiple entries found for unique field, data issue found.";
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> shipmentService.partialUpdate(commonRequestModel, true));
         assertEquals(errorMessage, e.getMessage());
@@ -3714,8 +3709,6 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
 
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3766,8 +3759,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3819,8 +3810,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
 
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3875,9 +3864,6 @@ ShipmentServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
-
-        when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-//        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
 
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -3987,8 +3973,7 @@ ShipmentServiceTest extends CommonMocks {
         if(dgUser) {
             when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
             when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
-            when(containerDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Containers.builder().build()));
-//            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(Awb.builder().build()));
+
             when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
             when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
             when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails1));
@@ -4119,16 +4104,11 @@ ShipmentServiceTest extends CommonMocks {
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());
 
-        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(containers));
-        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
-
         Packing packing = new Packing();
         packing.setId(1L);
         List<Packing> packingList = new ArrayList<>();
         packingList.add(packing);
 
-        PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
-        when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
         mockTenantSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -4826,17 +4806,10 @@ ShipmentServiceTest extends CommonMocks {
 
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());
-
-        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(containers));
-        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
-
         Packing packing = new Packing();
         packing.setId(1L);
         List<Packing> packingList = new ArrayList<>();
         packingList.add(packing);
-
-        PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing));
-        when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
         mockTenantSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -5441,16 +5414,11 @@ ShipmentServiceTest extends CommonMocks {
         Containers containers = new Containers();
         containers.setGuid(UUID.randomUUID());
 
-        PageImpl<Containers> containersPage = new PageImpl<>(Arrays.asList(containers));
-        when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
-
         Packing packing2 = new Packing();
         packing2.setId(1L);
         List<Packing> packingList = new ArrayList<>();
         packingList.add(packing2);
 
-        PageImpl<Packing> packingPage = new PageImpl<>(Arrays.asList(packing2));
-        when(packingDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(packingPage);
         mockShipmentSettings();
         mockTenantSettings();
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -6160,21 +6128,19 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void checkIfAllShipmentsAreNonDG() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
+        when(shipmentDao.findByShipmentIdInAndContainsHazardous(any(), anyBoolean())).thenReturn(List.of(shipmentDetails));
         boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
         assertFalse(response);
     }
 
     @Test
     void checkIfAllShipmentsAreNonDG_ReturnNull() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(null);
         boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
         assertTrue(response);
     }
 
     @Test
     void checkIfAllShipmentsAreNonDG_ReturnEmpty() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         boolean response = shipmentService.checkIfAllShipmentsAreNonDG(List.of(1L));
         assertTrue(response);
     }
