@@ -707,7 +707,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                 .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
                                                         .longitude(place.getLongitude())
                                                         .placeDescription(place.getFormattedDescription())
-                                                        .placeName(place.getName()));
+                                                        .placeName(place.getCode()));
 
                                         // Populate fields from Transports independently
                                         Optional.ofNullable(event.getDetails())
