@@ -1,0 +1,2 @@
+update shipment_details set direction = 'EXP' where shipment_id in ('SGHS24121882', 'SGHS24121883', 'SGHS24121884') and tenant_id = 582;
+update customer_booking set direction = 'EXP' where booking_number in ('DBLC-6547420-632725', 'DBLC-8477721-121950', 'DBLC-5151548-862243') and tenant_id = 582;
