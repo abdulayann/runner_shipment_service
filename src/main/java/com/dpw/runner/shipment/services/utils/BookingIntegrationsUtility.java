@@ -20,8 +20,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
@@ -58,7 +58,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -67,6 +66,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import java.time.LocalDateTime;
@@ -129,6 +129,8 @@ public class BookingIntegrationsUtility {
     private CommonUtils commonUtils;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private IEventService eventService;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -843,14 +845,15 @@ public class BookingIntegrationsUtility {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
                     }
 
-                    CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-                    eventReq.setEntityId(shipmentDetails.getId());
-                    eventReq.setEntityType(Constants.SHIPMENT);
-                    eventReq.setEventCode(payloadData.getEventCode());
-
-                    log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
-                    eventDao.autoGenerateEvents(eventReq);
-                    log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    EventsRequest eventsRequest = new EventsRequest();
+                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setEntityId(shipmentDetails.getId());
+                    eventsRequest.setEntityType(Constants.SHIPMENT);
+                    eventsRequest.setEventCode(payloadData.getEventCode());
+                    eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    eventService.saveEvent(eventsRequest);
+                    log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
             }
         } catch (Exception ex) {

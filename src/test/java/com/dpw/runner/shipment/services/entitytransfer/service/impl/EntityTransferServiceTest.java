@@ -91,6 +91,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.NetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
@@ -204,6 +205,8 @@ class EntityTransferServiceTest extends CommonMocks {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
     V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private IEventService eventService;
     @InjectMocks
     private EntityTransferService entityTransferService;
     @Mock
