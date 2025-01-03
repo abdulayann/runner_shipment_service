@@ -2020,7 +2020,10 @@ public abstract class IReport {
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
      */
-    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber) {
+        return getAwbFormattedDetails(name, address1, address2, city, state, zipCode, country, contactName, phone, taxRegistrationNumber, false);
+    }
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber, boolean addStringPHReqd)
     {
         List<String> details = new ArrayList<>();
         if(!Strings.isNullOrEmpty(name)){
@@ -2060,7 +2063,10 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(phone)) {
             if(!contactAndPhoneDetails.isEmpty())
                 contactAndPhoneDetails.append(", ");
-            contactAndPhoneDetails.append(phone);
+            String ph = phone;
+            if(addStringPHReqd)
+                ph = "PH: " + phone;
+            contactAndPhoneDetails.append(ph);
         }
         if (!contactAndPhoneDetails.isEmpty()) {
             details.add(contactAndPhoneDetails.toString());
