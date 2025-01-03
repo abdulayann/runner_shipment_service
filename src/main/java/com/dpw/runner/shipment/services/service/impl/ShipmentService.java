@@ -5939,13 +5939,16 @@ public class ShipmentService implements IShipmentService {
         } else {
             UUID guid = UUID.fromString(consoleGuid);
             consolidationDetails = consolidationDetailsDao.findByGuid(guid);
-            consoleId = consolidationDetails.get().getId();
         }
 
         if (consolidationDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        if(consoleId==null)
+            consoleId = consolidationDetails.get().getId();
+
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
