@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -45,6 +47,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -54,8 +58,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -99,6 +102,15 @@ class ShippingRequestOutReportTest extends CommonMocks {
 
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private CustomKeyGenerator keyGenerator;
 
     @BeforeAll
     static void init() throws IOException {
@@ -291,9 +303,12 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containerMap.put(PACKS, BigDecimal.TEN);
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(shippingRequestOutModel.getShipmentAndContainer()), any(TypeReference.class));
         masterDataMock();
-        mockVessel();
         mockCarrier();
         mockShipmentSettings();
+        when(masterDataUtils.getVesselDataFromCache(anySet())).thenReturn(new HashMap<>());
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
     }
 
@@ -451,10 +466,13 @@ class ShippingRequestOutReportTest extends CommonMocks {
         containerMap.put(PACKS, BigDecimal.TEN);
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(shippingRequestOutModel.getShipmentAndContainer()), any(TypeReference.class));
         masterDataMock();
-        mockVessel();
         mockCarrier();
         mockShipmentSettings();
         mockTenantSettings();
+        when(masterDataUtils.getVesselDataFromCache(anySet())).thenReturn(new HashMap<>());
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(shippingRequestOutReport.populateDictionary(shippingRequestOutModel));
         assert (true);
     }
@@ -524,7 +542,7 @@ class ShippingRequestOutReportTest extends CommonMocks {
     private void mockVessel() {
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
+        when(v1Service.fetchVesselData(any(CommonV1ListRequest.class))).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
     }
 

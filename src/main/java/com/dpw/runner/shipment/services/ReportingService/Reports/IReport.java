@@ -44,9 +44,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -351,17 +349,31 @@ public abstract class IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests))
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> masterDataUtils.convertToUnlocationResponse(entry.getValue()) // Conversion function
-                ));
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
-        Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
+        Map<String, EntityTransferMasterLists> entityTransferMasterListsMap = masterDataUtils.fetchMasterListFromCache(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
+        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferMasterLists> entry : entityTransferMasterListsMap.entrySet()) {
+            String key = entry.getKey();
+            String[] parts = key.split("#");
+            String itemType = parts[0];
+            String itemValue = parts[1];
+            MasterDataType masterDataType = Arrays.stream(MasterDataType.values())
+                    .filter(type -> type.getDescription().equals(itemType))
+                    .findFirst()
+                    .orElse(null);
+            int masterDataKey = masterDataType.getId();
+            MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
+            masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
+        }
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
         if (shipment.getReferenceNumbersList() != null) {
             dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream()
@@ -390,7 +402,17 @@ public abstract class IReport {
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
         dictionary.put(SHIPMENT_ID, shipment.getShipmentId());
-        VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
+        String carrierVesselId = shipment.getCarrierDetails().getVessel();
+        Set<String> vesselIds = new HashSet<>();
+        vesselIds.add(carrierVesselId);
+        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
+        Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
+            String key = entry.getKey();
+            VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
+            vesselsResponseMap.put(key, value);
+        }
+        VesselsResponse vesselsResponse = vesselsResponseMap.get(carrierVesselId);
         if(Objects.equals(shipment.getTransportMode(), AIR))
         {
             dictionary.put(VesselsNameFlightName, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
@@ -496,18 +518,18 @@ public abstract class IReport {
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
-        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
-        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
@@ -601,7 +623,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
 
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         if(destination != null) {
             dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
@@ -1835,7 +1857,7 @@ public abstract class IReport {
 
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
 
         if(StringUtility.isNotEmpty(hblDataDto.getCargoDescription())) {
             dictionary.put(ReportConstants.DO_MESSAGE, hblDataDto.getCargoDescription());
@@ -2165,12 +2187,13 @@ public abstract class IReport {
     }
 
     public String ConvertToDPWDateFormat(LocalDateTime date) {
-        return ConvertToDPWDateFormat(date, null);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        return ConvertToDPWDateFormat(date, null, v1TenantSettingsResponse);
     }
-    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
+
+    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat, V1TenantSettingsResponse v1TenantSettingsResponse)
     {
         String strDate = "";
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (date != null)
         {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
@@ -2752,45 +2775,6 @@ public abstract class IReport {
             masterLists.forEach(masterData -> {
                 dataMap.putIfAbsent(masterData.getItemType(), new HashMap<>());
                 dataMap.get(masterData.getItemType()).put(masterData.getItemValue(), masterData);
-            });
-        }
-        return dataMap;
-    }
-
-    public Map<Integer, Map<String, MasterData>> fetchMasterListFromCache(MasterListRequestV2 requests) {
-        Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if(Objects.isNull(requests)||Objects.isNull(requests.getMasterListRequests())||requests.getMasterListRequests().isEmpty()){
-            return new HashMap<>();
-        }
-        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        assert !Objects.isNull(cache);
-        List<MasterListRequest> fetchMasterListFromV1 = new ArrayList<>();
-        for (MasterListRequest masterListRequest : requests.getMasterListRequests()) {
-            String key = masterListRequest.getItemType() + "#" + masterListRequest.getItemValue();
-            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
-            if(Objects.isNull(value)) {
-                fetchMasterListFromV1.add(masterListRequest);
-            } else {
-                MasterData cachedData = (MasterData) value.get();
-                dataMap.putIfAbsent(cachedData.getItemType(), new HashMap<>());
-                dataMap.get(cachedData.getItemType()).put(cachedData.getItemValue(), cachedData);
-            }
-        }
-        if (!fetchMasterListFromV1.isEmpty()) {
-            MasterListRequestV2 missingRequestV2 = new MasterListRequestV2();
-            missingRequestV2.setMasterListRequests(fetchMasterListFromV1);
-            missingRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
-
-            V1DataResponse response = v1Service.fetchMultipleMasterData(missingRequestV2);
-            List<MasterData> fetchedData = jsonHelper.convertValueToList(response.entities, MasterData.class);
-            fetchedData.forEach(masterData -> {
-                dataMap.putIfAbsent(masterData.getItemType(), new HashMap<>());
-                dataMap.get(masterData.getItemType()).put(masterData.getItemValue(), masterData);
-                String cacheKey = keyGenerator.customCacheKeyForMasterData(
-                        CacheConstants.MASTER_LIST,
-                        masterData.getItemType() + "#" + masterData.getItemValue()
-                ).toString();
-                cache.put(cacheKey, masterData);
             });
         }
         return dataMap;
@@ -3500,7 +3484,7 @@ public abstract class IReport {
 
     private String getDate(Map<String, Object> agent) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
+        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat(), v1TenantSettingsResponse);
     }
 
     private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {

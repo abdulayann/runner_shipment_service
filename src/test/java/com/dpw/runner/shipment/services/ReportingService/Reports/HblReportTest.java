@@ -332,7 +332,7 @@ class HblReportTest extends CommonMocks {
         unlocationsResponse.setCountry("IND");
         locationMap.put(locationGuid, unlocationsResponse);
         Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
-        when(masterDataUtils.getLocationDataFromCache(any())).thenReturn(entityTransferUnLocationsMap);
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(entityTransferUnLocationsMap);
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().build()));
 
@@ -370,7 +370,7 @@ class HblReportTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
-        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
 
         List<MasterData> masterDataList = new ArrayList<>();
         MasterData masterData = new MasterData();
@@ -426,15 +426,13 @@ class HblReportTest extends CommonMocks {
         masterData.setItemValue("IND");
         masterData.setItemDescription("IND");
         masterDataList.add(masterData);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(masterDataList);
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
         mockShipmentSettings();
         mockTenantSettings();
         assertNotNull(hblReport.getDocumentModel(123L));
@@ -576,8 +574,7 @@ class HblReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -597,6 +594,9 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -720,19 +720,17 @@ class HblReportTest extends CommonMocks {
         consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
         consolidationModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
-        when(masterDataUtils.getLocationDataFromCache(any())).thenReturn(new HashMap<>());
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
-        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(Arrays.asList(new MasterData()));
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
 
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -752,6 +750,9 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -878,8 +879,7 @@ class HblReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -901,6 +901,9 @@ class HblReportTest extends CommonMocks {
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         Map<String, Object> response = hblReport.populateDictionary(hblModel);
         assertNotNull(response);
     }
@@ -1195,8 +1198,7 @@ class HblReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = List.of(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -1215,6 +1217,9 @@ class HblReportTest extends CommonMocks {
         when(jsonHelper.convertJsonToMap(blObjectJson)).thenReturn(dataMap);
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         mockTenantSettings();
         Map<String, Object> dict = hblReport.populateDictionary(hblModel);
         assertNotNull(dict);
@@ -1385,8 +1390,7 @@ class HblReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = List.of(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -1406,6 +1410,9 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 
@@ -1569,8 +1576,7 @@ class HblReportTest extends CommonMocks {
 
         v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = List.of(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
 
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setShipmentId(1L);
@@ -1590,6 +1596,9 @@ class HblReportTest extends CommonMocks {
         when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(hblReport.populateDictionary(hblModel));
     }
 }

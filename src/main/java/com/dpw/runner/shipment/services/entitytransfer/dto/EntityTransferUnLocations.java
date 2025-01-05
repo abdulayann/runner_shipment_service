@@ -38,7 +38,6 @@ public class EntityTransferUnLocations implements IEntityTranferBaseEntity, Seri
     public Boolean HasOutPort;
     public Boolean HasAirport;
     public Boolean HasTerminal;
-    public String countryName;
     public String CountryThreeDigitCode;
     public String LocationsReferenceGUID;
 }

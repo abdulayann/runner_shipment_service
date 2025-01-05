@@ -89,15 +89,15 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
         CarrierDetailModel carrierDetailModel;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(hawbModel.shipmentDetails != null ) {
-            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
+            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
         } else {
-            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault());
+            json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.getConsolidationDetails(), GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
             carrierDetailModel = hawbModel.getConsolidationDetails().getCarrierDetails();
         }
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         Integer companyId = ((HawbModel) documentModel).usersDto.getCompanyId();
         List<Object> companyCriteria = new ArrayList<>(List.of(List.of("Id"), "=", companyId));
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().criteriaRequests(companyCriteria).build();
@@ -537,7 +537,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.AO_DEPT_CODE, locCodeMap.get(routingInfoRows.get(0).getOriginPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getOriginPortName()).getIataCode() : null);
                 dictionary.put(ReportConstants.ISSUED_BY, carrierDetailModel.getShippingLine());
                 dictionary.put(ReportConstants.FLIGHT_NO1, routingInfoRows.get(0).getFlightNumber());
-                dictionary.put(ReportConstants.FLIGHT_DATE1, ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat));
+                dictionary.put(ReportConstants.FLIGHT_DATE1, ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
 
                 String carrier = routingInfoRows.get(0).getByCarrier();
                 String carrierCode = carrier != null && carrierRow.containsKey(carrier) ? carrierRow.get(carrier).IATACode : "";
@@ -559,7 +559,7 @@ public class HawbReport extends IReport{
                 List<String> flightNumberList = new ArrayList<>();
                 List<String> flightDateList = new ArrayList<>();
                 flightNumberList.add(String.format(REGEX_S_S, dictionary.get(ReportConstants.BY_FIRST), dictionary.get(ReportConstants.FLIGHT_NO1)));
-                flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat));
+                flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(0).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
 
 
                 if(routingInfoRows.size()>=2){
@@ -574,9 +574,9 @@ public class HawbReport extends IReport{
                         dictionary.put(ReportConstants.BY_SECOND, carrierRow.get(routingInfoRows.get(1).getByCarrier()).IATACode);
                     }
                     dictionary.put(ReportConstants.FLIGHT_NO2, routingInfoRows.get(1).getFlightNumber());
-                    dictionary.put(ReportConstants.FLIGHT_DATE2, ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat));
+                    dictionary.put(ReportConstants.FLIGHT_DATE2, ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
                     flightNumberList.add(String.format(REGEX_S_S, dictionary.get(ReportConstants.BY_SECOND), dictionary.get(ReportConstants.FLIGHT_NO2)));
-                    flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat));
+                    flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(1).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
                     String carrier2 = routingInfoRows.get(1).getByCarrier();
                     String carrierCode2 = carrier2 != null && carrierRow.containsKey(carrier2) ? carrierRow.get(carrier2).IATACode : "";
                     String flightNumber2 = routingInfoRows.get(1).getFlightNumber();
@@ -596,9 +596,9 @@ public class HawbReport extends IReport{
                         dictionary.put(ReportConstants.BY_THIRD, carrierRow.get(routingInfoRows.get(2).getByCarrier()).IATACode);
                     }
                     dictionary.put(ReportConstants.FLIGHT_NO3, routingInfoRows.get(2).getFlightNumber());
-                    dictionary.put(ReportConstants.FLIGHT_DATE3, ConvertToDPWDateFormat(routingInfoRows.get(2).getFlightDate(), tsDateTimeFormat));
+                    dictionary.put(ReportConstants.FLIGHT_DATE3, ConvertToDPWDateFormat(routingInfoRows.get(2).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
                     flightNumberList.add(String.format(REGEX_S_S, dictionary.get(ReportConstants.BY_THIRD), dictionary.get(ReportConstants.FLIGHT_NO3)));
-                    flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(2).getFlightDate(), tsDateTimeFormat));
+                    flightDateList.add(ConvertToDPWDateFormat(routingInfoRows.get(2).getFlightDate(), tsDateTimeFormat, v1TenantSettingsResponse));
                 }
 
                 dictionary.put(ReportConstants.FLIGHT_NO, String.join(",", flightNumberList));

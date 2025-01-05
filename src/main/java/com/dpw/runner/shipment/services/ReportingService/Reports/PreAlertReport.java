@@ -159,7 +159,7 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DELIVERY_AGENT, null);
         dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
@@ -176,10 +176,10 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.DELIVERY_AGENT, deliveryAgent);
         }
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.getShipmentContainers());
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.getShipmentContainers()));
