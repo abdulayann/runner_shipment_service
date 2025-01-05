@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.mapper;
 
+import com.dpw.runner.shipment.services.dto.response.ConsolidationExcelExportResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import java.util.List;
@@ -18,4 +19,6 @@ public interface ConsolidationMapper {
 
   List<ConsolidationListResponse> toConsolidationListResponses(
       List<ConsolidationDetails> consolidationDetails);
+
+  List<ConsolidationExcelExportResponse> toConsolidationExportListResponses(List<ConsolidationDetails> consolidationDetails);
 }

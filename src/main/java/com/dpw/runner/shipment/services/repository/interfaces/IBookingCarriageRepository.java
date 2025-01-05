@@ -17,4 +17,5 @@ public interface IBookingCarriageRepository extends MultiTenancyRepository<Booki
         Specification<BookingCarriage> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+  List<BookingCarriage> findByShipmentId(Long shipmentId);
 }

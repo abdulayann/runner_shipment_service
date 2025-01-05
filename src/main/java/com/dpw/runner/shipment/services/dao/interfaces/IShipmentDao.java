@@ -46,4 +46,6 @@ public interface IShipmentDao {
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
 
     void updateAdditionalDetailsByShipmentId(Long id, boolean emptyContainerReturned);
+    List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList, boolean containsHazardous);
+    List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
 }

@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -17,7 +16,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -30,9 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -88,14 +83,9 @@ public class NotesDao implements INotesDao {
         List<Notes> responseNotes = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Notes> hashMap;
-//            if(!Objects.isNull(notesIdList) && !notesIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
-                Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
-                hashMap = notes.stream()
+            List<Notes> notes = findByEntityIdAndEntityType(entityId, entityType);
+            Map<Long, Notes> hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
-//            }
             Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {

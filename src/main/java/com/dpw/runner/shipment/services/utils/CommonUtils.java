@@ -1552,7 +1552,7 @@ public class CommonUtils {
                     unlocoRequests.add(carrierDetails.getDestination());
                 if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
                     unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests);
+                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests, EntityTransferConstants.LOCATION_SERVICE_GUID);
                 EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
                 EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
                 EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());

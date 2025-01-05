@@ -3581,6 +3581,8 @@ import static org.mockito.Mockito.*;
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         mockShipmentSettings();
 
+        when(jsonHelper.convertValue(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
+
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(200,response.getStatus());
     }

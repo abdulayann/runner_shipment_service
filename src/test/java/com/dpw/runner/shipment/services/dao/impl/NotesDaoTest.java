@@ -137,12 +137,8 @@ class NotesDaoTest {
     @Test
     void updateEntityFromOtherEntity() {
         testData.setId(1L);
-
         Notes savedNote = testData;
-
-        Page<Notes> page = new PageImpl(List.of(savedNote));
-        when(notesRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
-
+        when(notesRepository.findByEntityIdAndEntityType(any(), any())).thenReturn(List.of(savedNote));
         try {
             var result = notesDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
             assertNotNull(result);
@@ -153,7 +149,7 @@ class NotesDaoTest {
 
     @Test
     void updateEntityFromOtherEntityWithException() throws RunnerException {
-        doThrow(new RuntimeException()).when(notesRepository).findAll(any(Specification.class), any(Pageable.class));
+        doThrow(new RuntimeException()).when(notesRepository).findByEntityIdAndEntityType(any(), any());
         try {
             var e = assertThrows(RunnerException.class, () -> notesDao.updateEntityFromOtherEntity(List.of(testData), 1L, "Shipment"));
         } catch (Exception e) {

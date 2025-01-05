@@ -115,4 +115,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "WHERE s.additional_details_id = a.id AND s.id = ?1", nativeQuery = true)
     void updateAdditionalDetailsByShipmentId(Long id, Boolean emptyContainerReturned);
 
+    @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1 AND contains_hazardous = ?2", nativeQuery = true)
+    List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList, boolean containsHazardous);
+    List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
 }
