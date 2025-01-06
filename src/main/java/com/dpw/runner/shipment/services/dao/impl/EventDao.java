@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -57,7 +58,9 @@ import org.hibernate.type.StandardBasicTypes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,7 +113,53 @@ public class EventDao implements IEventDao {
 
     @Override
     public Page<Events> findAll(Specification<Events> spec, Pageable pageable) {
-        return eventRepository.findAll(spec, pageable);
+        // Fetch the events from the database
+        Page<Events> eventsPage = eventRepository.findAll(spec, pageable);
+
+        // Apply sorting to the fetched results
+        List<Events> sortedEvents = eventsPage.getContent().stream()
+                .sorted((e1, e2) -> {
+                    for (Sort.Order order : pageable.getSort()) {
+                        int comparisonResult = compareEvents(e1, e2, order);
+                        // If comparison result is non-zero, return it
+                        if (comparisonResult != 0) {
+                            return comparisonResult;
+                        }
+                    }
+                    return 0;  // If all sorting criteria result in equality, return 0
+                })
+                .collect(Collectors.toList());
+
+        // Return a new Page with the sorted results
+        return new PageImpl<>(sortedEvents, pageable, eventsPage.getTotalElements());
+    }
+
+    private int compareEvents(Events e1, Events e2, Sort.Order order) {
+        Comparable value1 = getComparableValue(e1, order.getProperty());
+        Comparable value2 = getComparableValue(e2, order.getProperty());
+
+        // If either value is null, place it last in descending order
+        if (value1 == null && value2 == null) {
+            return 0;
+        } else if (value1 == null) {
+            return order.getDirection() == Sort.Direction.DESC ? 1 : -1;
+        } else if (value2 == null) {
+            return order.getDirection() == Sort.Direction.DESC ? -1 : 1;
+        }
+
+        // Otherwise, perform natural comparison
+        int comparison = value1.compareTo(value2);
+        return order.getDirection() == Sort.Direction.DESC ? -comparison : comparison;
+    }
+
+    private Comparable getComparableValue(Events event, String property) {
+        try {
+            Field field = Events.class.getDeclaredField(property);
+            field.setAccessible(true);
+            return (Comparable) field.get(event);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException("Unable to access field " + property, e);
+        }
     }
 
     @Override
