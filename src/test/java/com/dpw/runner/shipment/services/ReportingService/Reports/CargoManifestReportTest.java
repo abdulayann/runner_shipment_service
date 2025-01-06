@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -259,9 +261,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -421,9 +421,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -623,8 +621,7 @@ class CargoManifestReportTest extends CommonMocks {
         model.setAgentReference("test");
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(null);
-        String randomUUID  = UUID.randomUUID().toString();
-        arrivalDepartureDetailsModel.setLastForeignPort(randomUUID);
+        arrivalDepartureDetailsModel.setLastForeignPort("TestForeignPort");
         model.setArrivalDetails(arrivalDepartureDetailsModel);
         consolidationModels.add(model);
         shipmentModel.setConsolidationList(consolidationModels);
@@ -655,9 +652,6 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
         unlocationsResponse.setLocCode("test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -703,6 +697,14 @@ class CargoManifestReportTest extends CommonMocks {
         String customEntryNumber = "12345";
         String test  = "test";
         String consolNumber = "AIR-CAN-00001";
+        EntityTransferUnLocations entityTransferUnLocations = new EntityTransferUnLocations();
+        entityTransferUnLocations.setLocCode("TestForeignPort");
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put("TestForeignPort", entityTransferUnLocations);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocCode("TestForeignPort");
+        doReturn(unlocationsResponse1).when(jsonHelper).convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class));
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(entityTransferUnLocationsMap);
 
         Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
         assertNotNull(dictionary);
@@ -710,8 +712,7 @@ class CargoManifestReportTest extends CommonMocks {
         List<Map<String, Object>> routing = (List<Map<String, Object>>) dictionary.get(ROUTINGS);
         Map<String, Object> routsMap = routing.get(0);
         List<String> ctoAddress = ((List<String>) dictionary.get(CTO_ADDRESS));
-
-        assertEquals(test, dictionary.get(LAST_FOREIGN_PORT_NAME));
+        assertEquals("TestForeignPort", dictionary.get(LAST_FOREIGN_PORT_NAME));
         assertEquals(test, dictionary.get(AGENT_REFERENCE));
         assertEquals(consolNumber, dictionary.get(CONSOLIDATION_NUMBER));
         assertEquals(Constants.TRANSPORT_MODE_SEA, routsMap.get(MODE));

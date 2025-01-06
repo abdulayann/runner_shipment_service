@@ -2435,7 +2435,16 @@ public abstract class IReport {
     }
 
     public String getPortDetails(String UNLocCode) {
-        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Set<String> locCodes = new HashSet<>();
+        locCodes.add(UNLocCode);
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
+        UnlocationsResponse unlocationsResponse = unlocationsMap.get(UNLocCode);
         if(unlocationsResponse != null) {
             return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
         }
