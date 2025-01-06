@@ -3015,7 +3015,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(id);
+            Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
             if(!consolidationDetailsOptional.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

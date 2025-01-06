@@ -4515,7 +4515,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(id);
             if(!shipmentDetailsOptional.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
