@@ -362,13 +362,6 @@ class CSDReportTest {
         routingsModel.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
         shipment.setRoutingsList(List.of(routingsModel));
 
-//        UnlocationsResponse unlocationsResponse = UnlocationsResponse.builder().iataCode("AI1").build();
-//
-//        Mockito.when(masterDataUtils.getLocationData(any())).thenReturn(Map.ofEntries(
-//                Map.entry("Airport1", unlocationsResponse),
-//                Map.entry("Airport2", unlocationsResponse)
-//        ));
-
         var resp = spyReport.populateDictionary(csdModel);
         assertNotNull(resp);
         assertNotNull(resp.get(ReportConstants.TRANSIT_AIRPORTS));
