@@ -853,13 +853,34 @@ public class ReportService implements IReportService {
     }
 
     private void createEvent(ReportRequest reportRequest, String eventCode) {
+        if (reportRequest == null || reportRequest.getReportId() == null) {
+            throw new IllegalArgumentException("Invalid report request or report ID.");
+        }
+
+        Long reportId;
+        try {
+            reportId = Long.parseLong(reportRequest.getReportId());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid report ID format.", ex);
+        }
+
+        // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(LocalDateTime.now());
-        eventsRequest.setEntityId(Long.parseLong(reportRequest.getReportId()));
+        eventsRequest.setEntityId(reportId);
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventsRequest.setEventCode(eventCode);
         eventsRequest.setEventType(EventType.REPORT.name());
         eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+
+        // Set reference number based on event code
+        if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
+            shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
+                    eventsRequest.setReferenceNumber(shipmentDetails.getHouseBill())
+            );
+        }
+
+        // Save the event
         eventService.saveEvent(eventsRequest);
     }
 
