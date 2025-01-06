@@ -1639,10 +1639,11 @@ public class ContainerService implements IContainerService {
             log.info("Booking reference obtained: {}", bookingRef);
             for (Containers containers : containersList) {
                 if(( !oldContsMap.containsKey(containers.getId()) && !IsStringNullOrEmpty(containers.getContainerNumber()) ) ||
-                    ( oldContsMap.containsKey(containers.getId()) && !Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) ))
-                    log.debug("Preparing payload for container ID: {} with container number: {}",
+                    ( oldContsMap.containsKey(containers.getId()) && !Objects.equals(oldContsMap.get(containers.getId()), containers.getContainerNumber()) )) {
+                    log.info("Preparing payload for container ID: {} with container number: {}",
                             containers.getId(), containers.getContainerNumber());
                     payloadDetails.add(prepareQueuePayload(containers, bookingRef));
+                }
             }
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
             updateRequest.setContainers(payloadDetails);
