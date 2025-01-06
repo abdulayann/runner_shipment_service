@@ -5779,14 +5779,14 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void getAllMasterDataEmptyShipmentTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().id(1L).build();
-        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.empty());
         assertEquals(HttpStatus.BAD_REQUEST, shipmentService.getAllMasterData(commonRequestModel).getStatusCode());
     }
 
     @Test
     void getAllMasterDataTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().id(1L).build();
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         Map<String, Object> response = new HashMap<>();

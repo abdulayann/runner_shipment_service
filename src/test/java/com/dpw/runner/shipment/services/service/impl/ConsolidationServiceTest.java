@@ -3533,7 +3533,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
 
@@ -3542,7 +3542,7 @@ import static org.mockito.Mockito.*;
     }
     @Test
     void testGetAllMasterData_Failure() {
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.empty());
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAllMasterData(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
