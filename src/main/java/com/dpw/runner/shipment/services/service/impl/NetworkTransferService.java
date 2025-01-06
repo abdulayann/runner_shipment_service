@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -77,10 +78,13 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final INotificationDao notificationDao;
 
+    private final IEntityTransferService entityTransferService;
+
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
-                                  CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao) {
+                                  CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
+                                  IEntityTransferService entityTransferService) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -89,6 +93,7 @@ public class NetworkTransferService implements INetworkTransferService {
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.notificationDao = notificationDao;
+        this.entityTransferService = entityTransferService;
     }
 
 
@@ -384,6 +389,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
     @Override
     public ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel) {
+        entityTransferService.validateApprovalRoleForImport();
         ReassignRequest reassignRequest = (ReassignRequest) commonRequestModel.getData();
         var networkTransfer = networkTransferDao.findById(reassignRequest.getId());
         if(networkTransfer.isEmpty()){
