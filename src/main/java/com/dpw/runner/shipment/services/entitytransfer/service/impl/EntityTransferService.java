@@ -560,10 +560,13 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private void validateApprovalRoleForImport() {
+    public void validateApprovalRoleForImport() {
         if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            var tenantIds = new HashSet<>(Collections.singletonList(TenantContext.getCurrentTenant()));
-            approvalRoleTenantValidation(tenantIds);
+            var tenantId = TenantContext.getCurrentTenant();
+            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
+            if (approverRoleId == null || approverRoleId == 0) {
+                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
+            }
         }
     }
 

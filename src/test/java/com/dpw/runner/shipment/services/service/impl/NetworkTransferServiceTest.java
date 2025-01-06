@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -73,6 +74,8 @@ class NetworkTransferServiceTest {
     private ExecutorService executorService;
     @Mock
     private INotificationDao notificationDao;
+    @Mock
+    private IEntityTransferService entityTransferService;
 
 
     private static JsonTestUtility jsonTestUtility;
