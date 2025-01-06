@@ -4300,6 +4300,9 @@ public class ConsolidationService implements IConsolidationService {
         Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
                 Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), CONSOLIDATION);
 
+        if(oldOptionalNetworkTransfer.isEmpty())
+            return true;
+
         return oldOptionalNetworkTransfer
                 .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
                 .orElse(false) || optionalNetworkTransfer.isEmpty();
