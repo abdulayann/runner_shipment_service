@@ -998,11 +998,7 @@ public class HawbReport extends IReport{
         StringBuilder chargesStr = new StringBuilder();
         for(String charge : chargeDict.keySet())
         {
-            if(chargesStr.isEmpty()) {
-                chargesStr.append(charge).append(IReport.DisplayFormat(chargeDict.get(charge), 2, v1TenantSettingsResponse));
-            } else {
-                chargesStr.append("    ").append(charge).append(IReport.DisplayFormat(chargeDict.get(charge), 2, v1TenantSettingsResponse));
-            }
+            chargesStr.append(charge).append(" ").append(IReport.DisplayFormat(chargeDict.get(charge), 2, v1TenantSettingsResponse)).append("    ");
         }
         return chargesStr.toString();
     }
