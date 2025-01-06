@@ -107,15 +107,8 @@ public class EventsController {
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg = "failure executing :(";
-        try {
-            return ResponseHelper.buildSuccessResponse();
-//            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error syncing provided Events";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildSuccessResponse();
+//      return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
     }
 
     @ApiResponses(value = {
