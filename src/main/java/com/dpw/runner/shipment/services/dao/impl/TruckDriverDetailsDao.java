@@ -105,14 +105,9 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, TruckDriverDetails> hashMap;
-//            if(!Objects.isNull(truckDriverDetailsIdList) && !truckDriverDetailsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<TruckDriverDetails>, Pageable> pair = fetchData(listCommonRequest, TruckDriverDetails.class);
-                Page<TruckDriverDetails> truckDriverDetails = findAll(pair.getLeft(), pair.getRight());
-                hashMap = truckDriverDetails.stream()
+            List<TruckDriverDetails> truckDriverDetails = findByShipmentId(shipmentId);
+            Map<Long, TruckDriverDetails> hashMap = truckDriverDetails.stream()
                         .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
-//            }
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
@@ -133,6 +128,10 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<TruckDriverDetails> findByShipmentId(Long shipmentId) {
+        return truckDriverDetailsRepository.findByShipmentId(shipmentId);
     }
 
     @Override

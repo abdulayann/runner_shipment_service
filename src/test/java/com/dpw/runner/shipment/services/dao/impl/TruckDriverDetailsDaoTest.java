@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
@@ -65,6 +67,8 @@ class TruckDriverDetailsDaoTest {
     void setUp() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         testData = jsonTestUtility.getTestTruckDriverDetails();
+        UserContext.setUser(
+            UsersDto.builder().Username("user").TenantId(1).build());
         MockitoAnnotations.openMocks(this);
     }
 
@@ -126,7 +130,7 @@ class TruckDriverDetailsDaoTest {
     void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList() {
         Long shipmentId = 1L;
         var truckDriverDetailsDaoSpy = Mockito.spy(truckDriverDetailsDao);
-        doThrow(new RuntimeException("Test")).when(truckDriverDetailsDaoSpy).findAll(any(),any());
+        when(truckDriverDetailsDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException("Test"));
         assertThrows(RunnerException.class, () -> truckDriverDetailsDaoSpy.updateEntityFromShipment(Collections.emptyList(), shipmentId));
     }
 
@@ -135,7 +139,6 @@ class TruckDriverDetailsDaoTest {
         Long shipmentId = 1L;
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(new TruckDriverDetails(), new TruckDriverDetails());
         var truckDriverDetailsDaoSpy = Mockito.spy(truckDriverDetailsDao);
-        doReturn(mock(Page.class)).when(truckDriverDetailsDaoSpy).findAll(any(), any());
         doReturn(truckDriverDetailsList).when(truckDriverDetailsDaoSpy).saveEntityFromShipment(anyList(), eq(shipmentId), anyMap());
         List<TruckDriverDetails> result = truckDriverDetailsDaoSpy.updateEntityFromShipment(truckDriverDetailsList, shipmentId);
         assertEquals(truckDriverDetailsList, result);
@@ -145,7 +148,7 @@ class TruckDriverDetailsDaoTest {
     void updateEntityFromShipment_TruckDriverDetailsListIsEmpty_ReturnsEmptyList() throws RunnerException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        when(truckDriverDetailsRepository.findAll((Specification<TruckDriverDetails>) any(), (Pageable) any())).thenReturn(new PageImpl<TruckDriverDetails>(List.of(testData)));
+        when(truckDriverDetailsRepository.findByShipmentId(any())).thenReturn(List.of(testData));
         List<TruckDriverDetails> result = truckDriverDetailsDao.updateEntityFromShipment(Collections.singletonList(testData), shipmentId);
         assertNotNull(result);
         assertTrue(result.isEmpty());

@@ -150,9 +150,7 @@ class PartiesDaoTest {
         parties.setId(2L);
         partiesList.add(parties);
         var spyService = Mockito.spy(partiesDao);
-        doReturn(new PageImpl<>(partiesList)).when(spyService).findAll(any(), any());
         doReturn(List.of(testParties)).when(spyService).saveEntityFromOtherEntity(any(), anyLong(), anyString(), any());
-        doNothing().when(spyService).delete(any());
         List<Parties> responseEntity = spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT");
         assertEquals(List.of(testParties), responseEntity);
     }
@@ -162,7 +160,6 @@ class PartiesDaoTest {
         List<Parties> partiesList = new ArrayList<>();
         partiesList.add(testParties);
         var spyService = Mockito.spy(partiesDao);
-        doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT"));
     }
 
@@ -174,9 +171,7 @@ class PartiesDaoTest {
         parties.setId(2L);
         partiesList.add(parties);
         var spyService = Mockito.spy(partiesDao);
-        doReturn(new PageImpl<>(partiesList)).when(spyService).findAll(any(), any());
         doReturn(List.of(testParties)).when(spyService).saveEntityFromOtherEntity(any(), anyLong(), anyString(), any());
-        doThrow(new RuntimeException()).when(spyService).delete(any());
         List<Parties> responseEntity = spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT");
         assertEquals(List.of(testParties), responseEntity);
     }

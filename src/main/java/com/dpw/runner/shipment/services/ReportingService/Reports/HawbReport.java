@@ -22,9 +22,9 @@ import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -32,7 +32,6 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -90,7 +89,6 @@ public class HawbReport extends IReport{
         HawbModel hawbModel = (HawbModel) documentModel;
         String json;
         CarrierDetailModel carrierDetailModel;
-        String tenantName = getTenant().getTenantName();
         if(hawbModel.shipmentDetails != null ) {
             json = jsonHelper.convertToJsonWithDateTimeFormatter(hawbModel.shipmentDetails, GetDPWDateFormatOrDefault());
             carrierDetailModel = hawbModel.getShipmentDetails().getCarrierDetails();
@@ -150,7 +148,13 @@ public class HawbReport extends IReport{
                 locCodes.add(shipmentInfo.getDestinationAirport());
             }
 
-            Map<String, UnlocationsResponse> locCodeMap = getLocationData(locCodes, EntityTransferConstants.NAME);
+            Map<String, UnlocationsResponse> locCodeMap = new HashMap<>();
+            Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.NAME);
+            for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+                String key = entry.getKey();
+                UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                locCodeMap.put(key, value);
+            }
             UnlocationsResponse  originAirport = locCodeMap.get(shipmentInfo.getOriginAirport());
             UnlocationsResponse  destinationAirport = locCodeMap.get(shipmentInfo.getDestinationAirport());
 
@@ -238,13 +242,27 @@ public class HawbReport extends IReport{
                     var values = shipmentRow.getPackingList().stream()
                         .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                         .toList();
+                    Map<String, List<Map<String, Object>>> commodityMap = new HashMap<>();
+                    Set<String> commodityGrpCodes = new HashSet<>();
                     values.forEach(v -> {
                         if(v.containsKey(COMMODITY_GROUP) && v.get(COMMODITY_GROUP) != null){
-                            MasterData commodity = getMasterListData(MasterDataType.COMMODITY_GROUP, v.get(COMMODITY_GROUP).toString());
-                            if(!Objects.isNull(commodity))
-                                v.put(PACKS_COMMODITY_GROUP, commodity.getItemDescription());
+                            String key = v.get(COMMODITY_GROUP).toString() + "#" + MasterDataType.COMMODITY_GROUP;
+                            if(!commodityMap.containsKey(key)) {
+                                commodityMap.put(key, new ArrayList<>());
+                            }
+                            commodityMap.get(key).add(v);
+                            commodityGrpCodes.add(v.get(COMMODITY_GROUP).toString());
                         }
                     });
+                    Map<String, EntityTransferMasterLists> commodityResponse = masterDataUtils.getCommodityGroupDataFromCache(commodityGrpCodes);
+                    for(Map.Entry<String, EntityTransferMasterLists> entry: commodityResponse.entrySet()) {
+                        if(!Objects.isNull(entry.getValue()) && commodityMap.containsKey(entry.getKey())) {
+                            List<Map<String, Object>> vals = commodityMap.get(entry.getKey());
+                            for(Map<String, Object> val: vals) {
+                                val.put(PACKS_COMMODITY_GROUP, entry.getValue().getItemDescription());
+                            }
+                        }
+                    }
                     dictionary.put(SHIPMENT_PACKS, values);
                 }
             }
@@ -439,7 +457,7 @@ public class HawbReport extends IReport{
                     value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
                     value.put(AWB_DIMS, value.get(DIMENSIONS));
                     if(value.get(ReportConstants.RATE_CLASS) != null){
-                        value.put(ReportConstants.RATE_CLASS, value.get(ReportConstants.RATE_CLASS));
+                        value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                     }
                     if(value.get(ReportConstants.GROSS_WT) != null){
                         value.put(ReportConstants.GROSS_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
@@ -505,9 +523,14 @@ public class HawbReport extends IReport{
                     carrierSet.add(routingInfoRows.get(2).getByCarrier());
                 }
                 // Fetch all the possible loc codes possible in single call
-                locCodeMap = getLocationData(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+                    String key = entry.getKey();
+                    UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                    locCodeMap.put(key, value);
+                }
                 // Fetch all the possible carrier data in single call
-                Map<String, EntityTransferCarrier> carrierRow = fetchCarrier(carrierSet);
+                Map<String, EntityTransferCarrier> carrierRow = masterDataUtils.getCarrierDataFromCache(carrierSet);
 
                 dictionary.put(ReportConstants.TO_FIRST, locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()) != null ? locCodeMap.get(routingInfoRows.get(0).getDestinationPortName()).getIataCode() : null);
                 dictionary.put(ReportConstants.TO, dictionary.get(ReportConstants.TO_FIRST));
@@ -692,7 +715,12 @@ public class HawbReport extends IReport{
             {
                 locCodes = new HashSet<>();
                 locCodes.add(otherInfoRows.getExecutedAt());
-                locCodeMap = getLocationData(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+                    String key = entry.getKey();
+                    UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                    locCodeMap.put(key, value);
+                }
                 String executedAtName = null;
                 if (locCodeMap.get(otherInfoRows.getExecutedAt()) != null) {
                     // Get the name from v1 and convert it to uppercase if not null
@@ -1079,53 +1107,6 @@ public class HawbReport extends IReport{
         return null;
     }
 
-    private Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes, String fieldName) {
-        Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-        if(!List.of(EntityTransferConstants.NAME, EntityTransferConstants.LOCATION_SERVICE_GUID).contains(fieldName))
-            return locationMap;
-        if (locCodes.size() > 0) {
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(fieldName),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
-
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    switch (fieldName) {
-                        case EntityTransferConstants.NAME -> locationMap.put(unlocation.getName(), unlocation);
-                        case EntityTransferConstants.LOCATION_SERVICE_GUID ->
-                                locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
-                        default -> {
-                        }
-                    }
-                }
-            }
-        }
-        return locationMap;
-    }
-
-    private Map<String, EntityTransferCarrier> fetchCarrier(Set<String> values) {
-        if (values.size() == 1 && values.contains(null)) return new HashMap<>();
-        CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(EntityTransferConstants.ITEM_VALUE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(values)));
-        request.setCriteriaRequests(criteria);
-        CarrierListObject carrierListObject = new CarrierListObject();
-        carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
-
-        List<EntityTransferCarrier> carrierList = jsonHelper.convertValueToList(response.entities, EntityTransferCarrier.class);
-        Map<String, EntityTransferCarrier> keyCarrierDataMap = new HashMap<>();
-        carrierList.forEach(carrier -> {
-            keyCarrierDataMap.put(carrier.getItemValue(), carrier);
-        });
-        return keyCarrierDataMap;
-    }
 
     private String cityFromOrganizations (String orgName) {
         if(orgName != null){
