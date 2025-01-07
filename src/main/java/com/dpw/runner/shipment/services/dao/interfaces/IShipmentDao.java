@@ -41,11 +41,13 @@ public interface IShipmentDao {
     void entityDetach(List<ShipmentDetails> shipmentDetails);
     List<ShipmentDetails> findBySourceGuid(UUID guid);
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
-
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
-
     Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable);
     ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails);
+
+    void updateAdditionalDetailsByShipmentId(Long id, boolean emptyContainerReturned);
+    List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList, boolean containsHazardous);
+    List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 }

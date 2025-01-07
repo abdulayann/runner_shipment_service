@@ -498,22 +498,113 @@ public class ConsolidationService implements IConsolidationService {
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
+        this.getMasterDataForList(lst, responseList, getMasterData, true);
+        return responseList;
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ConsolidationDetails> lst) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        List<ConsolidationExcelExportResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationExportListResponses(lst);
+        Map<Long, ConsolidationExcelExportResponse> responseMap = listResponses.stream()
+            .collect(Collectors.toMap(ConsolidationExcelExportResponse::getId, response -> response));
+
+        lst.forEach(consolidationDetails -> {
+            ConsolidationExcelExportResponse res = responseMap.get(consolidationDetails.getId());
+            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
+                res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
+            updateHouseBillsShippingIds(consolidationDetails, res);
+            containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
+
+            consolidationListResponses.add(jsonHelper.convertValue(res, ConsolidationListResponse.class));
+        });
+        consolidationListResponses.forEach(consolidationDetails -> {
+            responseList.add(consolidationDetails);
+        });
+        this.getMasterDataForList(lst, responseList, true, false);
+        return responseList;
+    }
+
+    private void getMasterDataForList(List<ConsolidationDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData) {
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
+                double _start = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorService);
                 var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorService);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorService);
-                var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
+                CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
+                if (Boolean.TRUE.equals(includeTenantData))
+                    tenantDataFuture =CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorService);
                 CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
             }
         }
-        return responseList;
     }
 
     private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationListResponse response, boolean isShipmentLevelContainer) {
+        Long container20Count = 0L;
+        Long container40Count = 0L;
+        Long container20GPCount = 0L;
+        Long container20RECount = 0L;
+        Long container40GPCount = 0L;
+        Long container40RECount = 0L;
+        Long containerCount = 0L;
+        Set<String> containerNumber = new HashSet<>();
+        List<Containers> containersList = new ArrayList<>();
+        containersList = consolidationDetails.getContainersList();
+        if(isShipmentLevelContainer) {
+            List<ShipmentDetails> shipmentDetails = consolidationDetails.getShipmentsList();
+            if(shipmentDetails != null && shipmentDetails.size() > 0) {
+                containersList = new ArrayList<>();
+                for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+                    if(shipmentDetails1.getContainersList() != null && shipmentDetails1.getContainersList().size() > 0) {
+                        containersList.addAll(shipmentDetails1.getContainersList());
+                    }
+                }
+            }
+        } else {
+            containersList = consolidationDetails.getContainersList();
+        }
+        if (containersList != null && containersList.size() > 0) {
+            for (Containers container : containersList) {
+                if(container.getContainerCode() != null) {
+                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                        ++container20Count;
+                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                        ++container40Count;
+                    }
+
+                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                        ++container20GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                        ++container20RECount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                        ++container40GPCount;
+                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                        ++container40RECount;
+                    }
+                }
+                ++containerCount;
+                if (StringUtility.isNotEmpty(container.getContainerNumber())) {
+                    containerNumber.add(container.getContainerNumber());
+                }
+            }
+        }
+        response.setContainer20Count(container20Count);
+        response.setContainer40Count(container40Count);
+        response.setContainer20GPCount(container20GPCount);
+        response.setContainer20RECount(container20RECount);
+        response.setContainer40GPCount(container40GPCount);
+        response.setContainer40RECount(container40RECount);
+        response.setContainerCount(containerCount);
+        response.setContainerNumbers(containerNumber);
+    }
+
+    private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationExcelExportResponse response, boolean isShipmentLevelContainer) {
         Long container20Count = 0L;
         Long container40Count = 0L;
         Long container20GPCount = 0L;
@@ -584,6 +675,17 @@ public class ConsolidationService implements IConsolidationService {
         consolidationRes.setShipmentIds(shipmentIds);
     }
 
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationExcelExportResponse consolidationRes) {
+        var shipments = consol.getShipmentsList();
+        List<String> shipmentIds = null;
+        List<String> houseBills = null;
+        if (shipments != null)
+            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
+        if (shipmentIds != null)
+            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
+        consolidationRes.setHouseBills(houseBills);
+        consolidationRes.setShipmentIds(shipmentIds);
+    }
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -3025,7 +3127,7 @@ public class ConsolidationService implements IConsolidationService {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(id);
+            Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
             if(!consolidationDetailsOptional.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -3791,7 +3893,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-        List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent());
+        List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsPage.getContent());
         log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {

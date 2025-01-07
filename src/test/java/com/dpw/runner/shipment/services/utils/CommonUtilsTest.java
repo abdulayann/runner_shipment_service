@@ -954,7 +954,7 @@ class CommonUtilsTest {
         carrierDetails.setDestinationPort("test");
         Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
         unlocationsMap.put("test", new EntityTransferUnLocations());
-        when(masterDataUtils.getLocationDataFromCache(any())).thenReturn(unlocationsMap);
+        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(unlocationsMap);
         commonUtils.updateUnLocData(carrierDetails, null);
         verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }

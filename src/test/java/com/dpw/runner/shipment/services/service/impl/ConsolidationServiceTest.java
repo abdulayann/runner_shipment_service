@@ -3639,7 +3639,7 @@ import java.util.stream.Collectors;
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
 
@@ -3648,7 +3648,7 @@ import java.util.stream.Collectors;
     }
     @Test
     void testGetAllMasterData_Failure() {
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.empty());
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.getAllMasterData(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -3686,6 +3686,8 @@ import java.util.stream.Collectors;
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         mockShipmentSettings();
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
 
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(200,response.getStatus());

@@ -346,7 +346,9 @@ public class ReportService implements IReportService {
                 createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
-                createEvent(reportRequest, EventConstants.DHBL);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+            } else {
+                dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
             }
         } else if (report instanceof PreAlertReport vPreAlertReport) {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
@@ -782,7 +784,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createEvent(reportRequest, EventConstants.DHBL);
+                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){

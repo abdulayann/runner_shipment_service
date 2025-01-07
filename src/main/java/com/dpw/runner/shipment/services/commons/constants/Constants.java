@@ -605,6 +605,10 @@ public class Constants {
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
+
+    public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
+    public static final String ORG_ADDRESS = "orgAddress";
+
     private Constants() {
     }
 

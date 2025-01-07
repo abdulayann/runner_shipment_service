@@ -55,4 +55,7 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     @JsonProperty(value = "is_hazardous")
     private Boolean isDg;
     private String source;
+    private String status;
+    @JsonProperty(value = "reference_numbers")
+    private List<ReferenceNumbersRequest> referenceNumbers;
 }
