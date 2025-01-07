@@ -1348,7 +1348,6 @@ import java.util.stream.Collectors;
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidation);
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidation);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
