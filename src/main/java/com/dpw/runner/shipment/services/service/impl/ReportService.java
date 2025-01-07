@@ -848,12 +848,14 @@ public class ReportService implements IReportService {
         Integer noOfPacks = 0;
         boolean isCombi = dataRetrived.containsKey(ReportConstants.IS_COMBI) && Boolean.TRUE.equals(dataRetrived.get(ReportConstants.IS_COMBI));
         List<Pair<String, Integer>> hawbPacksMap = null; // used only for combi label
-        if(isCombi)
-            hawbPacksMap = (List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap");
         if(reportRequest.isFromConsolidation() && dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS) != null) {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         } else if (dataRetrived.get(ReportConstants.TOTAL_PACKS) != null) {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
+        }
+        if(isCombi) {
+            hawbPacksMap = (List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap");
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         }
         if(noOfPacks == null || noOfPacks == 0) {
             throw new ValidationException("no of pack is less than 1");
