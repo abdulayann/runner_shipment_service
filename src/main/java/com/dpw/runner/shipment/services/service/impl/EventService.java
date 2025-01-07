@@ -1128,6 +1128,9 @@ public class EventService implements IEventService {
         eventsRequest.setEventType(EventType.INVOICE.name());
         eventsRequest.setContainerNumber(accountReceivableDto.getInvoiceNumber());
         eventsRequest.setReferenceNumber(accountReceivableDto.getId());
+        eventsRequest.setBranch(accountReceivableDto.getBranchCode());
+        eventsRequest.setUserEmail(accountReceivableDto.getUserEmail());
+        eventsRequest.setUserName(accountReceivableDto.getUserDisplayName());
 
         return List.of(eventsRequest);
     }
