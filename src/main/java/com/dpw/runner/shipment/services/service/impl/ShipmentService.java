@@ -4515,7 +4515,7 @@ public class ShipmentService implements IShipmentService {
         String responseMsg;
         try {
             Long id = commonRequestModel.getId();
-            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(id);
             if(!shipmentDetailsOptional.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -5929,12 +5929,26 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached, boolean getMasterData) {
-        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData){
+        if(consoleId==null && consoleGuid==null)
+            throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
+
+        Optional<ConsolidationDetails> consolidationDetails;
+        if(consoleId != null ){
+            consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        } else {
+            UUID guid = UUID.fromString(consoleGuid);
+            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+        }
+
         if (consolidationDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        if(consoleId==null)
+            consoleId = consolidationDetails.get().getId();
+
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());

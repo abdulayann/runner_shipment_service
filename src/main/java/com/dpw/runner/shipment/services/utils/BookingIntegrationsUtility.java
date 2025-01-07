@@ -661,11 +661,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String mapBookingStatus(ShipmentStatus status) {
-        if (status == ShipmentStatus.Created)
-            return ShipmentConstants.PENDING;
-        else if (status == ShipmentStatus.Booked)
-            return ShipmentConstants.BOOKED;
-        else if (status == ShipmentStatus.Cancelled)
+        if (status == ShipmentStatus.Cancelled)
             return ShipmentConstants.CANCELLED;
         else
             return ShipmentConstants.CONFIRMED;
