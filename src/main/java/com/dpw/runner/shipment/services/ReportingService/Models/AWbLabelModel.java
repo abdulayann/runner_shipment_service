@@ -15,5 +15,6 @@ public class AWbLabelModel implements IDocumentModel{
     private List<String> TenantAddress;
     private Awb awb;
     private String remarks;
+    private List<ShipmentModel> shipmentModels; // used only for combi label
 //    public add awb
 }
