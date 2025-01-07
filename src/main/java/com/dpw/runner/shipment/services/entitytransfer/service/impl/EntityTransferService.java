@@ -2084,10 +2084,9 @@ public class EntityTransferService implements IEntityTransferService {
         // No CC emails are used
         List<String> ccEmails = new ArrayList<>();
         // Current user (the sender) in CC for NTE
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            UsersDto user = UserContext.getUser();
+        UsersDto user = UserContext.getUser();
+        if(user.Email!=null)
             ccEmails.add(user.Email);
-        }
         // Fetching role ids corresponding to console destination branches
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
         if(shipmentGuidSendToBranch == null)
@@ -2112,10 +2111,9 @@ public class EntityTransferService implements IEntityTransferService {
         // No CC emails are used
         List<String> ccEmails = new ArrayList<>();
         // Current user (the sender) in CC for NTE
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            UsersDto user = UserContext.getUser();
+        UsersDto user = UserContext.getUser();
+        if(user.Email!=null)
             ccEmails.add(user.Email);
-        }
 
         // Fetching role ids corresponding to shipment destination branches
         var shipmentSettingsList = shipmentSettingsDao.getSettingsByTenantIds(destinationBranches);
