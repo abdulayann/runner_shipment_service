@@ -1461,6 +1461,13 @@ public class MasterDataUtils{
         return responseMap;
     }
 
+    /*
+     * Gets the location data from cache and populates into supplied unLocationsMap
+     */
+    public void getLocationDataFromCache(Set<String> locCodes, Map<String, EntityTransferUnLocations> unLocationsMap) {
+        unLocationsMap.putAll(getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID));
+    }
+
     public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes, String fieldName) {
         if(Objects.isNull(locCodes))
             return new HashMap<>();

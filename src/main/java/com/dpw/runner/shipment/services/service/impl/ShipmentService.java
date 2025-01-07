@@ -264,6 +264,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -808,12 +809,16 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
             ShipmentDetails finalShipmentDetails = shipmentDetails;
-            var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(finalShipmentDetails.getCarrierDetails(), null)), executorService);
+            /*  Populate unloc code for entities */
+            var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
+
             if(request.getConsolidationList() != null)
                 shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
             if(request.getContainersList() != null)
                 shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
-            CompletableFuture.allOf(carrierDetailsFuture).join();
+
+            populateUnlocCodeFuture.join();
+
             if(!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getImportBroker())) {
                 shipmentDetails.getAdditionalDetails().setImportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getDestinationLocCode()));
             }
@@ -833,7 +838,7 @@ public class ShipmentService implements IShipmentService {
             }
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
             if (ObjectUtils.isNotEmpty(routingsRequest))
-                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(jsonHelper.convertValueToList(routingsRequest, Routings.class), shipmentId));
+                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(shipmentDetails.getRoutingsList(), shipmentId));
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
@@ -1891,11 +1896,8 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
-    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean isImportFile) throws RunnerException {
-        CarrierDetails oldCarrierDetails = null;
-        if (!isCreate) {
-            oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
-
+    private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean isImportFile) throws RunnerException{
+        if(!isCreate) {
             // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
             if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
@@ -1906,8 +1908,9 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        CarrierDetails finalOldCarrierDetails = oldCarrierDetails;
-        var carrierDetailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.updateUnLocData(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails)), executorService);
+
+        CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
+
         List<Long> tempConsolIds = new ArrayList<>();
         Long id = !Objects.isNull(oldEntity) ? oldEntity.getId() : null;
         boolean syncConsole = false;
@@ -2106,8 +2109,30 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getEventsRevampEnabled())) {
             shipmentDetails.setEventsList(Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>()));
         }
-        CompletableFuture.allOf(carrierDetailsFuture).join();
+
+        populateUnlocCodeFuture.join();
         return syncConsole;
+    }
+
+    private CompletableFuture<Void> getPopulateUnlocCodeFuture(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        CarrierDetails finalOldCarrierDetails = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCarrierDetails).orElse(null);
+        List<Routings> finalOldRoutings = Optional.ofNullable(oldEntity).map(ShipmentDetails::getRoutingsList).orElse(Collections.emptyList());
+
+        /* Set to extract the unlocations from entities whose unloc code needs to be saved */
+        Set<String> unlocationsSet = Collections.synchronizedSet(new HashSet<>());
+        Map<String, EntityTransferUnLocations> unLocationsMap = new ConcurrentHashMap<>();
+
+        CompletableFuture<Void> populateUnlocCodeFuture = CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService),
+                CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(shipmentDetails.getRoutingsList(), finalOldRoutings, unlocationsSet), executorService)
+        );
+        populateUnlocCodeFuture.thenCompose(v -> CompletableFuture.runAsync(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap), executorService))
+                .thenCompose(v -> CompletableFuture.allOf(
+                CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(shipmentDetails.getCarrierDetails(), unLocationsMap), executorService),
+                CompletableFuture.runAsync(() -> commonUtils.updateRoutingUnLocData(shipmentDetails.getRoutingsList(), unLocationsMap), executorService)
+        ));
+
+        return populateUnlocCodeFuture;
     }
 
     private void deletePendingRequestsOnConsoleAttach(ShipmentDetails shipmentDetails, boolean isCreate) {

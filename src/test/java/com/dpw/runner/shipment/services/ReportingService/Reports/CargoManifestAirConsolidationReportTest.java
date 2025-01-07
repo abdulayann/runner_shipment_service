@@ -51,9 +51,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -263,7 +261,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ReportConstants.MORN);
+        referenceNumbersModel.setType(ReportConstants.MRN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
         ConsolidationModel consolidationModel = new ConsolidationModel();

@@ -993,6 +993,16 @@ public class HawbReport extends IReport{
         return chargesStr.toString();
     }
 
+    public static String getStringFromDictWithNoComma(Map<String,BigDecimal> chargeDict, V1TenantSettingsResponse v1TenantSettingsResponse)
+    {
+        StringBuilder chargesStr = new StringBuilder();
+        for(String charge : chargeDict.keySet())
+        {
+            chargesStr.append(charge).append(" ").append(IReport.DisplayFormat(chargeDict.get(charge), 2, v1TenantSettingsResponse)).append("    ");
+        }
+        return chargesStr.toString();
+    }
+
     public static OtherChargesResponse getOtherChargesDetailsIATA(List<AwbOtherChargesInfo> otherChargesRows, Awb siData, V1TenantSettingsResponse v1TenantSettingsResponse, AwbCargoInfo cargoInfoRows)
     {
         Map<String,BigDecimal> carrierChargesIATA = new HashMap<>();
@@ -1036,8 +1046,8 @@ public class HawbReport extends IReport{
             newOtherChargesList.add(newOtherCharges);
         }
 
-        String CarrierChargesIATAStr = getStringFromDict(carrierChargesIATA, v1TenantSettingsResponse);
-        String AgentChargesIATAStr = getStringFromDict(agentChargesIATA, v1TenantSettingsResponse);
+        String CarrierChargesIATAStr = getStringFromDictWithNoComma(carrierChargesIATA, v1TenantSettingsResponse);
+        String AgentChargesIATAStr = getStringFromDictWithNoComma(agentChargesIATA, v1TenantSettingsResponse);
         List<String> otherChargesIATA = Arrays.asList(CarrierChargesIATAStr, AgentChargesIATAStr);
 
         otherChargesResponses.setOtherChargesItems(otherChargesIATA);

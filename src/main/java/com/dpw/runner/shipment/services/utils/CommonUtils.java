@@ -76,6 +76,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -88,6 +89,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -1569,6 +1571,71 @@ public class CommonUtils {
         }
         catch (Exception e) {
             log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
+        }
+    }
+
+    public void updateCarrierUnLocData(CarrierDetails carrierDetails, Map<String, EntityTransferUnLocations> unlocationsMap) {
+        try {
+            EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
+            EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
+            EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());
+            EntityTransferUnLocations destination = unlocationsMap.get(carrierDetails.getDestination());
+            if(!Objects.isNull(origin))
+                carrierDetails.setOriginLocCode(origin.getLocCode());
+            if(!Objects.isNull(destination))
+                carrierDetails.setDestinationLocCode(destination.getLocCode());
+            if(!Objects.isNull(pol))
+                carrierDetails.setOriginPortLocCode(pol.getLocCode());
+            if(!Objects.isNull(pod))
+                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+        }
+        catch (Exception e) {
+            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
+        }
+    }
+
+    public void updateRoutingUnLocData(List<Routings> routingsList, Map<String, EntityTransferUnLocations> unlocationsMap) {
+        try {
+            for(var routing : routingsList) {
+                EntityTransferUnLocations pol = unlocationsMap.get(routing.getPol());
+                EntityTransferUnLocations pod = unlocationsMap.get(routing.getPod());
+                if(!Objects.isNull(pol))
+                    routing.setOriginPortLocCode(pol.getLocCode());
+                if(!Objects.isNull(pod))
+                    routing.setDestinationPortLocCode(pod.getLocCode());
+            }
+        }
+        catch (Exception e) {
+            log.error("Error while updating un-locCode for routing list {}", e.getMessage());
+        }
+    }
+
+    public <T> void getChangedUnLocationFields(T newEntity, T oldEntity, Set<String> unlocationSet) {
+        if(Objects.isNull(newEntity))
+            return;
+        Class<?> clazz = newEntity.getClass();
+        try {
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                if (field.isAnnotationPresent(UnlocationData.class)) {
+                    if(Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) {
+                        unlocationSet.add((String) field.get(newEntity));
+                    }
+                }
+
+            }
+        } catch(Exception e) {
+            log.warn("Error while getting un-location fields for class {}", clazz.getSimpleName());
+        }
+    }
+
+    public <T extends BaseEntity> void getChangedUnLocationFields(List<T> newEntityList, List<T> oldEntityList, Set<String> unlocationSet) {
+        if(CollectionUtils.isEmpty(newEntityList))
+            return;
+
+        Map<Long, T>  oldEntityMap = Optional.ofNullable(oldEntityList).orElse(Collections.emptyList()).stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        for (T newEntity : newEntityList) {
+            getChangedUnLocationFields(newEntity, oldEntityMap.get(newEntity.getId()), unlocationSet);
         }
     }
 
