@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -7,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -14,8 +16,10 @@ import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -38,7 +42,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
@@ -47,8 +50,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.mockito.Mockito.*;
-
 import static org.junit.jupiter.api.Assertions.*;
+
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class NetworkTransferServiceTest {
@@ -69,6 +72,10 @@ class NetworkTransferServiceTest {
     private NetworkTransferService networkTransferService;
     @Mock
     private ExecutorService executorService;
+    @Mock
+    private INotificationDao notificationDao;
+    @Mock
+    private IEntityTransferService entityTransferService;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -89,6 +96,7 @@ class NetworkTransferServiceTest {
         consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         networkTransferService.executorService = Executors.newFixedThreadPool(2);
         UserContext.setUser(UsersDto.builder().Username("user").build());
+        TenantContext.setCurrentTenant(1);
     }
 
     @AfterEach
@@ -101,6 +109,7 @@ class NetworkTransferServiceTest {
         RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         var response = networkTransferService.requestForTransfer(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -114,10 +123,19 @@ class NetworkTransferServiceTest {
     }
 
     @Test
+    void requestForTransfer_Already_REQUESTED_TO_TRANSFER() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REQUESTED_TO_TRANSFER).build()));
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForTransfer(request));
+    }
+
+    @Test
     void requestForReassign() {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -127,6 +145,14 @@ class NetworkTransferServiceTest {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void requestForReassign_Already_REASSIGNED() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
     }
 

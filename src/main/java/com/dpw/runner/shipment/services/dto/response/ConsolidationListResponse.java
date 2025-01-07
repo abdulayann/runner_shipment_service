@@ -88,7 +88,7 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -141,4 +141,5 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Map<String, String> tenantMasterData;
     private Boolean isNetworkFlag;
     private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

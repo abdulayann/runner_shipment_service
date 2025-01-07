@@ -2130,6 +2130,59 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void fetchTenantIdForList_NetworkTransfer() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(NetworkTransferListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_NetworkTransfer2() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NetworkTransferListResponse.builder().sourceBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification2() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().requestedBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification3() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().reassignedToBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void setContainerTeuData() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);

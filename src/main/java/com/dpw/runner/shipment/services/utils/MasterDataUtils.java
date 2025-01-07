@@ -210,6 +210,9 @@ public class MasterDataUtils{
                 if (response instanceof NetworkTransferListResponse networkTransferListResponse && (networkTransferListResponse.getSourceBranchId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(networkTransferListResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId(), cacheMap));
                 }
+                if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null)) {
+                    tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
+                }
             }
 
             Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList);
@@ -235,6 +238,12 @@ public class MasterDataUtils{
                     networkTransferListResponse.setTenantMasterData(new HashMap<>());
                     if (networkTransferListResponse.getSourceBranchId() != null)
                         networkTransferListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+                }
+
+                if (response instanceof NotificationListResponse notificationListResponse) {
+                    notificationListResponse.setTenantMasterData(new HashMap<>());
+                    if (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null)
+                        notificationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(Notification.class.getSimpleName() + notificationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
             }
             log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());

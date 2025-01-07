@@ -722,4 +722,16 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds) {
         return shipmentRepository.findByShipmentIdIn(shipmentIds);
     }
+
+    @Override
+    @Transactional
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
+    }
+
+    @Override
+    @Transactional
+    public void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted) {
+        shipmentRepository.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isAccepted);
+    }
 }
