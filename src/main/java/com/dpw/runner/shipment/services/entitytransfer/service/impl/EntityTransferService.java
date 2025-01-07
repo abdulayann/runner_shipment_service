@@ -266,7 +266,7 @@ public class EntityTransferService implements IEntityTransferService {
             else if (ObjectUtils.isNotEmpty(shipment.getTriangulationPartnerList())
                     && shipment.getTriangulationPartnerList().contains(Long.valueOf(tenant))) {
                 taskPayload.setDirection(Constants.DIRECTION_CTS);
-            } else if (shipment.getTriangulationPartnerList() == null && Long.valueOf(tenant).equals(shipment.getTriangulationPartner())) {
+            } else if (CommonUtils.listIsNullOrEmpty(shipment.getTriangulationPartnerList()) && Long.valueOf(tenant).equals(shipment.getTriangulationPartner())) {
                 taskPayload.setDirection(Constants.DIRECTION_CTS);
             }
             taskPayload.setSendToBranch(tenant);
@@ -359,7 +359,7 @@ public class EntityTransferService implements IEntityTransferService {
                     && consol.getTriangulationPartnerList().contains(Long.valueOf(tenant))) {
                 consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
                 sendingToTriangulationPartner = true;
-            } else if (consol.getTriangulationPartnerList() == null
+            } else if (CommonUtils.listIsNullOrEmpty(consol.getTriangulationPartnerList())
                     && Long.valueOf(tenant).equals(consol.getTriangulationPartner())) {
                 consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
                 sendingToTriangulationPartner = true;
