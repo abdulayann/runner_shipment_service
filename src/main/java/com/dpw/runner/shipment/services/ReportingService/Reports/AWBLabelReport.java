@@ -88,9 +88,18 @@ public class AWBLabelReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         if(isCombi) {
-            ConsolidationDetails consolidationDetails = getConsolidationsById(id);
+            ConsolidationDetails consolidationDetails;
+            Long consoleId;
+            if(isMawb) {
+                consoleId = id;
+                consolidationDetails = getConsolidationsById(consoleId);
+            }
+            else {
+                consoleId = getShipmentDetails(id).getConsolidationList().get(0).getId();
+                consolidationDetails = getConsolidationsById(consoleId);
+            }
             awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
-            awbLabelModel.setAwb(getMawb(id, true));
+            awbLabelModel.setAwb(getMawb(consoleId, true));
             awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
             awbLabelModel.setShipmentModels(new ArrayList<>());
             if(!listIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
