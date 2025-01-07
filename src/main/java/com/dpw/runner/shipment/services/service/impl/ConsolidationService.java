@@ -4099,8 +4099,8 @@ public class ConsolidationService implements IConsolidationService {
         CompletableFuture<Void> populateUnlocCodeFuture = CompletableFuture.allOf(
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService),
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getRoutingsList(), finalOldRoutings, unlocationsSet), executorService)
-        );
-        populateUnlocCodeFuture.thenCompose(v -> CompletableFuture.runAsync(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap), executorService))
+        ).thenCompose(v ->
+                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService))
                 .thenCompose(v -> CompletableFuture.allOf(
                         CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService),
                         CompletableFuture.runAsync(() -> commonUtils.updateRoutingUnLocData(entity.getRoutingsList(), unLocationsMap), executorService)
