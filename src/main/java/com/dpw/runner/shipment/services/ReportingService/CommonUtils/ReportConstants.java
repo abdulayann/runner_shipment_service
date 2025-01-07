@@ -1263,6 +1263,7 @@ public class ReportConstants {
     public static final String AIR_LABEL_REMARKS = "AirLabelRemarks";
     public static final String IS_MAWB = "IsMAWB";
     public static final String IS_HAWB = "IsHAWB";
+    public static final String IS_COMBI = "IsCombi";
     public static final String IS_DMAWB = "IsDMAWB";
     public static final String IS_B2BMAWB = "IsB2BMAWB";
     public static final String CONSOL_TOTAL_WEIGHT_AND_UNIT = "ConsolTotalWeightandUnit";

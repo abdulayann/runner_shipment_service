@@ -1292,6 +1292,10 @@ public abstract class IReport {
 
     public ConsolidationModel getConsolidation(Long id) {
         ConsolidationDetails consolidationDetails = getConsolidationsById(id);
+        return getConsolidationModel(consolidationDetails);
+    }
+
+    public ConsolidationModel getConsolidationModel(ConsolidationDetails consolidationDetails) {
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 

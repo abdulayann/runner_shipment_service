@@ -6,22 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -32,14 +17,7 @@ import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -48,19 +26,8 @@ import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.EventType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.PrintType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -78,33 +45,9 @@ import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfConcatenate;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -113,6 +56,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @Slf4j
@@ -290,6 +247,7 @@ public class ReportService implements IReportService {
         if(report instanceof AWBLabelReport awbLabelReport) {
             awbLabelReport.setMawb(reportRequest.isFromConsolidation());
             awbLabelReport.setRemarks(reportRequest.getRemarks());
+            awbLabelReport.setCombi(reportRequest.isCombiLabel());
         }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
@@ -864,6 +822,10 @@ public class ReportService implements IReportService {
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         Integer noOfPacks = 0;
+        boolean isCombi = dataRetrived.containsKey(ReportConstants.IS_COMBI) && Boolean.TRUE.equals(dataRetrived.get(ReportConstants.IS_COMBI));
+        List<Pair<String, Integer>> hawbPacksMap = null; // used only for combi label
+        if(isCombi)
+            hawbPacksMap = (List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap");
         if(reportRequest.isFromConsolidation() && dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS) != null) {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         } else if (dataRetrived.get(ReportConstants.TOTAL_PACKS) != null) {
@@ -873,9 +835,20 @@ public class ReportService implements IReportService {
             throw new ValidationException("no of pack is less than 1");
         }
         for(int i = 1; i <=copies; i++) {
+            int ind = 0;
+            int prevPacks = 0;
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
+
+                if(isCombi) {
+                    dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
+                    packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
+                    if((packs-prevPacks)%hawbPacksMap.get(ind).getValue() == 0) {
+                        prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
+                        ind++;
+                    }
+                }
                 if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
                     dataRetrived.put(ReportConstants.COUNT, packsCount);
                     dataRetrived.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
