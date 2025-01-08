@@ -120,8 +120,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private Integer SourceTenantId;
     @JsonProperty("SpecialInstructions")
     private String SpecialInstructions;
-    @JsonProperty("TriangulationPartnerList")
-    private List<Long> TriangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private Integer TriangulationPartner;
     @JsonProperty("WarehouseId")
