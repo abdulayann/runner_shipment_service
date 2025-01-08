@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -17,7 +16,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRe
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -30,9 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -86,14 +81,9 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, BookingCarriage> hashMap;
-//            if(!Objects.isNull(bookingCarriageIdList) && !bookingCarriageIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
-                Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
-                hashMap = bookingCarriages.stream()
+            List<BookingCarriage> bookingCarriages = findByShipmentId(shipmentId);
+            Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
                         .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
-//            }
             Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
@@ -114,6 +104,10 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<BookingCarriage> findByShipmentId(Long shipmentId) {
+        return bookingCarriageRepository.findByShipmentId(shipmentId);
     }
 
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {

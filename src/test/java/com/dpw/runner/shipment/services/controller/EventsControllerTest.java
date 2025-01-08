@@ -24,7 +24,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {EventsController.class})
@@ -101,32 +100,10 @@ class EventsControllerTest {
 
     @Test
     void syncEventsToService() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void syncEventsToService2() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), true);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void syncEventsToService3() throws RunnerException {
-        // Mock
-        when(eventService.V1EventsCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test

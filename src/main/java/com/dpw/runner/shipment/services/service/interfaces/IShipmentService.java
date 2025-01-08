@@ -101,7 +101,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException;
     void validateRaKcDetails(ShipmentDetails shipmentDetails) throws RunnerException;
-    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, boolean isAttached, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData);
     ResponseEntity<IRunnerResponse> shipmentRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
@@ -133,5 +133,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
+     void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded);
 
 }

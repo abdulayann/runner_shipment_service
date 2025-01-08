@@ -720,9 +720,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
             Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabled();
             Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled() != null) && shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled().orElse(false);
+            Boolean newNetworkTransferFlag = (shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled() != null) && shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled().orElse(false);
+            Boolean newAutomaticTransferFlag = (shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled() != null) && shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled().orElse(false);
+
             LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(newEntityTransferFlag);
+            oldShipmentSettingsDetails.setIsNetworkTransferEntityEnabled(newNetworkTransferFlag);
+            oldShipmentSettingsDetails.setIsAutomaticTransferEnabled(newAutomaticTransferFlag);
             if(Boolean.TRUE.equals(newEntityTransferFlag)) {
                 oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(Boolean.FALSE.equals(oldEntityTransferFlag) ? LocalDateTime.now(): oldEntityTransferEnabledDate);
             } else {

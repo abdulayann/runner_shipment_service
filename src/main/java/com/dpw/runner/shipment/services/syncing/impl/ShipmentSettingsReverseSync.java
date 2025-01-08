@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -42,7 +43,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
         try {
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
-
+            TenantContext.setCurrentTenant(dest.getTenantId().intValue());
             // Non Enums entities
             if(req.getHblLock() != null && req.getHblLock().size() > 0)
                 dest.setHblLockSettings(convertToClass(req.getHblLock().get(0), HblLockSettingsRequest.class));
