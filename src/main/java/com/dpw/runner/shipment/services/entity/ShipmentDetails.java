@@ -290,13 +290,10 @@ public class ShipmentDetails extends MultiTenancy {
     @TenantIdData
     private Long documentationPartner;
 
-    @Column(name = "partner_id")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "triangulation_partner_shipment",
-            joinColumns = @JoinColumn(name = "shipment_id"))
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
     @BatchSize(size = 50)
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")
     @TenantIdData
@@ -588,4 +585,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }

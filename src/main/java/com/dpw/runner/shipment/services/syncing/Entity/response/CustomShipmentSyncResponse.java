@@ -1,20 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.Entity.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.syncing.Entity.BookingCarriageRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ElDetailsRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.FileRepoRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.JobRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.NoteRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.PickupDeliveryDetailsRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ReferenceNumbersRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.RoutingsRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.ShipmentServiceRequestV2;
-import com.dpw.runner.shipment.services.syncing.Entity.TruckDriverDetailsRequestV2;
+import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -416,8 +403,6 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartner")
-    private Integer TriangulationPartner;
 
 
 

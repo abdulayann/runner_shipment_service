@@ -1,5 +1,21 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -21,8 +37,36 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
+import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsolePacksListResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackSummaryDto;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerShipmentADInConsoleRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -36,9 +80,13 @@ import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -98,13 +146,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -236,8 +277,26 @@ import static org.mockito.Mockito.*;
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
 
+    @Mock
+    private INotificationDao notificationDao;
+
     @InjectMocks
     private ConsolidationService consolidationService;
+
+    @Mock
+    private QuartzJobInfoService quartzJobInfoService;
+
+    @Mock
+    private QuartzJobInfoDao quartzJobInfoDao;
+
+    @Mock
+    private NetworkTransferDao networkTransferDao;
+
+    @Mock
+    private CommonErrorLogsDao commonErrorLogsDao;
+
+    @Mock
+    private NetworkTransferService networkTransferService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -1015,7 +1074,7 @@ import static org.mockito.Mockito.*;
 
         ConsolidationDetails consolidationDetails = testConsol;
         copy.setCfsCutOffDate(LocalDateTime.MIN);
-        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setTransportMode(TRANSPORT_MODE_SEA);
         copy.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentRequest> shipmentRequests = new ArrayList<>();
         shipmentRequests.add(shipmentDetails1);
@@ -1023,7 +1082,7 @@ import static org.mockito.Mockito.*;
         copy.setContainersList(null);
 
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
         shipmentDetailsRequests.add(shipmentDetails2);
@@ -1054,7 +1113,7 @@ import static org.mockito.Mockito.*;
 
         ConsolidationDetails consolidationDetails = testConsol;
         copy.setCfsCutOffDate(LocalDateTime.MIN);
-        copy.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        copy.setTransportMode(TRANSPORT_MODE_SEA);
         copy.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentRequest> shipmentRequests = new ArrayList<>();
         shipmentRequests.add(shipmentDetails1);
@@ -1062,7 +1121,7 @@ import static org.mockito.Mockito.*;
         copy.setContainersList(null);
 
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         List<ShipmentDetails> shipmentDetailsRequests = new ArrayList<>();
         shipmentDetailsRequests.add(shipmentDetails2);
@@ -1182,6 +1241,10 @@ import static org.mockito.Mockito.*;
 
         commonRequestModel.setData(copy);
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setDocumentationPartner(null);
+        List<TriangulationPartner> triangulationPartnerList = List.of(TriangulationPartner.builder().triangulationPartner(0L).build(),
+                TriangulationPartner.builder().triangulationPartner(1L).build());
+        consolidationDetails.setTriangulationPartnerList(triangulationPartnerList);
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
@@ -1234,6 +1297,9 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
         ConsolidationDetails consolidationDetails = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
         consolidationDetails.setContainersList(null);
+        consolidationDetails.setReceivingBranch(0L);
+        consolidationDetails.setDocumentationPartner(0L);
+        consolidationDetails.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(0L).build()));
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
@@ -1252,6 +1318,45 @@ import static org.mockito.Mockito.*;
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
         when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
+    void testUpdate_ContainerListNull_TriangulationPartnerList() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
+        copy.setContainersList(null);
+        Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
+        EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
+        keyMasterDataMap.put("20GP", containerTypeMasterData);
+
+        commonRequestModel.setData(copy);
+        ConsolidationDetails consolidation = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+        consolidation.setContainersList(null);
+        consolidation.setReceivingBranch(0L);
+        consolidation.setDocumentationPartner(1L);
+        consolidation.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(1L).build()));
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
+                .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
+
+        var spyService = Mockito.spy(consolidationService);
+
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidation);
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
+        when(shipmentDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertValue(consolidation, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(consolidation.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
+        when(jsonHelper.convertValue(consolidation.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> response = spyService.update(commonRequestModel);
@@ -1290,7 +1395,7 @@ import static org.mockito.Mockito.*;
         containers.setId(1L);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1336,7 +1441,7 @@ import static org.mockito.Mockito.*;
         containers.setId(1L);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
@@ -1344,7 +1449,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setInterBranchConsole(true);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetails.setCfsCutOffDate(LocalDateTime.MIN);
 
@@ -1385,14 +1490,14 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1444,14 +1549,14 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1504,7 +1609,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1512,7 +1617,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1549,7 +1654,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1557,7 +1662,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1595,7 +1700,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1603,7 +1708,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1640,7 +1745,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1650,7 +1755,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
@@ -1688,7 +1793,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
@@ -1698,7 +1803,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
         consolidationDetails.setTenantId(shipmentDetails.getTenantId());
 
@@ -1735,14 +1840,14 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setContainsHazardous(true);
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(false);
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTenantId(UserContext.getUser().TenantId);
@@ -1807,7 +1912,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setId(2L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setEventsList(List.of(new Events()));
@@ -1855,7 +1960,7 @@ import static org.mockito.Mockito.*;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -1891,7 +1996,7 @@ import static org.mockito.Mockito.*;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -1928,7 +2033,7 @@ import static org.mockito.Mockito.*;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -1942,7 +2047,7 @@ import static org.mockito.Mockito.*;
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -1967,7 +2072,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setId(1L);
         shipmentDetails.setContainsHazardous(true);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -1982,7 +2087,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2008,7 +2113,7 @@ import static org.mockito.Mockito.*;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2030,7 +2135,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(true);
         consolidationDetails.setShipmentsList(new ArrayList<>(List.of(shipmentDetails1)));
 
@@ -2058,7 +2163,7 @@ import static org.mockito.Mockito.*;
         packing.setId(1L);
         shipmentDetails.setId(1L);
         shipmentDetails.setContainsHazardous(true);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.fromString("bdade3d2-4529-4ff1-80b1-ad047b41b100"));
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2073,7 +2178,7 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setHazardous(true);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setGuid(UUID.randomUUID());
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2142,7 +2247,7 @@ import static org.mockito.Mockito.*;
         Packing packing = new Packing();
         packing.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setPackingList(List.of(packing));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -2178,7 +2283,7 @@ import static org.mockito.Mockito.*;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
@@ -2631,7 +2736,6 @@ import static org.mockito.Mockito.*;
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
         when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
         mockShipmentSettings();
@@ -2829,7 +2933,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCalculateChargeable_Success_Air() {
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
         consolidationDetails.getAllocations().setWeightUnit(Constants.WEIGHT_UNIT_T);
         consolidationDetails.getAllocations().setWeight(BigDecimal.TEN);
@@ -3681,7 +3785,7 @@ import static org.mockito.Mockito.*;
     }
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         request.setShipmentType(Constants.SHIPMENT_TYPE_LSE);
@@ -3708,7 +3812,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_emptyHubTenantIds() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -3734,7 +3838,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_EXP_CoLoadFlag_False() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_EXP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -3754,7 +3858,7 @@ import static org.mockito.Mockito.*;
     }
     @Test
     void testGetAutoAttachConsolidationDetails_Success_WithMasterBill_AIR_IMP() {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         AutoAttachConsolidationRequest request = getAutoAttachConsolidationRequest();
         request.setDirection(Constants.DIRECTION_IMP);
         List<EntityTransferMasterLists> masterLists = jsonTestUtility.getAutoAttachConsoleMasterData();
@@ -4311,7 +4415,7 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
@@ -4350,7 +4454,7 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4387,7 +4491,7 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4429,7 +4533,7 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setScreeningStatus(Collections.emptyList());
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4470,7 +4574,7 @@ import static org.mockito.Mockito.*;
 
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setScreeningStatus(Collections.emptyList());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4507,7 +4611,7 @@ import static org.mockito.Mockito.*;
 
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setScreeningStatus(Collections.emptyList());
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4548,7 +4652,7 @@ import static org.mockito.Mockito.*;
         commonRequestModel.setData(copy);
 
         ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
@@ -4593,7 +4697,7 @@ import static org.mockito.Mockito.*;
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -4633,7 +4737,7 @@ import static org.mockito.Mockito.*;
         List<String> status = new ArrayList<>();
         status.add("PHS");
         consolidationDetails.setScreeningStatus(status);
-        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setId(null);
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
@@ -5274,7 +5378,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
@@ -5285,7 +5389,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments1() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         shipmentDetails.setContainsHazardous(true);
@@ -5296,7 +5400,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments2() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
         testConsol.setHazardous(true);
@@ -5308,7 +5412,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments3() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5320,7 +5424,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments4() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5332,7 +5436,7 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testValidationsBeforeAttachShipments5() throws RunnerException {
-        testConsol.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
         testConsol.setHazardous(true);
@@ -5355,7 +5459,7 @@ import static org.mockito.Mockito.*;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -5397,7 +5501,7 @@ import static org.mockito.Mockito.*;
         Containers containers = new Containers();
         containers.setId(1L);
         shipmentDetails.setId(1L);
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setContainersList(List.of(containers));
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
@@ -5452,7 +5556,9 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testRetrieveForNTE() {
-        testConsol.setTriangulationPartnerList(List.of(TenantContext.getCurrentTenant().longValue()));
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder()
+                .triangulationPartner(TenantContext.getCurrentTenant().longValue()).isAccepted(false).build();
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = consolidationService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -5474,10 +5580,10 @@ import static org.mockito.Mockito.*;
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(false).setIsNetworkTransferEntityEnabled(true);
-
+        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(12L).build();
         ConsolidationDetails consolidationDetails3 = testConsol;
         testConsol.setReceivingBranch(1L);
-        testConsol.setTriangulationPartnerList(List.of(12L));
+        testConsol.setTriangulationPartnerList(List.of(triangulationPartner));
 
         ConsolidationDetails consolidationDetails2 = testConsol;
 
@@ -5518,6 +5624,466 @@ import static org.mockito.Mockito.*;
             assertEquals(expectedEntity, response);
 
         }
+    }
+
+    @Test
+    void triggerAutomaticTransfer_InvalidForTransfer() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(false)
+                .build());
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .transportMode(TRANSPORT_MODE_AIR)
+                .receivingBranch(null)
+                .build();
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verifyNoInteractions(quartzJobInfoDao);
+        verifyNoInteractions(quartzJobInfoService);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_NoExistingQuartzJob_CreateNewJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(testConsol, null, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(0)).createSimpleJob(any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_NoChanges() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build();
+
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_UpdateJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newJob = new QuartzJobInfo();
+        newJob.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(newJob);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_AlreadyAccepted() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verifyNoInteractions(quartzJobInfoDao);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(null);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(new QuartzJobInfo());
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(false);
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(List.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoService.updateSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).updateSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ErrorLog() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(new CarrierDetails());
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isAirStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.getCarrierDetails().setFlightNumber("1424");
+        CarrierDetails carrierDetails = consolidationDetails1.getCarrierDetails();
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.getCarrierDetails().setFlightNumber("1224");
+        consolidationDetails.getCarrierDetails().setEta(carrierDetails.getEta());
+        consolidationDetails.getCarrierDetails().setEtd(carrierDetails.getEtd());
+        consolidationDetails.getCarrierDetails().setAta(carrierDetails.getAta());
+        consolidationDetails.getCarrierDetails().setAtd(carrierDetails.getAtd());
+
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_oldCarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(CarrierDetails.builder().atd(LocalDateTime.now()).build());
+        consolidationDetails.setCarrierDetails(null);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+    }
+
+
+    @Test
+    void triggerAutomaticTransfer_isAirNonStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isSeaCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(consolidationDetails1.getSendingAgent());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidReceivingBranchChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        var a = LocalDateTime.now();
+        consolidationDetails1.getCarrierDetails().setEta(a);
+        consolidationDetails1.getCarrierDetails().setEtd(a);
+
+        consolidationDetails.setId(5L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.getCarrierDetails().setEta(a);
+        consolidationDetails.getCarrierDetails().setEtd(a);
+        consolidationDetails.setReceivingBranch(200L);
+        consolidationDetails.setBol(consolidationDetails1.getBol());
+        consolidationDetails.setSendingAgent(consolidationDetails1.getSendingAgent());
+        consolidationDetails.setReceivingAgent(consolidationDetails1.getReceivingAgent());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidDateChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_ROA);
+        consolidationDetails1.setShipmentType(null);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setReceivingAgent(new Parties());
+        consolidationDetails1.setSendingAgent(new Parties());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(new Parties());
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
     }
 
 }
