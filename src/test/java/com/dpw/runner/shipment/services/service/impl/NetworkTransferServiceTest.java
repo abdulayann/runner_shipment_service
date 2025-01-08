@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
@@ -148,6 +149,24 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         mockShipmentSettings();
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void requestForReassign_DataRetrievalFailure2() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(0);
+        mockShipmentSettings();
+        assertThrows(ValidationException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void requestForReassign_DataRetrievalFailure3() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(null);
+        mockShipmentSettings();
+        assertThrows(ValidationException.class, () -> networkTransferService.requestForReassign(request));
     }
 
     @Test
