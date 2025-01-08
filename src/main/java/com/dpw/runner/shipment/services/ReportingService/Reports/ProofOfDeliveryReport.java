@@ -33,7 +33,10 @@ public class ProofOfDeliveryReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ProofOfDeliveryModel proofOfDeliveryModel = (ProofOfDeliveryModel) documentModel;
         Map<String, Object> dictionary = hblReport.populateDictionary(proofOfDeliveryModel.hblModel);
-        populateShipmentOrganizationsLL(proofOfDeliveryModel.hblModel.shipment, dictionary, new ArrayList<>());
+        if(proofOfDeliveryModel.hblModel.shipment != null) {
+            populateShipmentOrganizationsLL(proofOfDeliveryModel.hblModel.shipment, dictionary,
+                new ArrayList<>());
+        }
         return dictionary;
     }
 }
