@@ -1618,7 +1618,7 @@ public class CommonUtils {
             for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
                 if (field.isAnnotationPresent(UnlocationData.class)) {
-                    if(Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) {
+                    if((Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
                         unlocationSet.add((String) field.get(newEntity));
                     }
                 }
