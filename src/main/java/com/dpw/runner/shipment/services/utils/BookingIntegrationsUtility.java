@@ -131,6 +131,8 @@ public class BookingIntegrationsUtility {
     private IEventDao eventDao;
     @Autowired
     private IEventService eventService;
+    @Autowired
+    private IV1Service iv1Service;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -813,6 +815,7 @@ public class BookingIntegrationsUtility {
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                iv1Service.setAuthContext();
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
@@ -861,6 +864,7 @@ public class BookingIntegrationsUtility {
             log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
             TenantContext.removeTenant();
             UserContext.removeUser();
+            iv1Service.clearAuthContext();
         }
     }
 
