@@ -567,4 +567,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "events_revamp_enabled")
     private Boolean eventsRevampEnabled;
+
+    @Column(name = "is_awb_revamp_enabled")
+    private Boolean isAwbRevampEnabled;
 }
