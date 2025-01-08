@@ -4972,6 +4972,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDao.save(any(), eq(false))).thenThrow(RunnerException.class);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> {
