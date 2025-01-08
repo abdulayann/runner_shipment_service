@@ -105,6 +105,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -343,10 +344,10 @@ public class ReportService implements IReportService {
         } else if (report instanceof HblReport vHblReport) {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.FHBL);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             } else {
                 dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
             }
@@ -355,7 +356,7 @@ public class ReportService implements IReportService {
             createEvent(reportRequest, EventConstants.PRST);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.BOCO);
@@ -784,7 +785,7 @@ public class ReportService implements IReportService {
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
             {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
@@ -833,16 +834,18 @@ public class ReportService implements IReportService {
                 }
             }
         }
-        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) ||
-                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) ||
-            reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER)) {
-            Map<String, String> eventCodeMapping = new HashMap<>();
-            eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), EventConstants.CANG);
-            //todo: check for event: PICORDCNF
-            eventCodeMapping.put(ReportConstants.PICKUP_ORDER.toUpperCase(), ReportConstants.PICKUP_ORDER_GEN);
-            eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), EventConstants.DOGE);
-            if(eventCodeMapping.containsKey(reportRequest.getReportInfo().toUpperCase())){
-                createAutoEvent(reportRequest.getReportId(), eventCodeMapping.get(reportRequest.getReportInfo().toUpperCase()) , tenantSettingsRow);
+
+        if (ObjectUtils.isNotEmpty(reportRequest.getReportInfo())) {
+            String reportInfo = reportRequest.getReportInfo().toUpperCase();
+
+            if (reportInfo.equals(ReportConstants.PICKUP_ORDER.toUpperCase())) {
+                createAutoEvent(reportRequest.getReportId(), ReportConstants.PICKUP_ORDER_GEN, tenantSettingsRow);
+            }
+
+            if (reportInfo.equals(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase())) {
+                createEvent(reportRequest, EventConstants.CANG);
+            } else if (reportInfo.equals(ReportConstants.DELIVERY_ORDER.toUpperCase())) {
+                createEvent(reportRequest, EventConstants.DOGE);
             }
         }
 
@@ -850,13 +853,34 @@ public class ReportService implements IReportService {
     }
 
     private void createEvent(ReportRequest reportRequest, String eventCode) {
+        if (reportRequest == null || reportRequest.getReportId() == null) {
+            throw new IllegalArgumentException("Invalid report request or report ID.");
+        }
+
+        Long reportId;
+        try {
+            reportId = Long.parseLong(reportRequest.getReportId());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid report ID format.", ex);
+        }
+
+        // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(LocalDateTime.now());
-        eventsRequest.setEntityId(Long.parseLong(reportRequest.getReportId()));
+        eventsRequest.setEntityId(reportId);
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventsRequest.setEventCode(eventCode);
         eventsRequest.setEventType(EventType.REPORT.name());
         eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+
+        // Set reference number based on event code
+        if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
+            shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
+                    eventsRequest.setReferenceNumber(shipmentDetails.getHouseBill())
+            );
+        }
+
+        // Save the event
         eventService.saveEvent(eventsRequest);
     }
 
