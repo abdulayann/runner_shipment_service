@@ -2122,17 +2122,18 @@ public class ShipmentService implements IShipmentService {
         Set<String> unlocationsSet = Collections.synchronizedSet(new HashSet<>());
         Map<String, EntityTransferUnLocations> unLocationsMap = new ConcurrentHashMap<>();
 
-        CompletableFuture<Void> populateUnlocCodeFuture = CompletableFuture.allOf(
+        CompletableFuture.allOf(
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(shipmentDetails.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService),
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(shipmentDetails.getRoutingsList(), finalOldRoutings, unlocationsSet), executorService)
-        ).thenCompose(v ->
-                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService))
+        ).join();
+
+        CompletableFuture<Void> fetchUnlocationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
                 .thenCompose(v -> CompletableFuture.allOf(
-                CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(shipmentDetails.getCarrierDetails(), unLocationsMap), executorService),
-                CompletableFuture.runAsync(() -> commonUtils.updateRoutingUnLocData(shipmentDetails.getRoutingsList(), unLocationsMap), executorService)
+                    CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(shipmentDetails.getCarrierDetails(), unLocationsMap), executorService),
+                    CompletableFuture.runAsync(() -> commonUtils.updateRoutingUnLocData(shipmentDetails.getRoutingsList(), unLocationsMap), executorService)
         ));
 
-        return populateUnlocCodeFuture;
+        return fetchUnlocationDataFuture;
     }
 
     private void deletePendingRequestsOnConsoleAttach(ShipmentDetails shipmentDetails, boolean isCreate) {
@@ -3985,9 +3986,19 @@ public class ShipmentService implements IShipmentService {
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
                 Page<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
                     PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
-                andCriteria("id", eligibleShipmentId.getContent(), "IN", request);
-                totalPage = eligibleShipmentId.getTotalPages();
-                totalElements = eligibleShipmentId.getTotalElements();
+
+                List<Long> shipmentIds = notificationDao.findEntityIdsByEntityType(SHIPMENT);
+
+                Set<Long> uniqueShipmentIds = new HashSet<>(eligibleShipmentId.getContent());
+                uniqueShipmentIds.addAll(shipmentIds);
+
+                List<Long> combinedShipmentIds = new ArrayList<>(uniqueShipmentIds);
+
+                andCriteria("id", combinedShipmentIds, "IN", request);
+
+                totalElements = combinedShipmentIds.size();
+                int pageSize = request.getPageSize();
+                totalPage = (int) ((totalElements + pageSize - 1) / pageSize);
             }
 //            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);
