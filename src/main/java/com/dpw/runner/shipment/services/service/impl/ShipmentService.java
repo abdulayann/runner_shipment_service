@@ -1877,7 +1877,7 @@ public class ShipmentService implements IShipmentService {
         if(Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
             List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidationDetails1.getId());
-            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false);
+            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
             dgValidations(shipmentDetails, consolidationDetails1, 1);
             if(shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");

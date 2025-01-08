@@ -122,6 +122,9 @@ public class Routings extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     private String carrierCountry;
 
+    @Column(name = "inherited_from_consolidation")
+    private Boolean inheritedFromConsolidation = false;
+
     public boolean getIsDomestic() {
         return isDomestic;
     }

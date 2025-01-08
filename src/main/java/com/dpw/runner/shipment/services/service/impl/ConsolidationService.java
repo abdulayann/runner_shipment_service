@@ -1671,7 +1671,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(checkConsolidationEligibleForCFSValidation(console) &&
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
                     throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
-                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i, true);
+                syncMainCarriageRoutingToShipment(console.getRoutingsList(), i, true, true);
             }
 
             shipmentDao.saveAll(shipments);
@@ -1682,15 +1682,27 @@ public class ConsolidationService implements IConsolidationService {
         return shipments;
     }
 
+    //todo: method where routings has been added to set new ones
     @Override
-    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes, boolean reverseSyncFromConsolToShipment) throws RunnerException {
         if(CollectionUtils.isEmpty(consolidationRoutings) || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
             return;
         List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
         List<Routings> shipmentRoutingList = Optional.ofNullable(shipmentDetails.getRoutingsList()).orElse(new ArrayList<>());
         shipmentDetails.setRoutingsList(shipmentRoutingList);
+        List<Routings> existingOriginalShipmentMainCarriageRoutings = new ArrayList<>();
 
-        // sync consolidation routings to linked shipment
+        if (reverseSyncFromConsolToShipment) {
+            shipmentRoutingList.stream()
+                    .filter(r -> RoutingCarriage.MAIN_CARRIAGE.equals(r.getCarriage()) && Boolean.FALSE.equals(r.getInheritedFromConsolidation()))
+                    .forEach(shipmentRoute -> {
+                        var syncedRoute = jsonHelper.convertCreateValue(shipmentRoute, Routings.class);
+                        syncedRoute.setConsolidationId(null);
+                        syncedRoute.setShipmentId(shipmentDetails.getId());
+                        syncedRoute.setBookingId(null);
+                        existingOriginalShipmentMainCarriageRoutings.add(syncedRoute);
+                    });
+        }
         consolidationRoutings.stream()
                 .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
                 .forEach(consolRoute -> {
@@ -1700,9 +1712,9 @@ public class ConsolidationService implements IConsolidationService {
                     syncedRoute.setConsolidationId(null);
                     syncedRoute.setShipmentId(shipmentDetails.getId());
                     syncedRoute.setBookingId(null);
+                    syncedRoute.setInheritedFromConsolidation(true);
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
-
 
         List<Routings> existingMainCarriageRoutings = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
         int count = 0;
@@ -1730,7 +1742,9 @@ public class ConsolidationService implements IConsolidationService {
 
         // Merge routings list
         mergeRoutingList(preCarriageShipmentRoutes, finalShipmentRouteList, legCount);
-        mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
+        ArrayList<Routings> mergedShipmentMainCarriageList = new ArrayList<>(shipmentMainCarriageRouting);
+        mergedShipmentMainCarriageList.addAll(existingOriginalShipmentMainCarriageRoutings);
+        mergeRoutingList(mergedShipmentMainCarriageList, finalShipmentRouteList, legCount);
         mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
 
         if(saveRoutes)
@@ -1738,6 +1752,23 @@ public class ConsolidationService implements IConsolidationService {
 
         // Assign routing list to shipment routing
         shipmentDetails.setRoutingsList(finalShipmentRouteList);
+    }
+
+    // Helper method to create a synced route from consolidation routings
+    private Routings createSyncedRouteFromConsol(Routings existingRoute, List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
+        return consolidationRoutings.stream()
+                .filter(consolRoute -> RoutingCarriage.MAIN_CARRIAGE.equals(consolRoute.getCarriage()))
+                .filter(consolRoute -> existingRoute.getPol().equals(consolRoute.getPol()) && existingRoute.getPod().equals(consolRoute.getPod()))
+                .findFirst()
+                .map(consolRoute -> {
+                    var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
+                    syncedRoute.setConsolidationId(null);
+                    syncedRoute.setShipmentId(shipmentDetails.getId());
+                    syncedRoute.setBookingId(null);
+                    //syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
+                    return syncedRoute;
+                })
+                .orElse(existingRoute); // If no matching consol route is found, retain the existing route
     }
 
     /**

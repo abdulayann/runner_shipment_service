@@ -5221,6 +5221,12 @@ import static org.mockito.Mockito.*;
         Routings mockRouting = new Routings();
         mockRouting.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
 
+        // Create a mock routing for shipmentRoutingList with inheritedFromConsolidation = false
+        Routings existingRouting = new Routings();
+        existingRouting.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        existingRouting.setInheritedFromConsolidation(false);
+        existingRouting.setId(123L);
+
         ConsolidationDetails mockConoslidation = objectMapperTest.convertValue(testConsol, ConsolidationDetails.class);
         mockConoslidation.setCarrierBookingRef("BookingRef#TEST");
         mockConoslidation.setRoutingsList(List.of(mockRouting));
@@ -5228,7 +5234,7 @@ import static org.mockito.Mockito.*;
 
         ShipmentDetails mockShip1 = new ShipmentDetails();
         mockShip1.setCarrierDetails(new CarrierDetails());
-        mockShip1.setRoutingsList(new ArrayList<>());
+        mockShip1.setRoutingsList(List.of(existingRouting));
         mockShip1.setSyncRoutingFromConsolidation(true);
         ShipmentDetails mockShip2 = new ShipmentDetails();
         mockShip2.setCarrierDetails(new CarrierDetails());
@@ -5270,6 +5276,12 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
+
+        Routings updatedRouting = mockShip1.getRoutingsList().get(0);
+        assertNotNull(updatedRouting.getId());
+        assertEquals(existingRouting.getId(), updatedRouting.getId()); // ID should be preserved
+        assertNull(updatedRouting.getConsolidationId()); // Consolidation ID should be cleared
+        assertTrue(updatedRouting.getInheritedFromConsolidation());
     }
 
     @Test
