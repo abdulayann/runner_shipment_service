@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
@@ -24,11 +26,12 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -78,13 +81,13 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final INotificationDao notificationDao;
 
-    private final IEntityTransferService entityTransferService;
+    private final IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
-                                  IEntityTransferService entityTransferService) {
+                                  IShipmentSettingsDao shipmentSettingsDao) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -93,7 +96,7 @@ public class NetworkTransferService implements INetworkTransferService {
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.notificationDao = notificationDao;
-        this.entityTransferService = entityTransferService;
+        this.shipmentSettingsDao = shipmentSettingsDao;
     }
 
 
@@ -387,9 +390,24 @@ public class NetworkTransferService implements INetworkTransferService {
         return ResponseHelper.buildSuccessResponse();
     }
 
+    private Boolean getIsNetworkTransferFeatureEnabled(){
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+    }
+
+    private void validateApprovalRoleForImport() {
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
+            var tenantId = TenantContext.getCurrentTenant();
+            Integer approverRoleId = shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
+            if (approverRoleId == null || approverRoleId == 0) {
+                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
+            }
+        }
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel) {
-        entityTransferService.validateApprovalRoleForImport();
+        validateApprovalRoleForImport();
         ReassignRequest reassignRequest = (ReassignRequest) commonRequestModel.getData();
         var networkTransfer = networkTransferDao.findById(reassignRequest.getId());
         if(networkTransfer.isEmpty()){

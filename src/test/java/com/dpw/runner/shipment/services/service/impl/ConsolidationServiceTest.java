@@ -1347,7 +1347,7 @@ import java.util.stream.Collectors;
                 .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
 
         var spyService = Mockito.spy(consolidationService);
-
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidation);
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidation);
