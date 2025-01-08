@@ -3984,9 +3984,19 @@ public class ShipmentService implements IShipmentService {
             if(Boolean.TRUE.equals(request.getNotificationFlag())) {
                 Page<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
                     PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
-                andCriteria("id", eligibleShipmentId.getContent(), "IN", request);
-                totalPage = eligibleShipmentId.getTotalPages();
-                totalElements = eligibleShipmentId.getTotalElements();
+
+                List<Long> shipmentIds = notificationDao.findEntityIdsByEntityType(SHIPMENT);
+
+                Set<Long> uniqueShipmentIds = new HashSet<>(eligibleShipmentId.getContent());
+                uniqueShipmentIds.addAll(shipmentIds);
+
+                List<Long> combinedShipmentIds = new ArrayList<>(uniqueShipmentIds);
+
+                andCriteria("id", combinedShipmentIds, "IN", request);
+
+                totalElements = combinedShipmentIds.size();
+                int pageSize = request.getPageSize();
+                totalPage = (int) ((totalElements + pageSize - 1) / pageSize);
             }
 //            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
             checkWayBillNumberCriteria(request);

@@ -27,4 +27,6 @@ public interface INotificationDao {
     List<Notification> findNotificationForEntityTransfer(Long entityId, String entityType, Integer branchId, String requestType);
 
     void deleteAll(List<Notification> notificationList);
+
+    List<Long> findEntityIdsByEntityType(String entityType);
 }

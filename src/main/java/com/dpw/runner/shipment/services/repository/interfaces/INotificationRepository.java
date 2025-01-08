@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +34,7 @@ public interface INotificationRepository extends MultiTenancyRepository<Notifica
 
     @Query(value = "SELECT * FROM notification WHERE entity_id = ?1 AND entity_type = ?2 AND requested_branch_id = ?3 AND request_type = ?4", nativeQuery = true)
     List<Notification> findNotificationBasedOnEntityIdAndEntityTypeAndRequestedBranchIdAndRequestType(Long entityId, String entityType, Integer branchId, String requestType);
+
+    @Query("SELECT DISTINCT n.entityId FROM Notification n WHERE n.entityType = :entityType")
+    List<Long> findEntityIdsByEntityType(@Param("entityType") String entityType);
 }

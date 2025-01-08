@@ -560,7 +560,7 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    public void validateApprovalRoleForImport() {
+    private void validateApprovalRoleForImport() {
         if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
             var tenantId = TenantContext.getCurrentTenant();
             Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
