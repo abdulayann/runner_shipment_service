@@ -1,26 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -37,13 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
@@ -57,15 +30,6 @@ import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Stream;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -81,6 +45,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -120,6 +94,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IV1Service iv1Service;
 
     private static JsonTestUtility jsonTestUtility;
 
@@ -687,5 +664,127 @@ class BookingIntegrationsUtilityTest {
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
         verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse);
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
+        assertNotNull(requestMap);
+        assertEquals(8, requestMap.size());
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties1() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
+        assertNotNull(requestMap);
+        assertEquals(0, requestMap.size());
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties2() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(null);
+        assertNotNull(requestMap);
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties3() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties4() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        v1OrgResponse.setData(new ArrayList<>());
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties5() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        DependentServiceResponse v1OrgResponse2 = new DependentServiceResponse();
+        v1OrgResponse2.setData(null);
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse2);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties6() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        DependentServiceResponse v1OrgResponse2 = new DependentServiceResponse();
+        v1OrgResponse2.setData(new ArrayList<>());
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse2);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
     }
 }

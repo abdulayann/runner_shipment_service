@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +78,8 @@ class MasterDataUtilsTest {
     private BillingServiceAdapter billingServiceAdapter;
     @InjectMocks
     private  MasterDataUtils masterDataUtils;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
 
 
     @BeforeAll
@@ -1308,7 +1311,7 @@ class MasterDataUtilsTest {
 
     @Test
     void getLocationDataFromCache() {
-        var response = masterDataUtils.getLocationDataFromCache(null);
+        var response = masterDataUtils.getLocationDataFromCache(null, EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1317,7 +1320,7 @@ class MasterDataUtilsTest {
     void getLocationDataFromCache2() {
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        var response = masterDataUtils.getLocationDataFromCache(Set.of());
+        var response = masterDataUtils.getLocationDataFromCache(Set.of(), EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
         assertTrue(response.isEmpty());
     }
@@ -1330,7 +1333,7 @@ class MasterDataUtilsTest {
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(EntityTransferUnLocations.builder().Name("Name").LocationsReferenceGUID(UUID.randomUUID().toString()).LocCode("AEJEA").build()));
         when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        var response = spyService.getLocationDataFromCache(Set.of(locationGuid));
+        var response = spyService.getLocationDataFromCache(Set.of(locationGuid), EntityTransferConstants.LOCATION_SERVICE_GUID);
         assertNotNull(response);
     }
 
@@ -2127,6 +2130,59 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void fetchTenantIdForList_NetworkTransfer() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(NetworkTransferListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_NetworkTransfer2() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NetworkTransferListResponse.builder().sourceBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification() {
+        boolean isSuccess = true;
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().build()));
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification2() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().requestedBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void fetchTenantIdForList_Notification3() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(TenantModel::new);
+
+        masterDataUtils.fetchTenantIdForList(List.of(NotificationListResponse.builder().reassignedToBranchId(1L).build()));
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void setContainerTeuData() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentListResponse.class);
@@ -2303,4 +2359,131 @@ class MasterDataUtilsTest {
         assertNotNull(response);
         assertEquals("Namibia", response.get("NA"));
     }
+
+    @Test
+    void getCarrierDataFromCache() {
+        var response = masterDataUtils.getCarrierDataFromCache(null);
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarrierDataFromCache2() {
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = masterDataUtils.getCarrierDataFromCache(Set.of());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCarrierDataFromCache3() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String locationGuid = StringUtility.convertToString(UUID.randomUUID());
+        Cache cache = mock(Cache.class);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferCarrier.class))).thenReturn(List.of(EntityTransferCarrier.builder().ItemDescription("Name").Identifier1(UUID.randomUUID().toString()).ItemDescription("AEJEA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), anyBoolean())).thenReturn(V1DataResponse.builder().build());
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = spyService.getCarrierDataFromCache(Set.of(locationGuid));
+        assertNotNull(response);
+    }
+
+    @Test
+    void getCommodityGroupFromCache() {
+        var response = masterDataUtils.getCommodityGroupDataFromCache(null);
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCommodityGroupFromCache2() {
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = masterDataUtils.getCommodityGroupDataFromCache(Set.of());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getCommodityGroupFromCache3() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String locationGuid = StringUtility.convertToString(UUID.randomUUID());
+        Cache cache = mock(Cache.class);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(EntityTransferMasterLists.builder().ItemDescription("Name").Identifier1(UUID.randomUUID().toString()).ItemDescription("AEJEA").build()));
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(V1DataResponse.builder().build());
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = spyService.getCommodityGroupDataFromCache(Set.of(locationGuid));
+        assertNotNull(response);
+    }
+
+    @Test
+    void getPartiesOrgInfoFromCache() {
+        var response = masterDataUtils.getPartiesOrgInfoFromCache(null);
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getPartiesOrgInfoFromCache2() {
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = masterDataUtils.getPartiesOrgInfoFromCache(List.of());
+        assertNotNull(response);
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void getPartiesOrgInfoFromCache3() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        Parties locationGuid = Parties.builder().orgCode("abcd").addressCode("bcder").build();
+        Cache cache = mock(Cache.class);
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("abcd", "cd");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        addressMap.put("org#address", addressData);
+        Map<String, Map<String, Object>> organisationMap = new HashMap<>();
+        organisationMap.put("org", addressData);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().organizations(organisationMap).addresses(addressMap).build());
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = spyService.getPartiesOrgInfoFromCache(List.of(locationGuid));
+        assertNotNull(response);
+    }
+
+    @Test
+    void getPartiesOrgInfoFromCache4() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        Parties locationGuid = Parties.builder().orgCode("abcd").addressCode("bcder").build();
+        Cache cache = mock(Cache.class);
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("abcd", "cd");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        addressMap.put("org#address", addressData);
+        Map<String, Map<String, Object>> organisationMap = new HashMap<>();
+        addressMap.put("org", addressData);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().organizations(organisationMap).build());
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = spyService.getPartiesOrgInfoFromCache(List.of(locationGuid));
+        assertNotNull(response);
+    }
+
+    @Test
+    void getPartiesOrgInfoFromCache5() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        Parties locationGuid = Parties.builder().orgCode("abcd").addressCode("bcder").build();
+        Cache cache = mock(Cache.class);
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("abcd", "cd");
+        Map<String, Map<String, Object>> addressMap = new HashMap<>();
+        addressMap.put("org#address", addressData);
+        addressMap.put("org#address1", addressData);
+        addressMap.put("org#address2", addressData);
+        Map<String, Map<String, Object>> organisationMap = new HashMap<>();
+        organisationMap.put("org", addressData);
+        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(OrgAddressResponse.builder().organizations(organisationMap).addresses(addressMap).build());
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        var response = spyService.getPartiesOrgInfoFromCache(List.of(locationGuid));
+        assertNotNull(response);
+    }
+
+
 }
