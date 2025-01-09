@@ -46,16 +46,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -69,14 +69,24 @@ import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskType;
-import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
@@ -88,7 +98,16 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolida
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ArValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckEntityExistResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -100,6 +119,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -168,6 +188,7 @@ public class EntityTransferService implements IEntityTransferService {
     private IHblDao hblDao;
     private IAwbDao awbDao;
     private IEventDao eventDao;
+    private IEventService eventService;
     private MasterDataUtils masterDataUtils;
     private ILogsHistoryService logsHistoryService;
     private IContainerDao containerDao;
@@ -188,7 +209,8 @@ public class EntityTransferService implements IEntityTransferService {
     private INotificationDao notificationDao;
 
     @Autowired
-    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService, IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, INotificationDao notificationDao) {
+    public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
+            , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -219,6 +241,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.networkTransferService = networkTransferService;
         this.networkTransferDao = networkTransferDao;
         this.notificationDao = notificationDao;
+        this.eventService = eventService;
     }
 
     @Transactional
@@ -414,7 +437,7 @@ public class EntityTransferService implements IEntityTransferService {
             successTenantIds.add(tenant);
         }
 
-        this.createAutoEvent(consolidationDetails.get().getId().toString(), EventConstants.COSN, CONSOLIDATION);
+        this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION);
 
         List<String> tenantName = getTenantName(successTenantIds);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
@@ -977,18 +1000,19 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-
     private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
-            CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-            eventReq.entityId = entityId;
-            eventReq.entityType = entityType;
-            eventReq.eventCode = eventCode;
-            eventReq.isActualRequired = true;
-            eventReq.placeName = tenantName;
-            eventReq.createDuplicate = true;
-            log.info("Import event request: {}", jsonHelper.convertToJson(eventReq));
-            eventDao.autoGenerateEvents(eventReq);
-            log.info("Import event got created successfully with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        if (ObjectUtils.isNotEmpty(entityId)) {
+            EventsRequest eventsRequest = new EventsRequest();
+            eventsRequest.setActual(LocalDateTime.now());
+            eventsRequest.setEntityId(entityId);
+            eventsRequest.setEntityType(entityType);
+            eventsRequest.setEventCode(eventCode);
+            eventsRequest.setPlaceName(tenantName);
+            eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+            log.info("Import event request: {}", jsonHelper.convertToJson(eventsRequest));
+            eventService.saveEvent(eventsRequest);
+            log.info("Import {} event got created successfully with RequestId: {}", eventCode, LoggerHelper.getRequestIdFromMDC());
+        }
     }
 
 
@@ -1593,13 +1617,15 @@ public class EntityTransferService implements IEntityTransferService {
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(List.of(criteria1, "and", criteria2), "and", criteria3), "and" , criteria4)).build();
     }
 
-    private void createAutoEvent(String entityId, String eventCode, String entityType) {
-        if (StringUtility.isNotEmpty(entityId)) {
-            CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-            eventReq.entityId = Long.parseLong(entityId);
-            eventReq.entityType = entityType;
-            eventReq.eventCode = eventCode;
-            eventDao.autoGenerateEvents(eventReq);
+    private void createAutoEvent(Long entityId, String eventCode, String entityType) {
+        if (ObjectUtils.isNotEmpty(entityId)) {
+            EventsRequest eventsRequest = new EventsRequest();
+            eventsRequest.setActual(LocalDateTime.now());
+            eventsRequest.setEntityId(entityId);
+            eventsRequest.setEntityType(entityType);
+            eventsRequest.setEventCode(eventCode);
+            eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+            eventService.saveEvent(eventsRequest);
         }
     }
 

@@ -13,7 +13,6 @@ import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anySet;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -120,6 +119,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IV1Service iv1Service;
 
     private static JsonTestUtility jsonTestUtility;
 

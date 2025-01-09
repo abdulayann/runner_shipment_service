@@ -707,4 +707,21 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
         Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
     }
+
+    @Test
+    void partialUpdate_Success_WithAwbRevampFlagTrue(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsAwbRevampEnabled(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
+        testShipmentSettingsDetails.setIsAwbRevampEnabled(true);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 }

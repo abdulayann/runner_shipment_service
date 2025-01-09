@@ -177,4 +177,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean alwaysUtilization;
     private Boolean utilizationForContainerQuoted;
     private Boolean noUtilization;
+    private Boolean isAwbRevampEnabled;
 }

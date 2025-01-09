@@ -576,4 +576,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "no_utilization")
     private Boolean noUtilization;
+
+    @Column(name = "is_awb_revamp_enabled")
+    private Boolean isAwbRevampEnabled;
 }
